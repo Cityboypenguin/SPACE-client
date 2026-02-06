@@ -1,0 +1,8 @@
+services:
+  space: # ここはフロントのサービス名にする
+    build: ./docker
+    volumes:
+      - .:/app
+    ports:
+      - "5173:5173"
+    command: npm run dev
