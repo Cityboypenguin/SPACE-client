@@ -1,32 +1,32 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { loginAdmin } from '../api/auth';
 
 export const AdminLoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
+    setError('');
     try {
-      // 1. APIを呼び出す
       const data = await loginAdmin(email, password);
-      
-      // 2. 取得したトークンを localStorage に保存する
-      // schemaによれば AdministratorAuthPayload から token が返ってくる
       localStorage.setItem('space_admin_token', data.loginAdministrator.token);
-      
-      alert('ログイン成功！');
-      window.location.href = '/admin/dashboard'; // ログイン後の画面へ
+      navigate('/admin/dashboard');
     } catch (err) {
-      alert('ログインに失敗しました');
+      setError('メールアドレスまたはパスワードが正しくありません');
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      <h2>管理者ログイン</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin Email" required />
       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
-      <button type="submit">管理者ログイン</button>
+      <button type="submit">ログイン</button>
     </form>
   );
 };

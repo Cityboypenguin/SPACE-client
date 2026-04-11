@@ -1,6 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { logoutAdmin } from '../api/auth';
 
 export const AdminHeader = () => {
+  const navigate = useNavigate();
+
   const handleLogout = async () => {
     const token = localStorage.getItem('space_admin_token');
     if (token) {
@@ -10,9 +13,8 @@ export const AdminHeader = () => {
         console.error('Logout error:', err);
       }
     }
-    // トークンを消してログイン画面へ
     localStorage.removeItem('space_admin_token');
-    window.location.href = '/admin/login';
+    navigate('/admin/login');
   };
 
   return (
