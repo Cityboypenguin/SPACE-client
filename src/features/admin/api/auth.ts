@@ -1,7 +1,22 @@
 import { request } from '../../../lib/graphql';
 
-// ログイン用の入力型（スキーマの LoginInput に対応）
-// email と password が必要
+type Administrator = {
+  ID: string;
+  name: string;
+  email: string;
+};
+
+type LoginAdminResponse = {
+  loginAdministrator: {
+    token: string;
+    administrator: Administrator;
+  };
+};
+
+type LogoutAdminResponse = {
+  logoutAdministrator: boolean;
+};
+
 const LOGIN_ADMIN_MUTATION = `
   mutation LoginAdmin($input: LoginInput!) {
     loginAdministrator(input: $input) {
@@ -24,9 +39,9 @@ const LOGOUT_ADMIN_MUTATION = `
 
 export const loginAdmin = async (email: string, password: string) => {
   const variables = { input: { email, password } };
-  return await request<any>(LOGIN_ADMIN_MUTATION, variables);
+  return await request<LoginAdminResponse>(LOGIN_ADMIN_MUTATION, variables);
 };
 
 export const logoutAdmin = async (token: string) => {
-  return await request<any>(LOGOUT_ADMIN_MUTATION, { token });
+  return await request<LogoutAdminResponse>(LOGOUT_ADMIN_MUTATION, { token });
 };

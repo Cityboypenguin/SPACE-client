@@ -1,5 +1,5 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/query';
-export const STORAGE_KEY_TOKEN = 'space_token';
+export const STORAGE_KEY_TOKEN = 'space_admin_token';
 
 export const request = async <T>(query: string, variables?: Record<string, any>): Promise<T> => {
   const headers: Record<string, string> = {
