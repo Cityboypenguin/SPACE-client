@@ -1,6 +1,7 @@
 import { request } from '../../../lib/graphql';
 
 export const USER_TOKEN_KEY = 'space_user_token';
+export const USER_ID_KEY = 'space_user_id';
 
 type User = {
   ID: string;

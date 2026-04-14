@@ -14,6 +14,7 @@ export type User = {
 };
 
 type UsersResponse = { users: User[] };
+type SearchUsersResponse = { searchUsers: User[] };
 type GetUserByIDResponse = { getUserByID: User };
 type UpdateUserResponse = { updateUser: User };
 type DeleteUserResponse = { deleteUser: boolean };
@@ -21,6 +22,21 @@ type DeleteUserResponse = { deleteUser: boolean };
 const USERS_QUERY = `
   query {
     users {
+      ID
+      userID
+      name
+      email
+      role
+      status
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const SEARCH_USERS_QUERY = `
+  query SearchUsers($name: String!) {
+    searchUsers(name: $name) {
       ID
       userID
       name
@@ -73,6 +89,10 @@ const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
 export const getUsers = async () => {
   return await request<UsersResponse>(USERS_QUERY, undefined, getAdminToken());
+};
+
+export const searchUsers = async (name: string) => {
+  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { name }, getAdminToken());
 };
 
 export const getUserByID = async (id: string) => {

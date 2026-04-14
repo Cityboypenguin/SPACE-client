@@ -3,6 +3,9 @@ import { AdminRoutes } from './features/admin/routes/AdminRoutes'
 import { UserLoginForm } from './features/user/components/UserLoginForm'
 import { UserRegisterPage } from './features/user/pages/UserRegisterPage'
 import { UserDashboard } from './features/user/pages/UserDashboard'
+import { UserSettingsPage } from './features/user/pages/UserSettingsPage'
+import { UserSearchPage } from './features/user/pages/UserSearchPage'
+import { UserPublicProfilePage } from './features/user/pages/UserPublicProfilePage'
 import { UserProtectedRoute } from './features/user/components/UserProtectedRoute'
 
 function App() {
@@ -13,10 +16,34 @@ function App() {
         <Route path="/login" element={<UserLoginForm />} />
         <Route path="/register" element={<UserRegisterPage />} />
         <Route
-          path="/home"
+          path="/mypage"
           element={
             <UserProtectedRoute>
               <UserDashboard />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/mypage/settings"
+          element={
+            <UserProtectedRoute>
+              <UserSettingsPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <UserProtectedRoute>
+              <UserSearchPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/users/:id"
+          element={
+            <UserProtectedRoute>
+              <UserPublicProfilePage />
             </UserProtectedRoute>
           }
         />
