@@ -14,7 +14,7 @@ export const AdminLoginForm = () => {
     try {
       const data = await loginAdmin(email, password);
       localStorage.setItem('space_admin_token', data.loginAdministrator.token);
-      navigate('/admin/dashboard');
+      navigate('/admin');
     } catch (err) {
       setError('メールアドレスまたはパスワードが正しくありません');
     }

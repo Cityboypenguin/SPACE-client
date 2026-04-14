@@ -30,7 +30,6 @@ const LOGIN_ADMIN_MUTATION = `
   }
 `;
 
-// ログアウト用の Mutation
 const LOGOUT_ADMIN_MUTATION = `
   mutation LogoutAdmin($token: String!) {
     logoutAdministrator(token: $token)
