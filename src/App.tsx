@@ -7,6 +7,8 @@ import { UserSettingsPage } from './features/user/pages/UserSettingsPage'
 import { UserSearchPage } from './features/user/pages/UserSearchPage'
 import { UserPublicProfilePage } from './features/user/pages/UserPublicProfilePage'
 import { UserProtectedRoute } from './features/user/components/UserProtectedRoute'
+import { DMListPage } from './features/user/pages/DMListPage'
+import { DMPage } from './features/user/pages/DMPage'
 
 function App() {
   return (
@@ -44,6 +46,22 @@ function App() {
           element={
             <UserProtectedRoute>
               <UserPublicProfilePage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/dm"
+          element={
+            <UserProtectedRoute>
+              <DMListPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/dm/:roomId"
+          element={
+            <UserProtectedRoute>
+              <DMPage />
             </UserProtectedRoute>
           }
         />
