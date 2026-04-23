@@ -38,6 +38,10 @@ export const DMPage = () => {
   const [wsConnected, setWsConnected] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const currentUserID = localStorage.getItem(USER_ID_KEY) ?? '';
+  const isCurrentUser = (user: { ID: string; userID: string }) => {
+    if (!currentUserID) return false;
+    return user.ID === currentUserID || user.userID === currentUserID;
+  };
 
   useEffect(() => {
     if (!roomId) return;
@@ -51,7 +55,7 @@ export const DMPage = () => {
         setRoom(roomData.room);
         setMessages(messagesData.messages);
 
-        const partner = roomData.room.user.find((u) => u.ID !== currentUserID);
+        const partner = roomData.room.user.find((u) => !isCurrentUser(u));
         if (partner) {
           saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerUserID: partner.userID });
         }
@@ -101,20 +105,21 @@ export const DMPage = () => {
     setSending(true);
     setError('');
     try {
-      const data = await sendMessage(roomId, currentUserID, content.trim());
+      const data = await sendMessage(roomId, content.trim());
       setContent('');
       setMessages((prev) => {
         if (prev.some((m) => m.ID === data.sendMessage.ID)) return prev;
         return [...prev, data.sendMessage];
       });
-    } catch {
-      setError('メッセージの送信に失敗しました');
+    } catch (err) {
+      const message = err instanceof Error && err.message ? err.message : 'メッセージの送信に失敗しました';
+      setError(message);
     } finally {
       setSending(false);
     }
   };
 
-  const partnerName = room?.user.find((u) => u.ID !== currentUserID)?.name ?? 'DM';
+  const partnerName = room?.user.find((u) => !isCurrentUser(u))?.name ?? 'DM';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -159,7 +164,10 @@ export const DMPage = () => {
         {error && <p style={{ color: 'red' }}>{error}</p>}
 
         {messages.map((msg) => {
-          const isMine = msg.userID === currentUserID;
+          const isMine =
+            msg.userID === currentUserID ||
+            msg.user.ID === currentUserID ||
+            msg.user.userID === currentUserID;
           return (
             <div
               key={msg.ID}

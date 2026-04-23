@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchUsers, type UserProfile } from '../api/profile';
 import { UserHeader } from '../components/UserHeader';
+import { USER_ID_KEY } from '../api/auth';
 
 export const UserSearchPage = () => {
   const [query, setQuery] = useState('');
@@ -15,7 +16,11 @@ export const UserSearchPage = () => {
     setError('');
     try {
       const data = await searchUsers(query);
-      setResults(data.searchUsers);
+      const currentUserID = localStorage.getItem(USER_ID_KEY);
+      const filtered = currentUserID
+        ? data.searchUsers.filter((u) => u.ID !== currentUserID && u.userID !== currentUserID)
+        : data.searchUsers;
+      setResults(filtered);
       setSearched(true);
     } catch {
       setError('検索に失敗しました');

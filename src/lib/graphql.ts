@@ -21,7 +21,25 @@ export const request = async <T>(
   });
 
   if (!response.ok) {
-    throw new Error(`Network response was not ok: ${response.statusText}`);
+    let detail = '';
+    try {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const errorJson = await response.json();
+        if (Array.isArray(errorJson?.errors) && errorJson.errors.length > 0) {
+          detail = errorJson.errors.map((e: { message?: string }) => e.message || '').filter(Boolean).join(', ');
+        } else if (typeof errorJson?.message === 'string') {
+          detail = errorJson.message;
+        }
+      } else {
+        detail = (await response.text()).trim();
+      }
+    } catch {
+      detail = '';
+    }
+
+    const suffix = detail ? `: ${detail}` : '';
+    throw new Error(`Network response was not ok (${response.status} ${response.statusText})${suffix}`);
   }
 
   const json = await response.json();

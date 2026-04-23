@@ -27,8 +27,8 @@ export type Room = {
 const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 const GET_OR_CREATE_DM_ROOM_MUTATION = `
-  mutation GetOrCreateDMRoom($currentUserID: ID!, $targetUserID: ID!) {
-    getOrCreateDMRoom(currentUserID: $currentUserID, targetUserID: $targetUserID) {
+  mutation GetOrCreateDMRoom($targetUserID: ID!) {
+    getOrCreateDMRoom(targetUserID: $targetUserID) {
       ID
       name
       type
@@ -43,8 +43,8 @@ const GET_OR_CREATE_DM_ROOM_MUTATION = `
 `;
 
 const SEND_MESSAGE_MUTATION = `
-  mutation SendMessage($roomID: ID!, $userID: ID!, $content: String!) {
-    sendMessage(roomID: $roomID, userID: $userID, content: $content) {
+  mutation SendMessage($roomID: ID!, $content: String!) {
+    sendMessage(roomID: $roomID, content: $content) {
       ID
       roomID
       userID
@@ -92,19 +92,37 @@ const GET_ROOM_QUERY = `
   }
 `;
 
-export const getOrCreateDMRoom = async (currentUserID: string, targetUserID: string) => {
+const MY_DM_ROOMS_QUERY = `
+  query MyDMRooms {
+    myDMRooms {
+      ID
+      name
+      type
+      description
+      user {
+        ID
+        name
+        userID
+      }
+    }
+  }
+`;
+
+export const getOrCreateDMRoom = async (targetUserID: string) => {
+  const token = getUserToken();
   return await request<{ getOrCreateDMRoom: Room }>(
     GET_OR_CREATE_DM_ROOM_MUTATION,
-    { currentUserID, targetUserID },
-    getUserToken(),
+    { targetUserID },
+    token,
   );
 };
 
-export const sendMessage = async (roomID: string, userID: string, content: string) => {
+export const sendMessage = async (roomID: string, content: string) => {
+  const token = getUserToken();
   return await request<{ sendMessage: Message }>(
     SEND_MESSAGE_MUTATION,
-    { roomID, userID, content },
-    getUserToken(),
+    { roomID, content },
+    token,
   );
 };
 
@@ -122,4 +140,13 @@ export const getRoom = async (id: string) => {
     { id },
     getUserToken(),
   );
+};
+
+export const listMyDMRooms = async () => {
+  const token = getUserToken();
+  return await request<{ myDMRooms: Room[] }>(
+    MY_DM_ROOMS_QUERY,
+    undefined,
+    token,
+  ).then((data) => data.myDMRooms);
 };

@@ -12,29 +12,26 @@ export type UserProfile = {
   updatedAt: string;
 };
 
-type GetUserByIDResponse = { getUserByID: UserProfile };
+export type Profile = {
+  userID: string;
+  username: string;
+  bio: string | null;
+  grade: number | null;
+  image: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: UserProfile;
+};
+
+type MeResponse = { me: UserProfile };
 type SearchUsersResponse = { searchUsers: UserProfile[] };
 type UpdateUserResponse = { updateUser: UserProfile };
-type DeleteUserResponse = { deleteUser: boolean };
+type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
+type UpdateProfileResponse = { updateProfile: Profile };
 
-const GET_USER_BY_ID_QUERY = `
-  query GetUserByID($id: ID!) {
-    getUserByID(id: $id) {
-      ID
-      userID
-      name
-      email
-      role
-      status
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
-const UPDATE_USER_MUTATION = `
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
+const ME_QUERY = `
+  query Me {
+    me {
       ID
       userID
       name
@@ -60,29 +57,68 @@ const SEARCH_USERS_QUERY = `
   }
 `;
 
-const DELETE_USER_MUTATION = `
-  mutation DeleteUser($id: ID!) {
-    deleteUser(id: $id)
+const UPDATE_USER_MUTATION = `
+  mutation UpdateUser($input: UpdateUserInput!) {
+    updateUser(input: $input) {
+      ID
+      userID
+      name
+      email
+      role
+      status
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const GET_PROFILE_BY_USER_ID_QUERY = `
+  query GetProfileByUserID($userID: ID!) {
+    getProfileByUserID(userID: $userID) {
+      userID
+      username
+      bio
+      grade
+      image
+      createdAt
+      updatedAt
+      user {
+        ID
+        userID
+        name
+        email
+        role
+        status
+      }
+    }
+  }
+`;
+
+const UPDATE_PROFILE_MUTATION = `
+  mutation UpdateProfile($input: UpdateProfileInput!) {
+    updateProfile(input: $input) {
+      userID
+      username
+      bio
+      grade
+      image
+      createdAt
+      updatedAt
+    }
   }
 `;
 
 const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
-export const searchUsers = async (name: string) => {
-  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { name }, getUserToken());
-};
-
-export const getUserByID = async (id: string) => {
-  return await request<GetUserByIDResponse>(GET_USER_BY_ID_QUERY, { id }, getUserToken());
-};
-
-export const getMyProfile = async (id: string) => {
-  return await request<GetUserByIDResponse>(GET_USER_BY_ID_QUERY, { id }, getUserToken());
+export const getMyProfile = async () => {
+  const token = getUserToken();
+  if (!token) {
+    throw new Error('認証が必要です。ログインしてください。');
+  }
+  return await request<MeResponse>(ME_QUERY, undefined, token);
 };
 
 export const updateMyProfile = async (input: {
-  ID: string;
-  userID?: string;
   name?: string;
   email?: string;
   password?: string;
@@ -90,6 +126,24 @@ export const updateMyProfile = async (input: {
   return await request<UpdateUserResponse>(UPDATE_USER_MUTATION, { input }, getUserToken());
 };
 
-export const deleteMyAccount = async (id: string) => {
-  return await request<DeleteUserResponse>(DELETE_USER_MUTATION, { id }, getUserToken());
+export const searchUsers = async (name: string) => {
+  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { name }, getUserToken());
+};
+
+export const getProfileByUserID = async (userID: string) => {
+  return await request<GetProfileByUserIDResponse>(
+    GET_PROFILE_BY_USER_ID_QUERY,
+    { userID },
+    getUserToken(),
+  );
+};
+
+export const updateProfile = async (input: {
+  userID: string;
+  username?: string;
+  bio?: string;
+  grade?: number;
+  image?: string;
+}) => {
+  return await request<UpdateProfileResponse>(UPDATE_PROFILE_MUTATION, { input }, getUserToken());
 };

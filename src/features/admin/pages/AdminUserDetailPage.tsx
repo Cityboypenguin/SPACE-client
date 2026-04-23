@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getUserByID, updateUser, deleteUser, type User } from '../api/users';
+import { getUserByID, deleteUser, type User } from '../api/users';
 import { AdminHeader } from '../components/AdminHeader';
 
 export const AdminUserDetailPage = () => {
@@ -9,42 +9,13 @@ export const AdminUserDetailPage = () => {
 
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  const [userID, setUserID] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
   useEffect(() => {
     if (!id) return;
     getUserByID(id)
-      .then((data) => {
-        const u = data.getUserByID;
-        setUser(u);
-        setUserID(u.userID);
-        setName(u.name);
-        setEmail(u.email);
-      })
+      .then((data) => setUser(data.getUserByID))
       .catch(() => setError('ユーザー情報の取得に失敗しました'));
   }, [id]);
-
-  const handleUpdate = async (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    if (!id) return;
-    setError('');
-    setSuccess('');
-    try {
-      const input: Parameters<typeof updateUser>[0] = { ID: id, userID, name, email };
-      if (password) input.password = password;
-      const data = await updateUser(input);
-      setUser(data.updateUser);
-      setPassword('');
-      setSuccess('更新しました');
-    } catch {
-      setError('更新に失敗しました');
-    }
-  };
 
   const handleDelete = async () => {
     if (!id || !user) return;
@@ -65,51 +36,25 @@ export const AdminUserDetailPage = () => {
       <main style={{ padding: '2rem' }}>
         <button onClick={() => navigate('/admin/users')}>← 一覧に戻る</button>
         <h1>ユーザー詳細</h1>
-        <p>登録日時: {user.createdAt}</p>
-        <p>更新日時: {user.updatedAt}</p>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
-        {success && <p style={{ color: 'green' }}>{success}</p>}
 
-        <form onSubmit={handleUpdate}>
-          <h2>情報編集</h2>
-          <label>
-            ユーザーID
-            <input
-              type="text"
-              value={userID}
-              onChange={(e) => setUserID(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            名前
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            メールアドレス
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            パスワード（変更する場合のみ入力）
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          <button type="submit">更新する</button>
-        </form>
+        <dl>
+          <dt>ユーザーID</dt>
+          <dd>{user.userID}</dd>
+          <dt>名前</dt>
+          <dd>{user.name}</dd>
+          <dt>メールアドレス</dt>
+          <dd>{user.email}</dd>
+          <dt>ロール</dt>
+          <dd>{user.role}</dd>
+          <dt>ステータス</dt>
+          <dd>{user.status}</dd>
+          <dt>登録日時</dt>
+          <dd>{user.createdAt}</dd>
+          <dt>更新日時</dt>
+          <dd>{user.updatedAt}</dd>
+        </dl>
 
         <hr />
         <button onClick={handleDelete} style={{ color: 'red' }}>

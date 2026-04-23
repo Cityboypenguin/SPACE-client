@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/UserHeader';
 import { searchUsers, type UserProfile } from '../api/profile';
-import { getOrCreateDMRoom } from '../api/message';
+import { getOrCreateDMRoom, listMyDMRooms } from '../api/message';
 import { USER_ID_KEY } from '../api/auth';
-import { getRecentDMs, saveRecentDM, type RecentDM } from '../utils/recentDM';
+
+type RecentDM = {
+  roomID: string;
+  partnerName: string;
+  partnerUserID: string;
+};
 
 export const DMListPage = () => {
   const [query, setQuery] = useState('');
@@ -12,15 +17,60 @@ export const DMListPage = () => {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState('');
   const [starting, setStarting] = useState<string | null>(null);
-  const [recentDMs] = useState<RecentDM[]>(getRecentDMs);
+  const [recentDMs, setRecentDMs] = useState<RecentDM[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+
+    const loadDMRooms = async () => {
+      const currentUserID = localStorage.getItem(USER_ID_KEY);
+      const isCurrentUser = (user: { ID: string; userID: string }) => {
+        if (!currentUserID) return false;
+        return user.ID === currentUserID || user.userID === currentUserID;
+      };
+
+      try {
+        const serverRooms = await listMyDMRooms();
+        if (!active) return;
+
+        const mappedRecent = serverRooms
+          .map((room) => {
+            const partner = room.user.find((u) => !isCurrentUser(u)) ?? room.user[0];
+            if (!partner) return null;
+            return {
+              roomID: room.ID,
+              partnerName: partner.name,
+              partnerUserID: partner.userID,
+            } as RecentDM;
+          })
+          .filter((dm): dm is RecentDM => dm !== null);
+
+        setRecentDMs(mappedRecent);
+      } catch {
+        if (active) setError('DMルームの読み込みに失敗しました');
+      }
+    };
+
+    void loadDMRooms();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setResults([]);
+    setSearched(false);
     try {
       const data = await searchUsers(query);
-      setResults(data.searchUsers);
+      const currentUserID = localStorage.getItem(USER_ID_KEY);
+      const filtered = currentUserID
+        ? data.searchUsers.filter((u) => u.ID !== currentUserID)
+        : data.searchUsers;
+      setResults(filtered);
       setSearched(true);
     } catch {
       setError('検索に失敗しました');
@@ -28,20 +78,21 @@ export const DMListPage = () => {
   };
 
   const handleStartDM = async (target: UserProfile) => {
-    const currentUserID = localStorage.getItem(USER_ID_KEY);
-    if (!currentUserID) return;
     setStarting(target.ID);
     setError('');
     try {
-      const data = await getOrCreateDMRoom(currentUserID, target.ID);
-      const room = data.getOrCreateDMRoom;
-      saveRecentDM({ roomID: room.ID, partnerName: target.name, partnerUserID: target.userID });
-      navigate(`/dm/${room.ID}`);
-    } catch {
-      setError('DMの開始に失敗しました');
+      const data = await getOrCreateDMRoom(target.ID);
+      navigate(`/dm/${data.getOrCreateDMRoom.ID}`);
+    } catch (err) {
+      const message = err instanceof Error && err.message ? err.message : 'DMの開始に失敗しました';
+      setError(message);
     } finally {
       setStarting(null);
     }
+  };
+
+  const handleOpenDM = (dm: RecentDM) => {
+    navigate(`/dm/${dm.roomID}`);
   };
 
   return (
@@ -106,7 +157,7 @@ export const DMListPage = () => {
               {recentDMs.map((dm) => (
                 <li
                   key={dm.roomID}
-                  onClick={() => navigate(`/dm/${dm.roomID}`)}
+                  onClick={() => handleOpenDM(dm)}
                   style={{
                     cursor: 'pointer',
                     padding: '0.75rem 0.5rem',

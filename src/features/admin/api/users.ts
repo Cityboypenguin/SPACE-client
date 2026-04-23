@@ -16,7 +16,6 @@ export type User = {
 type UsersResponse = { users: User[] };
 type SearchUsersResponse = { searchUsers: User[] };
 type GetUserByIDResponse = { getUserByID: User };
-type UpdateUserResponse = { updateUser: User };
 type DeleteUserResponse = { deleteUser: boolean };
 
 const USERS_QUERY = `
@@ -64,21 +63,6 @@ const GET_USER_BY_ID_QUERY = `
   }
 `;
 
-const UPDATE_USER_MUTATION = `
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
-      ID
-      userID
-      name
-      email
-      role
-      status
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
 const DELETE_USER_MUTATION = `
   mutation DeleteUser($id: ID!) {
     deleteUser(id: $id)
@@ -97,16 +81,6 @@ export const searchUsers = async (name: string) => {
 
 export const getUserByID = async (id: string) => {
   return await request<GetUserByIDResponse>(GET_USER_BY_ID_QUERY, { id }, getAdminToken());
-};
-
-export const updateUser = async (input: {
-  ID: string;
-  userID?: string;
-  name?: string;
-  email?: string;
-  password?: string;
-}) => {
-  return await request<UpdateUserResponse>(UPDATE_USER_MUTATION, { input }, getAdminToken());
 };
 
 export const deleteUser = async (id: string) => {

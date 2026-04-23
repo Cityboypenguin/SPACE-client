@@ -18,3 +18,7 @@ export const saveRecentDM = (dm: RecentDM) => {
   const existing = getRecentDMs().filter((d) => d.roomID !== dm.roomID);
   localStorage.setItem(DM_ROOMS_KEY, JSON.stringify([dm, ...existing].slice(0, 20)));
 };
+
+export const replaceRecentDMs = (dms: RecentDM[]) => {
+  localStorage.setItem(DM_ROOMS_KEY, JSON.stringify(dms.slice(0, 20)));
+};

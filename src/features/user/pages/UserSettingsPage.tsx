@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getMyProfile, updateMyProfile, deleteMyAccount, type UserProfile } from '../api/profile';
+import { getMyProfile, updateMyProfile, type UserProfile } from '../api/profile';
 import { USER_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
 import { UserHeader } from '../components/UserHeader';
 
 export const UserSettingsPage = () => {
   const navigate = useNavigate();
-  const id = localStorage.getItem(USER_ID_KEY);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [userID, setUserID] = useState('');
@@ -17,28 +16,29 @@ export const UserSettingsPage = () => {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (!id) {
+    const token = localStorage.getItem(USER_TOKEN_KEY);
+    if (!token) {
       navigate('/login');
       return;
     }
-    getMyProfile(id)
+    getMyProfile()
       .then((data) => {
-        const p = data.getUserByID;
+        const p = data.me;
         setProfile(p);
+        localStorage.setItem(USER_ID_KEY, p.ID);
         setUserID(p.userID);
         setName(p.name);
         setEmail(p.email);
       })
       .catch(() => setError('プロフィールの取得に失敗しました'));
-  }, [id, navigate]);
+  }, [navigate]);
 
   const handleUpdate = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!id) return;
     setError('');
     setSuccess('');
     try {
-      const input: Parameters<typeof updateMyProfile>[0] = { ID: id, userID, name, email };
+      const input: Parameters<typeof updateMyProfile>[0] = { name, email };
       if (password) input.password = password;
       const data = await updateMyProfile(input);
       setProfile(data.updateUser);
@@ -46,19 +46,6 @@ export const UserSettingsPage = () => {
       setSuccess('更新しました');
     } catch {
       setError('更新に失敗しました');
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!id || !profile) return;
-    if (!window.confirm('アカウントを削除しますか？この操作は取り消せません。')) return;
-    try {
-      await deleteMyAccount(id);
-      localStorage.removeItem(USER_TOKEN_KEY);
-      localStorage.removeItem(USER_ID_KEY);
-      navigate('/login');
-    } catch {
-      setError('削除に失敗しました');
     }
   };
 
@@ -82,7 +69,7 @@ export const UserSettingsPage = () => {
             <input
               type="text"
               value={userID}
-              onChange={(e) => setUserID(e.target.value)}
+              readOnly
               required
             />
           </label>
@@ -114,11 +101,6 @@ export const UserSettingsPage = () => {
           </label>
           <button type="submit">更新する</button>
         </form>
-
-        <hr />
-        <button onClick={handleDelete} style={{ color: 'red' }}>
-          アカウントを削除する
-        </button>
       </main>
     </div>
   );

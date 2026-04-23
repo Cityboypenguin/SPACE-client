@@ -9,10 +9,11 @@ export const UserDashboard = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const id = localStorage.getItem(USER_ID_KEY);
-    if (!id) return;
-    getMyProfile(id)
-      .then((data) => setProfile(data.getUserByID))
+    getMyProfile()
+      .then((data) => {
+        setProfile(data.me);
+        localStorage.setItem(USER_ID_KEY, data.me.ID);
+      })
       .catch(() => setError('プロフィールの取得に失敗しました'));
   }, []);
 
