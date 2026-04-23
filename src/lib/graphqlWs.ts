@@ -70,11 +70,17 @@ export const subscribeToGraphQL = <T>(
   return () => {
     if (unsubscribed) return;
     unsubscribed = true;
-    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-      if (ws.readyState === WebSocket.OPEN) {
+    
+    if (ws) {
+      if (ws.readyState === WebSocket.CONNECTING) {
+        // 接続中にclose()を呼ぶとブラウザが警告を出すため、接続完了後に閉じるよう上書き
+        ws.onopen = () => {
+          if (ws) ws.close();
+        };
+      } else if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'complete', id: subId }));
+        ws.close();
       }
-      ws.close();
     }
     ws = null;
   };
