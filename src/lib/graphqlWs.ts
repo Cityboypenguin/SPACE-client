@@ -20,7 +20,7 @@ export const subscribeToGraphQL = <T>(
 ): (() => void) => {
   const subId = Math.random().toString(36).slice(2);
   const token = localStorage.getItem(USER_TOKEN_KEY);
-  let ws: WebSocket | null = new WebSocket(getWsUrl(), 'graphql-transport-ws');
+  let ws: WebSocket | null = new WebSocket(getWsUrl(), 'graphql-ws');
   let unsubscribed = false;
 
   ws.onopen = () => {
