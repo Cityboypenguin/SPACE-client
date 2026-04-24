@@ -20,11 +20,10 @@ export const request = async <T>(
     body: JSON.stringify({ query, variables }),
   });
 
-  // HTTPステータスコードでの401エラー（未認証）を検知した場合
   if (response.status === 401) {
     localStorage.clear();
-    // 必要に応じてAdminとUserで遷移先を分ける処理を入れるとより安全です
     window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+    return Promise.reject(new Error('Unauthorized'));
   }
 
   if (!response.ok) {
@@ -54,10 +53,15 @@ export const request = async <T>(
   if (json.errors) {
     const message = json.errors.map((e: { message: string }) => e.message).join(', ');
     
-    // GraphQLのレスポンス内でトークンエラーを検知した場合
-    if (message.includes('invalid token') || message.includes('token has been revoked')) {
+    if (
+      message.includes('invalid token') ||
+      message.includes('token has been revoked') ||
+      message.includes('token is expired') ||
+      message.includes('unauthorized')
+    ) {
       localStorage.clear();
       window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+      return Promise.reject(new Error('Unauthorized'));
     }
 
     throw new Error(message);
