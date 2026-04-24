@@ -1,6 +1,7 @@
 import { request } from '../../../lib/graphql';
 
 export const USER_TOKEN_KEY = 'space_user_token';
+export const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
 export const USER_ID_KEY = 'space_user_id';
 
 type User = {
@@ -15,6 +16,7 @@ type User = {
 type LoginUserResponse = {
   loginUser: {
     token: string;
+    refreshToken: string;
     user: User;
   };
 };
@@ -31,6 +33,7 @@ const LOGIN_USER_MUTATION = `
   mutation LoginUser($input: LoginInput!) {
     loginUser(input: $input) {
       token
+      refreshToken
       user {
         ID
         userID

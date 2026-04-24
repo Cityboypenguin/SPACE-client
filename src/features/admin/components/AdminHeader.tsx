@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { logoutAdmin } from '../api/auth';
+import { logoutAdmin, ADMIN_TOKEN_KEY, ADMIN_REFRESH_TOKEN_KEY } from '../api/auth';
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('space_admin_token');
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
     if (token) {
       try {
         await logoutAdmin(token);
@@ -13,7 +13,8 @@ export const AdminHeader = () => {
         console.error('Logout error:', err);
       }
     }
-    localStorage.removeItem('space_admin_token');
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_REFRESH_TOKEN_KEY);
     navigate('/admin/login');
   };
 

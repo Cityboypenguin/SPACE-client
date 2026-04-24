@@ -59,7 +59,8 @@ export const DMPage = () => {
         if (partner) {
           saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerUserID: partner.userID });
         }
-      } catch {
+      } catch (err) {
+        console.error('[DMPage] loadRoom failed:', err);
         setError('ルームの読み込みに失敗しました');
       }
     };

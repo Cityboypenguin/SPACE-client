@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerUser, loginUser, USER_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
+import { registerUser, loginUser, USER_TOKEN_KEY, USER_REFRESH_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
 
 export const UserRegisterPage = () => {
   const [userID, setUserID] = useState('');
@@ -17,6 +17,7 @@ export const UserRegisterPage = () => {
       await registerUser(userID, name, email, password);
       const loginData = await loginUser(email, password);
       localStorage.setItem(USER_TOKEN_KEY, loginData.loginUser.token);
+      localStorage.setItem(USER_REFRESH_TOKEN_KEY, loginData.loginUser.refreshToken);
       localStorage.setItem(USER_ID_KEY, loginData.loginUser.user.ID);
       navigate('/mypage');
     } catch {

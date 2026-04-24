@@ -1,5 +1,8 @@
 import { request } from '../../../lib/graphql';
 
+export const ADMIN_TOKEN_KEY = 'space_admin_token';
+export const ADMIN_REFRESH_TOKEN_KEY = 'space_admin_refresh_token';
+
 type Administrator = {
   ID: string;
   name: string;
@@ -9,6 +12,7 @@ type Administrator = {
 type LoginAdminResponse = {
   loginAdministrator: {
     token: string;
+    refreshToken: string;
     administrator: Administrator;
   };
 };
@@ -21,6 +25,7 @@ const LOGIN_ADMIN_MUTATION = `
   mutation LoginAdmin($input: LoginInput!) {
     loginAdministrator(input: $input) {
       token
+      refreshToken
       administrator {
         ID
         name

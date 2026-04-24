@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { logoutUser, USER_ID_KEY, USER_TOKEN_KEY } from '../api/auth';
+import { logoutUser, USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY } from '../api/auth';
 
 export const UserHeader = () => {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ export const UserHeader = () => {
       }
     }
     localStorage.removeItem(USER_TOKEN_KEY);
+    localStorage.removeItem(USER_REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_ID_KEY);
     window.location.href = '/login';
   };

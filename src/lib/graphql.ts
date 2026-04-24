@@ -1,5 +1,9 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/query';
 
+const USER_TOKEN_KEY = 'space_user_token';
+const USER_ID_KEY = 'space_user_id';
+const ADMIN_TOKEN_KEY = 'space_admin_token';
+
 export const request = async <T>(
   query: string,
   variables?: Record<string, unknown>,
@@ -21,7 +25,9 @@ export const request = async <T>(
   });
 
   if (response.status === 401) {
-    localStorage.clear();
+    localStorage.removeItem(USER_TOKEN_KEY);
+    localStorage.removeItem(USER_ID_KEY);
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
     window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
     return Promise.reject(new Error('Unauthorized'));
   }
@@ -59,7 +65,9 @@ export const request = async <T>(
       message.includes('token is expired') ||
       message.includes('unauthorized')
     ) {
-      localStorage.clear();
+      localStorage.removeItem(USER_TOKEN_KEY);
+      localStorage.removeItem(USER_ID_KEY);
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
       window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
       return Promise.reject(new Error('Unauthorized'));
     }

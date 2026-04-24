@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginAdmin } from '../api/auth';
+import { loginAdmin, ADMIN_TOKEN_KEY, ADMIN_REFRESH_TOKEN_KEY } from '../api/auth';
 
 export const AdminLoginForm = () => {
   const [email, setEmail] = useState('');
@@ -13,7 +13,8 @@ export const AdminLoginForm = () => {
     setError('');
     try {
       const data = await loginAdmin(email, password);
-      localStorage.setItem('space_admin_token', data.loginAdministrator.token);
+      localStorage.setItem(ADMIN_TOKEN_KEY, data.loginAdministrator.token);
+      localStorage.setItem(ADMIN_REFRESH_TOKEN_KEY, data.loginAdministrator.refreshToken);
       navigate('/admin');
     } catch {
       setError('メールアドレスまたはパスワードが正しくありません');

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginUser, USER_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
+import { loginUser, USER_TOKEN_KEY, USER_REFRESH_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
 
 export const UserLoginForm = () => {
   const [email, setEmail] = useState('');
@@ -14,6 +14,7 @@ export const UserLoginForm = () => {
     try {
       const data = await loginUser(email, password);
       localStorage.setItem(USER_TOKEN_KEY, data.loginUser.token);
+      localStorage.setItem(USER_REFRESH_TOKEN_KEY, data.loginUser.refreshToken);
       localStorage.setItem(USER_ID_KEY, data.loginUser.user.ID);
       navigate('/mypage');
     } catch {
