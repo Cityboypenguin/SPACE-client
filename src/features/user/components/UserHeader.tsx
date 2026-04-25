@@ -21,7 +21,7 @@ export const UserHeader = () => {
 
   return (
     <header style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 1rem', borderBottom: '1px solid #ccc' }}>
-      <h2 style={{ margin: 0, cursor: 'pointer' }} onClick={() => navigate('/mypage')}>SPACE</h2>
+      <h2 style={{ margin: 0, cursor: 'pointer' }} onClick={() => navigate('/mypage')}>S-Universe</h2>
       <nav style={{ display: 'flex', gap: '0.75rem', flex: 1 }}>
         <button onClick={() => navigate('/mypage')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }}>ホーム</button>
         <button onClick={() => navigate('/search')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }}>ユーザー検索</button>
