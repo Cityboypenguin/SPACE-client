@@ -3,7 +3,7 @@ import { USER_TOKEN_KEY } from './auth';
 
 export type UserProfile = {
   ID: string;
-  userID: string;
+  accountID: string;
   name: string;
   email: string;
   role: string;
@@ -13,7 +13,7 @@ export type UserProfile = {
 };
 
 export type Profile = {
-  userID: string;
+  accountID: string;
   username: string;
   bio: string | null;
   grade: number | null;
@@ -26,14 +26,14 @@ export type Profile = {
 type MeResponse = { me: UserProfile };
 type SearchUsersResponse = { searchUsers: UserProfile[] };
 type UpdateUserResponse = { updateUser: UserProfile };
-type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
+type GetProfileByAccountIDResponse = { getProfileByAccountID: Profile | null };
 type UpdateProfileResponse = { updateProfile: Profile };
 
 const ME_QUERY = `
   query Me {
     me {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -48,7 +48,7 @@ const SEARCH_USERS_QUERY = `
   query SearchUsers($name: String!) {
     searchUsers(name: $name) {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -61,7 +61,7 @@ const UPDATE_USER_MUTATION = `
   mutation UpdateUser($input: UpdateUserInput!) {
     updateUser(input: $input) {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -73,9 +73,9 @@ const UPDATE_USER_MUTATION = `
 `;
 
 const GET_PROFILE_BY_USER_ID_QUERY = `
-  query GetProfileByUserID($userID: ID!) {
-    getProfileByUserID(userID: $userID) {
-      userID
+  query GetProfileByAccountID($accountID: ID!) {
+    getProfileByAccountID(accountID: $accountID) {
+      accountID
       username
       bio
       grade
@@ -84,7 +84,7 @@ const GET_PROFILE_BY_USER_ID_QUERY = `
       updatedAt
       user {
         ID
-        userID
+        accountID
         name
         email
         role
@@ -97,7 +97,7 @@ const GET_PROFILE_BY_USER_ID_QUERY = `
 const UPDATE_PROFILE_MUTATION = `
   mutation UpdateProfile($input: UpdateProfileInput!) {
     updateProfile(input: $input) {
-      userID
+      accountID
       username
       bio
       grade
@@ -130,16 +130,16 @@ export const searchUsers = async (name: string) => {
   return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { name }, getUserToken());
 };
 
-export const getProfileByUserID = async (userID: string) => {
-  return await request<GetProfileByUserIDResponse>(
+export const getProfileByAccountID = async (accountID: string) => {
+  return await request<GetProfileByAccountIDResponse>(
     GET_PROFILE_BY_USER_ID_QUERY,
-    { userID },
+    { accountID },
     getUserToken(),
   );
 };
 
 export const updateProfile = async (input: {
-  userID: string;
+  accountID: string;
   username?: string;
   bio?: string;
   grade?: number;

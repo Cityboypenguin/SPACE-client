@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { registerUser, loginUser, USER_TOKEN_KEY, USER_REFRESH_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
 
 export const UserRegisterPage = () => {
-  const [userID, setUserID] = useState('');
+  const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +14,7 @@ export const UserRegisterPage = () => {
     e.preventDefault();
     setError('');
     try {
-      await registerUser(userID, name, email, password);
+      await registerUser(accountID, name, email, password);
       const loginData = await loginUser(email, password);
       localStorage.setItem(USER_TOKEN_KEY, loginData.loginUser.token);
       localStorage.setItem(USER_REFRESH_TOKEN_KEY, loginData.loginUser.refreshToken);
@@ -31,8 +31,8 @@ export const UserRegisterPage = () => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <input
         type="text"
-        value={userID}
-        onChange={(e) => setUserID(e.target.value)}
+        value={accountID}
+        onChange={(e) => setAccountID(e.target.value)}
         placeholder="ユーザーID"
         required
       />

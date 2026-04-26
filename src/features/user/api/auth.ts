@@ -4,9 +4,9 @@ export const USER_TOKEN_KEY = 'space_user_token';
 export const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
 export const USER_ID_KEY = 'space_user_id';
 
-type User = {
+export type User = {
   ID: string;
-  userID: string;
+  accountID: string;
   name: string;
   email: string;
   role: string;
@@ -36,7 +36,7 @@ const LOGIN_USER_MUTATION = `
       refreshToken
       user {
         ID
-        userID
+        accountID
         name
         email
         role
@@ -56,7 +56,7 @@ const CREATE_USER_MUTATION = `
   mutation CreateUser($input: CreateUserInput!) {
     createUser(input: $input) {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -73,6 +73,6 @@ export const logoutUser = async (token: string) => {
   return await request<LogoutUserResponse>(LOGOUT_USER_MUTATION, { token });
 };
 
-export const registerUser = async (userID: string, name: string, email: string, password: string) => {
-  return await request<RegisterUserResponse>(CREATE_USER_MUTATION, { input: { userID, name, email, password } });
+export const registerUser = async (accountID: string, name: string, email: string, password: string) => {
+  return await request<RegisterUserResponse>(CREATE_USER_MUTATION, { input: { accountID, name, email, password } });
 };

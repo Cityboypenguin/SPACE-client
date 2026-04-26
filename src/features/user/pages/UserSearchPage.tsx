@@ -16,9 +16,9 @@ export const UserSearchPage = () => {
     setError('');
     try {
       const data = await searchUsers(query);
-      const currentUserID = localStorage.getItem(USER_ID_KEY);
-      const filtered = currentUserID
-        ? data.searchUsers.filter((u) => u.ID !== currentUserID && u.userID !== currentUserID)
+      const currentAccountID = localStorage.getItem(USER_ID_KEY);
+      const filtered = currentAccountID
+        ? data.searchUsers.filter((u) => u.ID !== currentAccountID && u.accountID !== currentAccountID)
         : data.searchUsers;
       setResults(filtered);
       setSearched(true);
@@ -57,7 +57,7 @@ export const UserSearchPage = () => {
                 onClick={() => navigate(`/users/${user.ID}`)}
                 style={{ cursor: 'pointer', padding: '0.5rem 0', borderBottom: '1px solid #ccc' }}
               >
-                <strong>{user.name}</strong>（{user.userID}）
+                <strong>{user.name}</strong>（{user.accountID}）
               </li>
             ))}
           </ul>

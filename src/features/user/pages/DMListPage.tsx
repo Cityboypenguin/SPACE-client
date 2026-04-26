@@ -8,7 +8,7 @@ import { USER_ID_KEY } from '../api/auth';
 type RecentDM = {
   roomID: string;
   partnerName: string;
-  partnerUserID: string;
+  partnerAccountID: string;
 };
 
 export const DMListPage = () => {
@@ -24,10 +24,10 @@ export const DMListPage = () => {
     let active = true;
 
     const loadDMRooms = async () => {
-      const currentUserID = localStorage.getItem(USER_ID_KEY);
-      const isCurrentUser = (user: { ID: string; userID: string }) => {
-        if (!currentUserID) return false;
-        return user.ID === currentUserID || user.userID === currentUserID;
+      const currentAccountID = localStorage.getItem(USER_ID_KEY);
+      const isCurrentUser = (user: { ID: string; accountID: string }) => {
+        if (!currentAccountID) return false;
+        return user.ID === currentAccountID || user.accountID === currentAccountID;
       };
 
       try {
@@ -41,7 +41,7 @@ export const DMListPage = () => {
             return {
               roomID: room.ID,
               partnerName: partner.name,
-              partnerUserID: partner.userID,
+              partnerAccountID: partner.accountID,
             } as RecentDM;
           })
           .filter((dm): dm is RecentDM => dm !== null);
@@ -66,9 +66,9 @@ export const DMListPage = () => {
     setSearched(false);
     try {
       const data = await searchUsers(query);
-      const currentUserID = localStorage.getItem(USER_ID_KEY);
-      const filtered = currentUserID
-        ? data.searchUsers.filter((u) => u.ID !== currentUserID)
+      const currentAccountID = localStorage.getItem(USER_ID_KEY);
+      const filtered = currentAccountID
+        ? data.searchUsers.filter((u) => u.ID !== currentAccountID)
         : data.searchUsers;
       setResults(filtered);
       setSearched(true);
@@ -135,7 +135,7 @@ export const DMListPage = () => {
                   }}
                 >
                   <span>
-                    <strong>{user.name}</strong>（{user.userID}）
+                    <strong>{user.name}</strong>（{user.accountID}）
                   </span>
                   <button
                     onClick={() => handleStartDM(user)}
@@ -167,7 +167,7 @@ export const DMListPage = () => {
                 >
                   <strong>{dm.partnerName}</strong>
                   <span style={{ color: '#888', marginLeft: '0.5rem', fontSize: '0.9rem' }}>
-                    @{dm.partnerUserID}
+                    @{dm.partnerAccountID}
                   </span>
                 </li>
               ))}

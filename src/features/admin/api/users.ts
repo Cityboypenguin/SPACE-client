@@ -4,7 +4,7 @@ const ADMIN_TOKEN_KEY = 'space_admin_token';
 
 export type User = {
   ID: string;
-  userID: string;
+  accountID: string;
   name: string;
   email: string;
   role: string;
@@ -22,7 +22,7 @@ const USERS_QUERY = `
   query {
     users {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -37,7 +37,7 @@ const SEARCH_USERS_QUERY = `
   query SearchUsers($name: String!) {
     searchUsers(name: $name) {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -52,7 +52,7 @@ const GET_USER_BY_ID_QUERY = `
   query GetUserByID($id: ID!) {
     getUserByID(id: $id) {
       ID
-      userID
+      accountID
       name
       email
       role

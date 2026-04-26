@@ -41,7 +41,7 @@ export const AdminUserDetailPage = () => {
 
         <dl>
           <dt>ユーザーID</dt>
-          <dd>{user.userID}</dd>
+          <dd>{user.accountID}</dd>
           <dt>名前</dt>
           <dd>{user.name}</dd>
           <dt>メールアドレス</dt>

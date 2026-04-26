@@ -3,7 +3,7 @@ const DM_ROOMS_KEY = 'space_dm_recent';
 export type RecentDM = {
   roomID: string;
   partnerName: string;
-  partnerUserID: string;
+  partnerAccountID: string;
 };
 
 export const getRecentDMs = (): RecentDM[] => {

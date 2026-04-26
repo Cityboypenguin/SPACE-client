@@ -8,7 +8,7 @@ export const UserSettingsPage = () => {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [userID, setUserID] = useState('');
+  const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +26,7 @@ export const UserSettingsPage = () => {
         const p = data.me;
         setProfile(p);
         localStorage.setItem(USER_ID_KEY, p.ID);
-        setUserID(p.userID);
+        setAccountID(p.accountID);
         setName(p.name);
         setEmail(p.email);
       })
@@ -68,7 +68,7 @@ export const UserSettingsPage = () => {
             ユーザーID
             <input
               type="text"
-              value={userID}
+              value={accountID}
               readOnly
               required
             />

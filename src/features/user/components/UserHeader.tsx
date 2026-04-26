@@ -26,6 +26,7 @@ export const UserHeader = () => {
         <button onClick={() => navigate('/mypage')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }}>ホーム</button>
         <button onClick={() => navigate('/search')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }}>ユーザー検索</button>
         <button onClick={() => navigate('/dm')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }}>DM</button>
+        <button onClick={() => navigate('/posts')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }}>投稿</button>
       </nav>
       <button onClick={handleLogout}>ログアウト</button>
     </header>

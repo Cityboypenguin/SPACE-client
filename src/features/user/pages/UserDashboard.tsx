@@ -26,7 +26,7 @@ export const UserDashboard = () => {
         {profile && (
           <dl>
             <dt>ユーザーID</dt>
-            <dd>{profile.userID}</dd>
+            <dd>{profile.accountID}</dd>
             <dt>名前</dt>
             <dd>{profile.name}</dd>
             <dt>メールアドレス</dt>

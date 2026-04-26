@@ -11,11 +11,11 @@ const MESSAGE_ADDED_SUBSCRIPTION = `
     messageAdded(roomID: $roomID) {
       ID
       roomID
-      userID
+      accountID
       user {
         ID
         name
-        userID
+        accountID
       }
       content
       createdAt
@@ -37,10 +37,10 @@ export const DMPage = () => {
   const [sending, setSending] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const currentUserID = localStorage.getItem(USER_ID_KEY) ?? '';
-  const isCurrentUser = (user: { ID: string; userID: string }) => {
-    if (!currentUserID) return false;
-    return user.ID === currentUserID || user.userID === currentUserID;
+  const currentAccountID = localStorage.getItem(USER_ID_KEY) ?? '';
+  const isCurrentUser = (user: { ID: string; accountID: string }) => {
+    if (!currentAccountID) return false;
+    return user.ID === currentAccountID || user.accountID === currentAccountID;
   };
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export const DMPage = () => {
 
         const partner = roomData.room.user.find((u) => !isCurrentUser(u));
         if (partner) {
-          saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerUserID: partner.userID });
+          saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerAccountID: partner.accountID });
         }
       } catch (err) {
         console.error('[DMPage] loadRoom failed:', err);
@@ -66,7 +66,7 @@ export const DMPage = () => {
     };
 
     loadRoom();
-  }, [roomId, currentUserID]);
+  }, [roomId, currentAccountID]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -102,7 +102,7 @@ export const DMPage = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !roomId || !currentUserID) return;
+    if (!content.trim() || !roomId || !currentAccountID) return;
     setSending(true);
     setError('');
     try {
@@ -166,9 +166,9 @@ export const DMPage = () => {
 
         {messages.map((msg) => {
           const isMine =
-            msg.userID === currentUserID ||
-            msg.user.ID === currentUserID ||
-            msg.user.userID === currentUserID;
+            msg.accountID === currentAccountID ||
+            msg.user.ID === currentAccountID ||
+            msg.user.accountID === currentAccountID;
           return (
             <div
               key={msg.ID}
