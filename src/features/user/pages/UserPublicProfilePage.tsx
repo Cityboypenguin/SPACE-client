@@ -34,22 +34,36 @@ export const UserPublicProfilePage = () => {
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {!profile && !error && <p>読み込み中...</p>}
         {profile && (
-          <dl>
-            <dt>ユーザーID</dt>
-            <dd>{profile.userID}</dd>
-            <dt>名前</dt>
-            <dd>{profile.user.name}</dd>
-            <dt>ユーザー名</dt>
-            <dd>{profile.username}</dd>
-            <dt>自己紹介</dt>
-            <dd>{profile.bio ?? '未設定'}</dd>
-            <dt>学年</dt>
-            <dd>{profile.grade ?? '未設定'}</dd>
-            <dt>ロール</dt>
-            <dd>{profile.user.role}</dd>
-            <dt>ステータス</dt>
-            <dd>{profile.user.status}</dd>
-          </dl>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
+              {profile.image ? (
+                <img
+                  src={profile.image}
+                  alt={profile.user.name}
+                  style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div style={{
+                  width: 80, height: 80, borderRadius: '50%',
+                  background: '#ccc', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '2rem', color: '#fff',
+                }}>
+                  {profile.user.name.charAt(0)}
+                </div>
+              )}
+              <div>
+                <h2 style={{ margin: 0 }}>{profile.user.name}</h2>
+                <p style={{ margin: 0, color: '#666' }}>@{profile.username}</p>
+              </div>
+            </div>
+
+            <dl style={{ lineHeight: 2 }}>
+              <dt style={{ fontWeight: 'bold' }}>自己紹介</dt>
+              <dd>{profile.bio || '未設定'}</dd>
+              <dt style={{ fontWeight: 'bold' }}>学年</dt>
+              <dd>{profile.grade != null && profile.grade !== 0 ? `${profile.grade}年` : '未設定'}</dd>
+            </dl>
+          </div>
         )}
       </main>
     </div>
