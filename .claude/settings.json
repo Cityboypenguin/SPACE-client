@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go -C /Users/soma/SPACE/SPACE-server get github.com/99designs/gqlgen@v0.17.89)",
+      "Bash(go -C /Users/soma/SPACE/SPACE-server run github.com/99designs/gqlgen generate)",
+      "Bash(go -C /Users/soma/SPACE/SPACE-server build ./...)"
+    ],
+    "additionalDirectories": [
+      "/Users/soma/SPACE/SPACE-server/usecase/community",
+      "/Users/soma/SPACE/SPACE-server/graph"
+    ]
+  }
+}

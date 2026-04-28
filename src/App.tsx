@@ -9,6 +9,10 @@ import { UserPublicProfilePage } from './features/user/pages/UserPublicProfilePa
 import { UserProtectedRoute } from './features/user/components/UserProtectedRoute'
 import { DMListPage } from './features/user/pages/DMListPage'
 import { DMPage } from './features/user/pages/DMPage'
+import { CommunityListPage } from './features/user/pages/CommunityListPage'
+import { CommunityBoardListPage } from './features/user/pages/CommunityBoardListPage'
+import { CommunityCreatePage } from './features/user/pages/CommunityCreatePage'
+import { CommunityRoomPage } from './features/user/pages/CommunityRoomPage'
 
 function App() {
   return (
@@ -62,6 +66,38 @@ function App() {
           element={
             <UserProtectedRoute>
               <DMPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/community"
+          element={
+            <UserProtectedRoute>
+              <CommunityListPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/community/browse"
+          element={
+            <UserProtectedRoute>
+              <CommunityBoardListPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/community/create"
+          element={
+            <UserProtectedRoute>
+              <CommunityCreatePage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/community/chat/:roomId"
+          element={
+            <UserProtectedRoute>
+              <CommunityRoomPage />
             </UserProtectedRoute>
           }
         />

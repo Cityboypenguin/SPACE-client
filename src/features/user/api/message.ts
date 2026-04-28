@@ -20,7 +20,6 @@ export type Room = {
   ID: string;
   name: string;
   type: string;
-  description: string;
   user: MessageUser[];
 };
 
@@ -32,7 +31,7 @@ const GET_OR_CREATE_DM_ROOM_MUTATION = `
       ID
       name
       type
-      description
+
       user {
         ID
         name
@@ -82,7 +81,7 @@ const GET_ROOM_QUERY = `
       ID
       name
       type
-      description
+
       user {
         ID
         name
@@ -98,7 +97,7 @@ const MY_DM_ROOMS_QUERY = `
       ID
       name
       type
-      description
+
       user {
         ID
         name
