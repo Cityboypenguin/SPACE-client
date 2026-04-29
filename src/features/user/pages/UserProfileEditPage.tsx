@@ -8,7 +8,6 @@ export const UserProfileeditPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     userID: '',
-    username: '', 
     bio: '',
   });
   
@@ -28,7 +27,6 @@ export const UserProfileeditPage = () => {
           setFormData({
             userID: profile.userID,
             // 初期値として Userテーブルの name を表示させる
-            username: profile.user?.name || '', 
             bio: profile.bio || '',
           });
         }
@@ -51,7 +49,6 @@ export const UserProfileeditPage = () => {
 
   try {
     await updateProfile(formData);
-    await updateMyProfile({ name: formData.username });
 
     navigate('/mypage', { 
       state: { message: 'プロフィールを更新しました！' } 
@@ -69,15 +66,6 @@ export const UserProfileeditPage = () => {
       <main style={{ padding: '2rem' }}>
         <h1>プロフィール編集</h1>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 400 }}>
-          <label>
-            ユーザー名:
-            <input 
-              type="text" 
-              name="username"
-              value={formData.username} 
-              onChange={handleChange} 
-            />
-          </label>
           <label>
             自己紹介:
             <textarea 
