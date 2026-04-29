@@ -3,6 +3,7 @@ import { AdminRoutes } from './features/admin/routes/AdminRoutes'
 import { UserLoginForm } from './features/user/components/UserLoginForm'
 import { UserRegisterPage } from './features/user/pages/UserRegisterPage'
 import { UserDashboard } from './features/user/pages/UserDashboard'
+import { UserProfileeditPage } from './features/user/pages/UserProfileEditPage'
 import { UserSettingsPage } from './features/user/pages/UserSettingsPage'
 import { UserSearchPage } from './features/user/pages/UserSearchPage'
 import { UserPublicProfilePage } from './features/user/pages/UserPublicProfilePage'
@@ -34,6 +35,14 @@ function App() {
           element={
             <UserProtectedRoute>
               <UserSettingsPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/mypage/profile-edit"
+          element={
+            <UserProtectedRoute>
+              <UserProfileeditPage />
             </UserProtectedRoute>
           }
         />

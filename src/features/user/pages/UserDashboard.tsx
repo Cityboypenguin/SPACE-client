@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+// 1. useLocation を追加
+import { Link, useLocation } from 'react-router-dom';
 import { UserHeader } from '../components/UserHeader';
 import { getMyProfile, getProfileByUserID, type Profile, type UserProfile } from '../api/profile';
 import { USER_ID_KEY } from '../api/auth';
 
 export const UserDashboard = () => {
+  const location = useLocation();
+  const [flashMessage, setFlashMessage] = useState('');
+
+  useEffect(() => {
+    // 遷移時にメッセージがあればStateに入れる
+    if (location.state && location.state.message) {
+      setFlashMessage(location.state.message);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   const [account, setAccount] = useState<UserProfile | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +56,14 @@ export const UserDashboard = () => {
     <div>
       <UserHeader />
       <main style={{ padding: '2rem' }}>
+        {flashMessage && (
+          <p style={{ color: 'green', fontWeight: 'bold', marginBottom: '1rem' }}>
+            {flashMessage}
+          </p>
+        )}
+
         <h1>マイページ</h1>
+        <Link to="/mypage/profile-edit">プロフィール編集</Link>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {profile ? (
           <div>

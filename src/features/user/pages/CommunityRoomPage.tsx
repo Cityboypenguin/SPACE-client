@@ -38,9 +38,6 @@ export const CommunityRoomPage = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const currentUserID = localStorage.getItem(USER_ID_KEY) ?? '';
 
-  const isCurrentUser = (user: { ID: string; userID: string }) =>
-    user.ID === currentUserID || user.userID === currentUserID;
-
   useEffect(() => {
     if (!roomId) return;
     let active = true;
