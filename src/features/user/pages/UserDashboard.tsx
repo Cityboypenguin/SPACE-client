@@ -1,98 +1,54 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { UserHeader } from '../components/UserHeader';
-import { getMyProfile, getProfileByUserID, type Profile, type UserProfile } from '../api/profile';
-import { USER_ID_KEY } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../hooks/useProfile';
+import styles from './UserDashboard.module.css';
 
 export const UserDashboard = () => {
-  const [account, setAccount] = useState<UserProfile | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let active = true;
-
-    setLoading(true);
-    getMyProfile()
-      .then(async (data) => {
-        if (!active) return;
-
-        setAccount(data.me);
-        localStorage.setItem(USER_ID_KEY, data.me.ID);
-
-        const profileData = await getProfileByUserID(data.me.ID);
-        if (!active) return;
-
-        setProfile(profileData.getProfileByUserID);
-      })
-      .catch(() => {
-        if (active) setError('プロフィールの取得に失敗しました');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { userId } = useAuth();
+  const { profile, loading, error } = useProfile(userId);
 
   if (loading) return <p>読み込み中...</p>;
 
   return (
     <div>
       <UserHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.main}>
         <h1>マイページ</h1>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {profile ? (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div className={styles.profileHeader}>
               {profile.image ? (
                 <img
                   src={profile.image}
                   alt={profile.user.name}
-                  style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }}
+                  className={styles.avatar}
                 />
               ) : (
-                <div
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: '50%',
-                    background: '#ccc',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '2rem',
-                    color: '#fff',
-                  }}
-                >
+                <div className={styles.avatarPlaceholder}>
                   {profile.user.name.charAt(0)}
                 </div>
               )}
               <div>
-                <h2 style={{ margin: 0 }}>{profile.user.name}</h2>
-                <p style={{ margin: 0, color: '#666' }}>@{profile.username}</p>
+                <h2 className={styles.displayName}>{profile.user.name}</h2>
+                <p className={styles.username}>@{profile.username}</p>
               </div>
             </div>
 
-            <dl style={{ lineHeight: 2 }}>
-              <dt style={{ fontWeight: 'bold' }}>自己紹介</dt>
+            <dl className={styles.profileList}>
+              <dt className={styles.profileLabel}>自己紹介</dt>
               <dd>{profile.bio || '未設定'}</dd>
-              <dt style={{ fontWeight: 'bold' }}>学年</dt>
+              <dt className={styles.profileLabel}>学年</dt>
               <dd>{profile.grade != null && profile.grade !== 0 ? `${profile.grade}年` : '未設定'}</dd>
             </dl>
+
+            <p className={styles.accountMeta}>
+              ユーザーID: {profile.user.userID} / メールアドレス: {profile.user.email} / ロール: {profile.user.role} / ステータス: {profile.user.status}
+            </p>
           </div>
         ) : (
           <p>プロフィールがまだ作成されていません</p>
-        )}
-
-        {account && (
-          <p style={{ color: '#666', marginTop: '1.5rem' }}>
-            ユーザーID: {account.userID} / メールアドレス: {account.email} / ロール: {account.role} / ステータス: {account.status}
-          </p>
         )}
 
         <Link to="/mypage/settings">アカウント設定</Link>

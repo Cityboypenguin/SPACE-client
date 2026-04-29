@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getMyProfile, updateMyProfile, type UserProfile } from '../api/profile';
-import { USER_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 import { UserHeader } from '../components/UserHeader';
 
 export const UserSettingsPage = () => {
   const navigate = useNavigate();
-
+  const { token } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [userID, setUserID] = useState('');
   const [name, setName] = useState('');
@@ -16,7 +16,6 @@ export const UserSettingsPage = () => {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem(USER_TOKEN_KEY);
     if (!token) {
       navigate('/login');
       return;
@@ -25,13 +24,12 @@ export const UserSettingsPage = () => {
       .then((data) => {
         const p = data.me;
         setProfile(p);
-        localStorage.setItem(USER_ID_KEY, p.ID);
         setUserID(p.userID);
         setName(p.name);
         setEmail(p.email);
       })
       .catch(() => setError('プロフィールの取得に失敗しました'));
-  }, [navigate]);
+  }, [token, navigate]);
 
   const handleUpdate = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -66,12 +64,7 @@ export const UserSettingsPage = () => {
           <h2>プロフィール編集</h2>
           <label>
             ユーザーID
-            <input
-              type="text"
-              value={userID}
-              readOnly
-              required
-            />
+            <input type="text" value={userID} readOnly required />
           </label>
           <label>
             名前

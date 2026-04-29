@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/UserHeader';
 import { searchUsers, type UserProfile } from '../api/profile';
 import { getOrCreateDMRoom, listMyDMRooms } from '../api/message';
-import { USER_ID_KEY } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
+import styles from './DMListPage.module.css';
 
 type RecentDM = {
   roomID: string;
@@ -19,16 +20,14 @@ export const DMListPage = () => {
   const [starting, setStarting] = useState<string | null>(null);
   const [recentDMs, setRecentDMs] = useState<RecentDM[]>([]);
   const navigate = useNavigate();
+  const { userId: currentUserID } = useAuth();
 
   useEffect(() => {
     let active = true;
 
     const loadDMRooms = async () => {
-      const currentUserID = localStorage.getItem(USER_ID_KEY);
-      const isCurrentUser = (user: { ID: string; userID: string }) => {
-        if (!currentUserID) return false;
-        return user.ID === currentUserID || user.userID === currentUserID;
-      };
+      const isCurrentUser = (user: { ID: string; userID: string }) =>
+        currentUserID != null && (user.ID === currentUserID || user.userID === currentUserID);
 
       try {
         const serverRooms = await listMyDMRooms();
@@ -38,11 +37,7 @@ export const DMListPage = () => {
           .map((room) => {
             const partner = room.user.find((u) => !isCurrentUser(u)) ?? room.user[0];
             if (!partner) return null;
-            return {
-              roomID: room.ID,
-              partnerName: partner.name,
-              partnerUserID: partner.userID,
-            } as RecentDM;
+            return { roomID: room.ID, partnerName: partner.name, partnerUserID: partner.userID } as RecentDM;
           })
           .filter((dm): dm is RecentDM => dm !== null);
 
@@ -53,20 +48,16 @@ export const DMListPage = () => {
     };
 
     void loadDMRooms();
+    return () => { active = false; };
+  }, [currentUserID]);
 
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     setError('');
     setResults([]);
     setSearched(false);
     try {
       const data = await searchUsers(query);
-      const currentUserID = localStorage.getItem(USER_ID_KEY);
       const filtered = currentUserID
         ? data.searchUsers.filter((u) => u.ID !== currentUserID)
         : data.searchUsers;
@@ -84,56 +75,41 @@ export const DMListPage = () => {
       const data = await getOrCreateDMRoom(target.ID);
       navigate(`/dm/${data.getOrCreateDMRoom.ID}`);
     } catch (err) {
-      const message = err instanceof Error && err.message ? err.message : 'DMの開始に失敗しました';
-      setError(message);
+      setError(err instanceof Error && err.message ? err.message : 'DMの開始に失敗しました');
     } finally {
       setStarting(null);
     }
   };
 
-  const handleOpenDM = (dm: RecentDM) => {
-    navigate(`/dm/${dm.roomID}`);
-  };
-
   return (
     <div>
       <UserHeader />
-      <main style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
+      <main className={styles.main}>
         <h1>ダイレクトメッセージ</h1>
 
         <section>
-          <h2 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>新しいDMを開始</h2>
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem' }}>
+          <h2 className={styles.sectionTitle}>新しいDMを開始</h2>
+          <form onSubmit={handleSearch} className={styles.searchForm}>
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="名前で検索"
               required
-              style={{ flex: 1 }}
+              className={styles.searchInput}
             />
             <button type="submit">検索</button>
           </form>
 
           {error && <p style={{ color: 'red', marginTop: '0.5rem' }}>{error}</p>}
-
           {searched && results.length === 0 && (
             <p style={{ marginTop: '0.5rem' }}>該当するユーザーが見つかりませんでした</p>
           )}
 
           {results.length > 0 && (
-            <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.5rem' }}>
+            <ul className={styles.resultList}>
               {results.map((user) => (
-                <li
-                  key={user.ID}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '0.5rem 0',
-                    borderBottom: '1px solid #ccc',
-                  }}
-                >
+                <li key={user.ID} className={styles.resultItem}>
                   <span>
                     <strong>{user.name}</strong>（{user.userID}）
                   </span>
@@ -151,24 +127,17 @@ export const DMListPage = () => {
         </section>
 
         {recentDMs.length > 0 && (
-          <section style={{ marginTop: '2rem' }}>
-            <h2 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>最近のDM</h2>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+          <section className={styles.dmSection}>
+            <h2 className={styles.sectionTitle}>最近のDM</h2>
+            <ul className={styles.dmList}>
               {recentDMs.map((dm) => (
                 <li
                   key={dm.roomID}
-                  onClick={() => handleOpenDM(dm)}
-                  style={{
-                    cursor: 'pointer',
-                    padding: '0.75rem 0.5rem',
-                    borderBottom: '1px solid #ccc',
-                    borderRadius: '4px',
-                  }}
+                  onClick={() => navigate(`/dm/${dm.roomID}`)}
+                  className={styles.dmItem}
                 >
                   <strong>{dm.partnerName}</strong>
-                  <span style={{ color: '#888', marginLeft: '0.5rem', fontSize: '0.9rem' }}>
-                    @{dm.partnerUserID}
-                  </span>
+                  <span className={styles.dmPartnerSub}>@{dm.partnerUserID}</span>
                 </li>
               ))}
             </ul>

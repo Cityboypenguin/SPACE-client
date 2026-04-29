@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginUser, USER_TOKEN_KEY, USER_REFRESH_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
+import { loginUser } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 
 export const UserLoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     setError('');
     try {
       const data = await loginUser(email, password);
-      localStorage.setItem(USER_TOKEN_KEY, data.loginUser.token);
-      localStorage.setItem(USER_REFRESH_TOKEN_KEY, data.loginUser.refreshToken);
-      localStorage.setItem(USER_ID_KEY, data.loginUser.user.ID);
+      login(data.loginUser.token, data.loginUser.refreshToken, data.loginUser.user.ID);
       navigate('/mypage');
     } catch {
       setError('メールアドレスまたはパスワードが正しくありません');

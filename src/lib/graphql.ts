@@ -1,8 +1,18 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/query';
 
-const USER_TOKEN_KEY = 'space_user_token';
-const USER_ID_KEY = 'space_user_id';
-const ADMIN_TOKEN_KEY = 'space_admin_token';
+let _onUnauthorized: (() => void) | null = null;
+
+export const registerUnauthorizedHandler = (fn: () => void) => {
+  _onUnauthorized = fn;
+};
+
+const handleUnauthorized = () => {
+  if (_onUnauthorized) {
+    _onUnauthorized();
+  } else {
+    window.location.href = '/login';
+  }
+};
 
 export const request = async <T>(
   query: string,
@@ -25,10 +35,7 @@ export const request = async <T>(
   });
 
   if (response.status === 401) {
-    localStorage.removeItem(USER_TOKEN_KEY);
-    localStorage.removeItem(USER_ID_KEY);
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+    handleUnauthorized();
     return Promise.reject(new Error('Unauthorized'));
   }
 
@@ -46,10 +53,7 @@ export const request = async <T>(
       } else {
         detail = (await response.text()).trim();
       }
-    } catch {
-      detail = '';
-    }
-
+    } catch { /* ignore */ }
     const suffix = detail ? `: ${detail}` : '';
     throw new Error(`Network response was not ok (${response.status} ${response.statusText})${suffix}`);
   }
@@ -58,17 +62,14 @@ export const request = async <T>(
 
   if (json.errors) {
     const message = json.errors.map((e: { message: string }) => e.message).join(', ');
-    
+
     if (
       message.includes('invalid token') ||
       message.includes('token has been revoked') ||
       message.includes('token is expired') ||
       message.includes('unauthorized')
     ) {
-      localStorage.removeItem(USER_TOKEN_KEY);
-      localStorage.removeItem(USER_ID_KEY);
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-      window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+      handleUnauthorized();
       return Promise.reject(new Error('Unauthorized'));
     }
 

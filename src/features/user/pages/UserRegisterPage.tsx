@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerUser, loginUser, USER_TOKEN_KEY, USER_REFRESH_TOKEN_KEY, USER_ID_KEY } from '../api/auth';
+import { registerUser, loginUser } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 
 export const UserRegisterPage = () => {
   const [userID, setUserID] = useState('');
@@ -9,6 +10,7 @@ export const UserRegisterPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -16,9 +18,7 @@ export const UserRegisterPage = () => {
     try {
       await registerUser(userID, name, email, password);
       const loginData = await loginUser(email, password);
-      localStorage.setItem(USER_TOKEN_KEY, loginData.loginUser.token);
-      localStorage.setItem(USER_REFRESH_TOKEN_KEY, loginData.loginUser.refreshToken);
-      localStorage.setItem(USER_ID_KEY, loginData.loginUser.user.ID);
+      login(loginData.loginUser.token, loginData.loginUser.refreshToken, loginData.loginUser.user.ID);
       navigate('/mypage');
     } catch {
       setError('登録に失敗しました。入力内容をご確認ください。');
