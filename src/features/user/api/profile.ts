@@ -16,7 +16,6 @@ export type Profile = {
   userID: string;
   username: string;
   bio: string | null;
-  grade: number | null;
   image: string | null;
   createdAt: string;
   updatedAt: string;
@@ -78,7 +77,6 @@ const GET_PROFILE_BY_USER_ID_QUERY = `
       userID
       username
       bio
-      grade
       image
       createdAt
       updatedAt
@@ -100,7 +98,6 @@ const UPDATE_PROFILE_MUTATION = `
       userID
       username
       bio
-      grade
       image
       createdAt
       updatedAt
@@ -142,7 +139,6 @@ export const updateProfile = async (input: {
   userID: string;
   username?: string;
   bio?: string;
-  grade?: number;
   image?: string;
 }) => {
   return await request<UpdateProfileResponse>(UPDATE_PROFILE_MUTATION, { input }, getUserToken());

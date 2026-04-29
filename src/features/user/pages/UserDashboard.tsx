@@ -100,8 +100,6 @@ export const UserDashboard = () => {
             <dl style={{ lineHeight: 2 }}>
               <dt style={{ fontWeight: 'bold' }}>自己紹介</dt>
               <dd>{profile.bio || '未設定'}</dd>
-              <dt style={{ fontWeight: 'bold' }}>学年</dt>
-              <dd>{profile.grade != null && profile.grade !== 0 ? `${profile.grade}年` : '未設定'}</dd>
             </dl>
           </div>
         ) : (

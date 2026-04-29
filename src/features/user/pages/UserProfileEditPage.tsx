@@ -53,7 +53,6 @@ export const UserProfileeditPage = () => {
     await updateProfile(formData);
     await updateMyProfile({ name: formData.username });
 
-    // お土産（state）を持たせてマイページへ移動
     navigate('/mypage', { 
       state: { message: 'プロフィールを更新しました！' } 
     });
