@@ -38,7 +38,7 @@ export const UserSettingsPage = () => {
     setError('');
     setSuccess('');
     try {
-      const input: Parameters<typeof updateMyProfile>[0] = { name, email };
+      const input: Parameters<typeof updateMyProfile>[0] = { userID, name, email };
       if (password) input.password = password;
       const data = await updateMyProfile(input);
       setProfile(data.updateUser);
@@ -69,7 +69,7 @@ export const UserSettingsPage = () => {
             <input
               type="text"
               value={userID}
-              readOnly
+              onChange={(e) => setUserID(e.target.value)}
               required
             />
           </label>
