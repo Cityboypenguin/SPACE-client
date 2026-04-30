@@ -31,7 +31,6 @@ const GET_OR_CREATE_DM_ROOM_MUTATION = `
       ID
       name
       type
-
       user {
         ID
         name
@@ -46,7 +45,6 @@ const SEND_MESSAGE_MUTATION = `
     sendMessage(roomID: $roomID, content: $content) {
       ID
       roomID
-      accountID
       user {
         ID
         name
@@ -63,7 +61,6 @@ const LIST_MESSAGES_QUERY = `
     messages(roomID: $roomID) {
       ID
       roomID
-      accountID
       user {
         ID
         name
@@ -81,7 +78,6 @@ const GET_ROOM_QUERY = `
       ID
       name
       type
-
       user {
         ID
         name
@@ -97,7 +93,6 @@ const MY_DM_ROOMS_QUERY = `
       ID
       name
       type
-
       user {
         ID
         name
