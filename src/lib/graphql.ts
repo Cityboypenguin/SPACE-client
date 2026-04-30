@@ -1,4 +1,6 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/query';
+const fallbackApiUrl = `${window.location.protocol}//${window.location.hostname}:8080/query`;
+
+export const API_URL = import.meta.env.VITE_API_URL || fallbackApiUrl;
 
 let _onUnauthorized: (() => void) | null = null;
 

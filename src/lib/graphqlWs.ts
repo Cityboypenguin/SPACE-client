@@ -1,7 +1,7 @@
 import { USER_TOKEN_KEY } from '../features/user/api/auth';
 
 const getWsUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/query';
+  const apiUrl = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:8080/query`;
   return apiUrl.replace(/^http/, 'ws');
 };
 
