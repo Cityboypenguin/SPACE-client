@@ -36,7 +36,7 @@ export const UserSettingsPage = () => {
     setError('');
     setSuccess('');
     try {
-      const input: Parameters<typeof updateMyProfile>[0] = { name, email };
+      const input: Parameters<typeof updateMyProfile>[0] = { userID, name, email };
       if (password) input.password = password;
       const data = await updateMyProfile(input);
       setProfile(data.updateUser);
@@ -64,7 +64,12 @@ export const UserSettingsPage = () => {
           <h2>プロフィール編集</h2>
           <label>
             ユーザーID
-            <input type="text" value={userID} readOnly required />
+            <input
+              type="text"
+              value={userID}
+              onChange={(e) => setUserID(e.target.value)}
+              required
+            />
           </label>
           <label>
             名前
