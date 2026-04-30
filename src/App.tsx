@@ -41,23 +41,9 @@ const CommunityCreatePage = lazy(() =>
 const CommunityRoomPage = lazy(() =>
   import('./features/user/pages/CommunityRoomPage').then((m) => ({ default: m.CommunityRoomPage })),
 );
-import { BrowserRouter, Routes, Route } from 'react-router'
-import { AdminRoutes } from './features/admin/routes/AdminRoutes'
-import { UserLoginForm } from './features/user/components/UserLoginForm'
-import { UserRegisterPage } from './features/user/pages/UserRegisterPage'
-import { UserDashboard } from './features/user/pages/UserDashboard'
-import { UserProfileeditPage } from './features/user/pages/UserProfileEditPage'
-import { UserSettingsPage } from './features/user/pages/UserSettingsPage'
-import { UserSearchPage } from './features/user/pages/UserSearchPage'
-import { UserPublicProfilePage } from './features/user/pages/UserPublicProfilePage'
-import { UserProtectedRoute } from './features/user/components/UserProtectedRoute'
-import { DMListPage } from './features/user/pages/DMListPage'
-import { DMPage } from './features/user/pages/DMPage'
-import { CommunityListPage } from './features/user/pages/CommunityListPage'
-import { CommunityBoardListPage } from './features/user/pages/CommunityBoardListPage'
-import { CommunityCreatePage } from './features/user/pages/CommunityCreatePage'
-import { CommunityRoomPage } from './features/user/pages/CommunityRoomPage'
-
+const UserProfileEditPage = lazy(() =>
+  import('./features/user/pages/UserProfileEditPage').then((m) => ({ default: m.UserProfileEditPage })),
+);
 function App() {
   return (
     <Suspense fallback={<p>読み込み中...</p>}>
@@ -85,7 +71,7 @@ function App() {
           path="/mypage/profile-edit"
           element={
             <UserProtectedRoute>
-              <UserProfileeditPage />
+              <UserProfileEditPage />
             </UserProtectedRoute>
           }
         />

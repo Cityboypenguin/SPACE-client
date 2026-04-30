@@ -4,13 +4,8 @@ import { UserHeader } from '../components/UserHeader';
 import { searchUsers, type UserProfile } from '../api/profile';
 import { getOrCreateDMRoom, listMyDMRooms } from '../api/message';
 import { useAuth } from '../context/AuthContext';
+import { type RecentDM } from '../utils/recentDM';
 import styles from './DMListPage.module.css';
-
-type RecentDM = {
-  roomID: string;
-  partnerName: string;
-  partnerAccountID: string;
-};
 
 export const DMListPage = () => {
   const [query, setQuery] = useState('');
@@ -26,26 +21,19 @@ export const DMListPage = () => {
     let active = true;
 
     const loadDMRooms = async () => {
-      const currentUserAccountID = localStorage.getItem(USER_ID_KEY);
-      const isCurrentUser = (user: { ID: string; accountID: string }) => {
-        if (!currentUserAccountID) return false;
-        return user.ID === currentUserAccountID || user.accountID === currentUserAccountID;
-      };
-
       try {
         const serverRooms = await listMyDMRooms();
         if (!active) return;
 
         const mappedRecent = serverRooms
           .map((room) => {
-            const partner = room.user.find((u) => !isCurrentUser(u)) ?? room.user[0];
+            const partner = room.user.find((u) => u.ID !== currentUserID) ?? room.user[0];
             if (!partner) return null;
             return {
               roomID: room.ID,
               partnerName: partner.name,
               partnerAccountID: partner.accountID,
             } as RecentDM;
-            return { roomID: room.ID, partnerName: partner.name, partnerUserID: partner.userID } as RecentDM;
           })
           .filter((dm): dm is RecentDM => dm !== null);
 
@@ -66,9 +54,6 @@ export const DMListPage = () => {
     setSearched(false);
     try {
       const data = await searchUsers(query);
-      const currentUserAccountID = localStorage.getItem(USER_ID_KEY);
-      const filtered = currentUserAccountID
-        ? data.searchUsers.filter((u) => u.ID !== currentUserAccountID)
       const filtered = currentUserID
         ? data.searchUsers.filter((u) => u.ID !== currentUserID)
         : data.searchUsers;
@@ -148,10 +133,7 @@ export const DMListPage = () => {
                   className={styles.dmItem}
                 >
                   <strong>{dm.partnerName}</strong>
-                  <span style={{ color: '#888', marginLeft: '0.5rem', fontSize: '0.9rem' }}>
-                    @{dm.partnerAccountID}
-                  </span>
-                  <span className={styles.dmPartnerSub}>@{dm.partnerUserID}</span>
+                  <span className={styles.dmPartnerSub}>@{dm.partnerAccountID}</span>
                 </li>
               ))}
             </ul>

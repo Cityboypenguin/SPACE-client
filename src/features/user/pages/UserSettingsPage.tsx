@@ -24,7 +24,6 @@ export const UserSettingsPage = () => {
       .then((data) => {
         const p = data.me;
         setProfile(p);
-        localStorage.setItem(USER_ID_KEY, p.accountID);
         setAccountID(p.accountID);
         setName(p.name);
         setEmail(p.email);

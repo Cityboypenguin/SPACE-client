@@ -7,11 +7,10 @@ const MESSAGE_SUBSCRIPTION = `
     messageAdded(roomID: $roomID) {
       ID
       roomID
-      userID
       user {
         ID
         name
-        userID
+        accountID
       }
       content
       createdAt
@@ -48,8 +47,10 @@ export const useRoomMessages = (roomId: string | undefined) => {
         ]);
         if (!active) return;
         setState((prev) => ({ ...prev, room: roomData.room, messages: msgData.messages }));
-      } catch {
-        if (active) setState((prev) => ({ ...prev, error: 'ルームの読み込みに失敗しました' }));
+      } catch (err) {
+        if (!active) return;
+        const msg = err instanceof Error ? err.message : 'ルームの読み込みに失敗しました';
+        setState((prev) => ({ ...prev, error: msg }));
       }
     })();
 
@@ -65,11 +66,15 @@ export const useRoomMessages = (roomId: string | undefined) => {
       (data) => {
         setState((prev) => {
           const newMsg = data.messageAdded;
+          if (!newMsg) return prev;
           if (prev.messages.some((m) => m.ID === newMsg.ID)) return prev;
           return { ...prev, wsConnected: true, messages: [...prev.messages, newMsg] };
         });
       },
-      () => setState((prev) => ({ ...prev, wsConnected: false })),
+      (err) => {
+        console.error('[useRoomMessages] subscription error:', err);
+        setState((prev) => ({ ...prev, wsConnected: false }));
+      },
       () => setState((prev) => ({ ...prev, wsConnected: true })),
     );
 

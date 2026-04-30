@@ -39,8 +39,6 @@ export const UserPublicProfilePage = () => {
             <dl className={styles.profileList}>
               <dt className={styles.profileLabel}>自己紹介</dt>
               <dd>{profile.bio || '未設定'}</dd>
-              <dt className={styles.profileLabel}>学年</dt>
-              <dd>{profile.grade != null && profile.grade !== 0 ? `${profile.grade}年` : '未設定'}</dd>
             </dl>
           </div>
         )}

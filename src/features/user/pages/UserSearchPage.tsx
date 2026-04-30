@@ -19,7 +19,7 @@ export const UserSearchPage = () => {
     try {
       const data = await searchUsers(query);
       const filtered = currentUserID
-        ? data.searchUsers.filter((u) => u.ID !== currentUserID && u.accountID !== currentUserID)
+        ? data.searchUsers.filter((u) => u.ID !== currentUserID)
         : data.searchUsers;
       setResults(filtered);
       setSearched(true);

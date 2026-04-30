@@ -134,7 +134,6 @@ export const getProfileByUserID = async (userID: string) => {
 };
 
 export const updateProfile = async (input: {
-  userID: string;
   username?: string;
   bio?: string;
   image?: string;

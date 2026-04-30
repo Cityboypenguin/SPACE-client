@@ -26,8 +26,8 @@ export type Room = {
 const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 const GET_OR_CREATE_DM_ROOM_MUTATION = `
-  mutation GetOrCreateDMRoom($targetAccountID: ID!) {
-    getOrCreateDMRoom(targetAccountID: $targetAccountID) {
+  mutation GetOrCreateDMRoom($targetUserID: ID!) {
+    getOrCreateDMRoom(targetUserID: $targetUserID) {
       ID
       name
       type
@@ -102,11 +102,11 @@ const MY_DM_ROOMS_QUERY = `
   }
 `;
 
-export const getOrCreateDMRoom = async (targetAccountID: string) => {
+export const getOrCreateDMRoom = async (targetUserID: string) => {
   const token = getUserToken();
   return await request<{ getOrCreateDMRoom: Room }>(
     GET_OR_CREATE_DM_ROOM_MUTATION,
-    { targetAccountID },
+    { targetUserID },
     token,
   );
 };
