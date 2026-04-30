@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { UserHeader } from '../components/UserHeader';
 // 1. updateMyProfile をインポートに追加
-import { getMyProfile, getProfileByAccountID, updateProfile, updateMyProfile } from '../api/profile';
+import { getMyProfile, getProfileByUserID, updateProfile, updateMyProfile } from '../api/profile';
 import { Link, useNavigate } from 'react-router-dom';
 
 export const UserProfileeditPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    accountID: '',
+    userID: '',
     bio: '',
   });
   
@@ -20,12 +20,12 @@ export const UserProfileeditPage = () => {
         const meRes = await getMyProfile();
         const myUserID = meRes.me.ID;
 
-        const profileRes = await getProfileByAccountID(myUserID);
-        const profile = profileRes.getProfileByAccountID;
+        const profileRes = await getProfileByUserID(myUserID);
+        const profile = profileRes.getProfileByUserID;
 
         if (profile) {
           setFormData({
-            accountID: profile.accountID,
+            userID: myUserID,
             // 初期値として Userテーブルの name を表示させる
             bio: profile.bio || '',
           });
@@ -75,7 +75,7 @@ export const UserProfileeditPage = () => {
             />
           </label>
           
-          <button type="submit" disabled={!formData.accountID}>更新</button>
+          <button type="submit" disabled={!formData.bio}>更新</button>
         </form>
         <Link to="/mypage" style={{ marginTop: '1rem', display: 'inline-block' }}>マイページに戻る</Link>
         {error && <p style={{ color: 'red' }}>{error}</p>}

@@ -13,7 +13,6 @@ export type UserProfile = {
 };
 
 export type Profile = {
-  accountID: string;
   username: string;
   bio: string | null;
   image: string | null;
@@ -25,7 +24,7 @@ export type Profile = {
 type MeResponse = { me: UserProfile };
 type SearchUsersResponse = { searchUsers: UserProfile[] };
 type UpdateUserResponse = { updateUser: UserProfile };
-type GetProfileByAccountIDResponse = { getProfileByAccountID: Profile | null };
+type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
 type UpdateProfileResponse = { updateProfile: Profile };
 
 const ME_QUERY = `
@@ -71,10 +70,9 @@ const UPDATE_USER_MUTATION = `
   }
 `;
 
-const GET_PROFILE_BY_ACCOUNT_ID_QUERY = `
-  query GetProfileByAccountID($accountID: ID!) {
-    getProfileByAccountID(accountID: $accountID) {
-      accountID
+const GET_PROFILE_BY_USER_ID_QUERY = `
+  query GetProfileByUserID($userID: ID!) {
+    getProfileByUserID(userID: $userID) {
       username
       bio
       image
@@ -95,7 +93,6 @@ const GET_PROFILE_BY_ACCOUNT_ID_QUERY = `
 const UPDATE_PROFILE_MUTATION = `
   mutation UpdateProfile($input: UpdateProfileInput!) {
     updateProfile(input: $input) {
-      accountID
       username
       bio
       image
@@ -116,6 +113,7 @@ export const getMyProfile = async () => {
 };
 
 export const updateMyProfile = async (input: {
+  accountID?: string;
   name?: string;
   email?: string;
   password?: string;
@@ -127,16 +125,16 @@ export const searchUsers = async (name: string) => {
   return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { name }, getUserToken());
 };
 
-export const getProfileByAccountID = async (accountID: string) => {
-  return await request<GetProfileByAccountIDResponse>(
-    GET_PROFILE_BY_ACCOUNT_ID_QUERY,
-    { accountID },
+export const getProfileByUserID = async (userID: string) => {
+  return await request<GetProfileByUserIDResponse>(
+    GET_PROFILE_BY_USER_ID_QUERY,
+    { userID },
     getUserToken(),
   );
 };
 
 export const updateProfile = async (input: {
-  accountID: string;
+  userID: string;
   username?: string;
   bio?: string;
   image?: string;

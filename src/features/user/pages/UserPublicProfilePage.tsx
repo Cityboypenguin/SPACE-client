@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProfileByAccountID, type Profile } from '../api/profile';
+import { getProfileByUserID, type Profile } from '../api/profile';
 import { UserHeader } from '../components/UserHeader';
 
 export const UserPublicProfilePage = () => {
@@ -11,10 +11,10 @@ export const UserPublicProfilePage = () => {
 
   useEffect(() => {
     if (!id) return;
-    getProfileByAccountID(id)
+    getProfileByUserID(id)
       .then((data) => {
-        if (data.getProfileByAccountID) {
-          setProfile(data.getProfileByAccountID);
+        if (data.getProfileByUserID) {
+          setProfile(data.getProfileByUserID);
         } else {
           setError('プロフィールが見つかりませんでした');
         }
