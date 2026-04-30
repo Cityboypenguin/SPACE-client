@@ -19,7 +19,7 @@ export const UserSearchPage = () => {
     try {
       const data = await searchUsers(query);
       const filtered = currentUserID
-        ? data.searchUsers.filter((u) => u.ID !== currentUserID && u.userID !== currentUserID)
+        ? data.searchUsers.filter((u) => u.ID !== currentUserID && u.accountID !== currentUserID)
         : data.searchUsers;
       setResults(filtered);
       setSearched(true);
@@ -56,7 +56,7 @@ export const UserSearchPage = () => {
                 onClick={() => navigate(`/users/${user.ID}`)}
                 className={styles.resultItem}
               >
-                <strong>{user.name}</strong>（{user.userID}）
+                <strong>{user.name}</strong>（{user.accountID}）
               </li>
             ))}
           </ul>

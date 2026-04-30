@@ -1,6 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/UserHeader';
+import { listMessages, sendMessage, getRoom, type Message } from '../api/message';
+import { subscribeToGraphQL } from '../../../lib/graphqlWs';
+import { USER_ID_KEY } from '../api/auth';
+
+const MESSAGE_ADDED_SUBSCRIPTION = `
+  subscription MessageAdded($roomID: ID!) {
+    messageAdded(roomID: $roomID) {
+      ID
+      roomID
+      accountID
+      user {
+        ID
+        name
+        accountID
+      }
+      content
+      createdAt
+    }
+  }
+`;
+
+type MessageAddedData = {
+  messageAdded: Message;
+};
 import { sendMessage } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
@@ -15,6 +39,52 @@ export const CommunityRoomPage = () => {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const currentUserAccountID = localStorage.getItem(USER_ID_KEY) ?? '';
+
+  useEffect(() => {
+    if (!roomId) return;
+    let active = true;
+
+    const load = async () => {
+      try {
+        const [roomData, msgData] = await Promise.all([
+          getRoom(roomId),
+          listMessages(roomId),
+        ]);
+        if (!active) return;
+        setRoomName(roomData.room.name);
+        setMessages(msgData.messages);
+      } catch (err) {
+        if (active) setError('読み込みに失敗しました');
+        console.error(err);
+      }
+    };
+    void load();
+    return () => { active = false; };
+  }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const unsubscribe = subscribeToGraphQL<MessageAddedData>(
+      MESSAGE_ADDED_SUBSCRIPTION,
+      { roomID: roomId },
+      (data) => {
+        setWsConnected(true);
+        const newMsg = data.messageAdded;
+        setMessages((prev) =>
+          prev.some((m) => m.ID === newMsg.ID) ? prev : [...prev, newMsg],
+        );
+      },
+      () => setWsConnected(false),
+      () => setWsConnected(true),
+    );
+
+    return () => {
+      unsubscribe();
+      setWsConnected(false);
+    };
+  }, [roomId]);
 
   const isCurrentUser = (user: { ID: string; userID: string }) =>
     currentUserID != null && (user.ID === currentUserID || user.userID === currentUserID);
@@ -57,9 +127,9 @@ export const CommunityRoomPage = () => {
 
         {messages.map((msg) => {
           const isMine =
-            msg.userID === currentUserID ||
-            msg.user.ID === currentUserID ||
-            msg.user.userID === currentUserID;
+            msg.user.accountID === currentUserAccountID ||
+            msg.user.ID === currentUserAccountID ||
+            msg.user.accountID === currentUserAccountID;
           return (
             <div
               key={msg.ID}

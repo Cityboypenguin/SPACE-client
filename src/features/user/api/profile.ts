@@ -3,7 +3,7 @@ import { USER_TOKEN_KEY } from './auth';
 
 export type UserProfile = {
   ID: string;
-  userID: string;
+  accountID: string;
   name: string;
   email: string;
   role: string;
@@ -13,10 +13,8 @@ export type UserProfile = {
 };
 
 export type Profile = {
-  userID: string;
   username: string;
   bio: string | null;
-  grade: number | null;
   image: string | null;
   createdAt: string;
   updatedAt: string;
@@ -33,7 +31,7 @@ const ME_QUERY = `
   query Me {
     me {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -48,7 +46,7 @@ const SEARCH_USERS_QUERY = `
   query SearchUsers($name: String!) {
     searchUsers(name: $name) {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -61,7 +59,7 @@ const UPDATE_USER_MUTATION = `
   mutation UpdateUser($input: UpdateUserInput!) {
     updateUser(input: $input) {
       ID
-      userID
+      accountID
       name
       email
       role
@@ -75,16 +73,14 @@ const UPDATE_USER_MUTATION = `
 const GET_PROFILE_BY_USER_ID_QUERY = `
   query GetProfileByUserID($userID: ID!) {
     getProfileByUserID(userID: $userID) {
-      userID
       username
       bio
-      grade
       image
       createdAt
       updatedAt
       user {
         ID
-        userID
+        accountID
         name
         email
         role
@@ -97,10 +93,8 @@ const GET_PROFILE_BY_USER_ID_QUERY = `
 const UPDATE_PROFILE_MUTATION = `
   mutation UpdateProfile($input: UpdateProfileInput!) {
     updateProfile(input: $input) {
-      userID
       username
       bio
-      grade
       image
       createdAt
       updatedAt
@@ -119,7 +113,7 @@ export const getMyProfile = async () => {
 };
 
 export const updateMyProfile = async (input: {
-  userID: string;
+  accountID?: string;
   name?: string;
   email?: string;
   password?: string;
@@ -143,7 +137,6 @@ export const updateProfile = async (input: {
   userID: string;
   username?: string;
   bio?: string;
-  grade?: number;
   image?: string;
 }) => {
   return await request<UpdateProfileResponse>(UPDATE_PROFILE_MUTATION, { input }, getUserToken());

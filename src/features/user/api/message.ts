@@ -4,13 +4,13 @@ import { USER_TOKEN_KEY } from './auth';
 export type MessageUser = {
   ID: string;
   name: string;
-  userID: string;
+  accountID: string;
 };
 
 export type Message = {
   ID: string;
   roomID: string;
-  userID: string;
+  accountID: string;
   user: MessageUser;
   content: string;
   createdAt: string;
@@ -26,16 +26,15 @@ export type Room = {
 const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 const GET_OR_CREATE_DM_ROOM_MUTATION = `
-  mutation GetOrCreateDMRoom($targetUserID: ID!) {
-    getOrCreateDMRoom(targetUserID: $targetUserID) {
+  mutation GetOrCreateDMRoom($targetAccountID: ID!) {
+    getOrCreateDMRoom(targetAccountID: $targetAccountID) {
       ID
       name
       type
-
       user {
         ID
         name
-        userID
+        accountID
       }
     }
   }
@@ -46,11 +45,10 @@ const SEND_MESSAGE_MUTATION = `
     sendMessage(roomID: $roomID, content: $content) {
       ID
       roomID
-      userID
       user {
         ID
         name
-        userID
+        accountID
       }
       content
       createdAt
@@ -63,11 +61,10 @@ const LIST_MESSAGES_QUERY = `
     messages(roomID: $roomID) {
       ID
       roomID
-      userID
       user {
         ID
         name
-        userID
+        accountID
       }
       content
       createdAt
@@ -81,11 +78,10 @@ const GET_ROOM_QUERY = `
       ID
       name
       type
-
       user {
         ID
         name
-        userID
+        accountID
       }
     }
   }
@@ -97,21 +93,20 @@ const MY_DM_ROOMS_QUERY = `
       ID
       name
       type
-
       user {
         ID
         name
-        userID
+        accountID
       }
     }
   }
 `;
 
-export const getOrCreateDMRoom = async (targetUserID: string) => {
+export const getOrCreateDMRoom = async (targetAccountID: string) => {
   const token = getUserToken();
   return await request<{ getOrCreateDMRoom: Room }>(
     GET_OR_CREATE_DM_ROOM_MUTATION,
-    { targetUserID },
+    { targetAccountID },
     token,
   );
 };

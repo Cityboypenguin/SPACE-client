@@ -8,7 +8,7 @@ export const UserSettingsPage = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [userID, setUserID] = useState('');
+  const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +24,8 @@ export const UserSettingsPage = () => {
       .then((data) => {
         const p = data.me;
         setProfile(p);
-        setUserID(p.userID);
+        localStorage.setItem(USER_ID_KEY, p.accountID);
+        setAccountID(p.accountID);
         setName(p.name);
         setEmail(p.email);
       })
@@ -36,7 +37,7 @@ export const UserSettingsPage = () => {
     setError('');
     setSuccess('');
     try {
-      const input: Parameters<typeof updateMyProfile>[0] = { userID, name, email };
+      const input: Parameters<typeof updateMyProfile>[0] = { accountID, name, email };
       if (password) input.password = password;
       const data = await updateMyProfile(input);
       setProfile(data.updateUser);
@@ -61,13 +62,12 @@ export const UserSettingsPage = () => {
         {success && <p style={{ color: 'green' }}>{success}</p>}
 
         <form onSubmit={handleUpdate}>
-          <h2>プロフィール編集</h2>
           <label>
-            ユーザーID
+            アカウントID
             <input
               type="text"
-              value={userID}
-              onChange={(e) => setUserID(e.target.value)}
+              value={accountID}
+              onChange={(e) => setAccountID(e.target.value)}
               required
             />
           </label>

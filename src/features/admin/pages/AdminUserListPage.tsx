@@ -77,7 +77,7 @@ export const AdminUserListPage = () => {
                 onClick={() => navigate(`/admin/users/${user.ID}`)}
                 style={{ cursor: 'pointer' }}
               >
-                <td>{user.userID}</td>
+                <td>{user.accountID}</td>
                 <td>{user.name}</td>
                 <td>{user.email}</td>
                 <td>{user.role}</td>

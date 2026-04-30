@@ -5,6 +5,27 @@ import { sendMessage } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { saveRecentDM } from '../utils/recentDM';
+
+const MESSAGE_ADDED_SUBSCRIPTION = `
+  subscription MessageAdded($roomID: ID!) {
+    messageAdded(roomID: $roomID) {
+      ID
+      roomID
+      AcountID
+      user {
+        ID
+        name
+        AccountID
+      }
+      content
+      createdAt
+    }
+  }
+`;
+
+type MessageAddedData = {
+  messageAdded: Message;
+};
 import styles from '../components/chatRoom.module.css';
 
 export const DMPage = () => {
@@ -16,17 +37,67 @@ export const DMPage = () => {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const currentUserAccountID = localStorage.getItem(USER_ID_KEY) ?? '';
+  const isCurrentUser = (user: { ID: string; accountID: string }) => {
+    if (!currentUserAccountID) return false;
+    return user.ID === currentUserAccountID || user.accountID === currentUserAccountID;
+  };
 
   const isCurrentUser = (user: { ID: string; userID: string }) =>
     currentUserID != null && (user.ID === currentUserID || user.userID === currentUserID);
 
   useEffect(() => {
-    if (!room || !currentUserID) return;
-    const partner = room.user.find((u) => !isCurrentUser(u));
-    if (partner) {
-      saveRecentDM({ roomID: roomId!, partnerName: partner.name, partnerUserID: partner.userID });
-    }
-  }, [room, currentUserID]);
+    if (!roomId) return;
+
+    const loadRoom = async () => {
+      try {
+        const [roomData, messagesData] = await Promise.all([
+          getRoom(roomId),
+          listMessages(roomId),
+        ]);
+        setRoom(roomData.room);
+        setMessages(messagesData.messages);
+
+        const partner = roomData.room.user.find((u) => !isCurrentUser(u));
+        if (partner) {
+          saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerUserID: partner.accountID });
+        }
+      } catch (err) {
+        console.error('[DMPage] loadRoom failed:', err);
+        setError('ルームの読み込みに失敗しました');
+      }
+    };
+
+    loadRoom();
+  }, [roomId, currentUserAccountID]);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const unsubscribe = subscribeToGraphQL<MessageAddedData>(
+      MESSAGE_ADDED_SUBSCRIPTION,
+      { roomID: roomId },
+      (data) => {
+        setWsConnected(true);
+        const newMsg = data.messageAdded;
+        setMessages((prev) => {
+          if (prev.some((m) => m.ID === newMsg.ID)) return prev;
+          return [...prev, newMsg];
+        });
+      },
+      () => {
+        setWsConnected(false);
+      },
+      () => {
+        setWsConnected(true);
+      },
+    );
+
+    return () => {
+      unsubscribe();
+      setWsConnected(false);
+    };
+  }, [roomId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,7 +105,7 @@ export const DMPage = () => {
 
   const handleSend = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!content.trim() || !roomId || !currentUserID) return;
+    if (!content.trim() || !roomId || !currentUserAccountID) return;
     setSending(true);
     setSendError('');
     try {
@@ -68,9 +139,9 @@ export const DMPage = () => {
 
         {messages.map((msg) => {
           const isMine =
-            msg.userID === currentUserID ||
-            msg.user.ID === currentUserID ||
-            msg.user.userID === currentUserID;
+            msg.user.accountID === currentUserAccountID ||
+            msg.user.ID === currentUserAccountID ||
+            msg.user.accountID === currentUserAccountID;
           return (
             <div
               key={msg.ID}
