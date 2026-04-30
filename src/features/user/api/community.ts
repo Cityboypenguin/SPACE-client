@@ -95,10 +95,10 @@ export const joinCommunity = async (roomID: string): Promise<void> => {
   );
 };
 
-export const leaveCommunity = async (roomID: string, userID: string): Promise<void> => {
+export const leaveCommunity = async (roomID: string, accountID: string): Promise<void> => {
   await request<{ removeUserFromRoom: boolean }>(
     REMOVE_USER_FROM_ROOM_MUTATION,
-    { input: { roomID, userID } },
+    { input: { roomID, accountID } },
     getUserToken(),
   );
 };

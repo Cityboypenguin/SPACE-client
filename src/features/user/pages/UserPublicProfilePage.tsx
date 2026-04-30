@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProfileByUserID, type Profile } from '../api/profile';
+import { getProfileByAccountID, type Profile } from '../api/profile';
 import { UserHeader } from '../components/UserHeader';
 
 export const UserPublicProfilePage = () => {
@@ -11,10 +11,10 @@ export const UserPublicProfilePage = () => {
 
   useEffect(() => {
     if (!id) return;
-    getProfileByUserID(id)
+    getProfileByAccountID(id)
       .then((data) => {
-        if (data.getProfileByUserID) {
-          setProfile(data.getProfileByUserID);
+        if (data.getProfileByAccountID) {
+          setProfile(data.getProfileByAccountID);
         } else {
           setError('プロフィールが見つかりませんでした');
         }
@@ -60,8 +60,6 @@ export const UserPublicProfilePage = () => {
             <dl style={{ lineHeight: 2 }}>
               <dt style={{ fontWeight: 'bold' }}>自己紹介</dt>
               <dd>{profile.bio || '未設定'}</dd>
-              <dt style={{ fontWeight: 'bold' }}>学年</dt>
-              <dd>{profile.grade != null && profile.grade !== 0 ? `${profile.grade}年` : '未設定'}</dd>
             </dl>
           </div>
         )}

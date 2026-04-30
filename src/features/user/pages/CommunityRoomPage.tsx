@@ -10,11 +10,11 @@ const MESSAGE_ADDED_SUBSCRIPTION = `
     messageAdded(roomID: $roomID) {
       ID
       roomID
-      userID
+      accountID
       user {
         ID
         name
-        userID
+        accountID
       }
       content
       createdAt
@@ -36,7 +36,7 @@ export const CommunityRoomPage = () => {
   const [sending, setSending] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const currentUserID = localStorage.getItem(USER_ID_KEY) ?? '';
+  const currentUserAccountID = localStorage.getItem(USER_ID_KEY) ?? '';
 
   useEffect(() => {
     if (!roomId) return;
@@ -151,9 +151,9 @@ export const CommunityRoomPage = () => {
 
         {messages.map((msg) => {
           const isMine =
-            msg.userID === currentUserID ||
-            msg.user.ID === currentUserID ||
-            msg.user.userID === currentUserID;
+            msg.user.accountID === currentUserAccountID ||
+            msg.user.ID === currentUserAccountID ||
+            msg.user.accountID === currentUserAccountID;
           return (
             <div
               key={msg.ID}

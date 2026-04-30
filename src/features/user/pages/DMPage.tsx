@@ -11,11 +11,11 @@ const MESSAGE_ADDED_SUBSCRIPTION = `
     messageAdded(roomID: $roomID) {
       ID
       roomID
-      userID
+      AcountID
       user {
         ID
         name
-        userID
+        AccountID
       }
       content
       createdAt
@@ -37,10 +37,10 @@ export const DMPage = () => {
   const [sending, setSending] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const currentUserID = localStorage.getItem(USER_ID_KEY) ?? '';
-  const isCurrentUser = (user: { ID: string; userID: string }) => {
-    if (!currentUserID) return false;
-    return user.ID === currentUserID || user.userID === currentUserID;
+  const currentUserAccountID = localStorage.getItem(USER_ID_KEY) ?? '';
+  const isCurrentUser = (user: { ID: string; accountID: string }) => {
+    if (!currentUserAccountID) return false;
+    return user.ID === currentUserAccountID || user.accountID === currentUserAccountID;
   };
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export const DMPage = () => {
 
         const partner = roomData.room.user.find((u) => !isCurrentUser(u));
         if (partner) {
-          saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerUserID: partner.userID });
+          saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerUserID: partner.accountID });
         }
       } catch (err) {
         console.error('[DMPage] loadRoom failed:', err);
@@ -66,7 +66,7 @@ export const DMPage = () => {
     };
 
     loadRoom();
-  }, [roomId, currentUserID]);
+  }, [roomId, currentUserAccountID]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -102,7 +102,7 @@ export const DMPage = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !roomId || !currentUserID) return;
+    if (!content.trim() || !roomId || !currentUserAccountID) return;
     setSending(true);
     setError('');
     try {
@@ -166,9 +166,9 @@ export const DMPage = () => {
 
         {messages.map((msg) => {
           const isMine =
-            msg.userID === currentUserID ||
-            msg.user.ID === currentUserID ||
-            msg.user.userID === currentUserID;
+            msg.user.accountID === currentUserAccountID ||
+            msg.user.ID === currentUserAccountID ||
+            msg.user.accountID === currentUserAccountID;
           return (
             <div
               key={msg.ID}

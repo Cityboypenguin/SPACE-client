@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 // 1. useLocation を追加
 import { Link, useLocation } from 'react-router-dom';
 import { UserHeader } from '../components/UserHeader';
-import { getMyProfile, getProfileByUserID, type Profile, type UserProfile } from '../api/profile';
+import { getMyProfile, getProfileByAccountID, type Profile, type UserProfile } from '../api/profile';
 import { USER_ID_KEY } from '../api/auth';
 
 export const UserDashboard = () => {
@@ -33,10 +33,10 @@ export const UserDashboard = () => {
         setAccount(data.me);
         localStorage.setItem(USER_ID_KEY, data.me.ID);
 
-        const profileData = await getProfileByUserID(data.me.ID);
+        const profileData = await getProfileByAccountID(data.me.ID);
         if (!active) return;
 
-        setProfile(profileData.getProfileByUserID);
+        setProfile(profileData.getProfileByAccountID);
       })
       .catch(() => {
         if (active) setError('プロフィールの取得に失敗しました');
@@ -108,7 +108,7 @@ export const UserDashboard = () => {
 
         {account && (
           <p style={{ color: '#666', marginTop: '1.5rem' }}>
-            ユーザーID: {account.userID} / メールアドレス: {account.email} / ロール: {account.role} / ステータス: {account.status}
+            ユーザーID: {account.accountID} / メールアドレス: {account.email} / ロール: {account.role} / ステータス: {account.status}
           </p>
         )}
 
