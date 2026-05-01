@@ -44,6 +44,12 @@ const CommunityRoomPage = lazy(() =>
 const UserProfileEditPage = lazy(() =>
   import('./features/user/pages/UserProfileEditPage').then((m) => ({ default: m.UserProfileEditPage })),
 );
+const PostListPage = lazy(() =>
+  import('./features/user/pages/PostListPage').then((m) => ({ default: m.PostListPage })),
+);
+const PostDetailPage = lazy(() =>
+  import('./features/user/pages/PostDetailPage').then((m) => ({ default: m.PostDetailPage })),
+);
 function App() {
   return (
     <Suspense fallback={<p>読み込み中...</p>}>
@@ -136,6 +142,22 @@ function App() {
           element={
             <UserProtectedRoute>
               <CommunityRoomPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/posts"
+          element={
+            <UserProtectedRoute>
+              <PostListPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/posts/:id"
+          element={
+            <UserProtectedRoute>
+              <PostDetailPage />
             </UserProtectedRoute>
           }
         />

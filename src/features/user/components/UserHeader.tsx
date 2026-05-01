@@ -13,6 +13,7 @@ export const UserHeader = () => {
         <button className={styles.navButton} onClick={() => navigate('/mypage')}>ホーム</button>
         <button className={styles.navButton} onClick={() => navigate('/search')}>ユーザー検索</button>
         <button className={styles.navButton} onClick={() => navigate('/dm')}>DM</button>
+        <button className={styles.navButton} onClick={() => navigate('/posts')}>投稿</button>
         <button className={styles.navButton} onClick={() => navigate('/community')}>コミュニティ</button>
       </nav>
       <button className={styles.logoutButton} onClick={() => void logout()}>ログアウト</button>
