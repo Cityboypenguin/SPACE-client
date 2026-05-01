@@ -4,7 +4,7 @@ import { registerUser, loginUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 
 export const UserRegisterPage = () => {
-  const [userID, setUserID] = useState('');
+  const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +16,7 @@ export const UserRegisterPage = () => {
     e.preventDefault();
     setError('');
     try {
-      await registerUser(userID, name, email, password);
+      await registerUser(accountID, name, email, password);
       const loginData = await loginUser(email, password);
       login(loginData.loginUser.token, loginData.loginUser.refreshToken, loginData.loginUser.user.ID);
       navigate('/mypage');
@@ -31,8 +31,8 @@ export const UserRegisterPage = () => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <input
         type="text"
-        value={userID}
-        onChange={(e) => setUserID(e.target.value)}
+        value={accountID}
+        onChange={(e) => setAccountID(e.target.value)}
         placeholder="ユーザーID"
         required
       />
