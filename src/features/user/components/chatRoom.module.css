@@ -97,3 +97,78 @@
 .inputField {
   flex: 1;
 }
+
+.messageRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.messageActions {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.messageBubble:hover .messageActions {
+  display: flex;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #bbb;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.actionBtn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #555;
+}
+
+.editWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editInput {
+  border-radius: 12px;
+  border: 2px solid #646cff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  outline: none;
+  min-width: 180px;
+  max-width: 400px;
+}
+
+.editActions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.editSaveBtn {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #646cff;
+  color: white;
+  cursor: pointer;
+}
+
+.editCancelBtn {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: white;
+  color: #666;
+  cursor: pointer;
+}

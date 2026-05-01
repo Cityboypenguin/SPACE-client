@@ -14,6 +14,7 @@ export type Message = {
   user: MessageUser;
   content: string;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type Room = {
@@ -52,7 +53,31 @@ const SEND_MESSAGE_MUTATION = `
       }
       content
       createdAt
+      updatedAt
     }
+  }
+`;
+
+const UPDATE_MESSAGE_MUTATION = `
+  mutation UpdateMessage($roomID: ID!, $id: ID!, $content: String!) {
+    updateMessage(roomID: $roomID, id: $id, content: $content) {
+      ID
+      roomID
+      user {
+        ID
+        name
+        accountID
+      }
+      content
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const DELETE_MESSAGE_MUTATION = `
+  mutation DeleteMessage($roomID: ID!, $id: ID!) {
+    deleteMessage(roomID: $roomID, id: $id)
   }
 `;
 
@@ -133,6 +158,24 @@ export const getRoom = async (id: string) => {
     GET_ROOM_QUERY,
     { id },
     getUserToken(),
+  );
+};
+
+export const updateMessage = async (roomID: string, id: string, content: string) => {
+  const token = getUserToken();
+  return await request<{ updateMessage: Message }>(
+    UPDATE_MESSAGE_MUTATION,
+    { roomID, id, content },
+    token,
+  );
+};
+
+export const deleteMessage = async (roomID: string, id: string) => {
+  const token = getUserToken();
+  return await request<{ deleteMessage: boolean }>(
+    DELETE_MESSAGE_MUTATION,
+    { roomID, id },
+    token,
   );
 };
 

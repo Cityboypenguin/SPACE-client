@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/UserHeader';
-import { sendMessage } from '../api/message';
+import { sendMessage, updateMessage, deleteMessage } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { saveRecentDM } from '../utils/recentDM';
@@ -15,6 +15,8 @@ export const DMPage = () => {
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const isCurrentUser = (user: { ID: string }) =>
@@ -48,6 +50,30 @@ export const DMPage = () => {
     }
   };
 
+  const handleDelete = async (msgId: string) => {
+    if (!roomId) return;
+    try {
+      await deleteMessage(roomId, msgId);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : 'メッセージの削除に失敗しました');
+    }
+  };
+
+  const startEdit = (msg: { ID: string; content: string }) => {
+    setEditingId(msg.ID);
+    setEditContent(msg.content);
+  };
+
+  const handleSaveEdit = async (msgId: string) => {
+    if (!roomId || !editContent.trim()) return;
+    try {
+      await updateMessage(roomId, msgId, editContent.trim());
+      setEditingId(null);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : 'メッセージの編集に失敗しました');
+    }
+  };
+
   const partnerName = room?.user.find((u) => !isCurrentUser(u))?.name ?? 'DM';
 
   return (
@@ -68,14 +94,42 @@ export const DMPage = () => {
 
         {messages.map((msg) => {
           const isMine = msg.user.ID === currentUserID;
+          const isEditing = editingId === msg.ID;
           return (
             <div
               key={msg.ID}
               className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}
             >
               {!isMine && <span className={styles.senderName}>{msg.user.name}</span>}
-              <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                {msg.content}
+              <div className={styles.messageRow}>
+                {isMine && (
+                  <div className={styles.messageActions}>
+                    <button className={styles.actionBtn} onClick={() => startEdit(msg)} title="編集">✎</button>
+                    <button className={styles.actionBtn} onClick={() => handleDelete(msg.ID)} title="削除">✕</button>
+                  </div>
+                )}
+                {isEditing ? (
+                  <div className={styles.editWrapper}>
+                    <input
+                      className={styles.editInput}
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveEdit(msg.ID);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                      autoFocus
+                    />
+                    <div className={styles.editActions}>
+                      <button className={styles.editSaveBtn} onClick={() => handleSaveEdit(msg.ID)}>保存</button>
+                      <button className={styles.editCancelBtn} onClick={() => setEditingId(null)}>キャンセル</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
+                    {msg.content}
+                  </div>
+                )}
               </div>
               <span className={styles.timestamp}>
                 {new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
