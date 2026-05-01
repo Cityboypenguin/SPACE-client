@@ -23,6 +23,7 @@ export const AdminHeader = () => {
       <h2>管理画面</h2>
       <button onClick ={() => navigate('/admin')}>ダッシュボード</button>
       <button onClick={() => navigate('/admin/users')}>ユーザー管理</button>
+      <button onClick={() => navigate('/admin/administrators')}>管理者管理</button>
       <button onClick={() => navigate('/admin/register')}>新規管理者登録</button>
       <button onClick={handleLogout}>ログアウト</button>
     </header>

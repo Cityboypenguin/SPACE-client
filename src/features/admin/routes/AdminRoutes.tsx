@@ -5,6 +5,7 @@ import { AdminRegisterPage } from '../pages/AdminRegisterPage';
 import { AdminUserListPage } from '../pages/AdminUserListPage';
 import { AdminUserDetailPage } from '../pages/AdminUserDetailPage';
 import { AdminProtectedRoute } from '../components/AdminProtectedRoute';
+import { AdminAdministratorListPage } from '../pages/AdminAdministratorsListPage';
 
 export const AdminRoutes = () => {
   return (
@@ -32,6 +33,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminUserDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="administrators"
+        element={
+          <AdminProtectedRoute>
+            <AdminAdministratorListPage />
           </AdminProtectedRoute>
         }
       />
