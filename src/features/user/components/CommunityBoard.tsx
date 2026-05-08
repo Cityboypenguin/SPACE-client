@@ -109,7 +109,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/community/chat/${community.roomID}`);
+                  navigate(`/community/chat/${community.roomID}`, { state: { communityID: community.ID } });
                 }}
                 style={{
                   padding: '0.45rem 1.2rem',

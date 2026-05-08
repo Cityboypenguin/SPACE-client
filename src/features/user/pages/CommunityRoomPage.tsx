@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { UserHeader } from '../components/UserHeader';
+import { CommunitySettingsModal } from '../components/CommunitySettingsModal';
 import { sendMessage, updateMessage, deleteMessage } from '../api/message';
+import {
+  listMyCommunities,
+  getMyRoleInCommunity,
+  type Community,
+} from '../api/community';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import styles from '../components/chatRoom.module.css';
@@ -9,8 +15,13 @@ import styles from '../components/chatRoom.module.css';
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { userId: currentUserID } = useAuth();
   const { room, messages, wsConnected, error, addMessage } = useRoomMessages(roomId);
+
+  const [community, setCommunity] = useState<Community | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
@@ -21,6 +32,44 @@ export const CommunityRoomPage = () => {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const stateID = (location.state as { communityID?: string } | null)?.communityID;
+
+    const resolveCommunity = async () => {
+      let communityID = stateID;
+      if (!communityID) {
+        try {
+          const communities = await listMyCommunities();
+          const found = communities.find((c) => c.roomID === roomId);
+          if (found) communityID = found.ID;
+          if (found) setCommunity(found);
+        } catch {
+          return;
+        }
+      } else {
+        try {
+          const communities = await listMyCommunities();
+          const found = communities.find((c) => c.ID === communityID);
+          if (found) setCommunity(found);
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!communityID) return;
+      try {
+        const role = await getMyRoleInCommunity(communityID);
+        setIsOwner(role === 'owner');
+      } catch {
+        setIsOwner(false);
+      }
+    };
+
+    resolveCommunity();
+  }, [roomId, location.state]);
 
   const handleSend = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -69,6 +118,24 @@ export const CommunityRoomPage = () => {
       <div className={styles.roomHeader}>
         <button className={styles.backButton} onClick={() => navigate('/community')}>← 戻る</button>
         <strong className={styles.roomTitle}>{room?.name || '...'}</strong>
+        {isOwner && (
+          <button
+            onClick={() => setShowSettings(true)}
+            style={{
+              marginLeft: '0.5rem',
+              padding: '3px 10px',
+              fontSize: '0.8rem',
+              borderRadius: 6,
+              border: '1px solid #a78bfa',
+              background: '#fff',
+              color: '#7c3aed',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            ⚙ 設定
+          </button>
+        )}
         <span
           className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}
           title={wsConnected ? '接続中' : '切断'}
@@ -80,6 +147,7 @@ export const CommunityRoomPage = () => {
 
         {messages.map((msg) => {
           const isMine = msg.user.ID === currentUserID;
+          const canDelete = isMine || isOwner;
           const isEditing = editingId === msg.ID;
           return (
             <div
@@ -88,10 +156,14 @@ export const CommunityRoomPage = () => {
             >
               {!isMine && <span className={styles.senderName}>{msg.user.name}</span>}
               <div className={styles.messageRow}>
-                {isMine && (
+                {(isMine || (canDelete && !isMine)) && (
                   <div className={styles.messageActions}>
-                    <button className={styles.actionBtn} onClick={() => startEdit(msg)} title="編集">✎</button>
-                    <button className={styles.actionBtn} onClick={() => handleDelete(msg.ID)} title="削除">✕</button>
+                    {isMine && (
+                      <button className={styles.actionBtn} onClick={() => startEdit(msg)} title="編集">✎</button>
+                    )}
+                    {canDelete && (
+                      <button className={styles.actionBtn} onClick={() => handleDelete(msg.ID)} title="削除">✕</button>
+                    )}
                   </div>
                 )}
                 {isEditing ? (
@@ -140,6 +212,14 @@ export const CommunityRoomPage = () => {
           {sending ? '送信中...' : '送信'}
         </button>
       </form>
+
+      {showSettings && community && (
+        <CommunitySettingsModal
+          community={community}
+          onClose={() => setShowSettings(false)}
+          onUpdated={(updated) => setCommunity(updated)}
+        />
+      )}
     </div>
   );
 };

@@ -39,6 +39,11 @@ export const AdminUserDetailPage = () => {
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
 
+        <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+          <button onClick={() => navigate(`/admin/users/${id}/profile`)}>プロフィールを見る</button>
+          <button onClick={() => navigate(`/admin/users/${id}/edit`)}>情報を編集</button>
+        </div>
+
         <dl>
           <dt>ユーザーID</dt>
           <dd>{user.accountID}</dd>

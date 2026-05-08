@@ -60,7 +60,7 @@ export const CommunityListPage = () => {
             {communities.map((c) => (
               <li
                 key={c.ID}
-                onClick={() => navigate(`/community/chat/${c.roomID}`)}
+                onClick={() => navigate(`/community/chat/${c.roomID}`, { state: { communityID: c.ID } })}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
