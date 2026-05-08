@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Avatar } from '../../../../components/atoms/Avatar';
+import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../molecules/LikeButton';
 import { UserMeta } from '../molecules/UserMeta';
 import { formatTime } from '../../utils/formatTime';
@@ -31,7 +31,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) =
         onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Avatar name={post.user.name} size={36} />
+          <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={36} />
           {post.replies.length > 0 && (
             <div style={{ width: 2, flex: 1, background: '#e2e8f0', marginTop: 4 }} />
           )}

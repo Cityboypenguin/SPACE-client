@@ -45,6 +45,17 @@
   gap: 0.5rem;
 }
 
+.theirRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.theirContent {
+  flex: 1;
+  min-width: 0;
+}
+
 .messageBubble {
   display: flex;
   flex-direction: column;

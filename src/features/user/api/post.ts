@@ -5,6 +5,7 @@ export type PostUser = {
   ID: string;
   name: string;
   accountID: string;
+  avatarUrl?: string | null;
 };
 
 export type PostFavorite = {
@@ -35,6 +36,7 @@ const POST_FIELDS = `
     ID
     name
     accountID
+    avatarUrl
   }
   favorites {
     ID

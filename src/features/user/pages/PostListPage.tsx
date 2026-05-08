@@ -5,10 +5,12 @@ import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { getTopLevelPosts, createPost, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../hooks/useProfile';
 
 export const PostListPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
+  const { profile } = useProfile(userId);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -75,6 +77,9 @@ export const PostListPage = () => {
           onSubmit={handlePost}
           submitting={posting}
           error={postError}
+          userId={userId}
+          avatarUrl={profile?.avatarUrl}
+          userName={profile?.user.name}
         />
 
         {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}

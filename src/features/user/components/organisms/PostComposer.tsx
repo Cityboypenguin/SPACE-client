@@ -1,3 +1,6 @@
+import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { Avatar } from '../../../../components/atoms/Avatar';
+
 type Props = {
   value: string;
   onChange: (val: string) => void;
@@ -9,6 +12,9 @@ type Props = {
   submitLabel?: string;
   submittingLabel?: string;
   iconSize?: number;
+  userId?: string | null;
+  avatarUrl?: string | null;
+  userName?: string;
 };
 
 export const PostComposer = ({
@@ -22,24 +28,33 @@ export const PostComposer = ({
   submitLabel = '投稿する',
   submittingLabel = '投稿中...',
   iconSize = 44,
+  userId,
+  avatarUrl,
+  userName = '',
 }: Props) => (
   <div style={{ padding: '1rem', borderBottom: '2px solid #e2e8f0', display: 'flex', gap: '0.75rem' }}>
-    <div
-      style={{
-        width: iconSize,
-        height: iconSize,
-        borderRadius: '50%',
-        background: 'linear-gradient(135deg,#646cff,#a78bfa)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#fff',
-        fontSize: iconSize >= 40 ? '1.2rem' : '1rem',
-        flexShrink: 0,
-      }}
-    >
-      ✍️
-    </div>
+    {userId && userName ? (
+      <UserAvatar userId={userId} name={userName} avatarUrl={avatarUrl} size={iconSize} />
+    ) : userName ? (
+      <Avatar name={userName} size={iconSize} />
+    ) : (
+      <div
+        style={{
+          width: iconSize,
+          height: iconSize,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg,#646cff,#a78bfa)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          fontSize: iconSize >= 40 ? '1.2rem' : '1rem',
+          flexShrink: 0,
+        }}
+      >
+        ✍️
+      </div>
+    )}
     <div style={{ flex: 1 }}>
       <textarea
         value={value}

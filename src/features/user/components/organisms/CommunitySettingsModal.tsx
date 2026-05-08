@@ -172,7 +172,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 500 }}>
                           {m.role === ROLE_OWNER && (
-                            <span style={{ marginRight: 4 }} title="オーナー">👑</span>
+                            <span style={{ marginRight: 4 }} title="オーナー"></span>
                           )}
                           {m.user.name}
                         </div>

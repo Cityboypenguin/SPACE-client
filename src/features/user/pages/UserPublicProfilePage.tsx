@@ -19,9 +19,9 @@ export const UserPublicProfilePage = () => {
         {profile && (
           <div>
             <div className={styles.profileHeader}>
-              {profile.image ? (
+              {profile.avatarUrl ? (
                 <img
-                  src={profile.image}
+                  src={profile.avatarUrl}
                   alt={profile.user.name}
                   className={styles.avatar}
                 />

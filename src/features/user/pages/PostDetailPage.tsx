@@ -3,15 +3,17 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
-import { Avatar } from '../../../components/atoms/Avatar';
+import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
 import { getPostByID, createPost, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { useAuth } from '../context/AuthContext';
+import { useProfile } from '../hooks/useProfile';
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userId } = useAuth();
+  const { profile } = useProfile(userId);
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -80,7 +82,7 @@ export const PostDetailPage = () => {
           <>
             <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <Avatar name={post.user.name} size={44} />
+                <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
                 <div>
                   <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
                   <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
@@ -111,6 +113,9 @@ export const PostDetailPage = () => {
               submitLabel="返信する"
               submittingLabel="送信中..."
               iconSize={36}
+              userId={userId}
+              avatarUrl={profile?.avatarUrl}
+              userName={profile?.user.name}
             />
 
             {post.replies.length > 0 && (

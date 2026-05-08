@@ -1,4 +1,4 @@
-import { Avatar } from '../../../../components/atoms/Avatar';
+import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../molecules/LikeButton';
 import { UserMeta } from '../molecules/UserMeta';
 import { formatTime } from '../../utils/formatTime';
@@ -26,7 +26,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick }: Props) => (
     onMouseEnter={(e) => (e.currentTarget.style.background = '#f8faff')}
     onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
   >
-    <Avatar name={post.user.name} size={44} />
+    <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
     <div style={{ flex: 1, minWidth: 0 }}>
       <UserMeta
         name={post.user.name}

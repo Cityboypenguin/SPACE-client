@@ -5,6 +5,7 @@ export type MessageUser = {
   ID: string;
   name: string;
   accountID: string;
+  avatarUrl?: string | null;
 };
 
 export type Message = {
@@ -36,6 +37,7 @@ const GET_OR_CREATE_DM_ROOM_MUTATION = `
         ID
         name
         accountID
+        avatarUrl
       }
     }
   }
@@ -50,6 +52,7 @@ const SEND_MESSAGE_MUTATION = `
         ID
         name
         accountID
+        avatarUrl
       }
       content
       createdAt
@@ -67,6 +70,7 @@ const UPDATE_MESSAGE_MUTATION = `
         ID
         name
         accountID
+        avatarUrl
       }
       content
       createdAt
@@ -90,6 +94,7 @@ const LIST_MESSAGES_QUERY = `
         ID
         name
         accountID
+        avatarUrl
       }
       content
       createdAt
@@ -107,6 +112,7 @@ const GET_ROOM_QUERY = `
         ID
         name
         accountID
+        avatarUrl
       }
     }
   }
@@ -122,6 +128,7 @@ const MY_DM_ROOMS_QUERY = `
         ID
         name
         accountID
+        avatarUrl
       }
     }
   }

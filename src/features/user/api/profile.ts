@@ -8,6 +8,7 @@ export type UserProfile = {
   email: string;
   role: string;
   status: string;
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -15,7 +16,7 @@ export type UserProfile = {
 export type Profile = {
   username: string;
   bio: string | null;
-  image: string | null;
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
   user: UserProfile;
@@ -26,6 +27,8 @@ type SearchUsersResponse = { searchUsers: UserProfile[] };
 type UpdateUserResponse = { updateUser: UserProfile };
 type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
 type UpdateProfileResponse = { updateProfile: Profile };
+type PresignedUploadUrlResponse = { presignedAvatarUploadUrl: { uploadUrl: string; objectKey: string } };
+type SetAvatarResponse = { setAvatar: Profile };
 
 const ME_QUERY = `
   query Me {
@@ -70,12 +73,33 @@ const UPDATE_USER_MUTATION = `
   }
 `;
 
+const PRESIGNED_AVATAR_UPLOAD_URL_QUERY = `
+  query PresignedAvatarUploadUrl($contentType: String!) {
+    presignedAvatarUploadUrl(contentType: $contentType) {
+      uploadUrl
+      objectKey
+    }
+  }
+`;
+
+const SET_AVATAR_MUTATION = `
+  mutation SetAvatar($objectKey: String!) {
+    setAvatar(objectKey: $objectKey) {
+      username
+      bio
+      avatarUrl
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 const GET_PROFILE_BY_USER_ID_QUERY = `
   query GetProfileByUserID($userID: ID!) {
     getProfileByUserID(userID: $userID) {
       username
       bio
-      image
+      avatarUrl
       createdAt
       updatedAt
       user {
@@ -95,7 +119,7 @@ const UPDATE_PROFILE_MUTATION = `
     updateProfile(input: $input) {
       username
       bio
-      image
+      avatarUrl
       createdAt
       updatedAt
     }
@@ -136,7 +160,31 @@ export const getProfileByUserID = async (userID: string) => {
 export const updateProfile = async (input: {
   username?: string;
   bio?: string;
-  image?: string;
 }) => {
   return await request<UpdateProfileResponse>(UPDATE_PROFILE_MUTATION, { input }, getUserToken());
+};
+
+export const getPresignedAvatarUploadUrl = async (contentType: string) => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await request<PresignedUploadUrlResponse>(
+    PRESIGNED_AVATAR_UPLOAD_URL_QUERY,
+    { contentType },
+    token,
+  );
+};
+
+export const uploadAvatarToStorage = async (uploadUrl: string, file: File): Promise<void> => {
+  const res = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!res.ok) throw new Error('画像のアップロードに失敗しました。');
+};
+
+export const setAvatar = async (objectKey: string) => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await request<SetAvatarResponse>(SET_AVATAR_MUTATION, { objectKey }, token);
 };
