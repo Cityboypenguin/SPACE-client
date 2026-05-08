@@ -17,8 +17,12 @@ export const UserLoginForm = () => {
       const data = await loginUser(email, password);
       login(data.loginUser.token, data.loginUser.refreshToken, data.loginUser.user.ID);
       navigate('/mypage');
-    } catch {
-      setError('メールアドレスまたはパスワードが正しくありません');
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('account is frozen')) {
+        setError('このアカウントは凍結されています。管理者にお問い合わせください。');
+      } else {
+        setError('メールアドレスまたはパスワードが正しくありません');
+      }
     }
   };
 
