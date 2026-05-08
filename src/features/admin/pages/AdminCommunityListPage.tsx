@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCommunities, type Community } from '../api/communities';
-import { AdminHeader } from '../components/AdminHeader';
+import { AdminHeader } from '../components/organisms/AdminHeader';
 
 export const AdminCommunityListPage = () => {
   const [communities, setCommunities] = useState<Community[]>([]);

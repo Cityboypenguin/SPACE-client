@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/UserHeader';
+import { UserHeader } from '../components/organisms/UserHeader';
 import { useProfile } from '../hooks/useProfile';
 import styles from './UserPublicProfilePage.module.css';
 

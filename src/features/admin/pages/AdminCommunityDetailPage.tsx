@@ -8,7 +8,7 @@ import {
   type Community,
   type CommunityMember,
 } from '../api/communities';
-import { AdminHeader } from '../components/AdminHeader';
+import { AdminHeader } from '../components/organisms/AdminHeader';
 
 const ROLE_OWNER = 'owner';
 

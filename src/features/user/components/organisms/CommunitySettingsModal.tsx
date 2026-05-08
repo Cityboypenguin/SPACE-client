@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Avatar } from '../../../../components/atoms/Avatar';
+import { RoleBadge } from '../atoms/RoleBadge';
 import {
   getCommunityMembers,
   updateCommunityInfo,
@@ -7,7 +9,7 @@ import {
   demoteFromCommunityOwner,
   type Community,
   type CommunityMember,
-} from '../api/community';
+} from '../../api/community';
 
 type Props = {
   community: Community;
@@ -166,16 +168,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                         padding: '0.6rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0',
                       }}
                     >
-                      <div
-                        style={{
-                          width: 36, height: 36, borderRadius: '50%',
-                          background: 'linear-gradient(135deg,#646cff,#a78bfa)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#fff', fontWeight: 700, flexShrink: 0,
-                        }}
-                      >
-                        {m.user.name.charAt(0).toUpperCase()}
-                      </div>
+                      <Avatar name={m.user.name} size={36} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 500 }}>
                           {m.role === ROLE_OWNER && (
@@ -185,16 +178,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                         </div>
                         <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>@{m.user.accountID}</div>
                       </div>
-                      <span
-                        style={{
-                          fontSize: '0.72rem', padding: '2px 8px', borderRadius: 20,
-                          background: m.role === ROLE_OWNER ? '#ede9fe' : '#f1f5f9',
-                          color: m.role === ROLE_OWNER ? '#7c3aed' : '#64748b',
-                          fontWeight: 600, flexShrink: 0,
-                        }}
-                      >
-                        {m.role === ROLE_OWNER ? 'オーナー' : 'メンバー'}
-                      </span>
+                      <RoleBadge role={m.role} />
                       <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
                         {m.role === ROLE_OWNER ? (
                           <button

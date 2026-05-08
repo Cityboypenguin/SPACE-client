@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getPosts, searchPosts, adminDeletePost, type Post } from '../api/posts';
-import { AdminHeader } from '../components/AdminHeader';
+import { AdminHeader } from '../components/organisms/AdminHeader';
 
 export const AdminPostListPage = () => {
   const [posts, setPosts] = useState<Post[]>([]);

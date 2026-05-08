@@ -1,4 +1,4 @@
-import { AdminHeader } from '../components/AdminHeader';
+import { AdminHeader } from '../components/organisms/AdminHeader';
 
 export const AdminDashboard = () => {
   return (

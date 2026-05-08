@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/UserHeader';
+import { UserHeader } from '../components/organisms/UserHeader';
 import { createCommunity } from '../api/community';
 
 export const CommunityCreatePage = () => {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, adminUpdateUser, type User } from '../api/users';
-import { AdminHeader } from '../components/AdminHeader';
+import { AdminHeader } from '../components/organisms/AdminHeader';
 
 export const AdminUserEditPage = () => {
   const { id } = useParams<{ id: string }>();

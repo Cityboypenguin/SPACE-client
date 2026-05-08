@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getMyProfile, updateMyProfile, type UserProfile } from '../api/profile';
 import { useAuth } from '../context/AuthContext';
-import { UserHeader } from '../components/UserHeader';
+import { UserHeader } from '../components/organisms/UserHeader';
 
 export const UserSettingsPage = () => {
   const navigate = useNavigate();

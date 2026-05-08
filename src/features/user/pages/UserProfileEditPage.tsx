@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/UserHeader';
+import { UserHeader } from '../components/organisms/UserHeader';
 import { getMyProfile, getProfileByUserID, updateProfile } from '../api/profile';
 
 export const UserProfileEditPage = () => {
   const navigate = useNavigate();
-  const [userID, setUserID] = useState('');
   const [bio, setBio] = useState('');
   const [error, setError] = useState('');
 
@@ -14,7 +13,6 @@ export const UserProfileEditPage = () => {
       try {
         const meRes = await getMyProfile();
         const myUserID = meRes.me.ID;
-        setUserID(myUserID);
 
         const profileRes = await getProfileByUserID(myUserID);
         const profile = profileRes.getProfileByUserID;

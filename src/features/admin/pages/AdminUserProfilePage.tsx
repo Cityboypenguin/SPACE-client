@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, getProfileByUserID, adminUpdateProfile, type User, type Profile } from '../api/users';
-import { AdminHeader } from '../components/AdminHeader';
+import { AdminHeader } from '../components/organisms/AdminHeader';
 
 export const AdminUserProfilePage = () => {
   const { id } = useParams<{ id: string }>();

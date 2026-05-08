@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { logoutAdmin, ADMIN_TOKEN_KEY, ADMIN_REFRESH_TOKEN_KEY } from '../api/auth';
+import { logoutAdmin, ADMIN_TOKEN_KEY, ADMIN_REFRESH_TOKEN_KEY } from '../../api/auth';
 
 export const AdminHeader = () => {
   const navigate = useNavigate();

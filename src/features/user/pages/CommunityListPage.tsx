@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/UserHeader';
+import { UserHeader } from '../components/organisms/UserHeader';
+import { Avatar } from '../../../components/atoms/Avatar';
 import { listMyCommunities, type Community } from '../api/community';
 
 export const CommunityListPage = () => {
@@ -75,23 +76,7 @@ export const CommunityListPage = () => {
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#f8faff')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
               >
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg,#646cff,#a78bfa)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: '1.1rem',
-                    flexShrink: 0,
-                  }}
-                >
-                  {c.name.charAt(0).toUpperCase()}
-                </div>
+                <Avatar name={c.name} size={42} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: '#1e293b' }}>{c.name}</div>
                   <div style={{ fontSize: '0.82rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/UserHeader';
+import { UserHeader } from '../components/organisms/UserHeader';
 import { searchUsers, type UserProfile } from '../api/profile';
 import { getOrCreateDMRoom, listMyDMRooms } from '../api/message';
 import { useAuth } from '../context/AuthContext';

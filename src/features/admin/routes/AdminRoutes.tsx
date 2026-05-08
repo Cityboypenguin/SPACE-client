@@ -1,5 +1,5 @@
 import { Route, Routes, Navigate } from 'react-router-dom';
-import { AdminLoginForm } from '../components/AdminLoginForm';
+import { AdminLoginForm } from '../components/organisms/AdminLoginForm';
 import { AdminDashboard } from '../pages/AdminDashboard';
 import { AdminRegisterPage } from '../pages/AdminRegisterPage';
 import { AdminUserListPage } from '../pages/AdminUserListPage';

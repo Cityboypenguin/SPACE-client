@@ -6,7 +6,7 @@ const AdminRoutes = lazy(() =>
   import('./features/admin/routes/AdminRoutes').then((m) => ({ default: m.AdminRoutes })),
 );
 const UserLoginForm = lazy(() =>
-  import('./features/user/components/UserLoginForm').then((m) => ({ default: m.UserLoginForm })),
+  import('./features/user/components/organisms/UserLoginForm').then((m) => ({ default: m.UserLoginForm })),
 );
 const UserRegisterPage = lazy(() =>
   import('./features/user/pages/UserRegisterPage').then((m) => ({ default: m.UserRegisterPage })),

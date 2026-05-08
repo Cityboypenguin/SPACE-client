@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/UserHeader';
-import { CommunityBoard } from '../components/CommunityBoard';
+import { UserHeader } from '../components/organisms/UserHeader';
+import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, type Community } from '../api/community';
 
 export const CommunityBoardListPage = () => {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdministrators, searchAdministrators, type Administrator } from '../api/administrators';
-import { AdminHeader } from '../components/AdminHeader';
+import { AdminHeader } from '../components/organisms/AdminHeader';
 
 export const AdminAdministratorListPage = () => {
   const [administrators, setAdministrators] = useState<Administrator[]>([]);

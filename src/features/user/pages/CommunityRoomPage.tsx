@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { UserHeader } from '../components/UserHeader';
-import { CommunitySettingsModal } from '../components/CommunitySettingsModal';
+import { UserHeader } from '../components/organisms/UserHeader';
+import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
+import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
+import { ChatInput } from '../components/molecules/ChatInput';
 import { sendMessage, updateMessage, deleteMessage } from '../api/message';
 import {
   listMyCommunities,
@@ -10,7 +12,7 @@ import {
 } from '../api/community';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
-import styles from '../components/chatRoom.module.css';
+import styles from '../components/organisms/chatRoom.module.css';
 
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -102,11 +104,6 @@ export const CommunityRoomPage = () => {
     }
   };
 
-  const startEdit = (msg: { ID: string; content: string }) => {
-    setEditingId(msg.ID);
-    setEditContent(msg.content);
-  };
-
   const handleSaveEdit = async (msgId: string) => {
     if (!roomId || !editContent.trim()) return;
     try {
@@ -154,70 +151,31 @@ export const CommunityRoomPage = () => {
         {messages.map((msg) => {
           const isMine = msg.user.ID === currentUserID;
           const canDelete = isMine || isOwner;
-          const isEditing = editingId === msg.ID;
           return (
-            <div
+            <ChatMessageBubble
               key={msg.ID}
-              className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}
-            >
-              {!isMine && <span className={styles.senderName}>{msg.user.name}</span>}
-              <div className={styles.messageRow}>
-                {(isMine || (canDelete && !isMine)) && (
-                  <div className={styles.messageActions}>
-                    {isMine && (
-                      <button className={styles.actionBtn} onClick={() => startEdit(msg)} title="編集">✎</button>
-                    )}
-                    {canDelete && (
-                      <button className={styles.actionBtn} onClick={() => handleDelete(msg.ID)} title="削除">✕</button>
-                    )}
-                  </div>
-                )}
-                {isEditing ? (
-                  <div className={styles.editWrapper}>
-                    <input
-                      className={styles.editInput}
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveEdit(msg.ID);
-                        if (e.key === 'Escape') setEditingId(null);
-                      }}
-                      autoFocus
-                    />
-                    <div className={styles.editActions}>
-                      <button className={styles.editSaveBtn} onClick={() => handleSaveEdit(msg.ID)}>保存</button>
-                      <button className={styles.editCancelBtn} onClick={() => setEditingId(null)}>キャンセル</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                    {msg.content}
-                  </div>
-                )}
-              </div>
-              <span className={styles.timestamp}>
-                {new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
+              msg={msg}
+              isMine={isMine}
+              canDelete={canDelete}
+              isEditing={editingId === msg.ID}
+              editContent={editContent}
+              onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
+              onSaveEdit={() => handleSaveEdit(msg.ID)}
+              onCancelEdit={() => setEditingId(null)}
+              onEditContentChange={setEditContent}
+              onDelete={() => handleDelete(msg.ID)}
+            />
           );
         })}
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSend} className={styles.inputForm}>
-        <input
-          type="text"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="メッセージを入力..."
-          disabled={sending}
-          className={styles.inputField}
-          autoFocus
-        />
-        <button type="submit" disabled={sending || !content.trim()}>
-          {sending ? '送信中...' : '送信'}
-        </button>
-      </form>
+      <ChatInput
+        value={content}
+        onChange={setContent}
+        onSubmit={handleSend}
+        disabled={sending}
+      />
 
       {showSettings && community && (
         <CommunitySettingsModal
