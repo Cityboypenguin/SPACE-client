@@ -142,7 +142,12 @@ export const AdminCommunityDetailPage = () => {
               {members.map((member) => (
                 <tr key={member.user.ID}>
                   <td>{member.user.accountID}</td>
-                  <td>{member.user.name}</td>
+                  <td>
+                    {member.role === ROLE_OWNER && (
+                      <span style={{ marginRight: 4 }} title="オーナー">👑</span>
+                    )}
+                    {member.user.name}
+                  </td>
                   <td>{member.user.email}</td>
                   <td>
                     <span

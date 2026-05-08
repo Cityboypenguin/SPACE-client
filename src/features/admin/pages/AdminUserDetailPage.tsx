@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getUserByID, deleteUser, type User } from '../api/users';
+import { getUserByID, deleteUser, freezeUser, unfreezeUser, type User } from '../api/users';
 import { AdminHeader } from '../components/AdminHeader';
+
+const STATUS_FROZEN = 'frozen';
 
 export const AdminUserDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -9,6 +11,7 @@ export const AdminUserDetailPage = () => {
 
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState('');
+  const [freezeError, setFreezeError] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -28,7 +31,33 @@ export const AdminUserDetailPage = () => {
     }
   };
 
+  const handleFreeze = async () => {
+    if (!id || !user) return;
+    if (!window.confirm(`${user.name} を凍結しますか？`)) return;
+    setFreezeError('');
+    try {
+      await freezeUser(id);
+      setUser((prev) => prev ? { ...prev, status: STATUS_FROZEN } : prev);
+    } catch {
+      setFreezeError('凍結に失敗しました');
+    }
+  };
+
+  const handleUnfreeze = async () => {
+    if (!id || !user) return;
+    if (!window.confirm(`${user.name} の凍結を解除しますか？`)) return;
+    setFreezeError('');
+    try {
+      await unfreezeUser(id);
+      setUser((prev) => prev ? { ...prev, status: 'active' } : prev);
+    } catch {
+      setFreezeError('解除に失敗しました');
+    }
+  };
+
   if (!user) return <p>読み込み中...</p>;
+
+  const isFrozen = user.status === STATUS_FROZEN;
 
   return (
     <div>
@@ -54,7 +83,21 @@ export const AdminUserDetailPage = () => {
           <dt>ロール</dt>
           <dd>{user.role}</dd>
           <dt>ステータス</dt>
-          <dd>{user.status}</dd>
+          <dd>
+            <span
+              style={{
+                display: 'inline-block',
+                padding: '2px 10px',
+                borderRadius: 12,
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                background: isFrozen ? '#dbeafe' : '#dcfce7',
+                color: isFrozen ? '#1d4ed8' : '#16a34a',
+              }}
+            >
+              {isFrozen ? '凍結中' : 'アクティブ'}
+            </span>
+          </dd>
           <dt>登録日時</dt>
           <dd>{user.createdAt}</dd>
           <dt>更新日時</dt>
@@ -62,9 +105,56 @@ export const AdminUserDetailPage = () => {
         </dl>
 
         <hr />
-        <button onClick={handleDelete} style={{ color: 'red' }}>
-          このユーザーを削除する
-        </button>
+
+        {freezeError && <p style={{ color: 'red' }}>{freezeError}</p>}
+
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {isFrozen ? (
+            <button
+              onClick={handleUnfreeze}
+              style={{
+                padding: '0.5rem 1.25rem',
+                borderRadius: 8,
+                border: '1px solid #93c5fd',
+                background: '#eff6ff',
+                color: '#1d4ed8',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              凍結を解除する
+            </button>
+          ) : (
+            <button
+              onClick={handleFreeze}
+              style={{
+                padding: '0.5rem 1.25rem',
+                borderRadius: 8,
+                border: '1px solid #93c5fd',
+                background: '#eff6ff',
+                color: '#1d4ed8',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              ユーザーを凍結する
+            </button>
+          )}
+          <button
+            onClick={handleDelete}
+            style={{
+              padding: '0.5rem 1.25rem',
+              borderRadius: 8,
+              border: '1px solid #fca5a5',
+              background: '#fff',
+              color: '#ef4444',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            このユーザーを削除する
+          </button>
+        </div>
       </main>
     </div>
   );

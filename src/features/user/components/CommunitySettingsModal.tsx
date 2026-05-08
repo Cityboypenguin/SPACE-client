@@ -177,7 +177,12 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                         {m.user.name.charAt(0).toUpperCase()}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 500 }}>{m.user.name}</div>
+                        <div style={{ fontWeight: 500 }}>
+                          {m.role === ROLE_OWNER && (
+                            <span style={{ marginRight: 4 }} title="オーナー">👑</span>
+                          )}
+                          {m.user.name}
+                        </div>
                         <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>@{m.user.accountID}</div>
                       </div>
                       <span
