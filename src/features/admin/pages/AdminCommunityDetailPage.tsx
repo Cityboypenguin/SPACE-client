@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   getCommunities,
+  getCommunityMembers,
   updateCommunity,
   kickUserFromCommunity,
-  getCommunityRoom,
   type Community,
-  type RoomUser,
+  type CommunityMember,
 } from '../api/communities';
 import { AdminHeader } from '../components/AdminHeader';
+
+const ROLE_OWNER = 'owner';
 
 export const AdminCommunityDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +20,7 @@ export const AdminCommunityDetailPage = () => {
   const [community, setCommunity] = useState<Community | null>(
     (location.state as { community?: Community })?.community ?? null,
   );
-  const [members, setMembers] = useState<RoomUser[]>([]);
+  const [members, setMembers] = useState<CommunityMember[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -34,17 +36,17 @@ export const AdminCommunityDetailPage = () => {
         setCommunity(found);
         setName(found.name);
         setDescription(found.description);
-        fetchMembers(found.roomID);
       }
     } catch {
       setError('コミュニティ情報の取得に失敗しました');
     }
   };
 
-  const fetchMembers = async (roomID: string) => {
+  const fetchMembers = async () => {
+    if (!id) return;
     try {
-      const data = await getCommunityRoom(roomID);
-      setMembers(data.room?.user ?? []);
+      const data = await getCommunityMembers(id);
+      setMembers(data.getCommunityMembers);
     } catch {
       setMembersError('メンバー一覧の取得に失敗しました');
     }
@@ -54,10 +56,10 @@ export const AdminCommunityDetailPage = () => {
     if (community) {
       setName(community.name);
       setDescription(community.description);
-      fetchMembers(community.roomID);
     } else {
       fetchCommunity();
     }
+    fetchMembers();
   }, [id]);
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
@@ -77,12 +79,12 @@ export const AdminCommunityDetailPage = () => {
     }
   };
 
-  const handleKick = async (userID: string, userName: string) => {
+  const handleKick = async (member: CommunityMember) => {
     if (!id) return;
-    if (!window.confirm(`${userName} をコミュニティから削除しますか？`)) return;
+    if (!window.confirm(`${member.user.name} をコミュニティから削除しますか？`)) return;
     try {
-      await kickUserFromCommunity(id, userID);
-      setMembers((prev) => prev.filter((m) => m.ID !== userID));
+      await kickUserFromCommunity(id, member.user.ID);
+      setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
     } catch {
       setError('キックに失敗しました');
     }
@@ -132,18 +134,34 @@ export const AdminCommunityDetailPage = () => {
                 <th>ユーザーID</th>
                 <th>名前</th>
                 <th>メールアドレス</th>
+                <th>ロール</th>
                 <th>操作</th>
               </tr>
             </thead>
             <tbody>
               {members.map((member) => (
-                <tr key={member.ID}>
-                  <td>{member.accountID}</td>
-                  <td>{member.name}</td>
-                  <td>{member.email}</td>
+                <tr key={member.user.ID}>
+                  <td>{member.user.accountID}</td>
+                  <td>{member.user.name}</td>
+                  <td>{member.user.email}</td>
+                  <td>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        background: member.role === ROLE_OWNER ? '#ede9fe' : '#f1f5f9',
+                        color: member.role === ROLE_OWNER ? '#7c3aed' : '#64748b',
+                      }}
+                    >
+                      {member.role === ROLE_OWNER ? 'オーナー' : 'メンバー'}
+                    </span>
+                  </td>
                   <td>
                     <button
-                      onClick={() => handleKick(member.ID, member.name)}
+                      onClick={() => handleKick(member)}
                       style={{ color: 'red' }}
                     >
                       キック

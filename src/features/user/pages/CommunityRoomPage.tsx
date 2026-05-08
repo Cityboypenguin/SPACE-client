@@ -30,6 +30,12 @@ export const CommunityRoomPage = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (error && error.includes('not a member of this room')) {
+      navigate('/community', { replace: true });
+    }
+  }, [error, navigate]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 

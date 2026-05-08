@@ -19,6 +19,11 @@ export type RoomUser = {
   email: string;
 };
 
+export type CommunityMember = {
+  user: RoomUser;
+  role: string;
+};
+
 export type Room = {
   ID: string;
   name: string;
@@ -72,6 +77,20 @@ const GET_ROOM_QUERY = `
   }
 `;
 
+const GET_COMMUNITY_MEMBERS_QUERY = `
+  query GetCommunityMembers($communityID: ID!) {
+    getCommunityMembers(communityID: $communityID) {
+      user {
+        ID
+        accountID
+        name
+        email
+      }
+      role
+    }
+  }
+`;
+
 export const getCommunities = async () => {
   return await request<{ communities: Community[] }>(COMMUNITIES_QUERY, undefined, getAdminToken());
 };
@@ -97,4 +116,12 @@ export const kickUserFromCommunity = async (communityID: string, userID: string)
 
 export const getCommunityRoom = async (roomID: string) => {
   return await request<{ room: Room | null }>(GET_ROOM_QUERY, { id: roomID }, getAdminToken());
+};
+
+export const getCommunityMembers = async (communityID: string) => {
+  return await request<{ getCommunityMembers: CommunityMember[] }>(
+    GET_COMMUNITY_MEMBERS_QUERY,
+    { communityID },
+    getAdminToken(),
+  );
 };

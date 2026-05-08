@@ -28,6 +28,7 @@ type GetUserByIDResponse = { getUserByID: User };
 type DeleteUserResponse = { deleteUser: boolean };
 type AdminUpdateUserResponse = { adminUpdateUser: User };
 type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
+type AdminUpdateProfileResponse = { adminUpdateProfile: Profile };
 
 const USERS_QUERY = `
   query {
@@ -95,6 +96,26 @@ const ADMIN_UPDATE_USER_MUTATION = `
   }
 `;
 
+const ADMIN_UPDATE_PROFILE_MUTATION = `
+  mutation AdminUpdateProfile($userID: ID!, $input: UpdateProfileInput!) {
+    adminUpdateProfile(userID: $userID, input: $input) {
+      username
+      bio
+      image
+      createdAt
+      updatedAt
+      user {
+        ID
+        accountID
+        name
+        email
+        role
+        status
+      }
+    }
+  }
+`;
+
 const GET_PROFILE_BY_USER_ID_QUERY = `
   query GetProfileByUserID($userID: ID!) {
     getProfileByUserID(userID: $userID) {
@@ -142,4 +163,15 @@ export const adminUpdateUser = async (
 
 export const getProfileByUserID = async (userID: string) => {
   return await request<GetProfileByUserIDResponse>(GET_PROFILE_BY_USER_ID_QUERY, { userID }, getAdminToken());
+};
+
+export const adminUpdateProfile = async (
+  userID: string,
+  input: { bio?: string; image?: string },
+) => {
+  return await request<AdminUpdateProfileResponse>(
+    ADMIN_UPDATE_PROFILE_MUTATION,
+    { userID, input },
+    getAdminToken(),
+  );
 };

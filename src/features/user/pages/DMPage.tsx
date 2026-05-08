@@ -31,6 +31,12 @@ export const DMPage = () => {
   }, [room]);
 
   useEffect(() => {
+    if (error && error.includes('not a member of this room')) {
+      navigate('/dm', { replace: true });
+    }
+  }, [error, navigate]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
