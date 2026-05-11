@@ -16,7 +16,7 @@ export type User = {
 export type Profile = {
   username: string;
   bio: string | null;
-  image: string | null;
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
   user: User;
@@ -115,7 +115,7 @@ const ADMIN_UPDATE_PROFILE_MUTATION = `
     adminUpdateProfile(userID: $userID, input: $input) {
       username
       bio
-      image
+      avatarUrl
       createdAt
       updatedAt
       user {
@@ -135,7 +135,7 @@ const GET_PROFILE_BY_USER_ID_QUERY = `
     getProfileByUserID(userID: $userID) {
       username
       bio
-      image
+      avatarUrl
       createdAt
       updatedAt
       user {
@@ -189,7 +189,7 @@ export const getProfileByUserID = async (userID: string) => {
 
 export const adminUpdateProfile = async (
   userID: string,
-  input: { bio?: string; image?: string },
+  input: { bio?: string },
 ) => {
   return await request<AdminUpdateProfileResponse>(
     ADMIN_UPDATE_PROFILE_MUTATION,

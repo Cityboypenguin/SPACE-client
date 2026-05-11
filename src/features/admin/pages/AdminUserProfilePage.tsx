@@ -10,7 +10,6 @@ export const AdminUserProfilePage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
   const [bio, setBio] = useState('');
-  const [image, setImage] = useState('');
   const [error, setError] = useState('');
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
@@ -26,7 +25,6 @@ export const AdminUserProfilePage = () => {
         const p = data.getProfileByUserID;
         setProfile(p);
         setBio(p?.bio ?? '');
-        setImage(p?.image ?? '');
       })
       .catch(() => setError('プロフィールの取得に失敗しました'));
   }, [id]);
@@ -37,9 +35,8 @@ export const AdminUserProfilePage = () => {
     setEditSuccess('');
     if (!id) return;
     try {
-      const input: { bio?: string; image?: string } = {};
+      const input: { bio?: string } = {};
       if (bio !== (profile?.bio ?? '')) input.bio = bio;
-      if (image !== (profile?.image ?? '')) input.image = image;
       const data = await adminUpdateProfile(id, input);
       setProfile(data.adminUpdateProfile);
       setEditSuccess('更新しました');
@@ -75,9 +72,9 @@ export const AdminUserProfilePage = () => {
                   <dd>{profile.bio ?? '未設定'}</dd>
                   <dt><strong>アイコン画像</strong></dt>
                   <dd>
-                    {profile.image ? (
+                    {profile.avatarUrl ? (
                       <img
-                        src={profile.image}
+                        src={profile.avatarUrl}
                         alt="プロフィール画像"
                         style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: '50%' }}
                       />
