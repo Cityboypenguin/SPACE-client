@@ -133,17 +133,21 @@ export const deleteAdministrator = async (id: string) => {
 export const updateAdministrator = async (id: string, name?: string, email?: string, password?: string) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
   const UPDATE_ADMINISTRATOR_MUTATION = `
-    mutation UpdateAdministrator($input: UpdateAdministratorInput!) {
-      updateAdministrator(input: $input) {
+    mutation UpdateAdministrator($id: ID!, $input: UpdateAdministratorInput!) {
+      updateAdministrator(id: $id, input: $input) {
         ID
         name
         email
       }
     }
   `;
+  const input: { name?: string; email?: string; password?: string } = {};
+  if (name !== undefined) input.name = name;
+  if (email !== undefined) input.email = email;
+  if (password !== undefined) input.password = password;
   return await request<{ updateAdministrator: Administrator }>(
     UPDATE_ADMINISTRATOR_MUTATION,
-    { input: { id, name, email, password } },
+    { id, input },
     token,
   );
 };
