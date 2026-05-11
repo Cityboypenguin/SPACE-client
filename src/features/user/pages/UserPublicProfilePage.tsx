@@ -32,7 +32,7 @@ export const UserPublicProfilePage = () => {
               )}
               <div>
                 <h2 className={styles.displayName}>{profile.user.name}</h2>
-                <p className={styles.username}>@{profile.username}</p>
+                <p className={styles.username}>@{profile.user.accountID}</p>
               </div>
             </div>
 
