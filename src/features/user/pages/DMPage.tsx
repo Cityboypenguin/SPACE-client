@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
-import { sendMessage, updateMessage, deleteMessage } from '../api/message';
+import { sendMessage, updateMessage, deleteMessage, getPresignedMessageFileUploadUrl, uploadFileToStorage } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { saveRecentDM } from '../utils/recentDM';
@@ -15,6 +15,7 @@ export const DMPage = () => {
   const { userId: currentUserID } = useAuth();
   const { room, messages, wsConnected, error, addMessage } = useRoomMessages(roomId);
   const [content, setContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -44,12 +45,20 @@ export const DMPage = () => {
 
   const handleSend = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!content.trim() || !roomId || !currentUserID) return;
+    if (!content.trim() && !selectedFile) return;
+    if (!roomId || !currentUserID) return;
     setSending(true);
     setSendError('');
     try {
-      const data = await sendMessage(roomId, content.trim());
+      let attachmentKey: string | undefined;
+      if (selectedFile) {
+        const { presignedMessageFileUploadUrl } = await getPresignedMessageFileUploadUrl(roomId, selectedFile.type);
+        await uploadFileToStorage(presignedMessageFileUploadUrl.uploadUrl, selectedFile);
+        attachmentKey = presignedMessageFileUploadUrl.objectKey;
+      }
+      const data = await sendMessage(roomId, content.trim(), attachmentKey, selectedFile?.name);
       setContent('');
+      setSelectedFile(null);
       addMessage(data.sendMessage);
     } catch (err) {
       setSendError(err instanceof Error && err.message ? err.message : 'メッセージの送信に失敗しました');
@@ -120,6 +129,8 @@ export const DMPage = () => {
         value={content}
         onChange={setContent}
         onSubmit={handleSend}
+        onFileSelect={setSelectedFile}
+        selectedFile={selectedFile}
         disabled={sending}
       />
     </div>

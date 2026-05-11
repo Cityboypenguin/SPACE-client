@@ -4,7 +4,7 @@ import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
-import { sendMessage, updateMessage, deleteMessage } from '../api/message';
+import { sendMessage, updateMessage, deleteMessage, getPresignedMessageFileUploadUrl, uploadFileToStorage } from '../api/message';
 import {
   listMyCommunities,
   getMyRoleInCommunity,
@@ -25,6 +25,7 @@ export const CommunityRoomPage = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [content, setContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -81,12 +82,20 @@ export const CommunityRoomPage = () => {
 
   const handleSend = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!content.trim() || !roomId) return;
+    if (!content.trim() && !selectedFile) return;
+    if (!roomId) return;
     setSending(true);
     setSendError('');
     try {
-      const data = await sendMessage(roomId, content.trim());
+      let attachmentKey: string | undefined;
+      if (selectedFile) {
+        const { presignedMessageFileUploadUrl } = await getPresignedMessageFileUploadUrl(roomId, selectedFile.type);
+        await uploadFileToStorage(presignedMessageFileUploadUrl.uploadUrl, selectedFile);
+        attachmentKey = presignedMessageFileUploadUrl.objectKey;
+      }
+      const data = await sendMessage(roomId, content.trim(), attachmentKey, selectedFile?.name);
       setContent('');
+      setSelectedFile(null);
       addMessage(data.sendMessage);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'メッセージの送信に失敗しました');
@@ -174,6 +183,8 @@ export const CommunityRoomPage = () => {
         value={content}
         onChange={setContent}
         onSubmit={handleSend}
+        onFileSelect={setSelectedFile}
+        selectedFile={selectedFile}
         disabled={sending}
       />
 

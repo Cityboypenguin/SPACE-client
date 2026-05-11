@@ -2,19 +2,25 @@ import { useEffect, useState } from 'react';
 import { listMessages, getRoom, type Message, type Room } from '../api/message';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 
+const MESSAGE_FIELDS = `
+  ID
+  roomID
+  user {
+    ID
+    name
+    accountID
+    avatarUrl
+  }
+  content
+  attachmentUrl
+  createdAt
+  updatedAt
+`;
+
 const MESSAGE_ADDED_SUBSCRIPTION = `
   subscription MessageAdded($roomID: ID!) {
     messageAdded(roomID: $roomID) {
-      ID
-      roomID
-      user {
-        ID
-        name
-        accountID
-      }
-      content
-      createdAt
-      updatedAt
+      ${MESSAGE_FIELDS}
     }
   }
 `;
@@ -30,16 +36,7 @@ const MESSAGE_DELETED_SUBSCRIPTION = `
 const MESSAGE_UPDATED_SUBSCRIPTION = `
   subscription MessageUpdated($roomID: ID!) {
     messageUpdated(roomID: $roomID) {
-      ID
-      roomID
-      user {
-        ID
-        name
-        accountID
-      }
-      content
-      createdAt
-      updatedAt
+      ${MESSAGE_FIELDS}
     }
   }
 `;

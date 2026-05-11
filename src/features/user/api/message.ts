@@ -14,6 +14,8 @@ export type Message = {
   accountID: string;
   user: MessageUser;
   content: string;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -24,6 +26,22 @@ export type Room = {
   type: string;
   user: MessageUser[];
 };
+
+const MESSAGE_FIELDS = `
+  ID
+  roomID
+  user {
+    ID
+    name
+    accountID
+    avatarUrl
+  }
+  content
+  attachmentUrl
+  attachmentName
+  createdAt
+  updatedAt
+`;
 
 const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
@@ -44,19 +62,9 @@ const GET_OR_CREATE_DM_ROOM_MUTATION = `
 `;
 
 const SEND_MESSAGE_MUTATION = `
-  mutation SendMessage($roomID: ID!, $content: String!) {
-    sendMessage(roomID: $roomID, content: $content) {
-      ID
-      roomID
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
-      content
-      createdAt
-      updatedAt
+  mutation SendMessage($roomID: ID!, $content: String!, $attachmentKey: String, $attachmentName: String) {
+    sendMessage(roomID: $roomID, content: $content, attachmentKey: $attachmentKey, attachmentName: $attachmentName) {
+      ${MESSAGE_FIELDS}
     }
   }
 `;
@@ -64,17 +72,7 @@ const SEND_MESSAGE_MUTATION = `
 const UPDATE_MESSAGE_MUTATION = `
   mutation UpdateMessage($roomID: ID!, $id: ID!, $content: String!) {
     updateMessage(roomID: $roomID, id: $id, content: $content) {
-      ID
-      roomID
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
-      content
-      createdAt
-      updatedAt
+      ${MESSAGE_FIELDS}
     }
   }
 `;
@@ -88,16 +86,7 @@ const DELETE_MESSAGE_MUTATION = `
 const LIST_MESSAGES_QUERY = `
   query ListMessages($roomID: ID!) {
     messages(roomID: $roomID) {
-      ID
-      roomID
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
-      content
-      createdAt
+      ${MESSAGE_FIELDS}
     }
   }
 `;
@@ -134,6 +123,15 @@ const MY_DM_ROOMS_QUERY = `
   }
 `;
 
+const PRESIGNED_MESSAGE_FILE_UPLOAD_URL_QUERY = `
+  query PresignedMessageFileUploadUrl($roomID: ID!, $contentType: String!) {
+    presignedMessageFileUploadUrl(roomID: $roomID, contentType: $contentType) {
+      uploadUrl
+      objectKey
+    }
+  }
+`;
+
 export const getOrCreateDMRoom = async (targetUserID: string) => {
   const token = getUserToken();
   return await request<{ getOrCreateDMRoom: Room }>(
@@ -143,11 +141,11 @@ export const getOrCreateDMRoom = async (targetUserID: string) => {
   );
 };
 
-export const sendMessage = async (roomID: string, content: string) => {
+export const sendMessage = async (roomID: string, content: string, attachmentKey?: string, attachmentName?: string) => {
   const token = getUserToken();
   return await request<{ sendMessage: Message }>(
     SEND_MESSAGE_MUTATION,
-    { roomID, content },
+    { roomID, content, attachmentKey, attachmentName },
     token,
   );
 };
@@ -193,4 +191,23 @@ export const listMyDMRooms = async () => {
     undefined,
     token,
   ).then((data) => data.myDMRooms);
+};
+
+export const getPresignedMessageFileUploadUrl = async (roomID: string, contentType: string) => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await request<{ presignedMessageFileUploadUrl: { uploadUrl: string; objectKey: string } }>(
+    PRESIGNED_MESSAGE_FILE_UPLOAD_URL_QUERY,
+    { roomID, contentType },
+    token,
+  );
+};
+
+export const uploadFileToStorage = async (uploadUrl: string, file: File): Promise<void> => {
+  const res = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!res.ok) throw new Error('ファイルのアップロードに失敗しました。');
 };
