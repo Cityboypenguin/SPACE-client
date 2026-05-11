@@ -4,14 +4,10 @@ import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
-import { sendMessage, updateMessage, deleteMessage, getPresignedMessageFileUploadUrl, uploadFileToStorage } from '../api/message';
-import {
-  listMyCommunities,
-  getMyRoleInCommunity,
-  type Community,
-} from '../api/community';
+import { listMyCommunities, getMyRoleInCommunity, type Community } from '../api/community';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
+import { useChatActions } from '../hooks/useChatActions';
 import styles from '../components/organisms/chatRoom.module.css';
 
 export const CommunityRoomPage = () => {
@@ -20,16 +16,19 @@ export const CommunityRoomPage = () => {
   const location = useLocation();
   const { userId: currentUserID } = useAuth();
   const { room, messages, wsConnected, error, addMessage } = useRoomMessages(roomId);
+  const {
+    content, setContent,
+    selectedFile, setSelectedFile,
+    sending,
+    sendError,
+    editingId, setEditingId,
+    editContent, setEditContent,
+    handleSend, handleDelete, handleSaveEdit,
+  } = useChatActions(roomId, addMessage);
 
   const [community, setCommunity] = useState<Community | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [content, setContent] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,49 +79,6 @@ export const CommunityRoomPage = () => {
     resolveCommunity();
   }, [roomId, location.state]);
 
-  const handleSend = async (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    if (!content.trim() && !selectedFile) return;
-    if (!roomId) return;
-    setSending(true);
-    setSendError('');
-    try {
-      let attachmentKey: string | undefined;
-      if (selectedFile) {
-        const { presignedMessageFileUploadUrl } = await getPresignedMessageFileUploadUrl(roomId, selectedFile.type);
-        await uploadFileToStorage(presignedMessageFileUploadUrl.uploadUrl, selectedFile);
-        attachmentKey = presignedMessageFileUploadUrl.objectKey;
-      }
-      const data = await sendMessage(roomId, content.trim(), attachmentKey, selectedFile?.name);
-      setContent('');
-      setSelectedFile(null);
-      addMessage(data.sendMessage);
-    } catch (err) {
-      setSendError(err instanceof Error ? err.message : 'メッセージの送信に失敗しました');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleDelete = async (msgId: string) => {
-    if (!roomId) return;
-    try {
-      await deleteMessage(roomId, msgId);
-    } catch (err) {
-      setSendError(err instanceof Error ? err.message : 'メッセージの削除に失敗しました');
-    }
-  };
-
-  const handleSaveEdit = async (msgId: string) => {
-    if (!roomId || !editContent.trim()) return;
-    try {
-      await updateMessage(roomId, msgId, editContent.trim());
-      setEditingId(null);
-    } catch (err) {
-      setSendError(err instanceof Error ? err.message : 'メッセージの編集に失敗しました');
-    }
-  };
-
   return (
     <div className={styles.container}>
       <UserHeader />
@@ -159,13 +115,12 @@ export const CommunityRoomPage = () => {
 
         {messages.map((msg) => {
           const isMine = msg.user.ID === currentUserID;
-          const canDelete = isMine || isOwner;
           return (
             <ChatMessageBubble
               key={msg.ID}
               msg={msg}
               isMine={isMine}
-              canDelete={canDelete}
+              canDelete={isMine || isOwner}
               isEditing={editingId === msg.ID}
               editContent={editContent}
               onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}

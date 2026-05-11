@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
-import { sendMessage, updateMessage, deleteMessage, getPresignedMessageFileUploadUrl, uploadFileToStorage } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
+import { useChatActions } from '../hooks/useChatActions';
 import { saveRecentDM } from '../utils/recentDM';
 import styles from '../components/organisms/chatRoom.module.css';
 
@@ -14,24 +14,24 @@ export const DMPage = () => {
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
   const { room, messages, wsConnected, error, addMessage } = useRoomMessages(roomId);
-  const [content, setContent] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
+  const {
+    content, setContent,
+    selectedFile, setSelectedFile,
+    sending,
+    sendError,
+    editingId, setEditingId,
+    editContent, setEditContent,
+    handleSend, handleDelete, handleSaveEdit,
+  } = useChatActions(roomId, addMessage);
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  const isCurrentUser = (user: { ID: string }) =>
-    currentUserID != null && user.ID === currentUserID;
 
   useEffect(() => {
     if (!room || !roomId) return;
-    const partner = room.user.find((u) => !isCurrentUser(u));
+    const partner = room.user.find((u) => u.ID !== currentUserID);
     if (partner) {
       saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerAccountID: partner.accountID });
     }
-  }, [room]);
+  }, [room, roomId, currentUserID]);
 
   useEffect(() => {
     if (error && error.includes('not a member of this room')) {
@@ -43,50 +43,7 @@ export const DMPage = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    if (!content.trim() && !selectedFile) return;
-    if (!roomId || !currentUserID) return;
-    setSending(true);
-    setSendError('');
-    try {
-      let attachmentKey: string | undefined;
-      if (selectedFile) {
-        const { presignedMessageFileUploadUrl } = await getPresignedMessageFileUploadUrl(roomId, selectedFile.type);
-        await uploadFileToStorage(presignedMessageFileUploadUrl.uploadUrl, selectedFile);
-        attachmentKey = presignedMessageFileUploadUrl.objectKey;
-      }
-      const data = await sendMessage(roomId, content.trim(), attachmentKey, selectedFile?.name);
-      setContent('');
-      setSelectedFile(null);
-      addMessage(data.sendMessage);
-    } catch (err) {
-      setSendError(err instanceof Error && err.message ? err.message : 'メッセージの送信に失敗しました');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleDelete = async (msgId: string) => {
-    if (!roomId) return;
-    try {
-      await deleteMessage(roomId, msgId);
-    } catch (err) {
-      setSendError(err instanceof Error ? err.message : 'メッセージの削除に失敗しました');
-    }
-  };
-
-  const handleSaveEdit = async (msgId: string) => {
-    if (!roomId || !editContent.trim()) return;
-    try {
-      await updateMessage(roomId, msgId, editContent.trim());
-      setEditingId(null);
-    } catch (err) {
-      setSendError(err instanceof Error ? err.message : 'メッセージの編集に失敗しました');
-    }
-  };
-
-  const partnerName = room?.user.find((u) => !isCurrentUser(u))?.name ?? 'DM';
+  const partnerName = room?.user.find((u) => u.ID !== currentUserID)?.name ?? 'DM';
 
   return (
     <div className={styles.container}>
