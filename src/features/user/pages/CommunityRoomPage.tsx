@@ -4,7 +4,7 @@ import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
-import { listMyCommunities, getMyRoleInCommunity, type Community } from '../api/community';
+import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
@@ -29,6 +29,19 @@ export const CommunityRoomPage = () => {
   const [community, setCommunity] = useState<Community | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
+  const handleLeave = async () => {
+    if (!roomId || !currentUserID) return;
+    if (!window.confirm('このコミュニティを退出しますか？')) return;
+    setLeaving(true);
+    try {
+      await leaveCommunity(roomId, currentUserID);
+      navigate('/community', { replace: true });
+    } catch {
+      setLeaving(false);
+    }
+  };
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -104,6 +117,24 @@ export const CommunityRoomPage = () => {
             ⚙ 設定
           </button>
         )}
+        <button
+          onClick={handleLeave}
+          disabled={leaving}
+          style={{
+            marginLeft: '0.5rem',
+            padding: '3px 10px',
+            fontSize: '0.8rem',
+            borderRadius: 6,
+            border: '1px solid #fca5a5',
+            background: '#fff',
+            color: '#ef4444',
+            cursor: leaving ? 'not-allowed' : 'pointer',
+            fontWeight: 600,
+            opacity: leaving ? 0.6 : 1,
+          }}
+        >
+          退出
+        </button>
         <span
           className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}
           title={wsConnected ? '接続中' : '切断'}
