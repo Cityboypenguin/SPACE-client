@@ -13,10 +13,99 @@ import {
   getPresignedMediaUploadUrl,
   uploadFileToStorage,
   type Post,
+  type Media,
   type MediaInput,
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
+  <div
+    onClick={onClose}
+    style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, cursor: 'zoom-out',
+    }}
+  >
+    <button
+      onClick={onClose}
+      style={{
+        position: 'absolute', top: 16, right: 20,
+        background: 'none', border: 'none', color: '#fff',
+        fontSize: '2rem', cursor: 'pointer', lineHeight: 1,
+      }}
+    >✕</button>
+    <img
+      src={url} alt="拡大表示"
+      onClick={(e) => e.stopPropagation()}
+      style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }}
+    />
+  </div>
+);
+
+const PostMediaDetail = ({ media }: { media: Media[] }) => {
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const images = media.filter((m) => m.contentType.startsWith('image/'));
+  const files = media.filter((m) => !m.contentType.startsWith('image/'));
+  const count = images.length;
+
+  const gridStyle: React.CSSProperties =
+    count <= 1
+      ? { display: 'block' }
+      : count === 2
+        ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }
+        : count === 3
+          ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 3 }
+          : { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 3 };
+
+  return (
+    <>
+      {images.length > 0 && (
+        <div style={{ ...gridStyle, marginBottom: 8, maxWidth: 420 }}>
+          {images.map((m, i) => (
+            <img
+              key={m.ID}
+              src={m.url}
+              alt="添付画像"
+              onClick={() => setLightboxUrl(m.url)}
+              style={{
+                width: '100%',
+                height: count === 1 ? 'auto' : 160,
+                maxHeight: count === 1 ? 400 : 160,
+                objectFit: 'cover',
+                borderRadius: count === 1 ? 10 : (i === 0 && count === 3 ? '10px 0 0 10px' : 8),
+                cursor: 'zoom-in', display: 'block',
+                gridColumn: count === 3 && i === 0 ? '1 / 2' : undefined,
+                gridRow: count === 3 && i === 0 ? '1 / 3' : undefined,
+              }}
+            />
+          ))}
+        </div>
+      )}
+      {files.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {files.map((m) => (
+            <a
+              key={m.ID}
+              href={m.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 12px', background: '#f3f4f6',
+                border: '1px solid #e5e7eb', borderRadius: 8,
+                fontSize: '0.85rem', color: '#374151', textDecoration: 'none',
+              }}
+            >
+              📎 {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
+            </a>
+          ))}
+        </div>
+      )}
+      {lightboxUrl && <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
+    </>
+  );
+};
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +116,7 @@ export const PostDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [replyContent, setReplyContent] = useState('');
-  const [replyFile, setReplyFile] = useState<File | null>(null);
+  const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState('');
   const replyRef = useRef<HTMLTextAreaElement>(null);
@@ -54,19 +143,23 @@ export const PostDetailPage = () => {
   };
 
   const handleReply = async () => {
-    if ((!replyContent.trim() && !replyFile) || replying || !id) return;
+    if ((!replyContent.trim() && replyFiles.length === 0) || replying || !id) return;
     setReplying(true);
     setReplyError('');
     try {
       let mediaInputs: MediaInput[] | undefined;
-      if (replyFile) {
-        const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(replyFile.type);
-        await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, replyFile);
-        mediaInputs = [{ objectKey: presignedMediaUploadUrl.objectKey, contentType: replyFile.type }];
+      if (replyFiles.length > 0) {
+        mediaInputs = await Promise.all(
+          replyFiles.map(async (file) => {
+            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+          }),
+        );
       }
       await createPost(replyContent.trim(), id, mediaInputs);
       setReplyContent('');
-      setReplyFile(null);
+      setReplyFiles([]);
       loadPost(id);
     } catch {
       setReplyError('返信に失敗しました');
@@ -83,9 +176,7 @@ export const PostDetailPage = () => {
           <button
             onClick={() => navigate(-1)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.1rem', padding: '0.25rem 0.5rem', borderRadius: '50%' }}
-          >
-            ←
-          </button>
+          >←</button>
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿</h1>
         </div>
 
@@ -111,40 +202,7 @@ export const PostDetailPage = () => {
                 </p>
               )}
               {post.media && post.media.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: '0.75rem' }}>
-                  {post.media.map((m) =>
-                    m.contentType.startsWith('image/') ? (
-                      <img
-                        key={m.ID}
-                        src={m.url}
-                        alt="添付画像"
-                        style={{ maxWidth: 300, maxHeight: 300, borderRadius: 10, objectFit: 'cover', cursor: 'pointer' }}
-                        onClick={() => window.open(m.url, '_blank')}
-                      />
-                    ) : (
-                      <a
-                        key={m.ID}
-                        href={m.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 12px',
-                          background: '#f3f4f6',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: 8,
-                          fontSize: '0.85rem',
-                          color: '#374151',
-                          textDecoration: 'none',
-                        }}
-                      >
-                        📎 {m.contentType.split('/')[1]?.toUpperCase() ?? 'ファイル'}
-                      </a>
-                    ),
-                  )}
-                </div>
+                <PostMediaDetail media={post.media} />
               )}
               <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
@@ -171,8 +229,8 @@ export const PostDetailPage = () => {
               userId={userId}
               avatarUrl={profile?.avatarUrl}
               userName={profile?.user.name}
-              selectedFile={replyFile}
-              onFileSelect={setReplyFile}
+              selectedFiles={replyFiles}
+              onFileSelect={setReplyFiles}
             />
 
             {post.replies.length > 0 && (

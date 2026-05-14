@@ -24,7 +24,7 @@ export const PostListPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [content, setContent] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
 
@@ -41,19 +41,23 @@ export const PostListPage = () => {
   }, []);
 
   const handlePost = async () => {
-    if ((!content.trim() && !selectedFile) || posting) return;
+    if ((!content.trim() && selectedFiles.length === 0) || posting) return;
     setPosting(true);
     setPostError('');
     try {
       let mediaInputs: MediaInput[] | undefined;
-      if (selectedFile) {
-        const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(selectedFile.type);
-        await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, selectedFile);
-        mediaInputs = [{ objectKey: presignedMediaUploadUrl.objectKey, contentType: selectedFile.type }];
+      if (selectedFiles.length > 0) {
+        mediaInputs = await Promise.all(
+          selectedFiles.map(async (file) => {
+            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+          }),
+        );
       }
       const newPost = await createPost(content.trim(), undefined, mediaInputs);
       setContent('');
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setPosts((prev) => [newPost, ...prev]);
     } catch {
       setPostError('投稿に失敗しました');
@@ -97,8 +101,8 @@ export const PostListPage = () => {
           userId={userId}
           avatarUrl={profile?.avatarUrl}
           userName={profile?.user.name}
-          selectedFile={selectedFile}
-          onFileSelect={setSelectedFile}
+          selectedFiles={selectedFiles}
+          onFileSelect={setSelectedFiles}
         />
 
         {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}

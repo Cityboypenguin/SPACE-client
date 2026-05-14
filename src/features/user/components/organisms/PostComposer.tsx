@@ -2,14 +2,9 @@ import { useRef } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 
-const ACCEPTED_FILE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'application/pdf',
-];
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_IMAGES = 4;
 
 type Props = {
   value: string;
@@ -25,8 +20,8 @@ type Props = {
   userId?: string | null;
   avatarUrl?: string | null;
   userName?: string;
-  selectedFile?: File | null;
-  onFileSelect?: (file: File | null) => void;
+  selectedFiles?: File[];
+  onFileSelect?: (files: File[]) => void;
 };
 
 export const PostComposer = ({
@@ -43,28 +38,36 @@ export const PostComposer = ({
   userId,
   avatarUrl,
   userName = '',
-  selectedFile,
+  selectedFiles = [],
   onFileSelect,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    if (!file) { onFileSelect?.(null); return; }
-    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-      alert('JPEG・PNG・GIF・WebP・PDF のみ添付できます。');
+    const incoming = Array.from(e.target.files ?? []);
+    if (!incoming.length) return;
+    const invalid = incoming.find((f) => !ACCEPTED_IMAGE_TYPES.includes(f.type));
+    if (invalid) {
+      alert('JPEG・PNG・GIF・WebP のみ添付できます。');
       e.target.value = '';
       return;
     }
-    if (file.size > MAX_FILE_SIZE) {
+    const oversize = incoming.find((f) => f.size > MAX_FILE_SIZE);
+    if (oversize) {
       alert('ファイルサイズは 10MB 以下にしてください。');
       e.target.value = '';
       return;
     }
-    onFileSelect?.(file);
+    if (selectedFiles.length >= MAX_IMAGES) return;
+    onFileSelect?.([...selectedFiles, incoming[0]]);
+    e.target.value = '';
   };
 
-  const canSubmit = !submitting && (value.trim() !== '' || !!selectedFile);
+  const removeFile = (index: number) => {
+    onFileSelect?.(selectedFiles.filter((_, i) => i !== index));
+  };
+
+  const canSubmit = !submitting && (value.trim() !== '' || selectedFiles.length > 0);
 
   return (
     <div style={{ padding: '1rem', borderBottom: '2px solid #e2e8f0', display: 'flex', gap: '0.75rem' }}>
@@ -75,20 +78,12 @@ export const PostComposer = ({
       ) : (
         <div
           style={{
-            width: iconSize,
-            height: iconSize,
-            borderRadius: '50%',
+            width: iconSize, height: iconSize, borderRadius: '50%',
             background: 'linear-gradient(135deg,#646cff,#a78bfa)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: iconSize >= 40 ? '1.2rem' : '1rem',
-            flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: iconSize >= 40 ? '1.2rem' : '1rem', flexShrink: 0,
           }}
-        >
-          ✍️
-        </div>
+        >✍️</div>
       )}
       <div style={{ flex: 1 }}>
         <textarea
@@ -97,58 +92,84 @@ export const PostComposer = ({
           placeholder={placeholder}
           rows={rows}
           style={{
-            width: '100%',
-            border: 'none',
-            borderBottom: '1px solid #e2e8f0',
-            outline: 'none',
-            resize: 'none',
+            width: '100%', border: 'none', borderBottom: '1px solid #e2e8f0',
+            outline: 'none', resize: 'none',
             fontSize: rows >= 3 ? '1.05rem' : '0.95rem',
-            color: '#1e293b',
-            background: 'transparent',
-            padding: '0.25rem 0',
-            boxSizing: 'border-box',
+            color: '#1e293b', background: 'transparent',
+            padding: '0.25rem 0', boxSizing: 'border-box',
           }}
         />
 
-        {selectedFile && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: '0.8rem', color: '#6b7280' }}>
-            <span>📎 {selectedFile.name}</span>
-            <button
-              type="button"
-              onClick={() => {
-                onFileSelect?.(null);
-                if (fileInputRef.current) fileInputRef.current.value = '';
-              }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '0.9rem' }}
-            >
-              ✕
-            </button>
+        {selectedFiles.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '6px 0' }}>
+            {selectedFiles.map((file, i) => (
+              <div key={i} style={{ position: 'relative' }}>
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={file.name}
+                  style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, display: 'block' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeFile(i)}
+                  style={{
+                    position: 'absolute', top: -4, right: -4,
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: '#374151', border: 'none',
+                    color: '#fff', fontSize: '0.65rem',
+                    cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    padding: 0, lineHeight: 1,
+                  }}
+                >✕</button>
+              </div>
+            ))}
+            {selectedFiles.length < MAX_IMAGES && onFileSelect && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: 64, height: 64, borderRadius: 8,
+                  border: '2px dashed #d1d5db', background: '#f9fafb',
+                  color: '#9ca3af', fontSize: '1.5rem',
+                  cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >+</button>
+            )}
           </div>
         )}
 
-        {error && (
-          <p style={{ color: 'red', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>{error}</p>
-        )}
+        {error && <p style={{ color: 'red', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>{error}</p>}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: rows >= 3 ? '0.5rem' : '0.4rem' }}>
-          {onFileSelect ? (
+          {onFileSelect && selectedFiles.length === 0 ? (
             <>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={submitting}
-                title="ファイルを添付"
+                title={`写真を追加 (最大${MAX_IMAGES}枚)`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b7280', padding: '0 4px' }}
               >
-                📎
+                🖼️
               </button>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept={ACCEPTED_FILE_TYPES.join(',')}
+                accept={ACCEPTED_IMAGE_TYPES.join(',')}
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
               />
             </>
+          ) : onFileSelect ? (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_IMAGE_TYPES.join(',')}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
           ) : (
             <div />
           )}
@@ -159,9 +180,7 @@ export const PostComposer = ({
               padding: rows >= 3 ? '0.45rem 1.2rem' : '0.4rem 1rem',
               borderRadius: '20px',
               background: canSubmit ? '#646cff' : '#c7d2fe',
-              color: '#fff',
-              border: 'none',
-              fontWeight: 700,
+              color: '#fff', border: 'none', fontWeight: 700,
               fontSize: rows >= 3 ? '0.9rem' : '0.85rem',
               cursor: canSubmit ? 'pointer' : 'default',
               transition: 'background 0.1s',
