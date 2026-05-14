@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostComposer } from '../components/organisms/PostComposer';
@@ -119,7 +119,6 @@ export const PostDetailPage = () => {
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState('');
-  const replyRef = useRef<HTMLTextAreaElement>(null);
 
   const loadPost = (postId: string) => {
     setLoading(true);

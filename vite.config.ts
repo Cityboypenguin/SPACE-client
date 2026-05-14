@@ -6,5 +6,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true, // Dockerコンテナの外からアクセスできるようにする設定
+    proxy: {
+      '/query': {
+        target: 'http://host.docker.internal:8080',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
 })
