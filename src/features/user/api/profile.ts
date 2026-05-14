@@ -1,4 +1,5 @@
 import { request } from '../../../lib/graphql';
+import { storageUrl } from '../../../lib/storage';
 import { USER_TOKEN_KEY } from './auth';
 
 export type UserProfile = {
@@ -175,7 +176,7 @@ export const getPresignedAvatarUploadUrl = async (contentType: string) => {
 };
 
 export const uploadAvatarToStorage = async (uploadUrl: string, file: File): Promise<void> => {
-  const res = await fetch(uploadUrl, {
+  const res = await fetch(storageUrl(uploadUrl) ?? uploadUrl, {
     method: 'PUT',
     headers: { 'Content-Type': file.type },
     body: file,

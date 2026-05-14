@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { storageUrl } from '../../../../lib/storage';
 import { LikeButton } from '../molecules/LikeButton';
 import { UserMeta } from '../molecules/UserMeta';
 import { formatTime } from '../../utils/formatTime';
@@ -61,15 +62,18 @@ const PostMediaGrid = ({ media }: { media: Media[] }) => {
     <>
       {images.length > 0 && (
         <div style={{ ...gridStyle, marginBottom: files.length > 0 ? 4 : 0, maxWidth: 300 }}>
-          {images.map((m, i) => (
-            <img
-              key={m.ID}
-              src={m.url}
-              alt="添付画像"
-              style={imgStyle(i)}
-              onClick={(e) => { e.stopPropagation(); setLightboxUrl(m.url); }}
-            />
-          ))}
+          {images.map((m, i) => {
+            const url = storageUrl(m.url);
+            return (
+              <img
+                key={m.ID}
+                src={url}
+                alt="添付画像"
+                style={imgStyle(i)}
+                onClick={(e) => { e.stopPropagation(); setLightboxUrl(url); }}
+              />
+            );
+          })}
         </div>
       )}
       {files.length > 0 && (
@@ -77,7 +81,7 @@ const PostMediaGrid = ({ media }: { media: Media[] }) => {
           {files.map((m) => (
             <a
               key={m.ID}
-              href={m.url}
+              href={storageUrl(m.url)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}

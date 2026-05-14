@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { storageUrl } from '../../lib/storage';
 import { Avatar } from './Avatar';
 
 type Props = {
@@ -11,7 +12,7 @@ type Props = {
 export const UserAvatar = ({ userId, name, avatarUrl, size = 40 }: Props) => {
   const content = avatarUrl ? (
     <img
-      src={avatarUrl}
+      src={storageUrl(avatarUrl) ?? undefined}
       alt={name}
       style={{
         width: size,

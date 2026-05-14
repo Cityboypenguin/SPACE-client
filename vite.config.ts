@@ -12,6 +12,10 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      '/space-avatars': {
+        target: 'http://host.docker.internal:9000',
+        changeOrigin: true,
+      },
     },
   },
 })

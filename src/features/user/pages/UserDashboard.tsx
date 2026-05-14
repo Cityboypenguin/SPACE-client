@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+import { storageUrl } from '../../../lib/storage';
 import styles from './UserDashboard.module.css';
 
 export const UserDashboard = () => {
@@ -38,7 +39,7 @@ export const UserDashboard = () => {
             <div className={styles.profileHeader}>
               {profile.avatarUrl ? (
                 <img
-                  src={profile.avatarUrl}
+                  src={storageUrl(profile.avatarUrl) ?? undefined}
                   alt={profile.user.name}
                   className={styles.avatar}
                 />

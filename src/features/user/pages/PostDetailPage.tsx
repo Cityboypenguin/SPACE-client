@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { storageUrl } from '../../../lib/storage';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
@@ -62,24 +63,27 @@ const PostMediaDetail = ({ media }: { media: Media[] }) => {
     <>
       {images.length > 0 && (
         <div style={{ ...gridStyle, marginBottom: 8, maxWidth: 420 }}>
-          {images.map((m, i) => (
-            <img
-              key={m.ID}
-              src={m.url}
-              alt="添付画像"
-              onClick={() => setLightboxUrl(m.url)}
-              style={{
-                width: '100%',
-                height: count === 1 ? 'auto' : 160,
-                maxHeight: count === 1 ? 400 : 160,
-                objectFit: 'cover',
-                borderRadius: count === 1 ? 10 : (i === 0 && count === 3 ? '10px 0 0 10px' : 8),
-                cursor: 'zoom-in', display: 'block',
-                gridColumn: count === 3 && i === 0 ? '1 / 2' : undefined,
-                gridRow: count === 3 && i === 0 ? '1 / 3' : undefined,
-              }}
-            />
-          ))}
+          {images.map((m, i) => {
+            const url = storageUrl(m.url);
+            return (
+              <img
+                key={m.ID}
+                src={url}
+                alt="添付画像"
+                onClick={() => setLightboxUrl(url)}
+                style={{
+                  width: '100%',
+                  height: count === 1 ? 'auto' : 160,
+                  maxHeight: count === 1 ? 400 : 160,
+                  objectFit: 'cover',
+                  borderRadius: count === 1 ? 10 : (i === 0 && count === 3 ? '10px 0 0 10px' : 8),
+                  cursor: 'zoom-in', display: 'block',
+                  gridColumn: count === 3 && i === 0 ? '1 / 2' : undefined,
+                  gridRow: count === 3 && i === 0 ? '1 / 3' : undefined,
+                }}
+              />
+            );
+          })}
         </div>
       )}
       {files.length > 0 && (
@@ -87,7 +91,7 @@ const PostMediaDetail = ({ media }: { media: Media[] }) => {
           {files.map((m) => (
             <a
               key={m.ID}
-              href={m.url}
+              href={storageUrl(m.url)}
               target="_blank"
               rel="noopener noreferrer"
               style={{

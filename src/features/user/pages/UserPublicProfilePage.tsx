@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useProfile } from '../hooks/useProfile';
+import { storageUrl } from '../../../lib/storage';
 import styles from './UserPublicProfilePage.module.css';
 
 export const UserPublicProfilePage = () => {
@@ -21,7 +22,7 @@ export const UserPublicProfilePage = () => {
             <div className={styles.profileHeader}>
               {profile.avatarUrl ? (
                 <img
-                  src={profile.avatarUrl}
+                  src={storageUrl(profile.avatarUrl) ?? undefined}
                   alt={profile.user.name}
                   className={styles.avatar}
                 />

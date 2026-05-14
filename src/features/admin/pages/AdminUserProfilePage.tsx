@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, getProfileByUserID, adminUpdateProfile, type User, type Profile } from '../api/users';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { storageUrl } from '../../../lib/storage';
 
 export const AdminUserProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -74,7 +75,7 @@ export const AdminUserProfilePage = () => {
                   <dd>
                     {profile.avatarUrl ? (
                       <img
-                        src={profile.avatarUrl}
+                        src={storageUrl(profile.avatarUrl) ?? undefined}
                         alt="プロフィール画像"
                         style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: '50%' }}
                       />

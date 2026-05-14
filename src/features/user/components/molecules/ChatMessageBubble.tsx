@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type Message, type Media } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { storageUrl } from '../../../../lib/storage';
 import styles from '../organisms/chatRoom.module.css';
 
 const getFileIcon = (contentType: string): string => {
@@ -53,24 +54,27 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
           justifyContent: isMine ? 'flex-end' : 'flex-start',
           maxWidth: images.length === 1 ? 200 : 160,
         }}>
-          {images.map((m) => (
-            <img
-              key={m.ID}
-              src={m.url}
-              alt="添付画像"
-              onClick={() => setLightboxUrl(m.url)}
-              style={{
-                width: images.length === 1 ? '100%' : 76,
-                height: images.length === 1 ? 'auto' : 76,
-                maxWidth: images.length === 1 ? 200 : 76,
-                maxHeight: images.length === 1 ? 200 : 76,
-                objectFit: 'cover',
-                borderRadius: 8,
-                cursor: 'zoom-in',
-                display: 'block',
-              }}
-            />
-          ))}
+          {images.map((m) => {
+            const url = storageUrl(m.url);
+            return (
+              <img
+                key={m.ID}
+                src={url}
+                alt="添付画像"
+                onClick={() => setLightboxUrl(url)}
+                style={{
+                  width: images.length === 1 ? '100%' : 76,
+                  height: images.length === 1 ? 'auto' : 76,
+                  maxWidth: images.length === 1 ? 200 : 76,
+                  maxHeight: images.length === 1 ? 200 : 76,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                  cursor: 'zoom-in',
+                  display: 'block',
+                }}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -79,7 +83,7 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
           {files.map((m) => (
             <a
               key={m.ID}
-              href={m.url}
+              href={storageUrl(m.url)}
               target="_blank"
               rel="noopener noreferrer"
               style={{ textDecoration: 'none' }}
