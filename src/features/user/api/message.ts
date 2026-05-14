@@ -8,14 +8,25 @@ export type MessageUser = {
   avatarUrl?: string | null;
 };
 
+export type Media = {
+  ID: string;
+  url: string;
+  contentType: string;
+  createdAt: string;
+};
+
+export type MediaInput = {
+  objectKey: string;
+  contentType: string;
+};
+
 export type Message = {
   ID: string;
   roomID: string;
   accountID: string;
   user: MessageUser;
   content: string;
-  attachmentUrl?: string | null;
-  attachmentName?: string | null;
+  media: Media[];
   createdAt: string;
   updatedAt: string;
 };
@@ -37,8 +48,11 @@ const MESSAGE_FIELDS = `
     avatarUrl
   }
   content
-  attachmentUrl
-  attachmentName
+  media {
+    ID
+    url
+    contentType
+  }
   createdAt
   updatedAt
 `;
@@ -62,8 +76,8 @@ const GET_OR_CREATE_DM_ROOM_MUTATION = `
 `;
 
 const SEND_MESSAGE_MUTATION = `
-  mutation SendMessage($roomID: ID!, $content: String!, $attachmentKey: String, $attachmentName: String) {
-    sendMessage(roomID: $roomID, content: $content, attachmentKey: $attachmentKey, attachmentName: $attachmentName) {
+  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!]) {
+    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs) {
       ${MESSAGE_FIELDS}
     }
   }
@@ -123,9 +137,9 @@ const MY_DM_ROOMS_QUERY = `
   }
 `;
 
-const PRESIGNED_MESSAGE_FILE_UPLOAD_URL_QUERY = `
-  query PresignedMessageFileUploadUrl($roomID: ID!, $contentType: String!) {
-    presignedMessageFileUploadUrl(roomID: $roomID, contentType: $contentType) {
+const PRESIGNED_MEDIA_UPLOAD_URL_QUERY = `
+  query PresignedMediaUploadUrl($contentType: String!) {
+    presignedMediaUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
     }
@@ -141,11 +155,11 @@ export const getOrCreateDMRoom = async (targetUserID: string) => {
   );
 };
 
-export const sendMessage = async (roomID: string, content: string, attachmentKey?: string, attachmentName?: string) => {
+export const sendMessage = async (roomID: string, content: string, mediaInputs?: MediaInput[]) => {
   const token = getUserToken();
   return await request<{ sendMessage: Message }>(
     SEND_MESSAGE_MUTATION,
-    { roomID, content, attachmentKey, attachmentName },
+    { roomID, content, mediaInputs },
     token,
   );
 };
@@ -193,12 +207,12 @@ export const listMyDMRooms = async () => {
   ).then((data) => data.myDMRooms);
 };
 
-export const getPresignedMessageFileUploadUrl = async (roomID: string, contentType: string) => {
+export const getPresignedMediaUploadUrl = async (contentType: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
-  return await request<{ presignedMessageFileUploadUrl: { uploadUrl: string; objectKey: string } }>(
-    PRESIGNED_MESSAGE_FILE_UPLOAD_URL_QUERY,
-    { roomID, contentType },
+  return await request<{ presignedMediaUploadUrl: { uploadUrl: string; objectKey: string } }>(
+    PRESIGNED_MEDIA_UPLOAD_URL_QUERY,
+    { contentType },
     token,
   );
 };

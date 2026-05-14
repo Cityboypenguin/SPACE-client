@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { type Message } from '../../api/message';
+import { type Message, type Media } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import styles from '../organisms/chatRoom.module.css';
 
-const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-
-const getFileIcon = (url: string): string => {
-  const lower = url.toLowerCase();
-  if (lower.includes('.pdf')) return '📄';
-  if (lower.match(/\.(doc|docx)$/)) return '📝';
-  if (lower.match(/\.(xls|xlsx)$/)) return '📊';
-  if (lower.match(/\.(zip|tar|gz)$/)) return '🗜️';
-  if (lower.match(/\.(mp4|mov|avi)$/)) return '🎥';
-  if (lower.match(/\.(mp3|wav|aac)$/)) return '🎵';
+const getFileIcon = (contentType: string): string => {
+  if (contentType.startsWith('image/')) return '🖼️';
+  if (contentType === 'application/pdf') return '📄';
+  if (contentType.includes('word')) return '📝';
+  if (contentType.includes('excel') || contentType.includes('spreadsheet')) return '📊';
+  if (contentType.includes('zip') || contentType.includes('compressed')) return '🗜️';
+  if (contentType.startsWith('video/')) return '🎥';
+  if (contentType.startsWith('audio/')) return '🎵';
   return '📎';
 };
 
@@ -62,15 +60,15 @@ const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) =
   </div>
 );
 
-const AttachmentPreview = ({ url, name, isMine }: { url: string; name?: string | null; isMine: boolean }) => {
+const MediaPreview = ({ media, isMine }: { media: Media; isMine: boolean }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const isImage = IMAGE_EXTS.some((ext) => url.toLowerCase().includes(ext));
+  const isImage = media.contentType.startsWith('image/');
 
   if (isImage) {
     return (
       <>
         <img
-          src={url}
+          src={media.url}
           alt="添付画像"
           onClick={() => setLightboxOpen(true)}
           style={{
@@ -84,18 +82,18 @@ const AttachmentPreview = ({ url, name, isMine }: { url: string; name?: string |
           }}
         />
         {lightboxOpen && (
-          <ImageLightbox url={url} onClose={() => setLightboxOpen(false)} />
+          <ImageLightbox url={media.url} onClose={() => setLightboxOpen(false)} />
         )}
       </>
     );
   }
 
-  const filename = name ?? decodeURIComponent(url.split('/').pop()?.split('?')[0] ?? 'ファイル');
-  const icon = getFileIcon(url);
+  const icon = getFileIcon(media.contentType);
+  const label = media.contentType.split('/')[1]?.toUpperCase() ?? 'ファイル';
 
   return (
     <a
-      href={url}
+      href={media.url}
       target="_blank"
       rel="noopener noreferrer"
       style={{ textDecoration: 'none', display: 'block', marginLeft: isMine ? 'auto' : 0 }}
@@ -128,7 +126,7 @@ const AttachmentPreview = ({ url, name, isMine }: { url: string; name?: string |
               whiteSpace: 'nowrap',
             }}
           >
-            {filename}
+            {label}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: 2 }}>
             タップして開く
@@ -167,7 +165,7 @@ export const ChatMessageBubble = ({
   const navigate = useNavigate();
 
   const hasText = msg.content.trim() !== '';
-  const hasAttachment = !!msg.attachmentUrl;
+  const hasMedia = msg.media && msg.media.length > 0;
 
   const bubbleContent = (
     <div className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}>
@@ -222,9 +220,9 @@ export const ChatMessageBubble = ({
                   {msg.content}
                 </div>
               )}
-              {hasAttachment && (
-                <AttachmentPreview url={msg.attachmentUrl!} name={msg.attachmentName} isMine={isMine} />
-              )}
+              {hasMedia && msg.media.map((m) => (
+                <MediaPreview key={m.ID} media={m} isMine={isMine} />
+              ))}
             </>
           )}
         </div>

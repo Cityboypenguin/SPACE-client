@@ -3,9 +3,10 @@ import {
   sendMessage,
   updateMessage,
   deleteMessage,
-  getPresignedMessageFileUploadUrl,
+  getPresignedMediaUploadUrl,
   uploadFileToStorage,
   type Message,
+  type MediaInput,
 } from '../api/message';
 
 export const useChatActions = (
@@ -26,13 +27,13 @@ export const useChatActions = (
     setSending(true);
     setSendError('');
     try {
-      let attachmentKey: string | undefined;
+      let mediaInputs: MediaInput[] | undefined;
       if (selectedFile) {
-        const { presignedMessageFileUploadUrl } = await getPresignedMessageFileUploadUrl(roomId, selectedFile.type);
-        await uploadFileToStorage(presignedMessageFileUploadUrl.uploadUrl, selectedFile);
-        attachmentKey = presignedMessageFileUploadUrl.objectKey;
+        const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(selectedFile.type);
+        await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, selectedFile);
+        mediaInputs = [{ objectKey: presignedMediaUploadUrl.objectKey, contentType: selectedFile.type }];
       }
-      const data = await sendMessage(roomId, content.trim(), attachmentKey, selectedFile?.name);
+      const data = await sendMessage(roomId, content.trim(), mediaInputs);
       setContent('');
       setSelectedFile(null);
       addMessage(data.sendMessage);

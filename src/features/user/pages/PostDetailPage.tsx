@@ -5,7 +5,16 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
-import { getPostByID, createPost, createFavorite, deleteFavorite, type Post } from '../api/post';
+import {
+  getPostByID,
+  createPost,
+  createFavorite,
+  deleteFavorite,
+  getPresignedMediaUploadUrl,
+  uploadFileToStorage,
+  type Post,
+  type MediaInput,
+} from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 
@@ -18,6 +27,7 @@ export const PostDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [replyContent, setReplyContent] = useState('');
+  const [replyFile, setReplyFile] = useState<File | null>(null);
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState('');
   const replyRef = useRef<HTMLTextAreaElement>(null);
@@ -44,12 +54,19 @@ export const PostDetailPage = () => {
   };
 
   const handleReply = async () => {
-    if (!replyContent.trim() || replying || !id) return;
+    if ((!replyContent.trim() && !replyFile) || replying || !id) return;
     setReplying(true);
     setReplyError('');
     try {
-      await createPost(replyContent.trim(), id);
+      let mediaInputs: MediaInput[] | undefined;
+      if (replyFile) {
+        const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(replyFile.type);
+        await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, replyFile);
+        mediaInputs = [{ objectKey: presignedMediaUploadUrl.objectKey, contentType: replyFile.type }];
+      }
+      await createPost(replyContent.trim(), id, mediaInputs);
       setReplyContent('');
+      setReplyFile(null);
       loadPost(id);
     } catch {
       setReplyError('返信に失敗しました');
@@ -88,9 +105,47 @@ export const PostDetailPage = () => {
                   <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
                 </div>
               </div>
-              <p style={{ margin: '0 0 0.75rem', color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word' }}>
-                {post.content}
-              </p>
+              {post.content && (
+                <p style={{ margin: '0 0 0.75rem', color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word' }}>
+                  {post.content}
+                </p>
+              )}
+              {post.media && post.media.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: '0.75rem' }}>
+                  {post.media.map((m) =>
+                    m.contentType.startsWith('image/') ? (
+                      <img
+                        key={m.ID}
+                        src={m.url}
+                        alt="添付画像"
+                        style={{ maxWidth: 300, maxHeight: 300, borderRadius: 10, objectFit: 'cover', cursor: 'pointer' }}
+                        onClick={() => window.open(m.url, '_blank')}
+                      />
+                    ) : (
+                      <a
+                        key={m.ID}
+                        href={m.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 12px',
+                          background: '#f3f4f6',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 8,
+                          fontSize: '0.85rem',
+                          color: '#374151',
+                          textDecoration: 'none',
+                        }}
+                      >
+                        📎 {m.contentType.split('/')[1]?.toUpperCase() ?? 'ファイル'}
+                      </a>
+                    ),
+                  )}
+                </div>
+              )}
               <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
               </div>
@@ -116,6 +171,8 @@ export const PostDetailPage = () => {
               userId={userId}
               avatarUrl={profile?.avatarUrl}
               userName={profile?.user.name}
+              selectedFile={replyFile}
+              onFileSelect={setReplyFile}
             />
 
             {post.replies.length > 0 && (
