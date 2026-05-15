@@ -18,7 +18,7 @@ export const CommunityRoomPage = () => {
   const { room, messages, wsConnected, error, addMessage } = useRoomMessages(roomId);
   const {
     content, setContent,
-    selectedFile, setSelectedFile,
+    selectedFiles, setSelectedFiles,
     sending,
     sendError,
     editingId, setEditingId,
@@ -169,8 +169,8 @@ export const CommunityRoomPage = () => {
         value={content}
         onChange={setContent}
         onSubmit={handleSend}
-        onFileSelect={setSelectedFile}
-        selectedFile={selectedFile}
+        onFileSelect={setSelectedFiles}
+        selectedFiles={selectedFiles}
         disabled={sending}
       />
 

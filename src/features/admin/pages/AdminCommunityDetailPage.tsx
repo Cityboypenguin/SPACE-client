@@ -5,8 +5,11 @@ import {
   getCommunityMembers,
   updateCommunity,
   kickUserFromCommunity,
+  listRoomMessages,
+  adminDeleteMessage,
   type Community,
   type CommunityMember,
+  type Message,
 } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 
@@ -21,11 +24,13 @@ export const AdminCommunityDetailPage = () => {
     (location.state as { community?: Community })?.community ?? null,
   );
   const [members, setMembers] = useState<CommunityMember[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
+  const [messagesError, setMessagesError] = useState('');
 
   const fetchCommunity = async () => {
     if (!id) return;
@@ -52,15 +57,41 @@ export const AdminCommunityDetailPage = () => {
     }
   };
 
+  const fetchMessages = async (roomID: string) => {
+    try {
+      const data = await listRoomMessages(roomID);
+      setMessages(data.messages);
+    } catch {
+      setMessagesError('メッセージ一覧の取得に失敗しました');
+    }
+  };
+
   useEffect(() => {
     if (community) {
       setName(community.name);
       setDescription(community.description);
+      fetchMessages(community.roomID);
     } else {
       fetchCommunity();
     }
     fetchMembers();
   }, [id]);
+
+  useEffect(() => {
+    if (community?.roomID) {
+      fetchMessages(community.roomID);
+    }
+  }, [community?.roomID]);
+
+  const handleDeleteMessage = async (message: Message) => {
+    if (!window.confirm('このメッセージを削除しますか？')) return;
+    try {
+      await adminDeleteMessage(message.roomID, message.ID);
+      setMessages((prev) => prev.filter((m) => m.ID !== message.ID));
+    } catch {
+      setError('メッセージの削除に失敗しました');
+    }
+  };
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +206,48 @@ export const AdminCommunityDetailPage = () => {
           </table>
         ) : (
           !membersError && <p>メンバーはいません</p>
+        )}
+
+        <hr style={{ margin: '2rem 0' }} />
+
+        <h2>メッセージ一覧</h2>
+        {messagesError && <p style={{ color: 'red' }}>{messagesError}</p>}
+        {messages.length > 0 ? (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>投稿者</th>
+                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>内容</th>
+                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>投稿日時</th>
+                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {messages.map((message) => (
+                <tr key={message.ID}>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
+                    {message.user.name}
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: '4px' }}>
+                      @{message.user.accountID}
+                    </span>
+                  </td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9', maxWidth: '400px', wordBreak: 'break-word' }}>
+                    {message.content}
+                  </td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
+                    {new Date(message.createdAt).toLocaleString('ja-JP')}
+                  </td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
+                    <button onClick={() => handleDeleteMessage(message)} style={{ color: 'red' }}>
+                      削除
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          !messagesError && <p>メッセージはありません</p>
         )}
       </main>
     </div>

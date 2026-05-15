@@ -12,7 +12,11 @@ const MESSAGE_FIELDS = `
     avatarUrl
   }
   content
-  attachmentUrl
+  media {
+    ID
+    url
+    contentType
+  }
   createdAt
   updatedAt
 `;

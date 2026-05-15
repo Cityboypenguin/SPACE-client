@@ -3,9 +3,10 @@ import {
   sendMessage,
   updateMessage,
   deleteMessage,
-  getPresignedMessageFileUploadUrl,
+  getPresignedMediaUploadUrl,
   uploadFileToStorage,
   type Message,
+  type MediaInput,
 } from '../api/message';
 
 export const useChatActions = (
@@ -13,7 +14,7 @@ export const useChatActions = (
   addMessage: (msg: Message) => void,
 ) => {
   const [content, setContent] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -21,20 +22,24 @@ export const useChatActions = (
 
   const handleSend = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!content.trim() && !selectedFile) return;
+    if (!content.trim() && selectedFiles.length === 0) return;
     if (!roomId) return;
     setSending(true);
     setSendError('');
     try {
-      let attachmentKey: string | undefined;
-      if (selectedFile) {
-        const { presignedMessageFileUploadUrl } = await getPresignedMessageFileUploadUrl(roomId, selectedFile.type);
-        await uploadFileToStorage(presignedMessageFileUploadUrl.uploadUrl, selectedFile);
-        attachmentKey = presignedMessageFileUploadUrl.objectKey;
+      let mediaInputs: MediaInput[] | undefined;
+      if (selectedFiles.length > 0) {
+        mediaInputs = await Promise.all(
+          selectedFiles.map(async (file) => {
+            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+          }),
+        );
       }
-      const data = await sendMessage(roomId, content.trim(), attachmentKey, selectedFile?.name);
+      const data = await sendMessage(roomId, content.trim(), mediaInputs);
       setContent('');
-      setSelectedFile(null);
+      setSelectedFiles([]);
       addMessage(data.sendMessage);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'メッセージの送信に失敗しました');
@@ -65,8 +70,8 @@ export const useChatActions = (
   return {
     content,
     setContent,
-    selectedFile,
-    setSelectedFile,
+    selectedFiles,
+    setSelectedFiles,
     sending,
     sendError,
     editingId,

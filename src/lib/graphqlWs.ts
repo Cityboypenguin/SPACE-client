@@ -1,7 +1,13 @@
 import { USER_TOKEN_KEY } from '../features/user/api/auth';
 
+const fallbackApiUrl = '/query';
+
 const getWsUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:8080/query`;
+  const apiUrl = import.meta.env.VITE_API_URL || fallbackApiUrl;
+  if (apiUrl.startsWith('/')) {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProtocol}//${window.location.host}${apiUrl}`;
+  }
   return apiUrl.replace(/^http/, 'ws');
 };
 

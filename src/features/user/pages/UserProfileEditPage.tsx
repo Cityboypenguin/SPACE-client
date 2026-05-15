@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { storageUrl } from '../../../lib/storage';
 import { UserHeader } from '../components/organisms/UserHeader';
 import {
   getMyProfile,
@@ -110,7 +111,7 @@ export const UserProfileEditPage = () => {
               }}
             >
               {displayAvatarUrl ? (
-                <img src={displayAvatarUrl} alt="アバター" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={storageUrl(displayAvatarUrl) ?? undefined} alt="アバター" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <span style={{ fontSize: '2rem', color: '#94a3b8' }}>＋</span>
               )}

@@ -1,5 +1,9 @@
 import { request } from '../../../lib/graphql';
 import { USER_TOKEN_KEY } from './auth';
+import { type Media, type MediaInput, getPresignedMediaUploadUrl, uploadFileToStorage } from './message';
+
+export type { Media, MediaInput };
+export { getPresignedMediaUploadUrl, uploadFileToStorage };
 
 export type PostUser = {
   ID: string;
@@ -24,6 +28,7 @@ export type Post = {
   favorites: PostFavorite[];
   parent?: Post | null;
   replies: Post[];
+  media: Media[];
 };
 
 const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
@@ -43,6 +48,11 @@ const POST_FIELDS = `
     user {
       ID
     }
+  }
+  media {
+    ID
+    url
+    contentType
   }
 `;
 
@@ -126,10 +136,16 @@ export const getPostByID = async (id: string): Promise<Post | null> => {
   return data.getPostByID;
 };
 
-export const createPost = async (content: string, parentId?: string): Promise<Post> => {
+export const createPost = async (content: string, parentId?: string, mediaInputs?: MediaInput[]): Promise<Post> => {
   const data = await request<{ createPost: Post }>(
     CREATE_POST_MUTATION,
-    { input: { content, ...(parentId ? { parent_id: parentId } : {}) } },
+    {
+      input: {
+        content,
+        ...(parentId ? { parent_id: parentId } : {}),
+        ...(mediaInputs && mediaInputs.length > 0 ? { mediaInputs } : {}),
+      },
+    },
     getUserToken(),
   );
   return data.createPost;

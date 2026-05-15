@@ -3,7 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
-import { getTopLevelPosts, createPost, createFavorite, deleteFavorite, type Post } from '../api/post';
+import {
+  getTopLevelPosts,
+  createPost,
+  createFavorite,
+  deleteFavorite,
+  getPresignedMediaUploadUrl,
+  uploadFileToStorage,
+  type Post,
+  type MediaInput,
+} from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 
@@ -15,6 +24,7 @@ export const PostListPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [content, setContent] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
 
@@ -31,12 +41,23 @@ export const PostListPage = () => {
   }, []);
 
   const handlePost = async () => {
-    if (!content.trim() || posting) return;
+    if ((!content.trim() && selectedFiles.length === 0) || posting) return;
     setPosting(true);
     setPostError('');
     try {
-      const newPost = await createPost(content.trim());
+      let mediaInputs: MediaInput[] | undefined;
+      if (selectedFiles.length > 0) {
+        mediaInputs = await Promise.all(
+          selectedFiles.map(async (file) => {
+            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+          }),
+        );
+      }
+      const newPost = await createPost(content.trim(), undefined, mediaInputs);
       setContent('');
+      setSelectedFiles([]);
       setPosts((prev) => [newPost, ...prev]);
     } catch {
       setPostError('投稿に失敗しました');
@@ -80,6 +101,8 @@ export const PostListPage = () => {
           userId={userId}
           avatarUrl={profile?.avatarUrl}
           userName={profile?.user.name}
+          selectedFiles={selectedFiles}
+          onFileSelect={setSelectedFiles}
         />
 
         {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
