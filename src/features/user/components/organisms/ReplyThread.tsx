@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../molecules/LikeButton';
 import { UserMeta } from '../molecules/UserMeta';
+import { PostMediaGrid } from '../molecules/PostMediaGrid';
 import { formatTime } from '../../utils/formatTime';
 import { type Post } from '../../api/post';
 
@@ -49,11 +50,17 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) =
               color: '#1e293b',
               lineHeight: 1.6,
               wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
               fontSize: '0.95rem',
             }}
           >
             {post.content}
           </p>
+          {post.media && post.media.length > 0 && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              <PostMediaGrid media={post.media} />
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.82rem' }}>
             <span style={{ color: '#94a3b8' }}>💬 {post.replies.length}</span>
             <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />

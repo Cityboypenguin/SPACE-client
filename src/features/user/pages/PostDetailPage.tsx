@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div
-    onClick={onClose}
+    onClick={(e) => { e.stopPropagation(); onClose(); }}
     style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -29,7 +29,7 @@ const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) =
     }}
   >
     <button
-      onClick={onClose}
+      onClick={(e) => { e.stopPropagation(); onClose(); }}
       style={{
         position: 'absolute', top: 16, right: 20,
         background: 'none', border: 'none', color: '#fff',
@@ -200,7 +200,7 @@ export const PostDetailPage = () => {
                 </div>
               </div>
               {post.content && (
-                <p style={{ margin: '0 0 0.75rem', color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word' }}>
+                <p style={{ margin: '0 0 0.75rem', color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                   {post.content}
                 </p>
               )}
