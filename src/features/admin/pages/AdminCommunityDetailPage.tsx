@@ -12,6 +12,7 @@ import {
   type Message,
 } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { storageUrl } from '../../../lib/storage';
 
 const ROLE_OWNER = 'owner';
 
@@ -232,7 +233,32 @@ export const AdminCommunityDetailPage = () => {
                     </span>
                   </td>
                   <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9', maxWidth: '400px', wordBreak: 'break-word' }}>
-                    {message.content}
+                    {message.content && <div>{message.content}</div>}
+                    {message.media && message.media.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: message.content ? '4px' : 0 }}>
+                        {message.media.map((m) =>
+                          m.contentType.startsWith('image/') ? (
+                            <a key={m.ID} href={storageUrl(m.url)} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={storageUrl(m.url)}
+                                alt="添付画像"
+                                style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4 }}
+                              />
+                            </a>
+                          ) : (
+                            <a
+                              key={m.ID}
+                              href={storageUrl(m.url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ fontSize: '0.8rem', color: '#3b82f6' }}
+                            >
+                              {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
+                            </a>
+                          )
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
                     {new Date(message.createdAt).toLocaleString('ja-JP')}
