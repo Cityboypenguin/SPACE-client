@@ -76,10 +76,11 @@
 }
 
 .bubble {
-  max-width: 70%;
+  max-width: 100%;
   padding: 0.5rem 0.75rem;
   border-radius: 12px;
   word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .bubbleMine {
@@ -107,18 +108,32 @@
 
 .inputField {
   flex: 1;
-}
-
-.messageRow {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  resize: none;
+  overflow-y: auto;
+  min-height: 36px;
+  max-height: 150px;
+  font: inherit;
+  line-height: 1.5;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .messageActions {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   display: none;
   flex-direction: column;
   gap: 2px;
+  z-index: 1;
+}
+
+.messageActionsLeft {
+  right: calc(100% + 2px);
+}
+
+.messageActionsRight {
+  left: calc(100% + 2px);
 }
 
 .messageBubble:hover .messageActions {

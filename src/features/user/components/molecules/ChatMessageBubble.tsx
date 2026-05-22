@@ -146,9 +146,9 @@ export const ChatMessageBubble = ({
         </span>
       )}
 
-      <div className={styles.messageRow}>
+      <div style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', gap: 3, alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
         {(isMine || canDelete) && !isEditing && (
-          <div className={styles.messageActions}>
+          <div className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight}`}>
             {isMine && (
               <button className={styles.actionBtn} onClick={onStartEdit} title="編集">✎</button>
             )}
@@ -157,36 +157,33 @@ export const ChatMessageBubble = ({
             )}
           </div>
         )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: isMine ? 'flex-end' : 'flex-start' }}>
-          {isEditing ? (
-            <div className={styles.editWrapper}>
-              <input
-                className={styles.editInput}
-                value={editContent}
-                onChange={(e) => onEditContentChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onSaveEdit();
-                  if (e.key === 'Escape') onCancelEdit();
-                }}
-                autoFocus
-              />
-              <div className={styles.editActions}>
-                <button className={styles.editSaveBtn} onClick={onSaveEdit}>保存</button>
-                <button className={styles.editCancelBtn} onClick={onCancelEdit}>キャンセル</button>
-              </div>
+        {isEditing ? (
+          <div className={styles.editWrapper}>
+            <input
+              className={styles.editInput}
+              value={editContent}
+              onChange={(e) => onEditContentChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSaveEdit();
+                if (e.key === 'Escape') onCancelEdit();
+              }}
+              autoFocus
+            />
+            <div className={styles.editActions}>
+              <button className={styles.editSaveBtn} onClick={onSaveEdit}>保存</button>
+              <button className={styles.editCancelBtn} onClick={onCancelEdit}>キャンセル</button>
             </div>
-          ) : (
-            <>
-              {hasText && (
-                <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                  {msg.content}
-                </div>
-              )}
-              {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
-            </>
-          )}
-        </div>
+          </div>
+        ) : (
+          <>
+            {hasText && (
+              <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
+                {msg.content}
+              </div>
+            )}
+            {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
+          </>
+        )}
       </div>
 
       <span className={styles.timestamp}>
