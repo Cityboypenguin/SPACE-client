@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { searchUsers, type UserProfile } from '../api/profile';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ export const UserSearchPage = () => {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { userId: currentUserID } = useAuth();
 
   const handleSearch = async (e: { preventDefault(): void }) => {
@@ -53,7 +54,7 @@ export const UserSearchPage = () => {
             {results.map((user) => (
               <li
                 key={user.ID}
-                onClick={() => navigate(`/users/${user.ID}`)}
+                onClick={() => navigate(`/users/${user.ID}`, { state: { from: location.pathname } })}
                 className={styles.resultItem}
               >
                 <strong>{user.name}</strong>（{user.accountID}）

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { storageUrl } from '../../lib/storage';
 import { Avatar } from './Avatar';
 
@@ -10,6 +10,7 @@ type Props = {
 };
 
 export const UserAvatar = ({ userId, name, avatarUrl, size = 40 }: Props) => {
+  const location = useLocation();
   const content = avatarUrl ? (
     <img
       src={storageUrl(avatarUrl) ?? undefined}
@@ -30,6 +31,7 @@ export const UserAvatar = ({ userId, name, avatarUrl, size = 40 }: Props) => {
   return (
     <Link
       to={`/users/${userId}`}
+      state={{ from: location.pathname }}
       onClick={(e) => e.stopPropagation()}
       style={{ textDecoration: 'none', flexShrink: 0, display: 'inline-flex' }}
     >

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { type Message, type Media } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { storageUrl } from '../../../../lib/storage';
@@ -129,6 +129,7 @@ export const ChatMessageBubble = ({
   onEditContentChange, onDelete,
 }: Props) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
@@ -138,7 +139,7 @@ export const ChatMessageBubble = ({
       {!isMine && (
         <span
           className={styles.senderName}
-          onClick={() => navigate(`/users/${msg.user.ID}`)}
+          onClick={() => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
           style={{ cursor: 'pointer' }}
         >
           {msg.user.name}
