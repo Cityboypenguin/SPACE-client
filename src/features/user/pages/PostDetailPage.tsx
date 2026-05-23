@@ -9,6 +9,8 @@ import { LikeButton } from '../components/molecules/LikeButton';
 import {
   getPostByID,
   createPost,
+  updatePost,
+  deletePost,
   createFavorite,
   deleteFavorite,
   getPresignedMediaUploadUrl,
@@ -211,7 +213,7 @@ export const PostDetailPage = () => {
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
               </div>
               <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
-                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                <span style={{ color: '#64748b', fontSize: '1.3rem' }}>
                   💬 <strong>{post.replies.length}</strong> 件の返信
                 </span>
                 <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
