@@ -98,7 +98,7 @@ export const CommunityRoomPage = () => {
 
       <div className={styles.roomHeader}>
         <button className={styles.backButton} onClick={() => navigate('/community')}>← 戻る</button>
-        <strong className={styles.roomTitle}>{room?.name || '...'}</strong>
+        <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         {isOwner && (
           <button
             onClick={() => setShowSettings(true)}
