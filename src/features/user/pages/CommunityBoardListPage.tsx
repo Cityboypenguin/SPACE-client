@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
-import { searchCommunities, joinCommunity, getRandomCommunities, type Community } from '../api/community';
+import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
 import { useAuth } from '../context/AuthContext';
 
 export const CommunityBoardListPage = () => {
@@ -21,17 +21,37 @@ export const CommunityBoardListPage = () => {
   useEffect(() => {
     let active = true;
     setLoadingRandom(true);
-    getRandomCommunities(10)
-      .then((list) => {
+
+    const initializeData = async () => {
+      try {
+        // 1. 自分が参加しているコミュニティの最新リストを取得
+        // エラーの指摘通り、関数名を「myCommunities」に変更します
+        const joinedList = await listMyCommunities(); 
+        
+        // 🌟 型の安全性を確保するため、<string> を明示します
+        const myIDs = new Set<string>(joinedList.map((c: Community) => c.ID));
+        
         if (!active) return;
-        setRandomResults(list);
-      })
-      .catch((err) => {
-        console.error('おすすめコミュニティの取得に失敗:', err);
-      })
-      .finally(() => {
+        // 参加済み状態を最新に更新
+        setJoinedIDs(myIDs);
+
+        // 2. おすすめコミュニティを取得
+        const randomList = await getRandomCommunities(10);
+        
+        if (!active) return;
+        // 最新の参加済みIDを使って、画面を開いた時点のデータをフィルター除外
+        const initialFiltered = randomList.filter((c) => !myIDs.has(c.ID));
+        setRandomResults(initialFiltered);
+
+      } catch (err) {
+        console.error('データの初期化に失敗しました:', err);
+      } finally {
         if (active) setLoadingRandom(false);
-      });
+      }
+    };
+
+    initializeData();
+
     return () => { active = false; };
   }, []);
 
@@ -101,7 +121,6 @@ export const CommunityBoardListPage = () => {
 
         {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
 
-        {/* 🌟 1. まだ検索していない時（おすすめの表示） */}
         {!searched && (
           <div>
             <h2 style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '0.75rem' }}>おすすめのコミュニティ</h2>
@@ -125,14 +144,12 @@ export const CommunityBoardListPage = () => {
           </div>
         )}
 
-        {/* 🌟 2. 検索したけれど、結果が0件だった時 */}
         {searched && results.length === 0 && (
           <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem 0' }}>
             該当するコミュニティが見つかりませんでした
           </p>
         )}
 
-        {/* 🌟 3. 検索して結果がヒットした時 */}
         {searched && results.length > 0 && (
           <div>
             <h2 style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '0.75rem' }}>検索結果</h2>
