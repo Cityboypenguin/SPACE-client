@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar } from '../../../../components/atoms/Avatar';
 import { type Community } from '../../api/community';
+import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 
 type Props = {
   community: Community;
@@ -44,7 +44,11 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <Avatar name={community.name} size={40} />
+        <CommunityAvatar 
+        name={community.name} 
+        src={community.iconURL} 
+        size={40} 
+        />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: '1rem', color: '#1e293b' }}>{community.name}</div>
           {!expanded && (

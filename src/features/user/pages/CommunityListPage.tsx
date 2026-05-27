@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
-import { Avatar } from '../../../components/atoms/Avatar';
+import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, type Community } from '../api/community';
 
 export const CommunityListPage = () => {
@@ -76,7 +76,11 @@ export const CommunityListPage = () => {
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#f8faff')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
               >
-                <Avatar name={c.name} size={42} />
+                <CommunityAvatar 
+                  name={c.name} 
+                  src={c.iconURL} 
+                  size={42} 
+                />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: '#1e293b' }}>{c.name}</div>
                   <div style={{ fontSize: '0.82rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
