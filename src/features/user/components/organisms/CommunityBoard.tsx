@@ -7,6 +7,7 @@ type Props = {
   community: Community;
   onJoin?: (community: Community) => Promise<void>;
   joined?: boolean;
+  currentUserID: string | null;
 };
 
 export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => {

@@ -121,6 +121,18 @@ const DEMOTE_FROM_OWNER_MUTATION = `
   }
 `;
 
+const RANDOM_COMMUNITIES_QUERY = `
+  query RandomCommunities($limit: Int!) {
+    randomCommunities(limit: $limit) {
+      ID
+      roomID
+      name
+      description
+      createdAt
+    }
+  }
+`;
+
 export const listMyCommunities = async (): Promise<Community[]> => {
   const data = await request<{ myCommunities: Community[] }>(
     MY_COMMUNITIES_QUERY,
@@ -216,4 +228,13 @@ export const demoteFromCommunityOwner = async (communityID: string, userID: stri
     { communityID, userID },
     getUserToken(),
   );
+};
+
+export const getRandomCommunities = async (limit: number): Promise<Community[]> => {
+  const data = await request<{ randomCommunities: Community[] }>(
+    RANDOM_COMMUNITIES_QUERY,
+    { limit },
+    getUserToken(),
+  );
+  return data.randomCommunities;
 };
