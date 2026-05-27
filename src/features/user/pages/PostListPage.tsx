@@ -6,8 +6,6 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import {
   getTopLevelPosts,
   createPost,
-  updatePost,
-  deletePost,
   createFavorite,
   deleteFavorite,
   getPresignedMediaUploadUrl,
