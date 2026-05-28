@@ -6,6 +6,7 @@ export type Community = {
   roomID: string;
   name: string;
   description: string;
+  avatarURL: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -29,6 +30,7 @@ const MY_COMMUNITIES_QUERY = `
       roomID
       name
       description
+      avatarURL
       createdAt
     }
   }
@@ -41,6 +43,7 @@ const SEARCH_COMMUNITIES_QUERY = `
       roomID
       name
       description
+      avatarURL
       createdAt
     }
   }
@@ -53,6 +56,7 @@ const CREATE_COMMUNITY_MUTATION = `
       roomID
       name
       description
+      avatarURL
       createdAt
     }
   }
@@ -97,6 +101,7 @@ const UPDATE_COMMUNITY_MUTATION = `
       roomID
       name
       description
+      avatarURL
       createdAt
       updatedAt
     }
@@ -128,7 +133,17 @@ const RANDOM_COMMUNITIES_QUERY = `
       roomID
       name
       description
+      avatarURL
       createdAt
+    }
+  }
+`;
+
+const PRESIGNED_COMMUNITY_ICON_UPLOAD_URL_QUERY = `
+  query PresignedCommunityIconUploadUrl($contentType: String!) {
+    presignedCommunityIconUploadUrl(contentType: $contentType) {
+      uploadUrl
+      objectKey
     }
   }
 `;
@@ -151,10 +166,10 @@ export const searchCommunities = async (name: string): Promise<Community[]> => {
   return data.searchCommunities;
 };
 
-export const createCommunity = async (name: string, description: string): Promise<Community> => {
+export const createCommunity = async (name: string, description: string, avatarKey: string): Promise<Community> => {
   const data = await request<{ createCommunity: Community }>(
     CREATE_COMMUNITY_MUTATION,
-    { input: { name, description } },
+    { input: { name, description, avatarKey } },
     getUserToken(),
   );
   return data.createCommunity;
@@ -196,7 +211,7 @@ export const getCommunityMembers = async (communityID: string): Promise<Communit
 
 export const updateCommunityInfo = async (
   id: string,
-  input: { name?: string; description?: string },
+  input: { name?: string; description?: string; avatarKey?: string },
 ): Promise<Community> => {
   const data = await request<{ updateCommunity: Community }>(
     UPDATE_COMMUNITY_MUTATION,
@@ -237,4 +252,15 @@ export const getRandomCommunities = async (limit: number): Promise<Community[]> 
     getUserToken(),
   );
   return data.randomCommunities;
+};
+
+export const getPresignedCommunityIconUploadUrl = async (contentType: string) => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  
+  return await request<{ presignedCommunityIconUploadUrl: { uploadUrl: string; objectKey: string } }>(
+    PRESIGNED_COMMUNITY_ICON_UPLOAD_URL_QUERY,
+    { contentType },
+    token,
+  );
 };
