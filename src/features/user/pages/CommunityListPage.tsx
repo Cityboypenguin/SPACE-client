@@ -76,11 +76,7 @@ export const CommunityListPage = () => {
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#f8faff')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
               >
-                <CommunityAvatar 
-                  name={c.name} 
-                  src={c.avatarURL}
-                  size={42} 
-                />
+                <CommunityAvatar name={c.name} src={c.avatarURL} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: '#1e293b' }}>{c.name}</div>
                   <div style={{ fontSize: '0.82rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

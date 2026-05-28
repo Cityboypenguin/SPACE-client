@@ -8,7 +8,9 @@ type Props = {
 };
 
 export const CommunityAvatar = ({ name, src, size = 40 }: Props) => {
-  const resolvedSrc = storageUrl(src);
+  const isNone = !src || src.includes('none') || src === '';
+  const resolvedSrc = !isNone ? storageUrl(src) : null;
+
   if (resolvedSrc) {
     return (
       <img
@@ -26,4 +28,4 @@ export const CommunityAvatar = ({ name, src, size = 40 }: Props) => {
     );
   }
   return <Avatar name={name} size={size} />;
-}
+};

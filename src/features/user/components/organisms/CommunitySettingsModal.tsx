@@ -30,8 +30,17 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [infoError, setInfoError] = useState('');
   const [infoSuccess, setInfoSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(storageUrl(community.avatarURL) || null);
+  const isInitialNone = !community.avatarURL || community.avatarURL === 'none' || community.avatarURL === '';
+  const hasValidAvatar = 
+    community.avatarURL && 
+    community.avatarURL !== '' && 
+    !community.avatarURL.includes('none');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    hasValidAvatar ? (storageUrl(community.avatarURL) || null) : null
+  );
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isIconDeleted, setIsIconDeleted] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,6 +56,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
 
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
+    setIsIconDeleted(false);
   };
 
   const handleSaveInfo = async (e: React.FormEvent) => {
@@ -62,12 +72,17 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
         const { uploadUrl, objectKey } = response.presignedCommunityIconUploadUrl;
         await uploadAvatarToStorage(uploadUrl, selectedFile);
         newAvatarKey = objectKey;
+      } else if (isIconDeleted) {
+        newAvatarKey = 'none';
       }
 
       const input: { name?: string; description?: string; avatarKey?: string } = {};
       if (name !== community.name) input.name = name;
       if (description !== community.description) input.description = description;
-      if (newAvatarKey !== undefined) input.avatarKey = newAvatarKey;
+      if (newAvatarKey !== undefined) {
+        input.avatarKey = newAvatarKey;
+      }
+      
       const updated = await updateCommunityInfo(community.ID, input);
       setInfoSuccess('更新しました');
       onUpdated(updated);
@@ -172,6 +187,27 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                     変更
                   </div>
                 </div>
+                {previewUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewUrl(null);
+                      setSelectedFile(null);
+                      setIsIconDeleted(true);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    style={{
+                      background: 'none', border: 'none', color: '#ef4444', 
+                      fontSize: '0.8rem', cursor: 'pointer', padding: '4px 8px',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    画像を削除する
+                  </button>
+                )}
+
                 <input 
                   type="file" 
                   ref={fileInputRef} 
