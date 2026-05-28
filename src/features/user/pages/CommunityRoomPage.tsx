@@ -5,6 +5,7 @@ import { CommunitySettingsModal } from '../components/organisms/CommunitySetting
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, getCommunityMembers, type Community } from '../api/community';
+import { CommunityMembersModal } from '../components/organisms/CommunityMemberModal';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
@@ -29,6 +30,7 @@ export const CommunityRoomPage = () => {
   const [community, setCommunity] = useState<Community | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const handleLeave = async () => {
@@ -102,7 +104,8 @@ export const CommunityRoomPage = () => {
         <button className={styles.backButton} onClick={() => navigate('/community')}>← 戻る</button>
         <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         {memberCount !== null && (
-          <span
+          <button
+            onClick={() => setShowMembers(true)}
             style={{
               marginLeft: '0.6rem',
               fontSize: '0.72rem',
@@ -114,10 +117,11 @@ export const CommunityRoomPage = () => {
               borderRadius: 12,
               display: 'inline-flex',
               alignItems: 'center',
+              cursor: 'pointer',
             }}
           >
             {memberCount} 人のメンバー
-          </span>
+          </button>
         )}
         {isOwner && (
           <button
@@ -199,6 +203,12 @@ export const CommunityRoomPage = () => {
           community={community}
           onClose={() => setShowSettings(false)}
           onUpdated={(updated) => setCommunity(updated)}
+        />
+      )}
+      {showMembers && community && (
+        <CommunityMembersModal
+          community={community}
+          onClose={() => setShowMembers(false)}
         />
       )}
     </div>
