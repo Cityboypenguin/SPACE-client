@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useProfile } from '../hooks/useProfile';
 import { storageUrl } from '../../../lib/storage';
@@ -7,13 +7,14 @@ import styles from './UserPublicProfilePage.module.css';
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile, loading, error } = useProfile(id);
 
   return (
     <div>
       <UserHeader />
       <main className={styles.main}>
-        <button onClick={() => navigate('/search')}>← 検索に戻る</button>
+        <button onClick={() => navigate((location.state as { from?: string })?.from ?? '/search')}>← 戻る</button>
         <h1>ユーザー詳細</h1>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {loading && <p>読み込み中...</p>}

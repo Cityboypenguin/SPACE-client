@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { RoleBadge } from '../atoms/RoleBadge';
 import {
@@ -7,9 +7,12 @@ import {
   kickUserFromCommunity,
   promoteToCommunityOwner,
   demoteFromCommunityOwner,
+  getPresignedCommunityIconUploadUrl,
   type Community,
   type CommunityMember,
 } from '../../api/community';
+import { uploadAvatarToStorage } from '../../api/profile';
+import { storageUrl } from '../../../../lib/storage';
 
 type Props = {
   community: Community;
@@ -27,6 +30,19 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [infoError, setInfoError] = useState('');
   const [infoSuccess, setInfoSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
+  const isInitialNone = !community.avatarURL || community.avatarURL === 'none' || community.avatarURL === '';
+  const hasValidAvatar = 
+    community.avatarURL && 
+    community.avatarURL !== '' && 
+    !community.avatarURL.includes('none');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    hasValidAvatar ? (storageUrl(community.avatarURL) || null) : null
+  );
+  
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isIconDeleted, setIsIconDeleted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getCommunityMembers(community.ID)
@@ -34,19 +50,47 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
       .catch(() => setMembersError('メンバー一覧の取得に失敗しました'));
   }, [community.ID]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setIsIconDeleted(false);
+  };
+
   const handleSaveInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     setInfoError('');
     setInfoSuccess('');
+    setSaving(true);
+
     try {
-      const input: { name?: string; description?: string } = {};
+      let newAvatarKey: string | undefined = undefined;
+      if (selectedFile) {
+        const response = await getPresignedCommunityIconUploadUrl(selectedFile.type);
+        const { uploadUrl, objectKey } = response.presignedCommunityIconUploadUrl;
+        await uploadAvatarToStorage(uploadUrl, selectedFile);
+        newAvatarKey = objectKey;
+      } else if (isIconDeleted) {
+        newAvatarKey = 'none';
+      }
+
+      const input: { name?: string; description?: string; avatarKey?: string } = {};
       if (name !== community.name) input.name = name;
       if (description !== community.description) input.description = description;
+      if (newAvatarKey !== undefined) {
+        input.avatarKey = newAvatarKey;
+      }
+      
       const updated = await updateCommunityInfo(community.ID, input);
       setInfoSuccess('更新しました');
       onUpdated(updated);
-    } catch {
-      setInfoError('更新に失敗しました');
+      setSelectedFile(null);
+    } catch (err) {
+      setInfoError(err instanceof Error ? err.message : '更新に失敗しました');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -127,6 +171,52 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
             <form onSubmit={handleSaveInfo} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {infoError && <p style={{ color: 'red', margin: 0 }}>{infoError}</p>}
               {infoSuccess && <p style={{ color: '#16a34a', margin: 0 }}>{infoSuccess}</p>}
+              
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e2e8f0' }}
+                  title="クリックして画像を変更"
+                >
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <Avatar name={name} size={120} />
+                  )}
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '0.65rem', textAlign: 'center', padding: '2px 0' }}>
+                    変更
+                  </div>
+                </div>
+                {previewUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewUrl(null);
+                      setSelectedFile(null);
+                      setIsIconDeleted(true);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    style={{
+                      background: 'none', border: 'none', color: '#ef4444', 
+                      fontSize: '0.8rem', cursor: 'pointer', padding: '4px 8px',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    画像を削除する
+                  </button>
+                )}
+
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                />
+              </div>
+
               <div>
                 <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>コミュニティ名</label>
                 <input
@@ -146,9 +236,10 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
               </div>
               <button
                 type="submit"
-                style={{ alignSelf: 'flex-end', padding: '0.5rem 1.5rem', borderRadius: 8, background: '#646cff', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                disabled={saving}
+                style={{ alignSelf: 'flex-end', padding: '0.5rem 1.5rem', borderRadius: 8, background: saving ? '#94a3b8' : '#646cff', color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600 }}
               >
-                保存
+                {saving ? '保存中...' : '保存'}
               </button>
             </form>
           )}
@@ -156,6 +247,32 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
           {tab === 'members' && (
             <div>
               {membersError && <p style={{ color: 'red', margin: '0 0 0.75rem' }}>{membersError}</p>}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.5rem', 
+                  marginBottom: '1rem', 
+                  paddingBottom: '0.5rem', 
+                  borderBottom: '1px dashed #e2e8f0' 
+                }}
+              >
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                  現在のメンバー
+                </span>
+                <span 
+                  style={{ 
+                    fontSize: '0.75rem', 
+                    fontWeight: 700, 
+                    color: '#646cff', 
+                    background: '#f0f2ff', 
+                    padding: '2px 8px', 
+                    borderRadius: 12 
+                  }}
+                >
+                  {members.length} 人
+                </span>
+              </div>
               {members.length === 0 ? (
                 <p style={{ color: '#94a3b8' }}>メンバーがいません</p>
               ) : (

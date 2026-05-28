@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import styles from '../organisms/chatRoom.module.css';
 
 const ACCEPTED_FILE_TYPES = [
@@ -22,6 +22,13 @@ type Props = {
 
 export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (value === '' && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  }, [value]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(e.target.files ?? []);
@@ -101,11 +108,22 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="メッセージを入力..."
+          rows={1}
+          onChange={(e) => {
+            onChange(e.target.value);
+            e.target.style.height = 'auto';
+            e.target.style.height = `${e.target.scrollHeight}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              if (canSubmit) onSubmit({ preventDefault: () => {} });
+            }
+          }}
+          placeholder="メッセージを入力... (Shift+Enterで改行)"
           disabled={disabled}
           className={styles.inputField}
           autoFocus

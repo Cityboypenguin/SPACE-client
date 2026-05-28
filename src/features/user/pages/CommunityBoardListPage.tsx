@@ -2,26 +2,56 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
-import { searchCommunities, joinCommunity, listMyCommunities, type Community } from '../api/community';
+import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
+import { useAuth } from '../context/AuthContext';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
+  const { userId: currentUserID } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Community[]>([]);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
   const [joinedIDs, setJoinedIDs] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+  const [randomResults, setRandomResults] = useState<Community[]>([]);
+  const [loadingRandom, setLoadingRandom] = useState(false);
 
-  // マウント時に参加済みコミュニティ ID を取得して初期化
+  // マウント時におすすめコミュニティを取得
   useEffect(() => {
     let active = true;
-    listMyCommunities()
-      .then((list) => {
+    setLoadingRandom(true);
+
+    const initializeData = async () => {
+      try {
+        // 1. 自分が参加しているコミュニティの最新リストを取得
+        // エラーの指摘通り、関数名を「myCommunities」に変更します
+        const joinedList = await listMyCommunities(); 
+        
+        // 🌟 型の安全性を確保するため、<string> を明示します
+        const myIDs = new Set<string>(joinedList.map((c: Community) => c.ID));
+        
         if (!active) return;
-        setJoinedIDs(new Set(list.map((c) => c.ID)));
-      })
-      .catch(() => {/* 取得失敗は無視してゲスト扱いのまま続行 */});
+        // 参加済み状態を最新に更新
+        setJoinedIDs(myIDs);
+
+        // 2. おすすめコミュニティを取得
+        const randomList = await getRandomCommunities(10);
+        
+        if (!active) return;
+        // 最新の参加済みIDを使って、画面を開いた時点のデータをフィルター除外
+        const initialFiltered = randomList.filter((c) => !myIDs.has(c.ID));
+        setRandomResults(initialFiltered);
+
+      } catch (err) {
+        console.error('データの初期化に失敗しました:', err);
+      } finally {
+        if (active) setLoadingRandom(false);
+      }
+    };
+
+    initializeData();
+
     return () => { active = false; };
   }, []);
 
@@ -42,8 +72,12 @@ export const CommunityBoardListPage = () => {
   };
 
   const handleJoin = useCallback(async (community: Community) => {
-    await joinCommunity(community.roomID);
-    setJoinedIDs((prev) => new Set([...prev, community.ID]));
+    try {
+      await joinCommunity(community.roomID);
+      setJoinedIDs((prev) => new Set([...prev, community.ID]));
+    } catch (err) {
+      console.error('コミュニティへの参加に失敗しました:', err);
+    }
   }, []);
 
   return (
@@ -87,22 +121,51 @@ export const CommunityBoardListPage = () => {
 
         {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
 
+        {!searched && (
+          <div>
+            <h2 style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '0.75rem' }}>おすすめのコミュニティ</h2>
+            {loadingRandom ? (
+              <p style={{ color: '#94a3b8' }}>読み込み中...</p>
+            ) : randomResults.length === 0 ? (
+              <p style={{ color: '#94a3b8' }}>おすすめのコミュニティはありません</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {randomResults.map((c) => (
+                  <CommunityBoard
+                    key={c.ID}
+                    community={c}
+                    currentUserID={currentUserID}
+                    joined={joinedIDs.has(c.ID)}
+                    onJoin={handleJoin}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {searched && results.length === 0 && (
           <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem 0' }}>
             該当するコミュニティが見つかりませんでした
           </p>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {results.map((c) => (
-            <CommunityBoard
-              key={c.ID}
-              community={c}
-              onJoin={joinedIDs.has(c.ID) ? undefined : handleJoin}
-              joined={joinedIDs.has(c.ID)}
-            />
-          ))}
-        </div>
+        {searched && results.length > 0 && (
+          <div>
+            <h2 style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '0.75rem' }}>検索結果</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {results.map((c) => (
+                <CommunityBoard
+                  key={c.ID}
+                  community={c}
+                  currentUserID={currentUserID}
+                  joined={joinedIDs.has(c.ID)}
+                  onJoin={handleJoin}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

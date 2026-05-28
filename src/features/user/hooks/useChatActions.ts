@@ -50,6 +50,7 @@ export const useChatActions = (
 
   const handleDelete = async (msgId: string) => {
     if (!roomId) return;
+    if (!window.confirm('このメッセージを削除しますか？')) return;
     try {
       await deleteMessage(roomId, msgId);
     } catch (err) {

@@ -4,7 +4,7 @@ import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
-import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
+import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, getCommunityMembers, type Community } from '../api/community';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
@@ -30,7 +30,7 @@ export const CommunityRoomPage = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [leaving, setLeaving] = useState(false);
-
+  const [memberCount, setMemberCount] = useState<number | null>(null);
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
     if (!window.confirm('このコミュニティを退出しますか？')) return;
@@ -84,6 +84,8 @@ export const CommunityRoomPage = () => {
       try {
         const role = await getMyRoleInCommunity(communityID);
         setIsOwner(role === 'owner');
+        const members = await getCommunityMembers(communityID);
+        setMemberCount(members.length);
       } catch {
         setIsOwner(false);
       }
@@ -98,7 +100,25 @@ export const CommunityRoomPage = () => {
 
       <div className={styles.roomHeader}>
         <button className={styles.backButton} onClick={() => navigate('/community')}>← 戻る</button>
-        <strong className={styles.roomTitle}>{room?.name || '...'}</strong>
+        <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
+        {memberCount !== null && (
+          <span
+            style={{
+              marginLeft: '0.6rem',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              color: '#38bdf8',
+              background: 'rgba(56, 189, 248, 0.15)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              padding: '2px 8px',
+              borderRadius: 12,
+              display: 'inline-flex',
+              alignItems: 'center',
+            }}
+          >
+            {memberCount} 人のメンバー
+          </span>
+        )}
         {isOwner && (
           <button
             onClick={() => setShowSettings(true)}
