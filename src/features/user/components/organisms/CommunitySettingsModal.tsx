@@ -247,6 +247,32 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
           {tab === 'members' && (
             <div>
               {membersError && <p style={{ color: 'red', margin: '0 0 0.75rem' }}>{membersError}</p>}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.5rem', 
+                  marginBottom: '1rem', 
+                  paddingBottom: '0.5rem', 
+                  borderBottom: '1px dashed #e2e8f0' 
+                }}
+              >
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                  現在のメンバー
+                </span>
+                <span 
+                  style={{ 
+                    fontSize: '0.75rem', 
+                    fontWeight: 700, 
+                    color: '#646cff', 
+                    background: '#f0f2ff', 
+                    padding: '2px 8px', 
+                    borderRadius: 12 
+                  }}
+                >
+                  {members.length} 人
+                </span>
+              </div>
               {members.length === 0 ? (
                 <p style={{ color: '#94a3b8' }}>メンバーがいません</p>
               ) : (

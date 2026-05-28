@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { type Community } from '../../api/community';
+import { getCommunityMembers, type Community } from '../../api/community';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 
 type Props = {
@@ -15,6 +15,14 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
   const [expanded, setExpanded] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
+  const [memberCount, setMemberCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (expanded && memberCount === null) {
+      getCommunityMembers(community.ID)
+        .then((members) => setMemberCount(members.length))
+        .catch(() => console.error('メンバー数の取得に失敗しました'));
+    }
+  }, [expanded, community.ID, memberCount]);
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -23,6 +31,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
     setError('');
     try {
       await onJoin(community);
+      if (memberCount !== null) setMemberCount(memberCount + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : '参加に失敗しました');
     } finally {
@@ -75,6 +84,23 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
           onClick={(e) => e.stopPropagation()}
           style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}
         >
+          {memberCount !== null && (
+            <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.82rem', color: '#64748b' }}>メンバー数:</span>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#646cff',
+                  background: '#f0f2ff',
+                  padding: '2px 8px',
+                  borderRadius: 12,
+                }}
+              >
+                {memberCount} 人
+              </span>
+            </div>
+          )}
           <p style={{ margin: '0 0 1rem', color: '#475569', lineHeight: 1.6 }}>
             {community.description}
           </p>
