@@ -30,8 +30,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [infoError, setInfoError] = useState('');
   const [infoSuccess, setInfoSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
-  const isInitialNone = !community.avatarURL || community.avatarURL === 'none' || community.avatarURL === '';
-  const hasValidAvatar = 
+  const hasValidAvatar =
     community.avatarURL && 
     community.avatarURL !== '' && 
     !community.avatarURL.includes('none');
