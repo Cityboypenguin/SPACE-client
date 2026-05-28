@@ -8,6 +8,7 @@ import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, getCommunityMe
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
+import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import styles from '../components/organisms/chatRoom.module.css';
 
 export const CommunityRoomPage = () => {
@@ -163,23 +164,28 @@ export const CommunityRoomPage = () => {
 
       <div className={styles.messageList}>
         {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
-
-        {messages.map((msg) => {
+        {messages.map((msg, index) => {
           const isMine = msg.user.ID === currentUserID;
+          const prevMsg = index > 0 ? messages[index - 1] : null;
           return (
-            <ChatMessageBubble
-              key={msg.ID}
-              msg={msg}
-              isMine={isMine}
-              canDelete={isMine || isOwner}
-              isEditing={editingId === msg.ID}
-              editContent={editContent}
-              onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
-              onSaveEdit={() => handleSaveEdit(msg.ID)}
-              onCancelEdit={() => setEditingId(null)}
-              onEditContentChange={setEditContent}
-              onDelete={() => handleDelete(msg.ID)}
-            />
+            <div key={msg.ID} style={{ display: 'contents' }}>
+              <ChatDateSeparator 
+                currentCreatedAt={msg.createdAt} 
+                prevCreatedAt={prevMsg?.createdAt} 
+              />
+              <ChatMessageBubble
+                msg={msg}
+                isMine={isMine}
+                canDelete={isMine || isOwner}
+                isEditing={editingId === msg.ID}
+                editContent={editContent}
+                onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
+                onSaveEdit={() => handleSaveEdit(msg.ID)}
+                onCancelEdit={() => setEditingId(null)}
+                onEditContentChange={setEditContent}
+                onDelete={() => handleDelete(msg.ID)}
+              />
+            </div>
           );
         })}
         <div ref={bottomRef} />
