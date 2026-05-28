@@ -44,7 +44,7 @@ export const CommunityCreatePage = () => {
     const { presignedCommunityIconUploadUrl } = await getPresignedCommunityIconUploadUrl(selectedFile.type);
     const { uploadUrl, objectKey } = presignedCommunityIconUploadUrl;
     await uploadAvatarToStorage(uploadUrl, selectedFile);
-    finalIconKey = `space-avatars/${objectKey}`;
+    finalIconKey = objectKey;
   }
   await createCommunity(name.trim(), description.trim(), finalIconKey ?? "");
   

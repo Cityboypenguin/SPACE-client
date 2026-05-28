@@ -78,7 +78,7 @@ export const CommunityListPage = () => {
               >
                 <CommunityAvatar 
                   name={c.name} 
-                  src={c.iconURL} 
+                  src={c.avatarURL}
                   size={42} 
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>

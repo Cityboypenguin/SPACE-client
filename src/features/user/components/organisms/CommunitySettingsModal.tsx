@@ -11,6 +11,8 @@ import {
   type Community,
   type CommunityMember,
 } from '../../api/community';
+import { uploadAvatarToStorage } from '../../api/profile';
+import { storageUrl } from '../../../../lib/storage';
 
 type Props = {
   community: Community;
@@ -28,8 +30,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [infoError, setInfoError] = useState('');
   const [infoSuccess, setInfoSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
-  const currentIconURL = community.iconURL || (community as any).iconUrl;
-  const [previewUrl, setPreviewUrl] = useState<string | null>(currentIconURL || null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(storageUrl(community.avatarURL) || null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,31 +56,18 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     setSaving(true);
 
     try {
-      let finalIconURL = currentIconURL;
+      let newAvatarKey: string | undefined = undefined;
       if (selectedFile) {
         const response = await getPresignedCommunityIconUploadUrl(selectedFile.type);
         const { uploadUrl, objectKey } = response.presignedCommunityIconUploadUrl;
-        const localUploadUrl = uploadUrl.replace('host.docker.internal', 'localhost');
-
-        const uploadRes = await fetch(localUploadUrl, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': selectedFile.type,
-            'Host': 'host.docker.internal:9000' 
-          },
-          body: selectedFile,
-        });
-        if (!uploadRes.ok) {
-          throw new Error('画像のストレージ保存に失敗しました');
-        }
-
-        finalIconURL = `/space-avatars/${objectKey}`;
+        await uploadAvatarToStorage(uploadUrl, selectedFile);
+        newAvatarKey = objectKey;
       }
 
-      const input: { name?: string; description?: string; iconURL?: string } = {};
+      const input: { name?: string; description?: string; avatarKey?: string } = {};
       if (name !== community.name) input.name = name;
       if (description !== community.description) input.description = description;
-      if (finalIconURL !== currentIconURL) input.iconURL = finalIconURL;
+      if (newAvatarKey !== undefined) input.avatarKey = newAvatarKey;
       const updated = await updateCommunityInfo(community.ID, input);
       setInfoSuccess('更新しました');
       onUpdated(updated);

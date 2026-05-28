@@ -1,4 +1,5 @@
 import { Avatar } from './Avatar';
+import { storageUrl } from '../../lib/storage';
 
 type Props = {
   name: string;
@@ -7,10 +8,11 @@ type Props = {
 };
 
 export const CommunityAvatar = ({ name, src, size = 40 }: Props) => {
-  if (src) {
+  const resolvedSrc = storageUrl(src);
+  if (resolvedSrc) {
     return (
       <img
-        src={src}
+        src={resolvedSrc}
         alt={name}
         style={{
           width: size,

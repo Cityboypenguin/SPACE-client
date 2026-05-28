@@ -46,7 +46,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         <CommunityAvatar 
         name={community.name} 
-        src={community.iconURL} 
+        src={community.avatarURL} 
         size={40} 
         />
         <div style={{ flex: 1, minWidth: 0 }}>
