@@ -17,6 +17,7 @@ export type CommunityMember = {
     accountID: string;
     name: string;
     email: string;
+    avatarUrl?: string | null;
   };
   role: string;
 };
@@ -88,6 +89,7 @@ const GET_COMMUNITY_MEMBERS_QUERY = `
         accountID
         name
         email
+        avatarUrl
       }
       role
     }

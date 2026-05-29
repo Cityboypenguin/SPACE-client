@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Avatar } from '../../../../components/atoms/Avatar';
+import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { RoleBadge } from '../atoms/RoleBadge';
 import {
   getCommunityMembers,
@@ -284,16 +285,22 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                         padding: '0.6rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0',
                       }}
                     >
-                      <Avatar name={m.user.name} size={36} />
+                      <UserAvatar 
+                        userId={m.user.ID} 
+                        name={m.user.name} 
+                        avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) : undefined}
+                        size={36} 
+                      />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 500 }}>
-                          {m.role === ROLE_OWNER && (
-                            <span style={{ marginRight: 4 }} title="オーナー"></span>
-                          )}
-                          {m.user.name}
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
+                            {m.user.name}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                              @{m.user.accountID}
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>@{m.user.accountID}</div>
-                      </div>
                       <RoleBadge role={m.role} />
                       <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
                         {m.role === ROLE_OWNER ? (
