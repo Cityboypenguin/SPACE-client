@@ -6,6 +6,8 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
+import { ReportModal } from '../components/organisms/ReportMadal';
+
 import {
   getPostByID,
   createPost,
@@ -19,6 +21,7 @@ import {
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+
 const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div
     onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -123,6 +126,7 @@ export const PostDetailPage = () => {
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState('');
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const loadPost = (postId: string) => {
     setLoading(true);
@@ -192,13 +196,41 @@ export const PostDetailPage = () => {
         ) : (
           <>
             <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
-                <div>
-                  <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
-                  <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+              
+              {/* ⭕ 2箇所目：ここから修正。両端揃えのレイアウトに変更 */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                
+                {/* 左側：アバターと名前 */}
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+                  </div>
                 </div>
+
+                {/* 右側：通報ボタン（自分以外の投稿のときだけ表示） */}
+                {userId !== post.user.ID && (
+                  <button
+                    onClick={() => setIsReportOpen(true)}
+                    style={{
+                      background: 'rgba(223, 71, 71, 0.1)',
+                      border: '1px solid #df4747',
+                      color: '#df4747',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                    }}
+                    title="この投稿を通報する"
+                  >
+                    ⚠️ 通報
+                  </button>
+                )}
               </div>
+              {/* ⭕ 修正ここまで */}
+
               {post.content && (
                 <p style={{ margin: '0 0 0.75rem', color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                   {post.content}
@@ -217,7 +249,6 @@ export const PostDetailPage = () => {
                 <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
               </div>
             </div>
-
             <PostComposer
               value={replyContent}
               onChange={setReplyContent}
@@ -243,6 +274,12 @@ export const PostDetailPage = () => {
                 ))}
               </div>
             )}
+            <ReportModal
+              isOpen={isReportOpen}
+              onClose={() => setIsReportOpen(false)}
+              targetType="POST"
+              targetID={post.ID}
+            />
           </>
         )}
       </main>
