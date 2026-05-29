@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/organisms/ToastContainer';
 import { OfflineBanner } from './components/organisms/OfflineBanner';
+import { Footer } from './components/organisms/Footer';
 import { NotFoundPage } from './components/pages/NotFoundPage';
 import { UserProtectedRoute } from './features/user/components/UserProtectedRoute';
 
@@ -53,6 +54,9 @@ const PostListPage = lazy(() =>
 );
 const PostDetailPage = lazy(() =>
   import('./features/user/pages/PostDetailPage').then((m) => ({ default: m.PostDetailPage })),
+);
+const InquiryPage = lazy(() =>
+  import('./features/user/pages/InquiryPage').then((m) => ({ default: m.InquiryPage })),
 );
 function App() {
   return (
@@ -168,8 +172,10 @@ function App() {
             </UserProtectedRoute>
           }
         />
+        <Route path="/inquiry" element={<InquiryPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <Footer />
     </Suspense>
     </ToastProvider>
   );

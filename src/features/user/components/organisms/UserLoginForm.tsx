@@ -48,6 +48,9 @@ export const UserLoginForm = () => {
       <p>
         アカウントをお持ちでない方は<Link to="/register">新規登録</Link>
       </p>
+      <p>
+        <Link to="/inquiry">お問い合わせ</Link>
+      </p>
     </form>
   );
 };

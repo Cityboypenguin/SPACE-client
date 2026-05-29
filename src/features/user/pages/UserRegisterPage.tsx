@@ -61,6 +61,9 @@ export const UserRegisterPage = () => {
       <p>
         すでにアカウントをお持ちの方は<Link to="/login">ログイン</Link>
       </p>
+      <p>
+        <Link to="/inquiry">お問い合わせ</Link>
+      </p>
     </form>
   );
 };
