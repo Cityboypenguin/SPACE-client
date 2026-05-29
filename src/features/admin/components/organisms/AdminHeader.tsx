@@ -28,6 +28,7 @@ export const AdminHeader = () => {
         <button onClick={() => navigate('/admin/users')}>ユーザー管理</button>
         <button onClick={() => navigate('/admin/communities')}>コミュニティ管理</button>
         <button onClick={() => navigate('/admin/posts')}>投稿管理</button>
+        <button onClick={() => navigate('/admin/reports')}>通報管理</button>
         <button onClick={() => navigate('/admin/administrators')}>管理者管理</button>
         <button onClick={() => navigate('/admin/register')}>新規管理者登録</button>
         <button onClick={() => setShowConfirm(true)}>ログアウト</button>
