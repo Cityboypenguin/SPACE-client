@@ -24,6 +24,7 @@ export type Post = {
   content: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
   user: PostUser;
   favorites: PostFavorite[];
   parent?: Post | null;
@@ -37,6 +38,7 @@ const POST_FIELDS = `
   ID
   content
   createdAt
+  deletedAt
   user {
     ID
     name
@@ -101,6 +103,23 @@ const CREATE_POST_MUTATION = `
   }
 `;
 
+const UPDATE_POST_MUTATION = `
+  mutation UpdatePost($input: UpdatePostInput!) {
+    updatePost(input: $input) {
+      ${POST_FIELDS}
+      replies {
+        ID
+      }
+    }
+  }
+`;
+
+const DELETE_POST_MUTATION = `
+  mutation DeletePost($id: ID!) {
+    deletePost(id: $id)
+  }
+`;
+
 const CREATE_FAVORITE_MUTATION = `
   mutation CreateFavorite($input: CreateFavoriteInput!) {
     createFavorite(input: $input) {
@@ -149,6 +168,28 @@ export const createPost = async (content: string, parentId?: string, mediaInputs
     getUserToken(),
   );
   return data.createPost;
+};
+
+export const updatePost = async (id: string, content: string): Promise<Post> => {
+  const data = await request<{ updatePost: Post }>(
+    UPDATE_POST_MUTATION,
+    {
+      input: {
+        id,
+        content,
+      },
+    },
+    getUserToken(),
+  );
+  return data.updatePost;
+};
+
+export const deletePost = async (id: string): Promise<void> => {
+  await request<{ deletePost: boolean }>(
+    DELETE_POST_MUTATION,
+    { id },
+    getUserToken(),
+  );
 };
 
 export const createFavorite = async (postId: string): Promise<void> => {

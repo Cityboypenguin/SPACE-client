@@ -33,7 +33,7 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
         padding: 0,
         cursor: currentUserId ? 'pointer' : 'default',
         color: isLiked ? '#f43f5e' : '#94a3b8',
-        fontSize: large ? '0.95rem' : '0.82rem',
+        fontSize: large ? '1.3rem' : '1.2rem',
         fontWeight: isLiked ? 600 : 400,
         transition: 'color 0.1s',
         display: 'flex',
