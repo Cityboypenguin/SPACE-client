@@ -111,7 +111,6 @@ export const AdminRoutes = () => {
         path="reports"
         element={
           <AdminProtectedRoute>
-            <AdminUserEditPage />
             <ReportsPage />
           </AdminProtectedRoute>
         }
