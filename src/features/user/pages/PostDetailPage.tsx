@@ -224,89 +224,105 @@ export const PostDetailPage = () => {
         ) : (
           <>
             <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
-                    <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
-                  </div>
-                </div>
-
-                {isMyPost && !isEditing && (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      onClick={() => { setIsEditing(true); setEditContent(post.content); }}
-                      style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: '#f1f5f9', border: 'none', borderRadius: '4px' }}
-                    >編集</button>
-                    <button
-                      onClick={handleDelete}
-                      style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
-                    >削除</button>
-                  </div>
-                )}
-              </div>
-
-              {isEditing ? (
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    style={{
-                      width: '100%',
-                      minHeight: '100px',
-                      padding: '0.5rem',
-                      margin: '0 0 0.75rem',
-                      fontFamily: 'inherit',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      color: '#1e293b',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.7,
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={() => { setIsEditing(false); setEditContent(post.content); }}
-                      style={{
-                        padding: '0.25rem 0.75rem',
-                        cursor: 'pointer',
-                        background: '#f1f5f9',
-                        border: 'none',
-                        borderRadius: '20px',
-                      }}
-                    >キャンセル</button>
-                    <button
-                      onClick={handleUpdate}
-                      disabled={!canSubmitEdit}
-                      style={{
-                        padding: '0.45rem 1.2rem',
-                        borderRadius: '20px',
-                        background: canSubmitEdit ? '#646cff' : '#c7d2fe',
-                        color: '#fff', border: 'none', fontWeight: 700,
-                        fontSize: '0.9rem',
-                        cursor: canSubmitEdit ? 'pointer' : 'default',
-                        transition: 'background 0.1s',
-                      }}
-                    >保存</button>
-                  </div>
+              {post.deletedAt ? (
+                <div style={{
+                  padding: '2rem 1rem',
+                  background: '#f8fafc',
+                  borderRadius: '8px',
+                  color: '#64748b',
+                  fontStyle: 'italic',
+                  textAlign: 'center',
+                  marginBottom: '1rem'
+                }}>
+                  この投稿は削除されました
                 </div>
               ) : (
-                post.content && (
-                  <p style={{
-                    margin: '0 0 0.75rem',
-                    color: '#1e293b',
-                    fontSize: '1.1rem',
-                    lineHeight: 1.7,
-                    wordBreak: 'break-word',
-                    whiteSpace: 'pre-wrap',
-                  }}>
-                    {post.content}
-                  </p>
-                )
-              )}
-              {post.media && post.media.length > 0 && (
-                <PostMediaDetail media={post.media} />
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                      <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+                      </div>
+                    </div>
+
+                    {isMyPost && !isEditing && (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={() => { setIsEditing(true); setEditContent(post.content); }}
+                          style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: '#f1f5f9', border: 'none', borderRadius: '4px' }}
+                        >編集</button>
+                        <button
+                          onClick={handleDelete}
+                          style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
+                        >削除</button>
+                      </div>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        style={{
+                          width: '100%',
+                          minHeight: '100px',
+                          padding: '0.5rem',
+                          margin: '0 0 0.75rem',
+                          fontFamily: 'inherit',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '4px',
+                          color: '#1e293b',
+                          fontSize: '1.1rem',
+                          lineHeight: 1.7,
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => { setIsEditing(false); setEditContent(post.content); }}
+                          style={{
+                            padding: '0.25rem 0.75rem',
+                            cursor: 'pointer',
+                            background: '#f1f5f9',
+                            border: 'none',
+                            borderRadius: '20px',
+                          }}
+                        >キャンセル</button>
+                        <button
+                          onClick={handleUpdate}
+                          disabled={!canSubmitEdit}
+                          style={{
+                            padding: '0.45rem 1.2rem',
+                            borderRadius: '20px',
+                            background: canSubmitEdit ? '#646cff' : '#c7d2fe',
+                            color: '#fff', border: 'none', fontWeight: 700,
+                            fontSize: '0.9rem',
+                            cursor: canSubmitEdit ? 'pointer' : 'default',
+                            transition: 'background 0.1s',
+                          }}
+                        >保存</button>
+                      </div>
+                    </div>
+                  ) : (
+                    post.content && (
+                      <p style={{
+                        margin: '0 0 0.75rem',
+                        color: '#1e293b',
+                        fontSize: '1.1rem',
+                        lineHeight: 1.7,
+                        wordBreak: 'break-word',
+                        whiteSpace: 'pre-wrap',
+                      }}>
+                        {post.content}
+                      </p>
+                    )
+                  )}
+                  {post.media && post.media.length > 0 && (
+                    <PostMediaDetail media={post.media} />
+                  )}
+                </>
               )}
               <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
