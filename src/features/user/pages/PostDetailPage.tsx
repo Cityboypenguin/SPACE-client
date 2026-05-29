@@ -6,6 +6,8 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
+import { ReportModal } from '../components/organisms/ReportMadal';
+
 import {
   getPostByID,
   createPost,
@@ -21,6 +23,7 @@ import {
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+
 const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div
     onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -334,7 +337,6 @@ export const PostDetailPage = () => {
                 <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
               </div>
             </div>
-
             <PostComposer
               value={replyContent}
               onChange={setReplyContent}
@@ -360,6 +362,12 @@ export const PostDetailPage = () => {
                 ))}
               </div>
             )}
+            <ReportModal
+              isOpen={isReportOpen}
+              onClose={() => setIsReportOpen(false)}
+              targetType="POST"
+              targetID={post.ID}
+            />
           </>
         )}
       </main>
