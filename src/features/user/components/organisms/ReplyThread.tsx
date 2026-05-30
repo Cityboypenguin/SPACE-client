@@ -5,6 +5,7 @@ import { UserMeta } from '../molecules/UserMeta';
 import { PostMediaGrid } from '../molecules/PostMediaGrid';
 import { formatTime } from '../../utils/formatTime';
 import { type Post } from '../../api/post';
+import { countAllReplies } from '../../utils/post';
 
 type Props = {
   post: Post;
@@ -62,7 +63,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) =
             </div>
           )}
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.82rem' }}>
-            <span style={{ color: '#94a3b8' }}>💬 {post.replies.length}</span>
+            <span style={{ color: '#94a3b8' }}>💬 {countAllReplies(post)}</span>
             <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />
           </div>
         </div>
@@ -70,15 +71,16 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) =
 
       {post.replies.length > 0 && (
         <div style={{ marginLeft: depth === 0 ? '2.75rem' : '2rem', borderLeft: '2px solid #e2e8f0' }}>
-          {post.replies.map((reply) => (
-            <ReplyThread
-              key={reply.ID}
-              post={reply}
-              depth={depth + 1}
-              currentUserId={currentUserId}
-              onLike={onLike}
-            />
-          ))}
+          {post.replies
+            .map((reply) => (
+              <ReplyThread
+                key={reply.ID}
+                post={reply}
+                depth={depth + 1}
+                currentUserId={currentUserId}
+                onLike={onLike}
+              />
+            ))}
         </div>
       )}
 
