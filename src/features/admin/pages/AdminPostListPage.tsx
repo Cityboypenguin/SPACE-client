@@ -42,7 +42,11 @@ export const AdminPostListPage = () => {
     if (!window.confirm('この投稿を削除しますか？')) return;
     try {
       await adminDeletePost(id);
-      setPosts((prev) => prev.filter((p) => p.ID !== id));
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.ID === id ? { ...p, deletedAt: new Date().toISOString() } : p
+        )
+      );
     } catch {
       setError('削除に失敗しました');
     }
@@ -94,11 +98,15 @@ export const AdminPostListPage = () => {
                   {post.user.name} (@{post.user.accountID})
                 </td>
                 <td>{post.createdAt}</td>
-                <td>
-                  <button onClick={() => handleDelete(post.ID)} style={{ color: 'red' }}>
-                    削除
-                  </button>
-                </td>
+                {post.deletedAt ? (
+                  <td style={{ color: 'gray' }}>削除済み</td>
+                ) : (
+                  <td>
+                    <button onClick={() => handleDelete(post.ID)} style={{ color: 'red' }}>
+                      削除
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

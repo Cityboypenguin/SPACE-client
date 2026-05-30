@@ -14,6 +14,7 @@ export type Post = {
   content: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string
   user: PostUser;
 };
 
@@ -24,6 +25,7 @@ const POSTS_QUERY = `
       content
       createdAt
       updatedAt
+      deletedAt
       user {
         ID
         accountID
