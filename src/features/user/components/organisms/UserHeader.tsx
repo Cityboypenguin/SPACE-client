@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import styles from './UserHeader.module.css';
 
 export const UserHeader = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { unreadCount } = useNotification();
   const [showConfirm, setShowConfirm] = useState(false);
 
   return (
@@ -19,6 +21,35 @@ export const UserHeader = () => {
           <button className={styles.navButton} onClick={() => navigate('/posts')}>投稿</button>
           <button className={styles.navButton} onClick={() => navigate('/community')}>コミュニティ</button>
         </nav>
+        <button
+          className={styles.navButton}
+          onClick={() => navigate('/notifications')}
+          style={{ position: 'relative', padding: '0.25rem 0.5rem' }}
+        >
+          🔔
+          {unreadCount > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                background: '#ef4444',
+                color: '#fff',
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                borderRadius: '50%',
+                width: 16,
+                height: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1,
+              }}
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
         <button className={styles.logoutButton} onClick={() => setShowConfirm(true)}>ログアウト</button>
       </header>
 

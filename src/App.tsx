@@ -6,6 +6,7 @@ import { OfflineBanner } from './components/organisms/OfflineBanner';
 import { Footer } from './components/organisms/Footer';
 import { NotFoundPage } from './components/pages/NotFoundPage';
 import { UserProtectedRoute } from './features/user/components/UserProtectedRoute';
+import { NotificationProvider } from './features/user/context/NotificationContext';
 
 const AdminRoutes = lazy(() =>
   import('./features/admin/routes/AdminRoutes').then((m) => ({ default: m.AdminRoutes })),
@@ -58,9 +59,16 @@ const PostDetailPage = lazy(() =>
 const InquiryPage = lazy(() =>
   import('./features/user/pages/InquiryPage').then((m) => ({ default: m.InquiryPage })),
 );
+const NotificationListPage = lazy(() =>
+  import('./features/user/pages/NotificationListPage').then((m) => ({ default: m.NotificationListPage })),
+);
+const NotificationDetailPage = lazy(() =>
+  import('./features/user/pages/NotificationDetailPage').then((m) => ({ default: m.NotificationDetailPage })),
+);
 function App() {
   return (
     <ToastProvider>
+      <NotificationProvider>
       <OfflineBanner />
       <ToastContainer />
       <Suspense fallback={<p>読み込み中...</p>}>
@@ -172,11 +180,28 @@ function App() {
             </UserProtectedRoute>
           }
         />
+        <Route
+          path="/notifications"
+          element={
+            <UserProtectedRoute>
+              <NotificationListPage />
+            </UserProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications/:id"
+          element={
+            <UserProtectedRoute>
+              <NotificationDetailPage />
+            </UserProtectedRoute>
+          }
+        />
         <Route path="/inquiry" element={<InquiryPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Footer />
     </Suspense>
+      </NotificationProvider>
     </ToastProvider>
   );
 }
