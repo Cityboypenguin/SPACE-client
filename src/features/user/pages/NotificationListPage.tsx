@@ -76,18 +76,18 @@ export const NotificationListPage = () => {
           <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
             通知
           </h1>
-          {hasUnread && (
+          {notifications.length > 0 && (
             <button
               onClick={handleMarkAllRead}
-              disabled={markingAll}
+              disabled={markingAll || !hasUnread}
               style={{
                 padding: '0.4rem 1rem',
                 borderRadius: 8,
                 border: '1px solid #94a3b8',
                 background: '#fff',
-                cursor: markingAll ? 'not-allowed' : 'pointer',
+                cursor: markingAll || !hasUnread ? 'not-allowed' : 'pointer',
                 fontSize: '0.875rem',
-                color: '#475569',
+                color: markingAll || !hasUnread ? '#cbd5e1' : '#475569',
                 fontWeight: 500,
               }}
             >
