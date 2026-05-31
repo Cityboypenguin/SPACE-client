@@ -6,7 +6,6 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
-import { ReportModal } from '../components/organisms/ReportMadal';
 
 import {
   getPostByID,
@@ -332,7 +331,7 @@ export const PostDetailPage = () => {
               </div>
               <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
                 <span style={{ color: '#64748b', fontSize: '1.3rem' }}>
-                  💬 <strong>{post.replies.length}</strong> 件の返信
+                  💬 <strong>{post.replyCount}</strong> 件の返信
                 </span>
                 <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
               </div>
@@ -357,17 +356,12 @@ export const PostDetailPage = () => {
 
             {post.replies.length > 0 && (
               <div>
-                {post.replies.map((reply) => (
-                  <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
-                ))}
+                {post.replies
+                  .map((reply) => (
+                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
+                  ))}
               </div>
             )}
-            <ReportModal
-              isOpen={isReportOpen}
-              onClose={() => setIsReportOpen(false)}
-              targetType="POST"
-              targetID={post.ID}
-            />
           </>
         )}
       </main>

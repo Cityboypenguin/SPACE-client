@@ -25,6 +25,7 @@ export type Post = {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  replyCount: number;
   user: PostUser;
   favorites: PostFavorite[];
   parent?: Post | null;
@@ -39,6 +40,7 @@ const POST_FIELDS = `
   content
   createdAt
   deletedAt
+  replyCount
   user {
     ID
     name

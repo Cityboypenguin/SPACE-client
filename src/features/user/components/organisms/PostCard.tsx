@@ -37,7 +37,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick }: Props) => (
         </div>
       )}
       <div style={{ display: 'flex', gap: '1.5rem', fontSize: '1.2rem' }}>
-        <span style={{ color: '#94a3b8' }}>💬 {post.replies.length}</span>
+        <span style={{ color: '#94a3b8' }}>💬 {post.replyCount}</span>
         <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />
       </div>
     </div>
