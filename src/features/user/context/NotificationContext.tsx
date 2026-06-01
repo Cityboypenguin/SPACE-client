@@ -13,7 +13,7 @@ import { getUnreadNotificationCount } from '../api/notification';
 import { SSE_URL } from '../../../lib/graphql';
 
 type SSENotificationPayload = {
-  id: number;
+  id: string;
   type: string;
   message: string;
   createdAt: string;
@@ -69,7 +69,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         const payload = JSON.parse(e.data as string) as SSENotificationPayload;
         setUnreadCount((c) => c + 1);
         setLastSseAt(Date.now());
-        addToastRef.current(payload.message, 'info');
+        addToastRef.current(payload.message, 'info', 4000, `/notifications/${payload.id}`);
       } catch {
         // ignore malformed event
       }
