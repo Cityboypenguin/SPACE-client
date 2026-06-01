@@ -2,6 +2,8 @@ const fallbackApiUrl = '/query';
 
 export const API_URL = import.meta.env.VITE_API_URL || fallbackApiUrl;
 
+export const SSE_URL = (import.meta.env.VITE_API_URL as string | undefined ?? '/query').replace(/\/query$/, '/events');
+
 let _onUnauthorized: (() => void) | null = null;
 
 export const registerUnauthorizedHandler = (fn: () => void) => {
