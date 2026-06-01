@@ -47,8 +47,8 @@ const ME_QUERY = `
 `;
 
 const SEARCH_USERS_QUERY = `
-  query SearchUsers($name: String!) {
-    searchUsers(name: $name) {
+  query SearchUsers($keyword: String!) {
+    searchUsers(keyword: $keyword) {
       ID
       accountID
       name
@@ -146,8 +146,8 @@ export const updateMyProfile = async (input: {
   return await request<UpdateUserResponse>(UPDATE_USER_MUTATION, { input }, getUserToken());
 };
 
-export const searchUsers = async (name: string) => {
-  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { name }, getUserToken());
+export const searchUsers = async (keyword: string) => {
+  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword }, getUserToken());
 };
 
 export const getProfileByUserID = async (userID: string) => {

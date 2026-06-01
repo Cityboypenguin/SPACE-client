@@ -48,8 +48,8 @@ const USERS_QUERY = `
 `;
 
 const SEARCH_USERS_QUERY = `
-  query SearchUsers($name: String!) {
-    searchUsers(name: $name) {
+  query SearchUsers($keyword: String!) {
+    searchUsers(keyword: $keyword) {
       ID
       accountID
       name
@@ -156,8 +156,8 @@ export const getUsers = async () => {
   return await request<UsersResponse>(USERS_QUERY, undefined, getAdminToken());
 };
 
-export const searchUsers = async (name: string) => {
-  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { name }, getAdminToken());
+export const searchUsers = async (keyword: string) => {
+  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword }, getAdminToken());
 };
 
 export const getUserByID = async (id: string) => {

@@ -50,3 +50,86 @@
   color: #666;
   margin-top: 1.5rem;
 }
+
+.main {
+  padding: 2rem;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.displayName {
+  margin: 0;
+}
+
+.username {
+  margin: 0;
+  color: #666;
+}
+
+.profileList {
+  line-height: 2;
+}
+
+.profileLabel {
+  font-weight: bold;
+}
+
+.accountMeta {
+  color: #666;
+  margin-top: 1.5rem;
+}
+
+/* リンクを囲むコンテナ */
+.linkContainer {
+  display: flex;
+  flex-direction: row;
+  /* 基本は横並び */
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* 各リンクのデザイン */
+.linkItem {
+  flex: 1;
+  /* 横幅を均等に分割する */
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-decoration: none;
+  color: black;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 画面幅が600px以下（スマートフォンなど）になった時の処理 */
+@media (max-width: 600px) {
+  .linkContainer {
+    flex-direction: column;
+    /* 縦並びに変更 */
+  }
+}

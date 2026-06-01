@@ -67,9 +67,19 @@ export const UserDashboard = () => {
           <p>プロフィールがまだ作成されていません</p>
         )}
 
-        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-          <Link to="/mypage/profile-edit">プロフィール編集</Link>
-          <Link to="/mypage/settings">アカウント設定</Link>
+        <div className={styles.linkContainer}>
+          <Link to="/mypage/profile-edit" className={styles.linkItem}>
+            プロフィール編集
+          </Link>
+          <Link to="/mypage/settings" className={styles.linkItem}>
+            アカウント設定
+          </Link>
+          <Link to="/mypage/favorites" className={styles.linkItem}>
+            お気に入り一覧
+          </Link>
+          <Link to="/mypage/blocks" className={styles.linkItem}>
+            ブロック一覧
+          </Link>
         </div>
       </main>
     </div>
