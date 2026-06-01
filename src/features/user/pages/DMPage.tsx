@@ -61,16 +61,16 @@ export const DMPage = () => {
 
       <div className={styles.messageList}>
         {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
-        
+
         {messages.map((msg, index) => {
           const isMine = msg.user.ID === currentUserID;
           const prevMsg = index > 0 ? messages[index - 1] : null;
-          
+
           return (
             <div key={msg.ID} style={{ display: 'contents' }}>
-              <ChatDateSeparator 
-                currentCreatedAt={msg.createdAt} 
-                prevCreatedAt={prevMsg?.createdAt} 
+              <ChatDateSeparator
+                currentCreatedAt={msg.createdAt}
+                prevCreatedAt={prevMsg?.createdAt}
               />
 
               <ChatMessageBubble
