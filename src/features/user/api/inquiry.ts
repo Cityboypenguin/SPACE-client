@@ -1,7 +1,7 @@
 import { request } from '../../../lib/graphql';
 
 type Inquiry = {
-  ID: string;
+  id: string;
   name: string;
   email: string;
   subject: string;
@@ -16,7 +16,7 @@ type CreateInquiryResponse = {
 const CREATE_INQUIRY_MUTATION = `
   mutation CreateInquiry($input: CreateInquiryInput!) {
     createInquiry(input: $input) {
-      ID
+      id
       name
       email
       subject
