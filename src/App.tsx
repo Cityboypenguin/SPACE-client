@@ -65,6 +65,9 @@ const NotificationListPage = lazy(() =>
 const NotificationDetailPage = lazy(() =>
   import('./features/user/pages/NotificationDetailPage').then((m) => ({ default: m.NotificationDetailPage })),
 );
+const AnnouncementDetailPage = lazy(() =>
+  import('./features/user/pages/AnnouncementDetailPage').then((m) => ({ default: m.AnnouncementDetailPage })),
+);
 function App() {
   return (
     <ToastProvider>
@@ -197,6 +200,14 @@ function App() {
           }
         />
         <Route path="/inquiry" element={<InquiryPage />} />
+        <Route
+          path="/announcements/:id"
+          element={
+            <UserProtectedRoute>
+              <AnnouncementDetailPage />
+            </UserProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Footer />

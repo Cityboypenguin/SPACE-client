@@ -15,6 +15,8 @@ import { AdminAdministratorEditPage } from '../pages/AdminAdministratorEditPage'
 import { ReportsPage } from '../pages/AdminReportListPage';
 import { AdminInquiryListPage } from '../pages/AdminInquiryListPage';
 import { AdminInquiryDetailPage } from '../pages/AdminInquiryDetailPage';
+import { AdminAnnouncementListPage } from '../pages/AdminAnnouncementListPage';
+import { AdminAnnouncementCreatePage } from '../pages/AdminAnnouncementCreatePage';
 
 export const AdminRoutes = () => {
   return (
@@ -130,6 +132,22 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminInquiryDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements/new"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementCreatePage />
           </AdminProtectedRoute>
         }
       />

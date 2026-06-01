@@ -14,12 +14,14 @@ const TYPE_LABEL: Record<string, string> = {
   dm: 'DM',
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
+  announcement: 'お知らせ',
 };
 
 const TARGET_PATH: Record<string, (id: string) => string> = {
   post: (id) => `/posts/${id}`,
   room: (id) => `/community/chat/${id}`,
   community: (id) => `/community`,
+  announcement: (id) => `/announcements/${id}`,
 };
 
 export const NotificationDetailPage = () => {
@@ -160,7 +162,8 @@ export const NotificationDetailPage = () => {
                 }}
               >
                 {notification.targetType === 'post' ? '投稿を見る' :
-                 notification.targetType === 'room' ? 'チャットルームへ' : 'コミュニティへ'}
+                 notification.targetType === 'room' ? 'チャットルームへ' :
+                 notification.targetType === 'announcement' ? 'お知らせを見る' : 'コミュニティへ'}
               </button>
             )}
           </div>
