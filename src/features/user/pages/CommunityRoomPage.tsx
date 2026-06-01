@@ -5,6 +5,7 @@ import { CommunitySettingsModal } from '../components/organisms/CommunitySetting
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, getCommunityMembers, type Community } from '../api/community';
+import { createReport } from '../api/report';
 import { CommunityMembersModal } from '../components/organisms/CommunityMemberModal';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
@@ -34,6 +35,7 @@ export const CommunityRoomPage = () => {
   const [showMembers, setShowMembers] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
+  const [reporting, setReporting] = useState(false);
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
     if (!window.confirm('このコミュニティを退出しますか？')) return;
@@ -43,6 +45,36 @@ export const CommunityRoomPage = () => {
       navigate('/community', { replace: true });
     } catch {
       setLeaving(false);
+    }
+  };
+
+  const handleReportCommunity = async () => {
+    if (!community) return;
+    
+    const reason = window.prompt(
+      `コミュニティ「${community.name}」を通報する理由を入力してください。\n(例: 荒らし行為、利用規約違反、不適切なコンテンツなど)`
+    );
+
+    if (reason === null) return;
+    if (!reason.trim()) {
+      window.alert('通報理由は必須です。');
+      return;
+    }
+
+    setReporting(true);
+    try {
+      await createReport({
+        targetType: 'COMMUNITY',
+        targetID: community.ID,
+        reason: '違反報告',
+        customReason: reason,
+      });
+      window.alert('コミュニティの通報が完了しました。運営にて確認いたします。');
+    } catch (err) {
+      console.error(err);
+      window.alert('通報の送信に失敗しました。');
+    } finally {
+      setReporting(false);
     }
   };
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -140,6 +172,26 @@ export const CommunityRoomPage = () => {
             }}
           >
             ⚙ 設定
+          </button>
+        )}
+        {community && (
+          <button
+            onClick={handleReportCommunity}
+            disabled={reporting}
+            style={{
+              marginLeft: 'auto',
+              padding: '3px 10px',
+              fontSize: '0.8rem',
+              borderRadius: 6,
+              border: '1px solid #fca5a5',
+              background: '#fff',
+              color: '#dc2626',
+              cursor: reporting ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              opacity: reporting ? 0.6 : 1,
+            }}
+          >
+            🚩 通報
           </button>
         )}
         <button
