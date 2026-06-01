@@ -63,7 +63,7 @@ export const AdminUserDetailPage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate('/admin/users')}>← 一覧に戻る</button>
+        <button onClick={() => navigate(-1)}>← 戻る</button>
         <h1>ユーザー詳細</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
