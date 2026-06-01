@@ -24,6 +24,8 @@ const TARGET_PATH: Record<string, (id: string) => string> = {
   announcement: (id) => `/announcements/${id}`,
 };
 
+const DM_TYPES = new Set(['dm']);
+
 export const NotificationDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -52,6 +54,10 @@ export const NotificationDetailPage = () => {
 
   const handleTargetLink = () => {
     if (!notification?.targetType || !notification?.targetID) return;
+    if (DM_TYPES.has(notification.type) && notification.targetType === 'room') {
+      navigate(`/dm/${notification.targetID}`);
+      return;
+    }
     const builder = TARGET_PATH[notification.targetType];
     if (builder) navigate(builder(notification.targetID));
   };
@@ -161,7 +167,8 @@ export const NotificationDetailPage = () => {
                   fontSize: '0.875rem',
                 }}
               >
-                {notification.targetType === 'post' ? '投稿を見る' :
+                {DM_TYPES.has(notification.type) ? 'DMへ' :
+                 notification.targetType === 'post' ? '投稿を見る' :
                  notification.targetType === 'room' ? 'チャットルームへ' :
                  notification.targetType === 'announcement' ? 'お知らせを見る' : 'コミュニティへ'}
               </button>

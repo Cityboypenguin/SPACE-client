@@ -17,9 +17,9 @@ type SSENotificationPayload = {
   type: string;
   message: string;
   createdAt: string;
-  actorID?: number;
+  actorID?: string;
   targetType?: string;
-  targetID?: number;
+  targetID?: string;
 };
 
 type NotificationContextValue = {
@@ -69,7 +69,11 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         const payload = JSON.parse(e.data as string) as SSENotificationPayload;
         setUnreadCount((c) => c + 1);
         setLastSseAt(Date.now());
-        addToastRef.current(payload.message, 'info', 4000, `/notifications/${payload.id}`);
+        const link =
+          payload.type === 'announcement' && payload.targetID
+            ? `/announcements/${payload.targetID}`
+            : `/notifications/${payload.id}`;
+        addToastRef.current(payload.message, 'info', 4000, link);
       } catch {
         // ignore malformed event
       }

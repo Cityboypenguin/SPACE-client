@@ -17,6 +17,7 @@ import { AdminInquiryListPage } from '../pages/AdminInquiryListPage';
 import { AdminInquiryDetailPage } from '../pages/AdminInquiryDetailPage';
 import { AdminAnnouncementListPage } from '../pages/AdminAnnouncementListPage';
 import { AdminAnnouncementCreatePage } from '../pages/AdminAnnouncementCreatePage';
+import { AdminAnnouncementDetailPage } from '../pages/AdminAnnouncementDetailPage';
 
 export const AdminRoutes = () => {
   return (
@@ -148,6 +149,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminAnnouncementCreatePage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementDetailPage />
           </AdminProtectedRoute>
         }
       />

@@ -10,6 +10,17 @@ export type Announcement = {
   createdAt: string;
 };
 
+const GET_ANNOUNCEMENT_QUERY = `
+  query GetAnnouncement($id: ID!) {
+    announcement(id: $id) {
+      ID
+      title
+      body
+      createdAt
+    }
+  }
+`;
+
 const ANNOUNCEMENTS_QUERY = `
   query Announcements($limit: Int) {
     announcements(limit: $limit) {
@@ -31,6 +42,15 @@ const CREATE_ANNOUNCEMENT_MUTATION = `
     }
   }
 `;
+
+export const getAnnouncement = async (id: string): Promise<Announcement> => {
+  const data = await request<{ announcement: Announcement }>(
+    GET_ANNOUNCEMENT_QUERY,
+    { id },
+    getAdminToken(),
+  );
+  return data.announcement;
+};
 
 export const getAnnouncements = async (limit = 50): Promise<Announcement[]> => {
   const data = await request<{ announcements: Announcement[] }>(

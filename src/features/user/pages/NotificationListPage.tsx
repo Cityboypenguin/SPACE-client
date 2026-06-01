@@ -5,6 +5,7 @@ import { useNotification } from '../context/NotificationContext';
 import {
   listMyNotifications,
   markAllNotificationsAsRead,
+  markNotificationAsRead,
   type Notification,
 } from '../api/notification';
 import { listAnnouncements, type Announcement } from '../api/announcement';
@@ -156,7 +157,14 @@ export const NotificationListPage = () => {
                 {notifications.map((n) => (
                   <li
                     key={n.ID}
-                    onClick={() => navigate(`/notifications/${n.ID}`)}
+                    onClick={() => {
+                      if (n.type === 'announcement' && n.targetID) {
+                        if (!n.isRead) markNotificationAsRead(n.ID).catch(() => {});
+                        navigate(`/announcements/${n.targetID}`);
+                      } else {
+                        navigate(`/notifications/${n.ID}`);
+                      }
+                    }}
                     style={{
                       padding: '1rem',
                       borderBottom: '1px solid #f1f5f9',

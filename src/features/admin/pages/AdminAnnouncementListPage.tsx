@@ -46,12 +46,14 @@ export const AdminAnnouncementListPage: React.FC = () => {
             {announcements.map((a) => (
               <li
                 key={a.ID}
+                onClick={() => navigate(`/admin/announcements/${a.ID}`)}
                 style={{
                   padding: '1rem',
                   borderBottom: '1px solid #e2e8f0',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.25rem',
+                  cursor: 'pointer',
                 }}
               >
                 <span style={{ fontWeight: 600, color: '#1e293b' }}>{a.title}</span>
