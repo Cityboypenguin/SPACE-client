@@ -35,7 +35,7 @@ const CREATE_REPORT_MUTATION = `
 const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 export const createReport = async (input: {
-  targetType: 'POST' | 'USER';
+  targetType: 'POST' | 'USER' | 'COMMUNITY';
   targetID: string;
   reason: string;
   customReason: string | null;

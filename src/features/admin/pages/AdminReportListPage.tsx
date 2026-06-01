@@ -2,14 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getReports, adminUpdateReportStatus } from '../api/report';
 
+type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY';
+
+const targetTypeJa: Record<string, string> = {
+  POST: '投稿',
+  USER: 'ユーザー',
+  COMMUNITY: 'コミュニティ',
+  COMMENT: 'コメント',
+};
+
+const statusJa: Record<string, string> = {
+  UNRESOLVED: '未対応',
+  PENDING: '未対応',
+  REVIEWING: '確認中',
+  RESOLVED: '対応済',
+  DISMISSED: '却下（問題なし）',
+};
+
 export const ReportsPage: React.FC = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [activeTab, setActiveTab] = useState<TargetTypeFilter>('ALL');
   const [error, setError] = useState('');
 
   const loadReports = () => {
     setError('');
-    getReports(filterStatus)
+    getReports(filterStatus, activeTab === 'ALL' ? undefined : activeTab)
       .then((data) => {
         if (data && data.searchReports) {
           setReports(data.searchReports);
@@ -25,7 +43,7 @@ export const ReportsPage: React.FC = () => {
 
   useEffect(() => {
     loadReports();
-  }, [filterStatus]);
+  }, [filterStatus, activeTab]);
 
   const handleUpdateStatus = async (reportId: string, newStatus: string) => {
     if (!window.confirm(`ステータスを ${newStatus} に変更しますか？`)) return;
@@ -39,87 +57,203 @@ export const ReportsPage: React.FC = () => {
     }
   };
 
+  const renderTargetContent = (targetID: string, targetType: string) => {
+    if (!targetID) return null;
+
+    const type = targetType?.toUpperCase();
+    if (type === 'POST') {
+      return (
+        <div style={{ fontSize: '0.8rem', color: '#64748b', wordBreak: 'break-all', fontFamily: 'monospace', lineHeight: '1.2' }}>
+          ID: {targetID}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getTargetUrl = (targetID: string, targetType: string) => {
+    if (!targetID) return '#';
+    const type = targetType?.toUpperCase();
+    if (type === 'POST') return `/admin/posts/${targetID}`;
+    if (type === 'USER') return `/admin/users/${targetID}`;
+    if (type === 'COMMUNITY') return `/admin/communities/${targetID}`;
+    if (type === 'COMMENT') return `/admin/comments/${targetID}`;
+    return '#';
+  };
+
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-        <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 600, color: '#1e293b' }}>
-            🚩 通報管理一覧
+      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a', fontWeight: 700 }}>
+            通報管理一覧
           </h1>
-        </div>
-        
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ fontWeight: 500, marginRight: '0.5rem', color: '#475569' }}>
-            ステータス絞り込み：
-          </label>
-          <select 
-            value={filterStatus} 
-            onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ padding: '0.4rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}
-          >
-            <option value="ALL">すべて</option>
-            <option value="PENDING">未対応</option>
-            <option value="RESOLVED">対応済</option>
-          </select>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>ステータス絞り込み：</span>
+            <select 
+              value={filterStatus} 
+              onChange={(e) => setFilterStatus(e.target.value)}
+              style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="ALL">すべて</option>
+              <option value="UNRESOLVED">未対応</option>
+              <option value="RESOLVED">対応済</option>
+            </select>
+          </div>
         </div>
 
-        {error && <p style={{ color: 'red', textAlign: 'center', padding: '1rem' }}>{error}</p>}
+        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+          {(['ALL', 'POST', 'USER', 'COMMUNITY'] as TargetTypeFilter[]).map((tab) => {
+            const isActive = activeTab === tab;
+            const labelMap: Record<TargetTypeFilter, string> = {
+              ALL: 'すべての通報',
+              POST: '投稿',
+              USER: 'ユーザー',
+              COMMUNITY: 'コミュニティ',
+            };
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  borderRadius: '6px 6px 0 0',
+                  border: 'none',
+                  background: isActive ? '#fff' : 'transparent',
+                  color: isActive ? '#2563eb' : '#64748b',
+                  cursor: 'pointer',
+                  borderBottom: isActive ? '2px solid #2563eb' : '2px solid transparent',
+                  transition: 'all 0.15s',
+                  marginBottom: '-1px',
+                }}
+              >
+                {labelMap[tab]}
+              </button>
+            );
+          })}
+        </div>
 
-        <div style={{ overflowX: 'auto', background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        {error && (
+          <p style={{ color: '#ef4444', background: '#fef2f2', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem', fontWeight: 500 }}>
+            {error}
+          </p>
+        )}
+
+        <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '1rem' }}>対象タイプ</th>
-                <th style={{ padding: '1rem' }}>通報理由</th>
-                <th style={{ padding: '1rem' }}>詳細説明</th>
-                <th style={{ padding: '1rem' }}>ステータス</th>
-                <th style={{ padding: '1rem' }}>日時</th>
-                <th style={{ padding: '1rem' }}>操作</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>対象タイプ</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '140px' }}>コンテンツリンク</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '180px' }}>通報理由</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem' }}>詳細説明</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '90px', textAlign: 'center' }}>状態</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '100px' }}>日時</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '95px', textAlign: 'center' }}>操作</th>
               </tr>
             </thead>
             <tbody>
-              {reports.map((report) => (
-                <tr key={report.ID} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{ padding: '0.2rem 0.5rem', borderRadius: 4, background: '#f1f5f9', fontSize: '0.85rem', fontWeight: 600 }}>
-                      {report.targetType}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem', fontWeight: 500 }}>{report.reason}</td>
-                  <td style={{ padding: '1rem', color: '#64748b', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {report.customReason || '（理由の入力なし）'}
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.6rem', borderRadius: 20, fontSize: '0.85rem', fontWeight: 600,
-                      background: report.status === 'RESOLVED' ? '#dcfce7' : '#fef9c3',
-                      color: report.status === 'RESOLVED' ? '#15803d' : '#a16207'
-                    }}>
-                      {report.status === 'RESOLVED' ? '対応済' : '未対応'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
-                    {report.createdAt ? new Date(report.createdAt).toLocaleString('ja-JP') : '---'}
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    {report.status !== 'RESOLVED' && (
-                      <button
-                        onClick={() => handleUpdateStatus(report.ID, 'RESOLVED')}
-                        style={{ padding: '0.4rem 0.8rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-                      >
-                        対応完了にする
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {reports.map((report) => {
+                const targetUrl = getTargetUrl(report.targetID, report.targetType);
+                return (
+                  <tr key={report.ID} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.1s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}>
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
+                      <span style={{ 
+                        padding: '0.2rem 0.5rem', 
+                        borderRadius: '4px', 
+                        fontSize: '0.75rem', 
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        background: report.targetType === 'USER' ? '#eff6ff' : report.targetType === 'COMMUNITY' ? '#f5f3ff' : '#f0fdf4',
+                        color: report.targetType === 'USER' ? '#1d4ed8' : report.targetType === 'COMMUNITY' ? '#6d28d9' : '#15803d',
+                        border: `1px solid ${report.targetType === 'USER' ? '#bfdbfe' : report.targetType === 'COMMUNITY' ? '#ddd6fe' : '#bbf7d0'}`
+                      }}>
+                        {targetTypeJa[report.targetType?.toUpperCase()] || report.targetType}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        {targetUrl !== '#' ? (
+                          <a 
+                            href={targetUrl} 
+                            style={{ fontSize: '0.8rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+                            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                          >
+                            詳細を確認する
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>---</span>
+                        )}
+                        {renderTargetContent(report.targetID, report.targetType)}
+                      </div>
+                    </td>
+
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
+                      <span style={{ 
+                        padding: '0.2rem 0.4rem', 
+                        borderRadius: '4px', 
+                        background: '#fee2e2', 
+                        color: '#991b1b', 
+                        fontWeight: 600, 
+                        fontSize: '0.75rem',
+                        display: 'inline-block',
+                        wordBreak: 'break-all',
+                        lineHeight: '1.3'
+                      }}>
+                        {report.reason}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', fontSize: '0.8rem', color: '#475569', wordBreak: 'break-all', lineHeight: '1.4' }}>
+                      {report.customReason || <span style={{ color: '#cbd5e1' }}>(入力なし)</span>}
+                    </td>
+
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', textAlign: 'center' }}>
+                      <span style={{
+                        padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600,
+                        background: report.status === 'RESOLVED' ? '#dcfce7' : '#fee2e2',
+                        color: report.status === 'RESOLVED' ? '#15803d' : '#991b1b',
+                        display: 'inline-block', whiteSpace: 'nowrap'
+                      }}>
+                        {statusJa[report.status?.toUpperCase()] || report.status}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                      {report.createdAt ? new Date(report.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---'}
+                    </td>
+
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', textAlign: 'center' }}>
+                      {report.status !== 'RESOLVED' ? (
+                        <button
+                          onClick={() => handleUpdateStatus(report.ID, 'RESOLVED')}
+                          style={{ padding: '0.3rem 0.6rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, transition: 'background 0.1s', whiteSpace: 'nowrap' }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#1d4ed8'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = '#2563eb'}
+                        >
+                          対応完了
+                        </button>
+                      ) : (
+                        <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>---</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
         {reports.length === 0 && !error && (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>通報が見つかりませんでした</p>
+          <div style={{ color: '#94a3b8', padding: '3rem', textAlign: 'center', fontSize: '0.85rem' }}>
+            指定された条件の通報は見つかりませんでした
+          </div>
         )}
       </main>
     </div>
