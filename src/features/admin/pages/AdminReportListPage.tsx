@@ -14,7 +14,7 @@ const targetTypeJa: Record<string, string> = {
 const statusJa: Record<string, string> = {
   UNRESOLVED: '未対応',
   PENDING: '未対応',
-  REVIEWING: '確認中',
+  REVIEWING: '対応中',
   RESOLVED: '対応済',
   DISMISSED: '却下（問題なし）',
 };
@@ -45,8 +45,8 @@ export const ReportsPage: React.FC = () => {
     loadReports();
   }, [filterStatus, activeTab]);
 
-  const handleUpdateStatus = async (reportId: string, newStatus: string) => {
-    if (!window.confirm(`ステータスを ${newStatus} に変更しますか？`)) return;
+  const handleUpdateStatus = async (reportId: string, newStatus: string, statusLabel: string) => {
+    if (!window.confirm(`ステータスを ${statusLabel} に変更しますか？`)) return;
     try {
       setError('');
       await adminUpdateReportStatus(reportId, newStatus);
@@ -63,7 +63,7 @@ export const ReportsPage: React.FC = () => {
     const type = targetType?.toUpperCase();
     if (type === 'POST') {
       return (
-        <div style={{ fontSize: '0.8rem', color: '#64748b', wordBreak: 'break-all', fontFamily: 'monospace', lineHeight: '1.2' }}>
+        <div style={{ fontSize: '0.75rem', color: '#64748b', wordBreak: 'break-all', fontFamily: 'monospace', lineHeight: '1.2', marginTop: '2px' }}>
           ID: {targetID}
         </div>
       );
@@ -86,19 +86,20 @@ export const ReportsPage: React.FC = () => {
       <AdminHeader />
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a', fontWeight: 700 }}>
+          <h1 style={{ margin: 0, fontSize: '1.4rem', color: '#0f172a', fontWeight: 700 }}>
             通報管理一覧
           </h1>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>ステータス絞り込み：</span>
+            <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>ステータス絞り込み：</span>
             <select 
               value={filterStatus} 
               onChange={(e) => setFilterStatus(e.target.value)}
-              style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}
+              style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
             >
               <option value="ALL">すべて</option>
               <option value="UNRESOLVED">未対応</option>
+              <option value="REVIEWING">対応中</option>
               <option value="RESOLVED">対応済</option>
             </select>
           </div>
@@ -119,7 +120,7 @@ export const ReportsPage: React.FC = () => {
                 onClick={() => setActiveTab(tab)}
                 style={{
                   padding: '0.5rem 1rem',
-                  fontSize: '0.85rem',
+                  fontSize: '0.8rem',
                   fontWeight: 600,
                   borderRadius: '6px 6px 0 0',
                   border: 'none',
@@ -138,27 +139,27 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {error && (
-          <p style={{ color: '#ef4444', background: '#fef2f2', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem', fontWeight: 500 }}>
+          <p style={{ color: '#ef4444', background: '#fef2f2', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.8rem', fontWeight: 500 }}>
             {error}
           </p>
         )}
 
-        <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
+        <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflowX: 'auto', border: '1px solid #e2e8f0' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed', minWidth: '1100px' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>対象タイプ</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '140px' }}>コンテンツリンク</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '180px' }}>通報理由</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem' }}>詳細説明</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '90px', textAlign: 'center' }}>状態</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '100px' }}>日時</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '95px', textAlign: 'center' }}>操作</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '100px' }}>対象タイプ</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '160px' }}>コンテンツリンク</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '160px' }}>通報理由</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: 'auto' }}>詳細説明</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '130px', textAlign: 'center' }}>状態</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>日時</th>
               </tr>
             </thead>
             <tbody>
               {reports.map((report) => {
                 const targetUrl = getTargetUrl(report.targetID, report.targetType);
+                const currentStatus = report.status?.toUpperCase();
                 return (
                   <tr key={report.ID} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.1s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}>
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
@@ -177,18 +178,18 @@ export const ReportsPage: React.FC = () => {
                     </td>
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
                         {targetUrl !== '#' ? (
                           <a 
                             href={targetUrl} 
-                            style={{ fontSize: '0.8rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+                            style={{ fontSize: '0.75rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
                             onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                             onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                           >
                             詳細を確認する
                           </a>
                         ) : (
-                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>---</span>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>---</span>
                         )}
                         {renderTargetContent(report.targetID, report.targetType)}
                       </div>
@@ -204,44 +205,49 @@ export const ReportsPage: React.FC = () => {
                         fontSize: '0.75rem',
                         display: 'inline-block',
                         wordBreak: 'break-all',
-                        lineHeight: '1.3'
+                        lineHeight: '1.2'
                       }}>
                         {report.reason}
                       </span>
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', fontSize: '0.8rem', color: '#475569', wordBreak: 'break-all', lineHeight: '1.4' }}>
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', fontSize: '0.75rem', color: '#475569', wordBreak: 'break-all', lineHeight: '1.4' }}>
                       {report.customReason || <span style={{ color: '#cbd5e1' }}>(入力なし)</span>}
                     </td>
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', textAlign: 'center' }}>
-                      <span style={{
-                        padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600,
-                        background: report.status === 'RESOLVED' ? '#dcfce7' : '#fee2e2',
-                        color: report.status === 'RESOLVED' ? '#15803d' : '#991b1b',
-                        display: 'inline-block', whiteSpace: 'nowrap'
-                      }}>
-                        {statusJa[report.status?.toUpperCase()] || report.status}
-                      </span>
+                      <select
+                        value={currentStatus === 'PENDING' ? 'UNRESOLVED' : currentStatus}
+                        disabled={currentStatus === 'RESOLVED'}
+                        onChange={(e) => {
+                          const nextStatus = e.target.value;
+                          const nextLabel = statusJa[nextStatus] || nextStatus;
+                          handleUpdateStatus(report.ID, nextStatus, nextLabel);
+                        }}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: currentStatus === 'RESOLVED' ? 'default' : 'pointer',
+                          outline: 'none',
+                          border: 'none',
+                          textAlign: 'center',
+                          WebkitAppearance: 'none',
+                          MozAppearance: 'none',
+                          appearance: 'none',
+                          background: currentStatus === 'RESOLVED' ? '#dcfce7' : currentStatus === 'REVIEWING' ? '#fef9c3' : '#fee2e2',
+                          color: currentStatus === 'RESOLVED' ? '#15803d' : currentStatus === 'REVIEWING' ? '#854d0e' : '#991b1b',
+                        }}
+                      >
+                        <option value="UNRESOLVED">未対応</option>
+                        <option value="REVIEWING">対応中</option>
+                        <option value="RESOLVED">対応済</option>
+                      </select>
                     </td>
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                       {report.createdAt ? new Date(report.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---'}
-                    </td>
-
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', textAlign: 'center' }}>
-                      {report.status !== 'RESOLVED' ? (
-                        <button
-                          onClick={() => handleUpdateStatus(report.ID, 'RESOLVED')}
-                          style={{ padding: '0.3rem 0.6rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, transition: 'background 0.1s', whiteSpace: 'nowrap' }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#1d4ed8'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = '#2563eb'}
-                        >
-                          対応完了
-                        </button>
-                      ) : (
-                        <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>---</span>
-                      )}
                     </td>
                   </tr>
                 );
