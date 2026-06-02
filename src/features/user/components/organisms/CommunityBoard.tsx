@@ -7,15 +7,17 @@ type Props = {
   community: Community;
   onJoin?: (community: Community) => Promise<void>;
   joined?: boolean;
+  onReport?: (community: Community) => Promise<void>;
   currentUserID: string | null;
 };
 
-export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => {
+export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: Props) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
   const [memberCount, setMemberCount] = useState<number | null>(null);
+
   useEffect(() => {
     if (expanded && memberCount === null) {
       getCommunityMembers(community.ID)
@@ -39,6 +41,13 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
     }
   };
 
+  const handleReportClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onReport) {
+      onReport(community);
+    }
+  };
+
   return (
     <div
       onClick={() => setExpanded((v) => !v)}
@@ -54,9 +63,9 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         <CommunityAvatar 
-        name={community.name} 
-        src={community.avatarURL} 
-        size={40} 
+          name={community.name} 
+          src={community.avatarURL} 
+          size={40} 
         />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: '1rem', color: '#1e293b' }}>{community.name}</div>
@@ -105,58 +114,82 @@ export const CommunityBoard = ({ community, onJoin, joined = false }: Props) => 
             {community.description}
           </p>
           {error && <p style={{ color: 'red', margin: '0 0 0.5rem', fontSize: '0.85rem' }}>{error}</p>}
-          {joined ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  padding: '0.35rem 0.9rem',
-                  borderRadius: '20px',
-                  background: '#dcfce7',
-                  color: '#16a34a',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                }}
-              >
-                参加済み
-              </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            
+            {joined ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '0.35rem 0.9rem',
+                    borderRadius: '20px',
+                    background: '#dcfce7',
+                    color: '#16a34a',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  参加済み
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/community/chat/${community.roomID}`, { state: { communityID: community.ID } });
+                  }}
+                  style={{
+                    padding: '0.45rem 1.2rem',
+                    borderRadius: '20px',
+                    background: '#646cff',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  チャットルームへ
+                </button>
+              </div>
+            ) : onJoin ? (
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/community/chat/${community.roomID}`, { state: { communityID: community.ID } });
-                }}
+                onClick={handleJoin}
+                disabled={joining}
                 style={{
                   padding: '0.45rem 1.2rem',
                   borderRadius: '20px',
-                  background: '#646cff',
+                  background: joining ? '#94a3b8' : '#646cff',
                   color: '#fff',
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: joining ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                   fontSize: '0.9rem',
                 }}
               >
-                チャットルームへ
+                {joining ? '参加中...' : 'コミュニティに参加'}
               </button>
-            </div>
-          ) : onJoin ? (
-            <button
-              onClick={handleJoin}
-              disabled={joining}
-              style={{
-                padding: '0.45rem 1.2rem',
-                borderRadius: '20px',
-                background: joining ? '#94a3b8' : '#646cff',
-                color: '#fff',
-                border: 'none',
-                cursor: joining ? 'not-allowed' : 'pointer',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-              }}
-            >
-              {joining ? '参加中...' : 'コミュニティに参加'}
-            </button>
-          ) : null}
+            ) : <div />}
+
+            {onReport && (
+              <button
+                onClick={handleReportClick}
+                style={{
+                  padding: '0.4rem 0.9rem',
+                  background: '#fff',
+                  color: '#ef4444',
+                  border: '1px solid #fca5a5',
+                  borderRadius: '20px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#fef2f2')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+              >
+                ⚠️ コミュニティ通報
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

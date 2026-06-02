@@ -13,6 +13,11 @@ import { AdminCommunityDetailPage } from '../pages/AdminCommunityDetailPage';
 import { AdminPostListPage } from '../pages/AdminPostListPage';
 import { AdminAdministratorEditPage } from '../pages/AdminAdministratorEditPage';
 import { ReportsPage } from '../pages/AdminReportListPage';
+import { AdminInquiryListPage } from '../pages/AdminInquiryListPage';
+import { AdminInquiryDetailPage } from '../pages/AdminInquiryDetailPage';
+import { AdminAnnouncementListPage } from '../pages/AdminAnnouncementListPage';
+import { AdminAnnouncementCreatePage } from '../pages/AdminAnnouncementCreatePage';
+import { AdminAnnouncementDetailPage } from '../pages/AdminAnnouncementDetailPage';
 
 export const AdminRoutes = () => {
   return (
@@ -112,6 +117,46 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <ReportsPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="inquiries"
+        element={
+          <AdminProtectedRoute>
+            <AdminInquiryListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="inquiries/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminInquiryDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements/new"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementCreatePage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementDetailPage />
           </AdminProtectedRoute>
         }
       />

@@ -7,11 +7,12 @@ export type Toast = {
   message: string;
   type: ToastType;
   duration: number;
+  navigateTo?: string;
 };
 
 type ToastContextValue = {
   toasts: Toast[];
-  addToast: (message: string, type?: ToastType, duration?: number) => void;
+  addToast: (message: string, type?: ToastType, duration?: number, navigateTo?: string) => void;
   removeToast: (id: string) => void;
 };
 
@@ -25,9 +26,9 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const addToast = useCallback(
-    (message: string, type: ToastType = 'info', duration = 4000) => {
+    (message: string, type: ToastType = 'info', duration = 4000, navigateTo?: string) => {
       const id = `toast-${Date.now()}-${Math.random()}`;
-      setToasts((prev) => [...prev, { id, message, type, duration }]);
+      setToasts((prev) => [...prev, { id, message, type, duration, navigateTo }]);
       if (duration > 0) {
         setTimeout(() => removeToast(id), duration);
       }

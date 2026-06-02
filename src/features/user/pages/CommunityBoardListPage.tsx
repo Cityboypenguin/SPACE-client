@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
+import { createReport } from '../api/report';
 import { useAuth } from '../context/AuthContext';
 
 export const CommunityBoardListPage = () => {
@@ -71,6 +72,31 @@ export const CommunityBoardListPage = () => {
     }
   };
 
+  const handleReportCommunity = useCallback(async (community: Community) => {
+    const customReason = window.prompt(
+      `コミュニティ「${community.name}」を通報する具体的な理由を入力してください。`
+    );
+
+    if (customReason === null) return; // キャンセル
+    if (customReason.trim() === '') {
+      alert('通報には具体的な理由の入力が必要です。');
+      return;
+    }
+
+    try {
+      await createReport({
+        targetType: 'COMMUNITY',
+        targetID: community.ID,
+        reason: 'COMMUNITY_VIOLATION',
+        customReason: customReason
+      });
+      alert('コミュニティの通報を送信しました。ご協力ありがとうございました。');
+    } catch (err) {
+      console.error('コミュニティの通報に失敗しました:', err);
+      alert('通報の送信に失敗しました。');
+    }
+  }, []);
+
   const handleJoin = useCallback(async (community: Community) => {
     try {
       await joinCommunity(community.roomID);
@@ -137,6 +163,7 @@ export const CommunityBoardListPage = () => {
                     currentUserID={currentUserID}
                     joined={joinedIDs.has(c.ID)}
                     onJoin={handleJoin}
+                    onReport={handleReportCommunity}
                   />
                 ))}
               </div>
@@ -161,6 +188,7 @@ export const CommunityBoardListPage = () => {
                   currentUserID={currentUserID}
                   joined={joinedIDs.has(c.ID)}
                   onJoin={handleJoin}
+                  onReport={handleReportCommunity}
                 />
               ))}
             </div>
