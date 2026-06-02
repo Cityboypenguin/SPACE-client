@@ -37,6 +37,7 @@ export type Room = {
   name: string;
   type: string;
   user: MessageUser[];
+  isMessagingDisabled: boolean;
 };
 
 const MESSAGE_FIELDS = `
@@ -72,6 +73,7 @@ const GET_OR_CREATE_DM_ROOM_MUTATION = `
         accountID
         avatarUrl
       }
+      isMessagingDisabled
     }
   }
 `;
@@ -118,6 +120,7 @@ const GET_ROOM_QUERY = `
         accountID
         avatarUrl
       }
+      isMessagingDisabled
     }
   }
 `;

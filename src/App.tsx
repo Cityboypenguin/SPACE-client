@@ -59,6 +59,12 @@ const PostDetailPage = lazy(() =>
 const InquiryPage = lazy(() =>
   import('./features/user/pages/InquiryPage').then((m) => ({ default: m.InquiryPage })),
 );
+const FavoriteUsersPage = lazy(() =>
+  import('./features/user/pages/FavoriteUsersPage').then((m) => ({ default: m.FavoriteUsersPage })),
+);
+const BlockedUsersPage = lazy(() =>
+  import('./features/user/pages/BlockedUsersPage').then((m) => ({ default: m.BlockedUsersPage })),
+);
 const NotificationListPage = lazy(() =>
   import('./features/user/pages/NotificationListPage').then((m) => ({ default: m.NotificationListPage })),
 );
@@ -69,140 +75,156 @@ function App() {
   return (
     <ToastProvider>
       <NotificationProvider>
-      <OfflineBanner />
-      <ToastContainer />
-      <Suspense fallback={<p>読み込み中...</p>}>
-        <Routes>
-          <Route path="/admin/*" element={<AdminRoutes />} />
-        <Route path="/login" element={<UserLoginForm />} />
-        <Route path="/register" element={<UserRegisterPage />} />
-        <Route
-          path="/mypage"
-          element={
-            <UserProtectedRoute>
-              <UserDashboard />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/mypage/settings"
-          element={
-            <UserProtectedRoute>
-              <UserSettingsPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/mypage/profile-edit"
-          element={
-            <UserProtectedRoute>
-              <UserProfileEditPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/search"
-          element={
-            <UserProtectedRoute>
-              <UserSearchPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/users/:id"
-          element={
-            <UserProtectedRoute>
-              <UserPublicProfilePage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/dm"
-          element={
-            <UserProtectedRoute>
-              <DMListPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/dm/:roomId"
-          element={
-            <UserProtectedRoute>
-              <DMPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/community"
-          element={
-            <UserProtectedRoute>
-              <CommunityListPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/community/browse"
-          element={
-            <UserProtectedRoute>
-              <CommunityBoardListPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/community/create"
-          element={
-            <UserProtectedRoute>
-              <CommunityCreatePage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/community/chat/:roomId"
-          element={
-            <UserProtectedRoute>
-              <CommunityRoomPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/posts"
-          element={
-            <UserProtectedRoute>
-              <PostListPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/posts/:id"
-          element={
-            <UserProtectedRoute>
-              <PostDetailPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <UserProtectedRoute>
-              <NotificationListPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications/:id"
-          element={
-            <UserProtectedRoute>
-              <NotificationDetailPage />
-            </UserProtectedRoute>
-          }
-        />
-        <Route path="/inquiry" element={<InquiryPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-      <Footer />
-    </Suspense>
+        <OfflineBanner />
+        <ToastContainer />
+        <Suspense fallback={<p>読み込み中...</p>}>
+          <Routes>
+            <Route path="/admin/*" element={<AdminRoutes />} />
+            <Route path="/login" element={<UserLoginForm />} />
+            <Route path="/register" element={<UserRegisterPage />} />
+            <Route
+              path="/mypage"
+              element={
+                <UserProtectedRoute>
+                  <UserDashboard />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/mypage/settings"
+              element={
+                <UserProtectedRoute>
+                  <UserSettingsPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/mypage/profile-edit"
+              element={
+                <UserProtectedRoute>
+                  <UserProfileEditPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/mypage/favorites"
+              element={
+                <UserProtectedRoute>
+                  <FavoriteUsersPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/mypage/blocks"
+              element={
+                <UserProtectedRoute>
+                  <BlockedUsersPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <UserProtectedRoute>
+                  <UserSearchPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/:id"
+              element={
+                <UserProtectedRoute>
+                  <UserPublicProfilePage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/dm"
+              element={
+                <UserProtectedRoute>
+                  <DMListPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/dm/:roomId"
+              element={
+                <UserProtectedRoute>
+                  <DMPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/community"
+              element={
+                <UserProtectedRoute>
+                  <CommunityListPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/community/browse"
+              element={
+                <UserProtectedRoute>
+                  <CommunityBoardListPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/community/create"
+              element={
+                <UserProtectedRoute>
+                  <CommunityCreatePage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/community/chat/:roomId"
+              element={
+                <UserProtectedRoute>
+                  <CommunityRoomPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/posts"
+              element={
+                <UserProtectedRoute>
+                  <PostListPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/posts/:id"
+              element={
+                <UserProtectedRoute>
+                  <PostDetailPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <UserProtectedRoute>
+                  <NotificationListPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications/:id"
+              element={
+                <UserProtectedRoute>
+                  <NotificationDetailPage />
+                </UserProtectedRoute>
+              }
+            />
+            <Route path="/inquiry" element={<InquiryPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+          <Footer />
+        </Suspense>
       </NotificationProvider>
-    </ToastProvider>
+    </ToastProvider >
   );
 }
 
