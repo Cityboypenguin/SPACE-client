@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { Link } from 'react-router-dom';
 import { getReports, adminUpdateReportStatus } from '../api/report';
 
 type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY';
@@ -57,29 +58,48 @@ export const ReportsPage: React.FC = () => {
     }
   };
 
-  const renderTargetContent = (targetID: string, targetType: string) => {
-    if (!targetID) return null;
-
-    const type = targetType?.toUpperCase();
-    if (type === 'POST') {
+  const renderTargetContent = (report: any) => {
+    if (report.targetType === 'POST') {
+      const postContent = report.targetPost?.content || report.postContent || report.content;
       return (
-        <div style={{ fontSize: '0.75rem', color: '#64748b', wordBreak: 'break-all', fontFamily: 'monospace', lineHeight: '1.2', marginTop: '2px' }}>
-          ID: {targetID}
+        <div style={{ 
+          color: '#475569', 
+          fontSize: '0.85rem', 
+          marginTop: '4px',
+          maxWidth: '240px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
+          {postContent ? postContent : `ID: ${report.targetID}`}
         </div>
       );
     }
-    return null;
+    return <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>ID: {report.targetID}</div>;
   };
 
   const getTargetUrl = (targetID: string, targetType: string) => {
-    if (!targetID) return '#';
-    const type = targetType?.toUpperCase();
-    if (type === 'POST') return `/admin/posts/${targetID}`;
-    if (type === 'USER') return `/admin/users/${targetID}`;
-    if (type === 'COMMUNITY') return `/admin/communities/${targetID}`;
-    if (type === 'COMMENT') return `/admin/comments/${targetID}`;
-    return '#';
-  };
+  if (!targetID) return '#';
+  let actualID = targetID;
+  if (targetID.startsWith('cG9zdD') || !/^\d+$/.test(targetID)) {
+    try {
+      const decoded = atob(targetID);
+      const parts = decoded.split(':');
+      if (parts.length > 1) {
+        actualID = parts[1];
+      }
+    } catch (e) {
+      console.error('Failed to decode Global ID:', e);
+    }
+  }
+
+  const type = targetType?.toUpperCase();
+  if (type === 'POST') return `/admin/posts/${actualID}`;
+  if (type === 'USER') return `/admin/users/${actualID}`;
+  if (type === 'COMMUNITY') return `/admin/communities/${actualID}`;
+  if (type === 'COMMENT') return `/admin/comments/${actualID}`;
+  return '#';
+};
 
   return (
     <div>
@@ -178,21 +198,15 @@ export const ReportsPage: React.FC = () => {
                     </td>
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                        {targetUrl !== '#' ? (
-                          <a 
-                            href={targetUrl} 
-                            style={{ fontSize: '0.75rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
-                            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-                          >
-                            詳細を確認する
-                          </a>
-                        ) : (
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>---</span>
-                        )}
-                        {renderTargetContent(report.targetID, report.targetType)}
-                      </div>
+                      <Link 
+                        to={targetUrl} 
+                        style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: '0.85rem' }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                      >
+                        詳細を確認する
+                      </Link>
+                      {renderTargetContent(report)}
                     </td>
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
