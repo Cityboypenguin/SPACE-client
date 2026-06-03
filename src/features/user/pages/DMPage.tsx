@@ -15,6 +15,7 @@ export const DMPage = () => {
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
   const { room, messages, wsConnected, error, addMessage } = useRoomMessages(roomId);
+  const isBlocked = room?.isMessagingDisabled ?? false;
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -46,6 +47,8 @@ export const DMPage = () => {
 
   const partnerName = room?.user.find((u) => u.ID !== currentUserID)?.name ?? 'DM';
 
+  // ... 上部のimportやフックの定義はそのまま ...
+
   return (
     <div className={styles.container}>
       <UserHeader />
@@ -61,16 +64,16 @@ export const DMPage = () => {
 
       <div className={styles.messageList}>
         {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
-        
+
         {messages.map((msg, index) => {
           const isMine = msg.user.ID === currentUserID;
           const prevMsg = index > 0 ? messages[index - 1] : null;
-          
+
           return (
             <div key={msg.ID} style={{ display: 'contents' }}>
-              <ChatDateSeparator 
-                currentCreatedAt={msg.createdAt} 
-                prevCreatedAt={prevMsg?.createdAt} 
+              <ChatDateSeparator
+                currentCreatedAt={msg.createdAt}
+                prevCreatedAt={prevMsg?.createdAt}
               />
 
               <ChatMessageBubble
@@ -91,6 +94,20 @@ export const DMPage = () => {
         <div ref={bottomRef} />
       </div>
 
+      {isBlocked && (
+        <div style={{
+          padding: '12px',
+          margin: '0 16px 16px',
+          textAlign: 'center',
+          backgroundColor: '#fee2e2',
+          color: '#dc2626',
+          borderRadius: '8px',
+          fontSize: '0.875rem'
+        }}>
+          ブロック設定により、現在メッセージを送受信できません。
+        </div>
+      )}
+
       <ChatInput
         value={content}
         onChange={setContent}
@@ -98,6 +115,7 @@ export const DMPage = () => {
         onFileSelect={setSelectedFiles}
         selectedFiles={selectedFiles}
         disabled={sending}
+        isBlocked={isBlocked}
       />
     </div>
   );

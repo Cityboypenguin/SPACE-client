@@ -18,9 +18,10 @@ type Props = {
   onFileSelect: (files: File[]) => void;
   selectedFiles: File[];
   disabled?: boolean;
+  isBlocked?: boolean;
 };
 
-export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled }: Props) => {
+export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -55,7 +56,13 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     onFileSelect(selectedFiles.filter((_, i) => i !== index));
   };
 
-  const canSubmit = !disabled && (value.trim() !== '' || selectedFiles.length > 0);
+  const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
+
+  const getButtonText = () => {
+    if (isBlocked) return '送信不可';
+    if (disabled) return '送信中...';
+    return '送信';
+  };
 
   return (
     <div>
@@ -95,9 +102,16 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || selectedFiles.length >= MAX_FILES}
-          title={`ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px', color: selectedFiles.length >= MAX_FILES ? '#d1d5db' : '#6b7280' }}
+          disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
+          title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? 'default' : 'pointer',
+            fontSize: '1.2rem',
+            padding: '0 4px',
+            color: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? '#d1d5db' : '#6b7280'
+          }}
         >
           📎
         </button>
@@ -120,16 +134,20 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
-              if (canSubmit) onSubmit({ preventDefault: () => {} });
+              if (canSubmit) onSubmit({ preventDefault: () => { } });
             }
           }}
-          placeholder="メッセージを入力... (Shift+Enterで改行)"
-          disabled={disabled}
+          placeholder={isBlocked ? 'メッセージを送信できません' : 'メッセージを入力... (Shift+Enterで改行)'}
+          disabled={disabled || isBlocked} // isBlocked も条件に追加
           className={styles.inputField}
-          autoFocus
+          style={{ cursor: (disabled || isBlocked) ? 'default' : 'text' }}
         />
-        <button type="submit" disabled={!canSubmit}>
-          {disabled ? '送信中...' : '送信'}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          style={{ cursor: !canSubmit ? 'default' : 'pointer' }}
+        >
+          {getButtonText()}
         </button>
       </form>
     </div>
