@@ -17,11 +17,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 
+let cachedPosts: Post[] = [];
+
 export const PostListPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<Post[]>(cachedPosts);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [content, setContent] = useState('');
@@ -29,10 +31,14 @@ export const PostListPage = () => {
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
 
+
   const loadPosts = () => {
     setLoading(true);
     getTopLevelPosts()
-      .then(setPosts)
+      .then((data) => {
+        setPosts(data);
+        cachedPosts = data;
+      })
       .catch(() => setError('投稿の読み込みに失敗しました'))
       .finally(() => setLoading(false));
   };
@@ -108,11 +114,7 @@ export const PostListPage = () => {
 
         {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
 
-        {loading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-        ) : posts.length === 0 ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
-        ) : (
+        {posts.length > 0 ? (
           posts.map((post) => (
             <PostCard
               key={post.ID}
@@ -122,6 +124,10 @@ export const PostListPage = () => {
               onClick={() => navigate(`/posts/${post.ID}`)}
             />
           ))
+        ) : loading ? (
+          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+        ) : (
+          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
         )}
       </main>
     </div>

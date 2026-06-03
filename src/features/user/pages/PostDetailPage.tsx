@@ -186,7 +186,7 @@ const ReportModal = ({ targetId, postContent, onClose }: ReportModalProps) => {
             {postContent}
           </div>
         )}
-        
+
         <div style={{ marginBottom: '1rem' }}>
           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
             通報理由
@@ -257,16 +257,35 @@ export const PostDetailPage = () => {
   const isMyPost = post?.user.ID === userId;
   const canSubmitEdit = editContent.trim() !== '';
 
-  const loadPost = (postId: string) => {
+  const loadPost = (postId: string, activeSignal = { active: true }) => {
     setLoading(true);
+    setError('');
     getPostByID(postId)
-      .then(setPost)
-      .catch(() => setError('投稿の読み込みに失敗しました'))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (activeSignal.active) {
+          setPost(data);
+        }
+      })
+      .catch(() => {
+        if (activeSignal.active) {
+          setError('投稿の読み込みに失敗しました');
+        }
+      })
+      .finally(() => {
+        if (activeSignal.active) {
+          setLoading(false);
+        }
+      });
   };
 
   useEffect(() => {
-    if (id) loadPost(id);
+    const activeSignal = { active: true };
+    if (id) {
+      loadPost(id, activeSignal);
+    }
+    return () => {
+      activeSignal.active = false;
+    };
   }, [id]);
 
   const handleLike = async (postId: string, isLiked: boolean) => {
@@ -336,7 +355,7 @@ export const PostDetailPage = () => {
       <main style={{ maxWidth: '600px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0' }}>
           <button
-            onClick={() => navigate('/posts')}
+            onClick={() => navigate(-1)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.1rem', padding: '0.25rem 0.5rem', borderRadius: '50%' }}
           >←</button>
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿</h1>
@@ -432,7 +451,7 @@ export const PostDetailPage = () => {
                   </p>
                 )
               )}
-              
+
               {post.media && post.media.length > 0 && (
                 <PostMediaDetail media={post.media} />
               )}
@@ -440,13 +459,13 @@ export const PostDetailPage = () => {
               <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
               </div>
-              
+
               <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
                 <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
                   💬 <strong>{post.replyCount}</strong> 件の返信
                 </span>
                 <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
-                
+
                 {!isMyPost && (
                   <button
                     onClick={() => setIsReportOpen(true)}
@@ -493,10 +512,10 @@ export const PostDetailPage = () => {
             )}
 
             {isReportOpen && id && (
-              <ReportModal 
-                targetId={id} 
-                postContent={post.content} 
-                onClose={() => setIsReportOpen(false)} 
+              <ReportModal
+                targetId={id}
+                postContent={post.content}
+                onClose={() => setIsReportOpen(false)}
               />
             )}
           </>
