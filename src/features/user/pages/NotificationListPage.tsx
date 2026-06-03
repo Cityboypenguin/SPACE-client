@@ -36,7 +36,7 @@ const TAB_STYLE = (active: boolean): React.CSSProperties => ({
 
 export const NotificationListPage = () => {
   const navigate = useNavigate();
-  const { lastSseAt, resetUnread } = useNotification();
+  const { lastSseAt, resetUnread, decrementUnread } = useNotification();
   const lastSseAtRef = useRef(lastSseAt);
 
   const [tab, setTab] = useState<Tab>('notifications');
@@ -61,8 +61,7 @@ export const NotificationListPage = () => {
 
   useEffect(() => {
     loadNotifications();
-    resetUnread();
-  }, [resetUnread]);
+  }, []);
 
   useEffect(() => {
     if (lastSseAt === 0 || lastSseAt === lastSseAtRef.current) return;
@@ -159,7 +158,10 @@ export const NotificationListPage = () => {
                     key={n.ID}
                     onClick={() => {
                       if (n.type === 'announcement' && n.targetID) {
-                        if (!n.isRead) markNotificationAsRead(n.ID).catch(() => {});
+                        if (!n.isRead) {
+                          markNotificationAsRead(n.ID).catch(() => {});
+                          decrementUnread();
+                        }
                         navigate(`/announcements/${n.targetID}`);
                       } else {
                         navigate(`/notifications/${n.ID}`);
