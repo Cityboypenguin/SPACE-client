@@ -92,49 +92,60 @@ const GET_POST_BY_ID_QUERY = `
   }
 `;
 
-const CREATE_POST_MUTATION = `
-  mutation CreatePost($input: CreatePostInput!) {
-    createPost(input: $input) {
+const GET_POSTS_BY_USER_ID_QUERY = `
+  query GetPostsByUserID($user_id: ID!) {
+    getPostsByUserID(user_id: $user_id) {
       ${POST_FIELDS}
       replies {
         ID
       }
     }
   }
+`;
+
+const CREATE_POST_MUTATION = `
+  mutation CreatePost($input: CreatePostInput!) {
+  createPost(input: $input) {
+      ${POST_FIELDS}
+      replies {
+      ID
+    }
+  }
+}
 `;
 
 const UPDATE_POST_MUTATION = `
   mutation UpdatePost($input: UpdatePostInput!) {
-    updatePost(input: $input) {
+  updatePost(input: $input) {
       ${POST_FIELDS}
       replies {
-        ID
-      }
+      ID
     }
   }
+}
 `;
 
 const DELETE_POST_MUTATION = `
   mutation DeletePost($id: ID!) {
-    deletePost(id: $id)
-  }
+  deletePost(id: $id)
+}
 `;
 
 const CREATE_FAVORITE_MUTATION = `
   mutation CreateFavorite($input: CreateFavoriteInput!) {
-    createFavorite(input: $input) {
-      ID
+  createFavorite(input: $input) {
+    ID
       user {
-        ID
-      }
+      ID
     }
   }
+}
 `;
 
 const DELETE_FAVORITE_MUTATION = `
   mutation DeleteFavorite($input: DeleteFavoriteInput!) {
-    deleteFavorite(input: $input)
-  }
+  deleteFavorite(input: $input)
+}
 `;
 
 export const getTopLevelPosts = async (): Promise<Post[]> => {
@@ -198,6 +209,15 @@ export const createFavorite = async (postId: string): Promise<void> => {
     { input: { post_id: postId } },
     getUserToken(),
   );
+};
+
+export const getPostsByUserID = async (userId: string): Promise<Post[]> => {
+  const data = await request<{ getPostsByUserID: Post[] }>(
+    GET_POSTS_BY_USER_ID_QUERY,
+    { user_id: userId },
+    getUserToken(),
+  );
+  return data.getPostsByUserID;
 };
 
 export const deleteFavorite = async (postId: string): Promise<void> => {
