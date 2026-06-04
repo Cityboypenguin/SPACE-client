@@ -124,7 +124,7 @@ export const UserPublicProfilePage = () => {
       <UserHeader />
       <main className={styles.main}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <button onClick={() => navigate((location.state as { from?: string })?.from ?? '/search')}>← 戻る</button>
+          <button onClick={() => navigate(-1)}>← 戻る</button>
 
           {profile && (
             <button
