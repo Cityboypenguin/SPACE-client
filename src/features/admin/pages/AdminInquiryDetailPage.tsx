@@ -48,6 +48,7 @@ export const AdminInquiryDetailPage: React.FC = () => {
       setError('');
       const updated = await updateInquiryStatus(id, newStatus);
       setInquiry((prev) => prev ? { ...prev, status: updated.status } : prev);
+      window.dispatchEvent(new Event('inquiry-status-updated'));
     } catch (err) {
       console.error(err);
       setError('ステータスの更新に失敗しました');
