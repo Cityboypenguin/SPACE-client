@@ -1,5 +1,5 @@
 import { request } from '../../../lib/graphql';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type Community = {
   ID: string;
@@ -7,6 +7,7 @@ export type Community = {
   name: string;
   description: string;
   avatarURL: string;
+  unreadCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -22,8 +23,6 @@ export type CommunityMember = {
   role: string;
 };
 
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
-
 const MY_COMMUNITIES_QUERY = `
   query MyCommunities {
     myCommunities {
@@ -32,6 +31,7 @@ const MY_COMMUNITIES_QUERY = `
       name
       description
       avatarURL
+      unreadCount
       createdAt
     }
   }

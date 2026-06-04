@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { searchUsers, type UserProfile } from '../api/profile';
-import { getOrCreateDMRoom, listMyDMRooms } from '../api/message';
+import { getOrCreateDMRoom, listMyDMRooms, type Room } from '../api/message';
 import { useAuth } from '../context/AuthContext';
-import { type RecentDM } from '../utils/recentDM';
+import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import styles from './DMListPage.module.css';
 
 export const DMListPage = () => {
@@ -13,7 +14,7 @@ export const DMListPage = () => {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState('');
   const [starting, setStarting] = useState<string | null>(null);
-  const [recentDMs, setRecentDMs] = useState<RecentDM[]>([]);
+  const [dmRooms, setDmRooms] = useState<Room[]>([]);
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
 
@@ -24,20 +25,7 @@ export const DMListPage = () => {
       try {
         const serverRooms = await listMyDMRooms();
         if (!active) return;
-
-        const mappedRecent = serverRooms
-          .map((room) => {
-            const partner = room.user.find((u) => u.ID !== currentUserID) ?? room.user[0];
-            if (!partner) return null;
-            return {
-              roomID: room.ID,
-              partnerName: partner.name,
-              partnerAccountID: partner.accountID,
-            } as RecentDM;
-          })
-          .filter((dm): dm is RecentDM => dm !== null);
-
-        setRecentDMs(mappedRecent);
+        setDmRooms(serverRooms);
       } catch {
         if (active) setError('DMルームの読み込みに失敗しました');
       }
@@ -46,6 +34,12 @@ export const DMListPage = () => {
     void loadDMRooms();
     return () => { active = false; };
   }, [currentUserID]);
+
+  useUnreadSubscription(({ roomID, unreadCount }) => {
+    setDmRooms((prev) => prev.map((room) =>
+      room.ID === roomID ? { ...room, unreadCount } : room
+    ));
+  });
 
   const handleSearch = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -122,20 +116,28 @@ export const DMListPage = () => {
           )}
         </section>
 
-        {recentDMs.length > 0 && (
+        {dmRooms.length > 0 && (
           <section className={styles.dmSection}>
             <h2 className={styles.sectionTitle}>最近のDM</h2>
             <ul className={styles.dmList}>
-              {recentDMs.map((dm) => (
-                <li
-                  key={dm.roomID}
-                  onClick={() => navigate(`/dm/${dm.roomID}`)}
-                  className={styles.dmItem}
-                >
-                  <strong>{dm.partnerName}</strong>
-                  <span className={styles.dmPartnerSub}>@{dm.partnerAccountID}</span>
-                </li>
-              ))}
+              {dmRooms.map((room) => {
+                const partner = room.user.find((u) => u.ID !== currentUserID) ?? room.user[0];
+                if (!partner) return null;
+                const hasUnread = (room.unreadCount ?? 0) > 0;
+                return (
+                  <li
+                    key={room.ID}
+                    onClick={() => navigate(`/dm/${room.ID}`)}
+                    className={`${styles.dmItem} ${hasUnread ? styles.dmItemUnread : ''}`}
+                  >
+                    <div className={styles.dmItemContent}>
+                      <strong>{partner.name}</strong>
+                      <span className={styles.dmPartnerSub}>@{partner.accountID}</span>
+                    </div>
+                    <UnreadCountBadge count={room.unreadCount ?? 0} />
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}

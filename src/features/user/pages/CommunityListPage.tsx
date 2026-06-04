@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, type Community } from '../api/community';
+import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
+import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
+import styles from './CommunityListPage.module.css';
 
 export const CommunityListPage = () => {
   const navigate = useNavigate();
@@ -20,23 +23,23 @@ export const CommunityListPage = () => {
     return () => { active = false; };
   }, []);
 
+  useUnreadSubscription(({ roomID, unreadCount }) => {
+    setCommunities((prev) => prev.map((c) =>
+      c.roomID === roomID ? { ...c, unreadCount } : c
+    ));
+  });
+
   return (
     <div>
       <UserHeader />
-      <main style={{ padding: '2rem', maxWidth: '700px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>コミュニティ</h1>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button
-              onClick={() => navigate('/community/browse')}
-              style={{ padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#334155', fontWeight: 600 }}
-            >
+      <main className={styles.main}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>コミュニティ</h1>
+          <div className={styles.headerActions}>
+            <button className={styles.btnSecondary} onClick={() => navigate('/community/browse')}>
               コミュニティを探す
             </button>
-            <button
-              onClick={() => navigate('/community/create')}
-              style={{ padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', background: '#646cff', border: 'none', color: '#fff', fontWeight: 600 }}
-            >
+            <button className={styles.btnPrimary} onClick={() => navigate('/community/create')}>
               + 作成
             </button>
           </div>
@@ -47,45 +50,35 @@ export const CommunityListPage = () => {
         {loading ? (
           <p style={{ color: '#94a3b8' }}>読み込み中...</p>
         ) : communities.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>
-            <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>参加しているコミュニティがありません</p>
-            <button
-              onClick={() => navigate('/community/browse')}
-              style={{ padding: '0.6rem 1.4rem', borderRadius: '20px', background: '#646cff', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-            >
+          <div className={styles.empty}>
+            <p>参加しているコミュニティがありません</p>
+            <button className={styles.btnPrimaryRound} onClick={() => navigate('/community/browse')}>
               コミュニティを探す
             </button>
           </div>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {communities.map((c) => (
-              <li
-                key={c.ID}
-                onClick={() => navigate(`/community/chat/${c.roomID}`, { state: { communityID: c.ID } })}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.9rem 1rem',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  background: '#fff',
-                  transition: 'background 0.12s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#f8faff')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
-              >
-                <CommunityAvatar name={c.name} src={c.avatarURL} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, color: '#1e293b' }}>{c.name}</div>
-                  <div style={{ fontSize: '0.82rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {c.description}
+          <ul className={styles.list}>
+            {communities.map((c) => {
+              const hasUnread = (c.unreadCount ?? 0) > 0;
+              return (
+                <li
+                  key={c.ID}
+                  onClick={() => navigate(`/community/chat/${c.roomID}`, { state: { communityID: c.ID } })}
+                  className={`${styles.item} ${hasUnread ? styles.itemUnread : ''}`}
+                >
+                  <CommunityAvatar name={c.name} src={c.avatarURL} />
+                  <div className={styles.itemBody}>
+                    <div className={`${styles.itemName} ${hasUnread ? styles.itemNameUnread : ''}`}>{c.name}</div>
+                    <div className={styles.itemDescription}>{c.description}</div>
                   </div>
-                </div>
-                <span style={{ color: '#94a3b8' }}>›</span>
-              </li>
-            ))}
+                  {hasUnread ? (
+                    <UnreadCountBadge count={c.unreadCount} />
+                  ) : (
+                    <span className={styles.chevron}>›</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </main>

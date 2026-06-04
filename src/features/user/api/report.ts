@@ -1,6 +1,6 @@
 // src/features/user/api/report.ts
 import { request } from '../../../lib/graphql';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type UserReport = {
   ID: string;
@@ -31,8 +31,6 @@ const CREATE_REPORT_MUTATION = `
     }
   }
 `;
-
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 export const createReport = async (input: {
   targetType: 'POST' | 'USER' | 'COMMUNITY';

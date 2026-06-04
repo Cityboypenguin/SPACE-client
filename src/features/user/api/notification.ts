@@ -1,5 +1,5 @@
 import { request } from '../../../lib/graphql';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type NotificationActor = {
   ID: string;
@@ -18,8 +18,6 @@ export type Notification = {
   isRead: boolean;
   createdAt: string;
 };
-
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 const MY_NOTIFICATIONS_QUERY = `
   query MyNotifications($limit: Int) {

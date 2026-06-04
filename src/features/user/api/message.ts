@@ -1,6 +1,6 @@
 import { request } from '../../../lib/graphql';
 import { storageUrl } from '../../../lib/storage';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type MessageUser = {
   ID: string;
@@ -38,9 +38,12 @@ export type Room = {
   type: string;
   user: MessageUser[];
   isMessagingDisabled: boolean;
+  lastReadAt?: string | null;
+  unreadCount: number;
+  partnerLastReadAt?: string | null;
 };
 
-const MESSAGE_FIELDS = `
+export const MESSAGE_FIELDS = `
   ID
   roomID
   user {
@@ -59,21 +62,32 @@ const MESSAGE_FIELDS = `
   updatedAt
 `;
 
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
+const ROOM_FIELDS = `
+  ID
+  name
+  type
+  user {
+    ID
+    name
+    accountID
+    avatarUrl
+  }
+  isMessagingDisabled
+  lastReadAt
+  unreadCount
+  partnerLastReadAt
+`;
+
+const MARK_ROOM_AS_READ_MUTATION = `
+  mutation MarkRoomAsRead($roomID: ID!) {
+    markRoomAsRead(roomID: $roomID)
+  }
+`;
 
 const GET_OR_CREATE_DM_ROOM_MUTATION = `
   mutation GetOrCreateDMRoom($targetUserID: ID!) {
     getOrCreateDMRoom(targetUserID: $targetUserID) {
-      ID
-      name
-      type
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
-      isMessagingDisabled
+      ${ROOM_FIELDS}
     }
   }
 `;
@@ -111,16 +125,7 @@ const LIST_MESSAGES_QUERY = `
 const GET_ROOM_QUERY = `
   query GetRoom($id: ID!) {
     room(id: $id) {
-      ID
-      name
-      type
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
-      isMessagingDisabled
+      ${ROOM_FIELDS}
     }
   }
 `;
@@ -128,15 +133,7 @@ const GET_ROOM_QUERY = `
 const MY_DM_ROOMS_QUERY = `
   query MyDMRooms {
     myDMRooms {
-      ID
-      name
-      type
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
+      ${ROOM_FIELDS}
     }
   }
 `;
@@ -149,6 +146,15 @@ const PRESIGNED_MEDIA_UPLOAD_URL_QUERY = `
     }
   }
 `;
+
+export const markRoomAsRead = async (roomID: string) => {
+  const token = getUserToken();
+  return await request<{ markRoomAsRead: boolean }>(
+    MARK_ROOM_AS_READ_MUTATION,
+    { roomID },
+    token,
+  );
+};
 
 export const getOrCreateDMRoom = async (targetUserID: string) => {
   const token = getUserToken();

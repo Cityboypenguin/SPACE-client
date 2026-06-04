@@ -1,5 +1,5 @@
 import { request } from '../../../lib/graphql';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 import { type Media, type MediaInput, getPresignedMediaUploadUrl, uploadFileToStorage } from './message';
 
 export type { Media, MediaInput };
@@ -31,8 +31,6 @@ export type Post = {
   replies: Post[];
   media: Media[];
 };
-
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 const POST_FIELDS = `
   ID

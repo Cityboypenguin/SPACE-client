@@ -1,5 +1,5 @@
 import { request } from '../../../lib/graphql';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type User = {
   ID: string;
@@ -14,8 +14,6 @@ export type FavoriteUser = {
   favoriteUserID: string;
   createdAt: string;
 };
-
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 const USER_FIELDS = `
   ID

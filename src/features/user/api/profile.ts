@@ -1,6 +1,6 @@
 import { request } from '../../../lib/graphql';
 import { storageUrl } from '../../../lib/storage';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type UserProfile = {
   ID: string;
@@ -126,8 +126,6 @@ const UPDATE_PROFILE_MUTATION = `
     }
   }
 `;
-
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 export const getMyProfile = async () => {
   const token = getUserToken();

@@ -4,6 +4,8 @@ export const USER_TOKEN_KEY = 'space_user_token';
 export const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
 export const USER_ID_KEY = 'space_user_id';
 
+export const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
+
 type User = {
   ID: string;
   accountID: string;

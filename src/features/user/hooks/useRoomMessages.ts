@@ -1,25 +1,6 @@
-import { useEffect, useState } from 'react';
-import { listMessages, getRoom, type Message, type Room } from '../api/message';
+import { useEffect, useRef, useState } from 'react';
+import { listMessages, getRoom, markRoomAsRead, MESSAGE_FIELDS, type Message, type Room } from '../api/message';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
-
-const MESSAGE_FIELDS = `
-  ID
-  roomID
-  user {
-    ID
-    name
-    accountID
-    avatarUrl
-  }
-  content
-  media {
-    ID
-    url
-    contentType
-  }
-  createdAt
-  updatedAt
-`;
 
 const MESSAGE_ADDED_SUBSCRIPTION = `
   subscription MessageAdded($roomID: ID!) {
@@ -45,15 +26,27 @@ const MESSAGE_UPDATED_SUBSCRIPTION = `
   }
 `;
 
+const ROOM_READ_STATUS_UPDATED_SUBSCRIPTION = `
+  subscription RoomReadStatusUpdated($roomID: ID!) {
+    roomReadStatusUpdated(roomID: $roomID) {
+      userID
+      lastReadAt
+    }
+  }
+`;
+
 type MessageAddedData = { messageAdded: Message };
 type MessageDeletedData = { messageDeleted: { ID: string } };
 type MessageUpdatedData = { messageUpdated: Message };
+type RoomReadStatusUpdatedData = { roomReadStatusUpdated: { userID: string; lastReadAt: string } };
 
 type State = {
   room: Room | null;
   messages: Message[];
   wsConnected: boolean;
   error: string;
+  initialLastReadAt: string | null;
+  partnerLastReadAt: string | null;
 };
 
 export const useRoomMessages = (roomId: string | undefined) => {
@@ -62,11 +55,16 @@ export const useRoomMessages = (roomId: string | undefined) => {
     messages: [],
     wsConnected: false,
     error: '',
+    initialLastReadAt: null,
+    partnerLastReadAt: null,
   });
+
+  const markedAsRead = useRef(false);
 
   useEffect(() => {
     if (!roomId) return;
     let active = true;
+    markedAsRead.current = false;
 
     (async () => {
       try {
@@ -75,7 +73,22 @@ export const useRoomMessages = (roomId: string | undefined) => {
           listMessages(roomId),
         ]);
         if (!active) return;
-        setState((prev) => ({ ...prev, room: roomData.room, messages: msgData.messages }));
+
+        const initialLastReadAt = roomData.room?.lastReadAt ?? null;
+        const partnerLastReadAt = roomData.room?.partnerLastReadAt ?? null;
+
+        setState((prev) => ({
+          ...prev,
+          room: roomData.room,
+          messages: msgData.messages,
+          initialLastReadAt,
+          partnerLastReadAt,
+        }));
+
+        if (!markedAsRead.current) {
+          markedAsRead.current = true;
+          await markRoomAsRead(roomId).catch(() => {});
+        }
       } catch (err) {
         if (!active) return;
         const msg = err instanceof Error ? err.message : 'ルームの読み込みに失敗しました';
@@ -99,6 +112,7 @@ export const useRoomMessages = (roomId: string | undefined) => {
           if (prev.messages.some((m) => m.ID === newMsg.ID)) return prev;
           return { ...prev, wsConnected: true, messages: [...prev.messages, newMsg] };
         });
+        markRoomAsRead(roomId).catch(() => {});
       },
       (err) => {
         console.error('[useRoomMessages] subscription error:', err);
@@ -148,6 +162,23 @@ export const useRoomMessages = (roomId: string | undefined) => {
         }));
       },
       (err) => console.error('[useRoomMessages] update subscription error:', err),
+    );
+
+    return () => unsubscribe();
+  }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const unsubscribe = subscribeToGraphQL<RoomReadStatusUpdatedData>(
+      ROOM_READ_STATUS_UPDATED_SUBSCRIPTION,
+      { roomID: roomId },
+      (data) => {
+        const update = data.roomReadStatusUpdated;
+        if (!update) return;
+        setState((prev) => ({ ...prev, partnerLastReadAt: update.lastReadAt }));
+      },
+      (err) => console.error('[useRoomMessages] read status subscription error:', err),
     );
 
     return () => unsubscribe();

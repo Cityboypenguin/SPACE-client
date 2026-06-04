@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
+import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
+import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, getCommunityMembers, type Community } from '../api/community';
 import { createReport } from '../api/report';
 import { CommunityMembersModal } from '../components/organisms/CommunityMemberModal';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
-import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
+import { useChatScroll } from '../hooks/useChatScroll';
 import styles from '../components/organisms/chatRoom.module.css';
 
 export const CommunityRoomPage = () => {
@@ -18,7 +20,7 @@ export const CommunityRoomPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { userId: currentUserID } = useAuth();
-  const { room, messages, wsConnected, error, addMessage } = useRoomMessages(roomId);
+  const { room, messages, wsConnected, error, addMessage, initialLastReadAt } = useRoomMessages(roomId);
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -29,6 +31,8 @@ export const CommunityRoomPage = () => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
+  const { bottomRef, firstUnreadRef, newMessageCount, scrollToLatest } = useChatScroll(messages, currentUserID);
+
   const [community, setCommunity] = useState<Community | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -36,6 +40,7 @@ export const CommunityRoomPage = () => {
   const [leaving, setLeaving] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [reporting, setReporting] = useState(false);
+
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
     if (!window.confirm('このコミュニティを退出しますか？')) return;
@@ -50,7 +55,7 @@ export const CommunityRoomPage = () => {
 
   const handleReportCommunity = async () => {
     if (!community) return;
-    
+
     const reason = window.prompt(
       `コミュニティ「${community.name}」を通報する理由を入力してください。\n(例: 荒らし行為、利用規約違反、不適切なコンテンツなど)`
     );
@@ -77,17 +82,12 @@ export const CommunityRoomPage = () => {
       setReporting(false);
     }
   };
-  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (error && error.includes('not a member of this room')) {
       navigate('/community', { replace: true });
     }
   }, [error, navigate]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -128,6 +128,8 @@ export const CommunityRoomPage = () => {
 
     resolveCommunity();
   }, [roomId, location.state]);
+
+  const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
 
   return (
     <div className={styles.container}>
@@ -218,33 +220,48 @@ export const CommunityRoomPage = () => {
         />
       </div>
 
-      <div className={styles.messageList}>
-        {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
-        {messages.map((msg, index) => {
-          const isMine = msg.user.ID === currentUserID;
-          const prevMsg = index > 0 ? messages[index - 1] : null;
-          return (
-            <div key={msg.ID} style={{ display: 'contents' }}>
-              <ChatDateSeparator 
-                currentCreatedAt={msg.createdAt} 
-                prevCreatedAt={prevMsg?.createdAt} 
-              />
-              <ChatMessageBubble
-                msg={msg}
-                isMine={isMine}
-                canDelete={isMine || isOwner}
-                isEditing={editingId === msg.ID}
-                editContent={editContent}
-                onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
-                onSaveEdit={() => handleSaveEdit(msg.ID)}
-                onCancelEdit={() => setEditingId(null)}
-                onEditContentChange={setEditContent}
-                onDelete={() => handleDelete(msg.ID)}
-              />
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
+      <div className={styles.messageListWrapper}>
+        <div className={styles.messageList}>
+          {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
+          {messages.map((msg, index) => {
+            const isMine = msg.user.ID === currentUserID;
+            const prevMsg = index > 0 ? messages[index - 1] : null;
+            const msgTimeMs = new Date(msg.createdAt).getTime();
+            const prevMsgTimeMs = prevMsg ? new Date(prevMsg.createdAt).getTime() : null;
+            const isFirstUnread = !isMine && initialLastReadAtMs !== null
+              && msgTimeMs > initialLastReadAtMs
+              && (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
+
+            return (
+              <div key={msg.ID} style={{ display: 'contents' }}>
+                <ChatDateSeparator
+                  currentCreatedAt={msg.createdAt}
+                  prevCreatedAt={prevMsg?.createdAt}
+                />
+                {isFirstUnread && (
+                  <div ref={firstUnreadRef} className={styles.unreadSeparator}>
+                    未読メッセージ
+                  </div>
+                )}
+                <ChatMessageBubble
+                  msg={msg}
+                  isMine={isMine}
+                  canDelete={isMine || isOwner}
+                  isEditing={editingId === msg.ID}
+                  editContent={editContent}
+                  onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
+                  onSaveEdit={() => handleSaveEdit(msg.ID)}
+                  onCancelEdit={() => setEditingId(null)}
+                  onEditContentChange={setEditContent}
+                  onDelete={() => handleDelete(msg.ID)}
+                />
+              </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
+
+        <NewMessagesBadge count={newMessageCount} onClick={scrollToLatest} />
       </div>
 
       <ChatInput

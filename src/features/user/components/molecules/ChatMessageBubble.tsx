@@ -121,12 +121,13 @@ type Props = {
   onCancelEdit: () => void;
   onEditContentChange: (val: string) => void;
   onDelete: () => void;
+  isReadByPartner?: boolean;
 };
 
 export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
-  onEditContentChange, onDelete,
+  onEditContentChange, onDelete, isReadByPartner,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -189,6 +190,9 @@ export const ChatMessageBubble = ({
       <span className={styles.timestamp}>
         {new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
       </span>
+      {isMine && isReadByPartner && (
+        <span className={styles.readReceipt}>既読</span>
+      )}
     </div>
   );
 

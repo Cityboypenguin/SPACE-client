@@ -1,9 +1,8 @@
 import { request } from '../../../lib/graphql';
+import { getUserToken } from '../../user/api/auth';
+import { ADMIN_TOKEN_KEY } from './auth';
 
-const ADMIN_TOKEN_KEY = 'space_admin_token';
-const USER_TOKEN_KEY = 'space_user_token';
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
 export const SEARCH_REPORTS_QUERY = `
   query SearchReports($filter: ReportSearchFilter) {
