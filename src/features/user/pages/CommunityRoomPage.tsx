@@ -31,7 +31,7 @@ export const CommunityRoomPage = () => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
-  const { bottomRef, firstUnreadRef, newMessageCount, scrollToLatest } = useChatScroll(messages, currentUserID);
+  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID);
 
   const [community, setCommunity] = useState<Community | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -261,7 +261,7 @@ export const CommunityRoomPage = () => {
           <div ref={bottomRef} />
         </div>
 
-        <NewMessagesBadge count={newMessageCount} onClick={scrollToLatest} />
+        <NewMessagesBadge count={newMessageCount} isAtBottom={isAtBottom} onClick={scrollToLatest} />
       </div>
 
       <ChatInput

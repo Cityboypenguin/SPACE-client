@@ -6,7 +6,27 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
   const firstUnreadRef = useRef<HTMLDivElement>(null);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
+  const [isAtBottom, setIsAtBottom] = useState(false);
   const seenCountRef = useRef(0);
+
+  useEffect(() => {
+    const el = bottomRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsAtBottom(true);
+          seenCountRef.current = messages.length;
+          setNewMessageCount(0);
+        } else {
+          setIsAtBottom(false);
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [messages.length]);
 
   // 初回ロード時: 未読がある場合は未読箇所へ、なければ最下部へスクロール
   useEffect(() => {
@@ -44,5 +64,5 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
     setNewMessageCount(0);
   };
 
-  return { bottomRef, firstUnreadRef, newMessageCount, scrollToLatest };
+  return { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest };
 };
