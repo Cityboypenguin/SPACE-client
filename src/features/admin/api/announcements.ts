@@ -61,6 +61,24 @@ export const getAnnouncements = async (limit = 50): Promise<Announcement[]> => {
   return data.announcements ?? [];
 };
 
+const UPDATE_ANNOUNCEMENT_MUTATION = `
+  mutation UpdateAnnouncement($id: ID!, $input: UpdateAnnouncementInput!) {
+    updateAnnouncement(id: $id, input: $input) {
+      ID
+      title
+      body
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const DELETE_ANNOUNCEMENT_MUTATION = `
+  mutation DeleteAnnouncement($id: ID!) {
+    deleteAnnouncement(id: $id)
+  }
+`;
+
 export const createAnnouncement = async (title: string, body: string): Promise<Announcement> => {
   const data = await request<{ createAnnouncement: Announcement }>(
     CREATE_ANNOUNCEMENT_MUTATION,
@@ -68,4 +86,22 @@ export const createAnnouncement = async (title: string, body: string): Promise<A
     getAdminToken(),
   );
   return data.createAnnouncement;
+};
+
+export const updateAnnouncement = async (id: string, title: string, body: string): Promise<Announcement> => {
+  const data = await request<{ updateAnnouncement: Announcement }>(
+    UPDATE_ANNOUNCEMENT_MUTATION,
+    { id, input: { title, body } },
+    getAdminToken(),
+  );
+  return data.updateAnnouncement;
+};
+
+export const deleteAnnouncement = async (id: string): Promise<boolean> => {
+  const data = await request<{ deleteAnnouncement: boolean }>(
+    DELETE_ANNOUNCEMENT_MUTATION,
+    { id },
+    getAdminToken(),
+  );
+  return data.deleteAnnouncement;
 };
