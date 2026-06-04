@@ -22,7 +22,7 @@ export const AdminHeader = () => {
 
   return (
     <>
-      <header>
+      <header style={{ position: 'sticky', top: 0, zIndex: 100, background: '#1a1a1a' }}>
         <h2>管理画面</h2>
         <button onClick={() => navigate('/admin')}>ダッシュボード</button>
         <button onClick={() => navigate('/admin/users')}>ユーザー管理</button>

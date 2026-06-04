@@ -1,14 +1,19 @@
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 1rem;
   border-bottom: 1px solid #ccc;
+  background-color: #f97316;
 }
 
 .logo {
   margin: 0;
   cursor: pointer;
+  color: #fff;
 }
 
 .nav {
@@ -23,6 +28,7 @@
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   font-size: 1rem;
+  color: #fff;
 }
 
 .navButton:hover {
@@ -31,4 +37,9 @@
 
 .logoutButton {
   cursor: pointer;
+  color: #fff;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
 }
