@@ -5,6 +5,7 @@ import { useNotification } from '../context/NotificationContext';
 import {
   listMyNotifications,
   markNotificationAsRead,
+  deleteNotifications,
   type Notification,
 } from '../api/notification';
 
@@ -33,6 +34,7 @@ export const NotificationDetailPage = () => {
   const [notification, setNotification] = useState<Notification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -52,6 +54,19 @@ export const NotificationDetailPage = () => {
       .finally(() => setLoading(false));
   }, [id, decrementUnread]);
 
+  const handleDelete = async () => {
+    if (!notification) return;
+    if (!window.confirm('この通知を削除しますか？')) return;
+    setDeleting(true);
+    try {
+      await deleteNotifications([notification.ID]);
+      navigate('/notifications');
+    } catch {
+      setError('削除に失敗しました');
+      setDeleting(false);
+    }
+  };
+
   const handleTargetLink = () => {
     if (!notification?.targetType || !notification?.targetID) return;
     if (DM_TYPES.has(notification.type) && notification.targetType === 'room') {
@@ -66,23 +81,42 @@ export const NotificationDetailPage = () => {
     <div>
       <UserHeader />
       <main style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
-        <button
-          onClick={() => navigate('/notifications')}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#3b82f6',
-            fontSize: '0.875rem',
-            padding: '0.25rem 0',
-            marginBottom: '1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-          }}
-        >
-          ← 通知一覧に戻る
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <button
+            onClick={() => navigate('/notifications')}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#3b82f6',
+              fontSize: '0.875rem',
+              padding: '0.25rem 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+          >
+            ← 通知一覧に戻る
+          </button>
+          {notification && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{
+                padding: '0.35rem 0.9rem',
+                borderRadius: 8,
+                border: '1px solid #fca5a5',
+                background: '#fff',
+                cursor: deleting ? 'not-allowed' : 'pointer',
+                fontSize: '0.8rem',
+                color: deleting ? '#fca5a5' : '#ef4444',
+                fontWeight: 500,
+              }}
+            >
+              {deleting ? '削除中...' : '削除'}
+            </button>
+          )}
+        </div>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
 

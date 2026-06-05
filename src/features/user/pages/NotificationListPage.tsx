@@ -6,6 +6,8 @@ import {
   listMyNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
+  deleteNotifications,
+  deleteReadNotifications,
   type Notification,
 } from '../api/notification';
 import { listAnnouncements, type Announcement } from '../api/announcement';
@@ -45,6 +47,10 @@ export const NotificationListPage = () => {
   const [notifLoading, setNotifLoading] = useState(true);
   const [notifError, setNotifError] = useState('');
   const [markingAll, setMarkingAll] = useState(false);
+
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
@@ -96,7 +102,66 @@ export const NotificationListPage = () => {
     }
   };
 
+  const handleDeleteRead = async () => {
+    if (!window.confirm('既読済みの通知をすべて削除しますか？')) return;
+    setDeleting(true);
+    setNotifError('');
+    try {
+      await deleteReadNotifications();
+      setNotifications((prev) => prev.filter((n) => !n.isRead));
+    } catch {
+      setNotifError('削除に失敗しました');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`選択した${selectedIds.size}件の通知を削除しますか？`)) return;
+    setDeleting(true);
+    setNotifError('');
+    try {
+      await deleteNotifications(Array.from(selectedIds));
+      const deletedUnreadCount = notifications.filter(
+        (n) => selectedIds.has(n.ID) && !n.isRead,
+      ).length;
+      setNotifications((prev) => prev.filter((n) => !selectedIds.has(n.ID)));
+      for (let i = 0; i < deletedUnreadCount; i++) decrementUnread();
+      setSelectedIds(new Set());
+      setSelectMode(false);
+    } catch {
+      setNotifError('削除に失敗しました');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === notifications.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(notifications.map((n) => n.ID)));
+    }
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
   const hasUnread = notifications.some((n) => !n.isRead);
+  const hasRead = notifications.some((n) => n.isRead);
+  const allSelected = notifications.length > 0 && selectedIds.size === notifications.length;
 
   return (
     <div>
@@ -106,33 +171,118 @@ export const NotificationListPage = () => {
           style={{
             padding: '1rem 1rem 0',
             borderBottom: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
           }}
         >
-          <h1 style={{ margin: '0 0 0.75rem', fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
-            通知
-          </h1>
-          {tab === 'notifications' && notifications.length > 0 && (
-            <button
-              onClick={handleMarkAllRead}
-              disabled={markingAll || !hasUnread}
-              style={{
-                padding: '0.4rem 1rem',
-                borderRadius: 8,
-                border: '1px solid #94a3b8',
-                background: '#fff',
-                cursor: markingAll || !hasUnread ? 'not-allowed' : 'pointer',
-                fontSize: '0.875rem',
-                color: markingAll || !hasUnread ? '#cbd5e1' : '#475569',
-                fontWeight: 500,
-                marginBottom: '0.75rem',
-              }}
-            >
-              {markingAll ? '処理中...' : '全て既読にする'}
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+              通知
+            </h1>
+
+            {tab === 'notifications' && notifications.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {selectMode ? (
+                  <>
+                    <button
+                      onClick={toggleSelectAll}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 8,
+                        border: '1px solid #94a3b8',
+                        background: '#fff',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        color: '#475569',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {allSelected ? '全解除' : '全選択'}
+                    </button>
+                    <button
+                      onClick={handleDeleteSelected}
+                      disabled={deleting || selectedIds.size === 0}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: selectedIds.size === 0 || deleting ? '#fca5a5' : '#ef4444',
+                        cursor: selectedIds.size === 0 || deleting ? 'not-allowed' : 'pointer',
+                        fontSize: '0.8rem',
+                        color: '#fff',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {deleting ? '削除中...' : `削除${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`}
+                    </button>
+                    <button
+                      onClick={exitSelectMode}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 8,
+                        border: '1px solid #94a3b8',
+                        background: '#fff',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        color: '#475569',
+                        fontWeight: 500,
+                      }}
+                    >
+                      キャンセル
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleMarkAllRead}
+                      disabled={markingAll || !hasUnread}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 8,
+                        border: '1px solid #94a3b8',
+                        background: '#fff',
+                        cursor: markingAll || !hasUnread ? 'not-allowed' : 'pointer',
+                        fontSize: '0.8rem',
+                        color: markingAll || !hasUnread ? '#cbd5e1' : '#475569',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {markingAll ? '処理中...' : '全て既読'}
+                    </button>
+                    <button
+                      onClick={handleDeleteRead}
+                      disabled={deleting || !hasRead}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 8,
+                        border: '1px solid #fca5a5',
+                        background: '#fff',
+                        cursor: deleting || !hasRead ? 'not-allowed' : 'pointer',
+                        fontSize: '0.8rem',
+                        color: deleting || !hasRead ? '#fca5a5' : '#ef4444',
+                        fontWeight: 500,
+                      }}
+                    >
+                      既読を全削除
+                    </button>
+                    <button
+                      onClick={() => setSelectMode(true)}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 8,
+                        border: '1px solid #94a3b8',
+                        background: '#fff',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        color: '#475569',
+                        fontWeight: 500,
+                      }}
+                    >
+                      選択
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
@@ -157,6 +307,10 @@ export const NotificationListPage = () => {
                   <li
                     key={n.ID}
                     onClick={() => {
+                      if (selectMode) {
+                        toggleSelect(n.ID);
+                        return;
+                      }
                       if (n.type === 'announcement' && n.targetID) {
                         if (!n.isRead) {
                           markNotificationAsRead(n.ID).catch(() => {});
@@ -171,25 +325,39 @@ export const NotificationListPage = () => {
                       padding: '1rem',
                       borderBottom: '1px solid #f1f5f9',
                       cursor: 'pointer',
-                      background: n.isRead ? '#fff' : '#eff6ff',
+                      background: selectMode && selectedIds.has(n.ID)
+                        ? '#dbeafe'
+                        : n.isRead ? '#fff' : '#eff6ff',
                       display: 'flex',
                       alignItems: 'flex-start',
                       gap: '0.75rem',
                     }}
                   >
-                    {!n.isRead && (
-                      <span
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          background: '#3b82f6',
-                          flexShrink: 0,
-                          marginTop: '0.4rem',
-                        }}
+                    {selectMode ? (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(n.ID)}
+                        onChange={() => toggleSelect(n.ID)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ marginTop: '0.3rem', flexShrink: 0, width: 16, height: 16, cursor: 'pointer' }}
                       />
+                    ) : (
+                      <>
+                        {!n.isRead && (
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              background: '#3b82f6',
+                              flexShrink: 0,
+                              marginTop: '0.4rem',
+                            }}
+                          />
+                        )}
+                        {n.isRead && <span style={{ width: 8, flexShrink: 0 }} />}
+                      </>
                     )}
-                    {n.isRead && <span style={{ width: 8, flexShrink: 0 }} />}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                         <span
