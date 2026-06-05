@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '../api/auth';
-import { registerUnauthorizedHandler } from '../../../lib/graphql';
+import { registerUnauthorizedHandler, registerTokenRefreshedHandler } from '../../../lib/graphql';
 
 const USER_TOKEN_KEY = 'space_user_token';
 const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
@@ -55,6 +55,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     clearAuth();
     navigate('/login');
   }, [token, clearAuth, navigate]);
+
+  useEffect(() => {
+    registerTokenRefreshedHandler((newToken, newRefreshToken) => {
+      localStorage.setItem(USER_TOKEN_KEY, newToken);
+      localStorage.setItem(USER_REFRESH_TOKEN_KEY, newRefreshToken);
+      setToken(newToken);
+    });
+  }, []);
 
   useEffect(() => {
     registerUnauthorizedHandler(() => {
