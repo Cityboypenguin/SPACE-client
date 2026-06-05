@@ -181,13 +181,20 @@ export const createPost = async (content: string, parentId?: string, mediaInputs
   return data.createPost;
 };
 
-export const updatePost = async (id: string, content: string): Promise<Post> => {
+export const updatePost = async (
+  id: string,
+  content: string,
+  newMediaInputs?: MediaInput[],
+  deletedMediaIDs?: string[]
+): Promise<Post> => {
   const data = await request<{ updatePost: Post }>(
     UPDATE_POST_MUTATION,
     {
       input: {
         id,
         content,
+        ...(newMediaInputs && newMediaInputs.length > 0 ? { newMediaInputs } : {}),
+        ...(deletedMediaIDs && deletedMediaIDs.length > 0 ? { deletedMediaIDs } : {}),
       },
     },
     getUserToken(),
