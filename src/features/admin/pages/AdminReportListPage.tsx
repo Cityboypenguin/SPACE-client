@@ -58,48 +58,44 @@ export const ReportsPage: React.FC = () => {
     }
   };
 
+  const getTargetUrl = (targetID: string, targetType: string) => {
+    if (!targetID || targetID === '#') return '#';
+    const type = targetType?.toUpperCase();
+    
+    if (type === 'POST') return `/admin/posts/${targetID}`;
+    if (type === 'USER') return `/admin/users/${targetID}`;
+    if (type === 'COMMUNITY') return `/admin/communities/${targetID}`;
+    if (type === 'COMMENT') return `/admin/comments/${targetID}`;
+    return '#';
+  };
+
   const renderTargetContent = (report: any) => {
     if (report.targetType === 'POST') {
-      const postContent = report.targetPost?.content || report.postContent || report.content;
+      const postContent = report.content || report.postContent;
+      
       return (
         <div style={{ 
-          color: '#475569', 
+          color: '#1e293b', 
           fontSize: '0.85rem', 
-          marginTop: '4px',
-          maxWidth: '240px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
+          fontWeight: 500,
+          backgroundColor: '#f8fafc',
+          padding: '0.6rem 0.8rem',
+          borderRadius: '6px',
+          borderLeft: '4px solid #cbd5e1',
+          wordBreak: 'break-all',
+          lineHeight: '1.4',
+          marginTop: '6px'
         }}>
-          {postContent ? postContent : `ID: ${report.targetID}`}
+          {postContent ? postContent : `対象ID: ${report.targetID}`}
         </div>
       );
     }
-    return <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>ID: {report.targetID}</div>;
+    return (
+      <div style={{ color: '#64748b', fontSize: '0.8rem', wordBreak: 'break-all', marginTop: '6px' }}>
+        対象ID: {report.targetID}
+      </div>
+    );
   };
-
-  const getTargetUrl = (targetID: string, targetType: string) => {
-  if (!targetID) return '#';
-  let actualID = targetID;
-  if (targetID.startsWith('cG9zdD') || !/^\d+$/.test(targetID)) {
-    try {
-      const decoded = atob(targetID);
-      const parts = decoded.split(':');
-      if (parts.length > 1) {
-        actualID = parts[1];
-      }
-    } catch (e) {
-      console.error('Failed to decode Global ID:', e);
-    }
-  }
-
-  const type = targetType?.toUpperCase();
-  if (type === 'POST') return `/admin/posts/${actualID}`;
-  if (type === 'USER') return `/admin/users/${actualID}`;
-  if (type === 'COMMUNITY') return `/admin/communities/${actualID}`;
-  if (type === 'COMMENT') return `/admin/comments/${actualID}`;
-  return '#';
-};
 
   return (
     <div>
@@ -168,9 +164,9 @@ export const ReportsPage: React.FC = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed', minWidth: '1100px' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '100px' }}>対象タイプ</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '160px' }}>コンテンツリンク</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '160px' }}>通報理由</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>対象タイプ</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '280px' }}>通報対象の内容</th>
+                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '140px' }}>通報理由</th>
                 <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: 'auto' }}>詳細説明</th>
                 <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '130px', textAlign: 'center' }}>状態</th>
                 <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>日時</th>
