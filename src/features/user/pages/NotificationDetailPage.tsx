@@ -8,6 +8,7 @@ import {
   deleteNotifications,
   type Notification,
 } from '../api/notification';
+import { storageUrl } from '../../../lib/storage';
 
 const TYPE_LABEL: Record<string, string> = {
   favorite: 'いいね',
@@ -157,7 +158,7 @@ export const NotificationDetailPage = () => {
               >
                 {notification.actor.avatarUrl ? (
                   <img
-                    src={notification.actor.avatarUrl}
+                    src={storageUrl(notification.actor.avatarUrl) ?? undefined}
                     alt={notification.actor.name}
                     style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
                   />

@@ -18,6 +18,9 @@ import { AdminInquiryDetailPage } from '../pages/AdminInquiryDetailPage';
 import { AdminAnnouncementListPage } from '../pages/AdminAnnouncementListPage';
 import { AdminAnnouncementCreatePage } from '../pages/AdminAnnouncementCreatePage';
 import { AdminAnnouncementDetailPage } from '../pages/AdminAnnouncementDetailPage';
+import { AdminTermsCreatePage } from '../pages/AdminTermsCreatePage';
+import { AdminTermsListPage } from '../pages/AdminTermsListPage';
+import { AdminTermsDetailPage } from '../pages/AdminTermsDetailPage';
 
 export const AdminRoutes = () => {
   return (
@@ -157,6 +160,30 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminAnnouncementDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="terms"
+        element={
+          <AdminProtectedRoute>
+            <AdminTermsListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="terms/new"
+        element={
+          <AdminProtectedRoute>
+            <AdminTermsCreatePage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="terms/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminTermsDetailPage />
           </AdminProtectedRoute>
         }
       />
