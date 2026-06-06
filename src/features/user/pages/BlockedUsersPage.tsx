@@ -5,12 +5,14 @@ import { useAuth } from '../context/AuthContext';
 import { getBlockersByUserID, deleteBlocker } from '../api/block';
 import type { User } from '../api/block'; // User型をインポート
 import { storageUrl } from '../../../lib/storage';
+import { useToast } from '../../../context/ToastContext';
 
 export const BlockedUsersPage = () => {
   const { userId } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!userId) return;
@@ -38,7 +40,7 @@ export const BlockedUsersPage = () => {
       await deleteBlocker(targetId);
       setUsers((prev) => prev.filter((u) => u.ID !== targetId));
     } catch (err) {
-      alert('解除に失敗しました');
+      addToast('ブロック解除に失敗しました', 'error');
     }
   };
 

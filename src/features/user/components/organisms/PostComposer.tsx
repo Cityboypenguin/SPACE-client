@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
+import { useToast } from '../../../../context/ToastContext';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -64,19 +65,20 @@ export const PostComposer = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const visibleExistingMedia = existingMedia.filter(m => !deletedMediaIDs.includes(m.ID));
   const totalMediaCount = visibleExistingMedia.length + selectedFiles.length;
+  const { addToast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      alert('JPEG・PNG・GIF・WebP のみ添付できます。');
+      addToast('対応していないファイル形式です。JPEG, PNG, GIF, WEBPのみアップロードできます。', 'error');
       e.target.value = '';
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      alert('ファイルサイズは 10MB 以下にしてください。');
+      addToast('ファイルサイズが大きすぎます。10MB以下の画像をアップロードしてください。', 'error');
       e.target.value = '';
       return;
     }

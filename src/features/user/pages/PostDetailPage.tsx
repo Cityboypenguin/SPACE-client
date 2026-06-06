@@ -6,6 +6,7 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
+import { useToast } from '../../../context/ToastContext';
 
 import {
   getPostByID,
@@ -126,6 +127,7 @@ const ReportModal = ({ targetId, postContent, onClose }: ReportModalProps) => {
   const [reason, setReason] = useState('SPAM');
   const [customReason, setCustomReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { addToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,11 +139,11 @@ const ReportModal = ({ targetId, postContent, onClose }: ReportModalProps) => {
         reason,
         customReason: customReason.trim() || null,
       });
-      alert('通報を送信しました');
+      addToast('通報が送信されました', 'success');
       onClose();
     } catch (err) {
       console.error(err);
-      alert('通報の送信に失敗しました');
+      addToast('通報の送信に失敗しました', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -372,7 +374,7 @@ export const PostDetailPage = () => {
       navigate(-1);
     } catch (err) {
       console.error(err);
-      alert('削除に失敗しました');
+
     }
   };
 

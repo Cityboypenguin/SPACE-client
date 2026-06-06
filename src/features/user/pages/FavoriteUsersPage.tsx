@@ -4,12 +4,14 @@ import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { getFavoriteUsersByUserID, deleteFavoriteUser, type User } from '../api/favorite_user';
 import { storageUrl } from '../../../lib/storage';
+import { useToast } from '../../../context/ToastContext';
 
 export const FavoriteUsersPage = () => {
   const { userId } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!userId) return;
@@ -37,7 +39,7 @@ export const FavoriteUsersPage = () => {
       await deleteFavoriteUser(targetId);
       setUsers((prev) => prev.filter((u) => u.ID !== targetId));
     } catch (err) {
-      alert('解除に失敗しました');
+      addToast('お気に入り解除に失敗しました', 'error');
     }
   };
 
