@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { useState } from 'react';
 import { type TermsOfService, consentToTerms } from '../../api/terms';
+import { TermsContent } from '../molecules/TermsContent';
 
 interface Props {
   terms: TermsOfService;
@@ -8,29 +8,9 @@ interface Props {
 }
 
 export const TermsConsentModal = ({ terms, onConsented }: Props) => {
-  const [content, setContent] = useState('');
-  const [loadingDoc, setLoadingDoc] = useState(true);
-  const [docError, setDocError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    fetch(terms.documentUrl)
-      .then((res) => {
-        if (!res.ok) throw new Error('fetch failed');
-        return res.text();
-      })
-      .then(setContent)
-      .catch(() => setDocError(true))
-      .finally(() => setLoadingDoc(false));
-  }, [terms.documentUrl]);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    if (!scrolled && el.scrollTop + el.clientHeight >= el.scrollHeight - 20) {
-      setScrolled(true);
-    }
-  };
+  const [docError, setDocError] = useState(false);
 
   const handleConsent = async () => {
     setSubmitting(true);
@@ -78,8 +58,10 @@ export const TermsConsentModal = ({ terms, onConsented }: Props) => {
           </p>
         </div>
 
-        <div
-          onScroll={handleScroll}
+        <TermsContent
+          documentUrl={terms.documentUrl}
+          onScrolledToBottom={() => setScrolled(true)}
+          onError={() => setDocError(true)}
           style={{
             flex: 1,
             overflowY: 'auto',
@@ -88,17 +70,7 @@ export const TermsConsentModal = ({ terms, onConsented }: Props) => {
             fontSize: '0.9rem',
             color: '#334155',
           }}
-        >
-          {loadingDoc ? (
-            <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
-          ) : docError ? (
-            <p style={{ color: '#ef4444', textAlign: 'center' }}>
-              規約の読み込みに失敗しました。しばらく経ってから再度お試しください。
-            </p>
-          ) : (
-            <ReactMarkdown>{content}</ReactMarkdown>
-          )}
-        </div>
+        />
 
         <div
           style={{
@@ -116,17 +88,15 @@ export const TermsConsentModal = ({ terms, onConsented }: Props) => {
           )}
           <button
             onClick={handleConsent}
-            disabled={submitting || loadingDoc || docError || !scrolled}
+            disabled={submitting || docError || !scrolled}
             style={{
               width: '100%',
               padding: '0.75rem',
-              background:
-                submitting || loadingDoc || docError || !scrolled ? '#93c5fd' : '#3b82f6',
+              background: submitting || docError || !scrolled ? '#93c5fd' : '#3b82f6',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
-              cursor:
-                submitting || loadingDoc || docError || !scrolled ? 'not-allowed' : 'pointer',
+              cursor: submitting || docError || !scrolled ? 'not-allowed' : 'pointer',
               fontWeight: 700,
               fontSize: '1rem',
             }}

@@ -82,6 +82,7 @@ function App() {
         <ToastContainer />
         <Suspense fallback={<p>読み込み中...</p>}>
           <Routes>
+            <Route path="/" element={<UserLoginForm />} />
             <Route path="/admin/*" element={<AdminRoutes />} />
             <Route path="/login" element={<UserLoginForm />} />
             <Route path="/register" element={<UserRegisterPage />} />

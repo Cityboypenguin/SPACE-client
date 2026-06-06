@@ -52,3 +52,20 @@ export const consentToTerms = async (termsID: string): Promise<boolean> => {
   );
   return data.consentToTerms;
 };
+
+const CURRENT_TERMS_QUERY = `
+  query CurrentTerms {
+    currentTerms {
+      ID
+      version
+      documentUrl
+      effectiveDate
+      createdAt
+    }
+  }
+`;
+
+export const getCurrentTerms = async (): Promise<TermsOfService | null> => {
+  const data = await request<{ currentTerms: TermsOfService | null }>(CURRENT_TERMS_QUERY, {});
+  return data.currentTerms;
+};
