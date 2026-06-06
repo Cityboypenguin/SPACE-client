@@ -5,11 +5,31 @@ import { useAuth } from '../context/AuthContext';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
 import { TermsContent } from '../components/molecules/TermsContent';
 
+// 有効な学科記号（表6より。LG=2020募集停止、LZ=2019募集停止のため除外）
+// 2文字コードを E より先に記述して誤マッチを防ぐ
+const studentEmailRe = /^(EE|EL|EW|JL|JP|MA|MD|CM|CA|LB|LA|LT|LR|LK|LM|NE|HP|HS|GN|GC|E)(2[0-9]|[3-9][0-9])\d{4}@senshu-u\.jp$/i;
+
+const validateEmail = (value: string): string => {
+  if (value && !studentEmailRe.test(value)) {
+    return 'メールアドレスは2020年度以降の学籍番号形式のみ登録できます';
+  }
+  return '';
+};
+
+const validatePassword = (value: string): string => {
+  if (value && value.length < 8) {
+    return 'パスワードは8文字以上で入力してください';
+  }
+  return '';
+};
+
 export const UserRegisterPage = () => {
   const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [error, setError] = useState('');
   const [currentTerms, setCurrentTerms] = useState<TermsOfService | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -24,9 +44,30 @@ export const UserRegisterPage = () => {
       .catch(() => {});
   }, []);
 
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    setEmailError(validateEmail(value));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    setPasswordError(validatePassword(value));
+  };
+
+  const hasValidationError = !!emailError || !!passwordError;
+
   const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (currentTerms && !agreed) return;
+
+    const emailErr = validateEmail(email);
+    const passwordErr = validatePassword(password);
+    if (emailErr || passwordErr) {
+      setEmailError(emailErr);
+      setPasswordError(passwordErr);
+      return;
+    }
+
     setError('');
     try {
       await registerUser(accountID, name, email, password);
@@ -62,17 +103,19 @@ export const UserRegisterPage = () => {
       <input
         type="email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => handleEmailChange(e.target.value)}
         placeholder="メールアドレス"
         required
       />
+      {emailError && <p style={{ color: 'red', fontSize: '0.8rem', margin: '0.2rem 0' }}>{emailError}</p>}
       <input
         type="password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => handlePasswordChange(e.target.value)}
         placeholder="パスワード"
         required
       />
+      {passwordError && <p style={{ color: 'red', fontSize: '0.8rem', margin: '0.2rem 0' }}>{passwordError}</p>}
       {currentTerms && (
         <div>
           <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0.75rem 0 0.5rem' }}>
@@ -109,7 +152,7 @@ export const UserRegisterPage = () => {
           </label>
         </div>
       )}
-      <button type="submit" disabled={!!currentTerms && !agreed}>登録する</button>
+      <button type="submit" disabled={(!!currentTerms && !agreed) || hasValidationError}>登録する</button>
       <p>
         すでにアカウントをお持ちの方は<Link to="/login">ログイン</Link>
       </p>
