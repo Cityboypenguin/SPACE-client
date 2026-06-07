@@ -60,6 +60,7 @@ const SEND_EMAIL_OTP_MUTATION = `
   }
 `;
 
+
 const CREATE_USER_MUTATION = `
   mutation CreateUser($input: CreateUserInput!) {
     createUser(input: $input) {
