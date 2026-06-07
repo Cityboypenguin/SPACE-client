@@ -54,8 +54,10 @@ export const AdminHeader = () => {
             )}
           </button>
           <button className={styles.navButton} onClick={() => navigate('/admin/announcements')}>お知らせ管理</button>
+          <button className={styles.navButton} onClick={() => navigate('/admin/terms')}>利用規約管理</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/administrators')}>管理者管理</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/register')}>新規管理者登録</button>
+          <button className={styles.navButton} onClick={() => navigate('/admin/maintenance')}>メンテナンス</button>
         </nav>
         <button className={styles.logoutButton} onClick={() => setShowConfirm(true)}>ログアウト</button>
       </header>

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 import {
   getTopLevelPosts,
@@ -17,35 +19,17 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 
-let cachedPosts: Post[] = [];
-
 export const PostListPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
-  const [posts, setPosts] = useState<Post[]>(cachedPosts);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+
+  const { data: posts, error, isLoading, mutate } = useSWR<Post[]>('user-posts', getTopLevelPosts);
+
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
-
-
-  const loadPosts = () => {
-    setLoading(true);
-    getTopLevelPosts()
-      .then((data) => {
-        setPosts(data);
-        cachedPosts = data;
-      })
-      .catch(() => setError('投稿の読み込みに失敗しました'))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadPosts();
-  }, []);
 
   const handlePost = async () => {
     if ((!content.trim() && selectedFiles.length === 0) || posting) return;
@@ -65,30 +49,35 @@ export const PostListPage = () => {
       const newPost = await createPost(content.trim(), undefined, mediaInputs);
       setContent('');
       setSelectedFiles([]);
-      setPosts((prev) => [newPost, ...prev]);
-    } catch {
-      setPostError('投稿に失敗しました');
+
+      mutate([newPost, ...(posts || [])], { revalidate: false });
+    } catch (err) {
+      setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setPosting(false);
     }
   };
 
   const handleLike = async (postId: string, isLiked: boolean) => {
-    if (isLiked) {
-      await deleteFavorite(postId);
-    } else {
-      await createFavorite(postId);
-    }
-    setPosts((prev) =>
-      prev.map((p) => {
+    try {
+      if (isLiked) {
+        await deleteFavorite(postId);
+      } else {
+        await createFavorite(postId);
+      }
+
+      const updatedPosts = posts?.map((p) => {
         if (p.ID !== postId) return p;
         if (isLiked) {
           return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
         } else {
           return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
         }
-      }),
-    );
+      });
+      mutate(updatedPosts, { revalidate: false });
+    } catch (err) {
+      console.error('いいねの更新に失敗しました', err);
+    }
   };
 
   return (
@@ -112,9 +101,11 @@ export const PostListPage = () => {
           onFileSelect={setSelectedFiles}
         />
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
 
-        {posts.length > 0 ? (
+        {isLoading ? (
+          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+        ) : posts && posts.length > 0 ? (
           posts.map((post) => (
             <PostCard
               key={post.ID}
@@ -124,8 +115,6 @@ export const PostListPage = () => {
               onClick={() => navigate(`/posts/${post.ID}`)}
             />
           ))
-        ) : loading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
         ) : (
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
         )}

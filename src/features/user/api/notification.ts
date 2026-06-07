@@ -90,3 +90,31 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
     getUserToken(),
   );
 };
+
+const DELETE_NOTIFICATIONS_MUTATION = `
+  mutation DeleteNotifications($ids: [ID!]!) {
+    deleteNotifications(ids: $ids)
+  }
+`;
+
+const DELETE_READ_NOTIFICATIONS_MUTATION = `
+  mutation DeleteReadNotifications {
+    deleteReadNotifications
+  }
+`;
+
+export const deleteNotifications = async (ids: string[]): Promise<void> => {
+  await request<{ deleteNotifications: boolean }>(
+    DELETE_NOTIFICATIONS_MUTATION,
+    { ids },
+    getUserToken(),
+  );
+};
+
+export const deleteReadNotifications = async (): Promise<void> => {
+  await request<{ deleteReadNotifications: boolean }>(
+    DELETE_READ_NOTIFICATIONS_MUTATION,
+    undefined,
+    getUserToken(),
+  );
+};

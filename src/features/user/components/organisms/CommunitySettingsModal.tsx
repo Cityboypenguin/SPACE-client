@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { RoleBadge } from '../atoms/RoleBadge';
+import { toUserMessage } from '../../../../lib/errorMessages';
 import {
   getCommunityMembers,
   updateCommunityInfo,
@@ -88,7 +89,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
       onUpdated(updated);
       setSelectedFile(null);
     } catch (err) {
-      setInfoError(err instanceof Error ? err.message : '更新に失敗しました');
+      setInfoError(toUserMessage(err, 'コミュニティ情報の更新に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setSaving(false);
     }
@@ -99,8 +100,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     try {
       await kickUserFromCommunity(community.ID, member.user.ID);
       setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
-    } catch {
-      setMembersError('キックに失敗しました');
+    } catch (err) {
+      setMembersError(toUserMessage(err, 'メンバーの削除に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
@@ -111,8 +112,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
       setMembers((prev) =>
         prev.map((m) => (m.user.ID === member.user.ID ? { ...m, role: ROLE_OWNER } : m)),
       );
-    } catch {
-      setMembersError('昇格に失敗しました');
+    } catch (err) {
+      setMembersError(toUserMessage(err, 'オーナーへの昇格に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
@@ -123,8 +124,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
       setMembers((prev) =>
         prev.map((m) => (m.user.ID === member.user.ID ? { ...m, role: 'member' } : m)),
       );
-    } catch {
-      setMembersError('降格に失敗しました');
+    } catch (err) {
+      setMembersError(toUserMessage(err, 'メンバーへの降格に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 

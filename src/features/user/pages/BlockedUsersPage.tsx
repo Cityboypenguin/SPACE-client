@@ -1,44 +1,29 @@
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { getBlockersByUserID, deleteBlocker } from '../api/block';
-import type { User } from '../api/block'; // User型をインポート
 import { storageUrl } from '../../../lib/storage';
+import { useToast } from '../../../context/ToastContext';
 
 export const BlockedUsersPage = () => {
   const { userId } = useAuth();
   const navigate = useNavigate();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
 
-  useEffect(() => {
-    if (!userId) return;
-    let active = true;
-
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const data = await getBlockersByUserID(userId);
-        if (active) setUsers(data || []);
-      } catch (err) {
-        console.error('ブロック一覧の取得に失敗しました', err);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    fetchUsers();
-    return () => { active = false; };
-  }, [userId]);
+  const { data, isLoading, mutate } = useSWR(
+    userId ? ['blocked-users', userId] : null,
+    ([, uid]: [string, string]) => getBlockersByUserID(uid),
+  );
+  const users = data ?? [];
 
   const handleUnblock = async (targetId: string) => {
     if (!window.confirm('ブロックを解除しますか？')) return;
     try {
       await deleteBlocker(targetId);
-      setUsers((prev) => prev.filter((u) => u.ID !== targetId));
-    } catch (err) {
-      alert('解除に失敗しました');
+      mutate(users.filter((u) => u.ID !== targetId), { revalidate: false });
+    } catch {
+      addToast('ブロックの解除に失敗しました', 'error');
     }
   };
 
@@ -49,7 +34,7 @@ export const BlockedUsersPage = () => {
         <button onClick={() => navigate('/mypage')} style={{ marginBottom: '1rem' }}>← マイページに戻る</button>
         <h1>ブロック一覧</h1>
 
-        {loading ? (
+        {isLoading ? (
           <p>読み込み中...</p>
         ) : users.length === 0 ? (
           <p style={{ color: 'gray' }}>ブロックしているユーザーはいません。</p>

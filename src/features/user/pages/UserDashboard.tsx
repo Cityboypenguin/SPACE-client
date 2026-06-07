@@ -1,16 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { storageUrl } from '../../../lib/storage';
 import styles from './UserDashboard.module.css';
+import { PostCard } from '../components/organisms/PostCard';
+import { getPostsByUserID, createFavorite, deleteFavorite } from '../api/post';
 
 export const UserDashboard = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [flashMessage, setFlashMessage] = useState('');
   const { userId } = useAuth();
   const { profile, loading, error } = useProfile(userId);
+
+  const { data: posts, isLoading: postsLoading, error: postsErr, mutate: mutatePosts } = useSWR(
+    userId ? ['user-posts', userId] : null,
+    ([, uid]: [string, string]) => getPostsByUserID(uid),
+  );
 
   useEffect(() => {
     if (location.state && (location.state as { message?: string }).message) {
@@ -18,6 +27,25 @@ export const UserDashboard = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location]);
+
+  const handleLike = async (postId: string, isLiked: boolean) => {
+    if (isLiked) {
+      await deleteFavorite(postId);
+    } else {
+      await createFavorite(postId);
+    }
+    mutatePosts(
+      (prev) => prev?.map((p) => {
+        if (p.ID !== postId) return p;
+        if (isLiked) {
+          return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
+        } else {
+          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+        }
+      }),
+      { revalidate: false },
+    );
+  };
 
   if (loading) return <p>読み込み中...</p>;
 
@@ -81,6 +109,39 @@ export const UserDashboard = () => {
             ブロック一覧
           </Link>
         </div>
+
+        <div style={{ marginTop: '2.5rem' }}>
+          <h2 style={{ fontSize: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+            自分の投稿
+          </h2>
+
+          {postsErr && <p style={{ color: 'red', marginBottom: '1rem' }}>投稿の読み込みに失敗しました</p>}
+
+          <div
+            style={{
+              maxHeight: '50vh',
+              overflowY: 'auto',
+              paddingRight: '0.5rem',
+            }}
+          >
+            {posts && posts.length > 0 ? (
+              posts.map((post) => (
+                <PostCard
+                  key={post.ID}
+                  post={post}
+                  currentUserId={userId}
+                  onLike={handleLike}
+                  onClick={() => navigate(`/posts/${post.ID}`)}
+                />
+              ))
+            ) : postsLoading ? (
+              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+            ) : (
+              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
+            )}
+          </div>
+        </div>
+
       </main>
     </div>
   );

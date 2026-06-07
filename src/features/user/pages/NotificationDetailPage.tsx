@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useNotification } from '../context/NotificationContext';
 import {
   listMyNotifications,
   markNotificationAsRead,
-  type Notification,
+  deleteNotifications,
 } from '../api/notification';
+import { storageUrl } from '../../../lib/storage';
 
 const TYPE_LABEL: Record<string, string> = {
   favorite: 'いいね',
@@ -20,7 +22,7 @@ const TYPE_LABEL: Record<string, string> = {
 const TARGET_PATH: Record<string, (id: string) => string> = {
   post: (id) => `/posts/${id}`,
   room: (id) => `/community/chat/${id}`,
-  community: (id) => `/community`,
+  community: () => `/community`,
   announcement: (id) => `/announcements/${id}`,
 };
 
@@ -30,27 +32,42 @@ export const NotificationDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { decrementUnread } = useNotification();
-  const [notification, setNotification] = useState<Notification | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!id) return;
+  const { data: notifications, isLoading, mutate } = useSWR(
+    'my-notifications',
+    () => listMyNotifications(50),
+  );
 
-    listMyNotifications()
-      .then((list) => {
-        const found = list.find((n) => n.ID === id) ?? null;
-        setNotification(found);
-        if (found && !found.isRead) {
-          return markNotificationAsRead(found.ID).then(() => {
-            setNotification((prev) => prev ? { ...prev, isRead: true } : prev);
-            decrementUnread();
-          });
-        }
+  const notification = notifications?.find((n) => n.ID === id) ?? null;
+
+  useEffect(() => {
+    if (!notification || notification.isRead) return;
+    markNotificationAsRead(notification.ID)
+      .then(() => {
+        mutate(
+          (prev) => prev?.map((n) => n.ID === notification.ID ? { ...n, isRead: true } : n),
+          { revalidate: false },
+        );
+        decrementUnread();
       })
-      .catch(() => setError('通知の読み込みに失敗しました'))
-      .finally(() => setLoading(false));
-  }, [id, decrementUnread]);
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notification?.ID, notification?.isRead]);
+
+  const handleDelete = async () => {
+    if (!notification) return;
+    if (!window.confirm('この通知を削除しますか？')) return;
+    setDeleting(true);
+    try {
+      await deleteNotifications([notification.ID]);
+      navigate('/notifications');
+    } catch {
+      setError('削除に失敗しました');
+      setDeleting(false);
+    }
+  };
 
   const handleTargetLink = () => {
     if (!notification?.targetType || !notification?.targetID) return;
@@ -66,27 +83,46 @@ export const NotificationDetailPage = () => {
     <div>
       <UserHeader />
       <main style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
-        <button
-          onClick={() => navigate('/notifications')}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#3b82f6',
-            fontSize: '0.875rem',
-            padding: '0.25rem 0',
-            marginBottom: '1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-          }}
-        >
-          ← 通知一覧に戻る
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <button
+            onClick={() => navigate('/notifications')}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#3b82f6',
+              fontSize: '0.875rem',
+              padding: '0.25rem 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+          >
+            ← 通知一覧に戻る
+          </button>
+          {notification && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{
+                padding: '0.35rem 0.9rem',
+                borderRadius: 8,
+                border: '1px solid #fca5a5',
+                background: '#fff',
+                cursor: deleting ? 'not-allowed' : 'pointer',
+                fontSize: '0.8rem',
+                color: deleting ? '#fca5a5' : '#ef4444',
+                fontWeight: 500,
+              }}
+            >
+              {deleting ? '削除中...' : '削除'}
+            </button>
+          )}
+        </div>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
 
-        {loading ? (
+        {isLoading ? (
           <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
         ) : !notification ? (
           <p style={{ color: '#94a3b8', textAlign: 'center' }}>通知が見つかりません</p>
@@ -123,7 +159,7 @@ export const NotificationDetailPage = () => {
               >
                 {notification.actor.avatarUrl ? (
                   <img
-                    src={notification.actor.avatarUrl}
+                    src={storageUrl(notification.actor.avatarUrl) ?? undefined}
                     alt={notification.actor.name}
                     style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
                   />

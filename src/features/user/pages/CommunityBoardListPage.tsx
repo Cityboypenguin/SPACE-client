@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
 import { createReport } from '../api/report';
 import { useAuth } from '../context/AuthContext';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
@@ -13,48 +15,23 @@ export const CommunityBoardListPage = () => {
   const [results, setResults] = useState<Community[]>([]);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [joinedIDs, setJoinedIDs] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
-  const [randomResults, setRandomResults] = useState<Community[]>([]);
-  const [loadingRandom, setLoadingRandom] = useState(false);
 
-  // マウント時におすすめコミュニティを取得
-  useEffect(() => {
-    let active = true;
-    setLoadingRandom(true);
+  const { data: myCommunities, mutate: mutateMyCommunities } = useSWR('my-communities', listMyCommunities);
+  const { data: randomCommunities, isLoading: loadingRandom } = useSWR(
+    'random-communities',
+    () => getRandomCommunities(10),
+  );
 
-    const initializeData = async () => {
-      try {
-        // 1. 自分が参加しているコミュニティの最新リストを取得
-        // エラーの指摘通り、関数名を「myCommunities」に変更します
-        const joinedList = await listMyCommunities(); 
-        
-        // 🌟 型の安全性を確保するため、<string> を明示します
-        const myIDs = new Set<string>(joinedList.map((c: Community) => c.ID));
-        
-        if (!active) return;
-        // 参加済み状態を最新に更新
-        setJoinedIDs(myIDs);
+  const joinedIDs = useMemo(
+    () => new Set(myCommunities?.map((c) => c.ID) ?? []),
+    [myCommunities],
+  );
 
-        // 2. おすすめコミュニティを取得
-        const randomList = await getRandomCommunities(10);
-        
-        if (!active) return;
-        // 最新の参加済みIDを使って、画面を開いた時点のデータをフィルター除外
-        const initialFiltered = randomList.filter((c) => !myIDs.has(c.ID));
-        setRandomResults(initialFiltered);
-
-      } catch (err) {
-        console.error('データの初期化に失敗しました:', err);
-      } finally {
-        if (active) setLoadingRandom(false);
-      }
-    };
-
-    initializeData();
-
-    return () => { active = false; };
-  }, []);
+  const randomResults = useMemo(
+    () => randomCommunities?.filter((c) => !joinedIDs.has(c.ID)) ?? [],
+    [randomCommunities, joinedIDs],
+  );
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +43,7 @@ export const CommunityBoardListPage = () => {
       setResults(data);
       setSearched(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '検索に失敗しました');
+      setError(toUserMessage(err, 'コミュニティの検索に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setSearching(false);
     }
@@ -77,7 +54,7 @@ export const CommunityBoardListPage = () => {
       `コミュニティ「${community.name}」を通報する具体的な理由を入力してください。`
     );
 
-    if (customReason === null) return; // キャンセル
+    if (customReason === null) return;
     if (customReason.trim() === '') {
       alert('通報には具体的な理由の入力が必要です。');
       return;
@@ -88,23 +65,23 @@ export const CommunityBoardListPage = () => {
         targetType: 'COMMUNITY',
         targetID: community.ID,
         reason: 'COMMUNITY_VIOLATION',
-        customReason: customReason
+        customReason: customReason,
       });
       alert('コミュニティの通報を送信しました。ご協力ありがとうございました。');
     } catch (err) {
       console.error('コミュニティの通報に失敗しました:', err);
-      alert('通報の送信に失敗しました。');
+      alert('通報の送信に失敗しました。時間をおいてから再度お試しください。');
     }
   }, []);
 
   const handleJoin = useCallback(async (community: Community) => {
     try {
       await joinCommunity(community.roomID);
-      setJoinedIDs((prev) => new Set([...prev, community.ID]));
+      void mutateMyCommunities();
     } catch (err) {
       console.error('コミュニティへの参加に失敗しました:', err);
     }
-  }, []);
+  }, [mutateMyCommunities]);
 
   return (
     <div>

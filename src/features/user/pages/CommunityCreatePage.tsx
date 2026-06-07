@@ -4,6 +4,7 @@ import { UserHeader } from '../components/organisms/UserHeader';
 import { createCommunity, getPresignedCommunityIconUploadUrl } from '../api/community';
 import { uploadAvatarToStorage } from '../api/profile';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const CommunityCreatePage = () => {
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ export const CommunityCreatePage = () => {
   
   navigate('/community');
     } catch (err) {
-      setError(err instanceof Error ? err.message : '作成に失敗しました');
+      setError(toUserMessage(err, 'コミュニティの作成に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setSubmitting(false);
     }
