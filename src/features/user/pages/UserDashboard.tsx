@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom'; // ⭕️ useNavigate を追加
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { storageUrl } from '../../../lib/storage';
 import styles from './UserDashboard.module.css';
 import { PostCard } from '../components/organisms/PostCard';
-import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
+import { getPostsByUserID, createFavorite, deleteFavorite } from '../api/post';
 
 export const UserDashboard = () => {
   const location = useLocation();
@@ -14,9 +15,11 @@ export const UserDashboard = () => {
   const [flashMessage, setFlashMessage] = useState('');
   const { userId } = useAuth();
   const { profile, loading, error } = useProfile(userId);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [postsLoading, setPostsLoading] = useState(true);
-  const [postsError, setPostsError] = useState('');
+
+  const { data: posts, isLoading: postsLoading, error: postsErr, mutate: mutatePosts } = useSWR(
+    userId ? ['user-posts', userId] : null,
+    ([, uid]: [string, string]) => getPostsByUserID(uid),
+  );
 
   useEffect(() => {
     if (location.state && (location.state as { message?: string }).message) {
@@ -25,35 +28,14 @@ export const UserDashboard = () => {
     }
   }, [location]);
 
-  useEffect(() => {
-    if (!userId) return;
-
-    let active = true;
-    setPostsLoading(true);
-    setPostsError('');
-
-    getPostsByUserID(userId)
-      .then((data) => {
-        if (active) setPosts(data);
-      })
-      .catch(() => {
-        if (active) setPostsError('投稿の読み込みに失敗しました');
-      })
-      .finally(() => {
-        if (active) setPostsLoading(false);
-      });
-
-    return () => { active = false; };
-  }, [userId]);
-
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) {
       await deleteFavorite(postId);
     } else {
       await createFavorite(postId);
     }
-    setPosts((prev) =>
-      prev.map((p) => {
+    mutatePosts(
+      (prev) => prev?.map((p) => {
         if (p.ID !== postId) return p;
         if (isLiked) {
           return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
@@ -61,6 +43,7 @@ export const UserDashboard = () => {
           return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
         }
       }),
+      { revalidate: false },
     );
   };
 
@@ -132,7 +115,7 @@ export const UserDashboard = () => {
             自分の投稿
           </h2>
 
-          {postsError && <p style={{ color: 'red', marginBottom: '1rem' }}>{postsError}</p>}
+          {postsErr && <p style={{ color: 'red', marginBottom: '1rem' }}>投稿の読み込みに失敗しました</p>}
 
           <div
             style={{
@@ -141,7 +124,7 @@ export const UserDashboard = () => {
               paddingRight: '0.5rem',
             }}
           >
-            {posts.length > 0 ? (
+            {posts && posts.length > 0 ? (
               posts.map((post) => (
                 <PostCard
                   key={post.ID}
@@ -158,7 +141,6 @@ export const UserDashboard = () => {
             )}
           </div>
         </div>
-        {/* ========================================================= */}
 
       </main>
     </div>

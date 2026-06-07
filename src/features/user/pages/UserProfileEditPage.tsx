@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { useAuth } from '../context/AuthContext';
 import {
-  getMyProfile,
   getProfileByUserID,
   updateProfile,
   getPresignedAvatarUploadUrl,
@@ -18,6 +19,12 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 export const UserProfileEditPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userId } = useAuth();
+
+  const { data: profileData } = useSWR(
+    userId ? ['profile', userId] : null,
+    ([, id]: [string, string]) => getProfileByUserID(id).then((d) => d.getProfileByUserID),
+  );
 
   const [bio, setBio] = useState('');
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
@@ -27,23 +34,10 @@ export const UserProfileEditPage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const meRes = await getMyProfile();
-        const myUserID = meRes.me.ID;
-
-        const profileRes = await getProfileByUserID(myUserID);
-        const profile = profileRes.getProfileByUserID;
-        if (profile) {
-          setBio(profile.bio || '');
-          setCurrentAvatarUrl(profile.avatarUrl);
-        }
-      } catch (err) {
-        setError(toUserMessage(err, 'プロフィールの取得に失敗しました。ページを再読み込みしてください。'));
-      }
-    };
-    void init();
-  }, []);
+    if (!profileData) return;
+    setBio(profileData.bio || '');
+    setCurrentAvatarUrl(profileData.avatarUrl);
+  }, [profileData]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

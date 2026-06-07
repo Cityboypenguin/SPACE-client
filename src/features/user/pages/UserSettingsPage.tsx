@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getMyProfile, updateMyProfile, type UserProfile } from '../api/profile';
+import useSWR from 'swr';
+import { getMyProfile, updateMyProfile } from '../api/profile';
 import { useAuth } from '../context/AuthContext';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -8,8 +9,6 @@ import { toUserMessage } from '../../../lib/errorMessages';
 export const UserSettingsPage = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -17,22 +16,17 @@ export const UserSettingsPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const { data: profile, isLoading } = useSWR(
+    token ? 'my-profile' : null,
+    () => getMyProfile().then((d) => d.me),
+  );
+
   useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    getMyProfile()
-      .then((data) => {
-        const p = data.me;
-        setProfile(p);
-        setAccountID(p.accountID);
-        setName(p.name);
-        setEmail(p.email);
-      })
-      .catch((err) => setError(toUserMessage(err, 'プロフィールの取得に失敗しました。ページを再読み込みしてください。')))
-      .finally(() => setIsLoading(false));
-  }, [token, navigate]);
+    if (!profile) return;
+    setAccountID(profile.accountID);
+    setName(profile.name);
+    setEmail(profile.email);
+  }, [profile]);
 
   const handleUpdate = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -41,8 +35,7 @@ export const UserSettingsPage = () => {
     try {
       const input: Parameters<typeof updateMyProfile>[0] = { accountID, name, email };
       if (password) input.password = password;
-      const data = await updateMyProfile(input);
-      setProfile(data.updateUser);
+      await updateMyProfile(input);
       setPassword('');
       setSuccess('更新しました');
     } catch (err) {
@@ -51,7 +44,13 @@ export const UserSettingsPage = () => {
   };
 
   if (isLoading) return <p>読み込み中...</p>;
-  if (!profile) return <p style={{ color: 'red' }}>{error}</p>;
+  if (!profile) {
+    if (!token) {
+      navigate('/login');
+      return null;
+    }
+    return <p style={{ color: 'red' }}>{error || 'プロフィールの取得に失敗しました。'}</p>;
+  }
 
   return (
     <div>

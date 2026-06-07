@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import useSWR from 'swr';
 import { storageUrl } from '../../../lib/storage';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostComposer } from '../components/organisms/PostComposer';
@@ -246,9 +247,12 @@ export const PostDetailPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+
+  const { data: post, isLoading, error, mutate } = useSWR<Post | null>(
+    id ? ['post', id] : null,
+    ([, postId]: [string, string]) => getPostByID(postId),
+  );
+
   const [replyContent, setReplyContent] = useState('');
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [replying, setReplying] = useState(false);
@@ -262,44 +266,13 @@ export const PostDetailPage = () => {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const isMyPost = post?.user.ID === userId;
 
-  const loadPost = (postId: string, activeSignal = { active: true }) => {
-    setLoading(true);
-    setError('');
-    getPostByID(postId)
-      .then((data) => {
-        if (activeSignal.active) {
-          setPost(data);
-        }
-      })
-      .catch(() => {
-        if (activeSignal.active) {
-          setError('投稿の読み込みに失敗しました');
-        }
-      })
-      .finally(() => {
-        if (activeSignal.active) {
-          setLoading(false);
-        }
-      });
-  };
-
-  useEffect(() => {
-    const activeSignal = { active: true };
-    if (id) {
-      loadPost(id, activeSignal);
-    }
-    return () => {
-      activeSignal.active = false;
-    };
-  }, [id]);
-
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) {
       await deleteFavorite(postId);
     } else {
       await createFavorite(postId);
     }
-    if (id) loadPost(id);
+    void mutate();
   };
 
   const handleReply = async () => {
@@ -320,7 +293,7 @@ export const PostDetailPage = () => {
       await createPost(replyContent.trim(), id, mediaInputs);
       setReplyContent('');
       setReplyFiles([]);
-      loadPost(id);
+      void mutate();
     } catch (err) {
       setReplyError(toUserMessage(err, '返信の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -359,7 +332,7 @@ export const PostDetailPage = () => {
       setIsEditing(false);
       setEditSelectedFiles([]);
       setEditDeletedMediaIDs([]);
-      loadPost(id);
+      void mutate();
     } catch (err) {
       setUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -389,9 +362,9 @@ export const PostDetailPage = () => {
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿</h1>
         </div>
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
 
-        {loading ? (
+        {isLoading ? (
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
         ) : !post ? (
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
@@ -443,7 +416,7 @@ export const PostDetailPage = () => {
                     onFileSelect={setEditSelectedFiles}
                     existingMedia={post.media}
                     deletedMediaIDs={editDeletedMediaIDs}
-                    onDeleteExistingMedia={(id) => setEditDeletedMediaIDs(prev => [...prev, id])}
+                    onDeleteExistingMedia={(mediaId) => setEditDeletedMediaIDs(prev => [...prev, mediaId])}
                     submitLabel="保存する"
                     submittingLabel="保存中..."
                     placeholder="投稿を編集..."
@@ -523,10 +496,9 @@ export const PostDetailPage = () => {
 
             {post.replies.length > 0 && (
               <div>
-                {post.replies
-                  .map((reply) => (
-                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
-                  ))}
+                {post.replies.map((reply) => (
+                  <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
+                ))}
               </div>
             )}
 

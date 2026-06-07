@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { searchUsers, type UserProfile } from '../api/profile';
-import { getOrCreateDMRoom, listMyDMRooms, type Room } from '../api/message';
+import { getOrCreateDMRoom, listMyDMRooms } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -13,38 +14,26 @@ export const DMListPage = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<UserProfile[]>([]);
   const [searched, setSearched] = useState(false);
-  const [error, setError] = useState('');
+  const [searchError, setSearchError] = useState('');
   const [starting, setStarting] = useState<string | null>(null);
-  const [dmRooms, setDmRooms] = useState<Room[]>([]);
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
 
-  useEffect(() => {
-    let active = true;
-
-    const loadDMRooms = async () => {
-      try {
-        const serverRooms = await listMyDMRooms();
-        if (!active) return;
-        setDmRooms(serverRooms);
-      } catch (err) {
-        if (active) setError(toUserMessage(err, 'DMルームの読み込みに失敗しました。時間をおいてから再度お試しください。'));
-      }
-    };
-
-    void loadDMRooms();
-    return () => { active = false; };
-  }, [currentUserID]);
+  const { data: dmRooms, error: roomsError, mutate: mutateDmRooms } = useSWR(
+    'dm-rooms',
+    listMyDMRooms,
+  );
 
   useUnreadSubscription(({ roomID, unreadCount }) => {
-    setDmRooms((prev) => prev.map((room) =>
-      room.ID === roomID ? { ...room, unreadCount } : room
-    ));
+    mutateDmRooms(
+      (prev) => prev?.map((room) => room.ID === roomID ? { ...room, unreadCount } : room),
+      { revalidate: false },
+    );
   });
 
   const handleSearch = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    setError('');
+    setSearchError('');
     setResults([]);
     setSearched(false);
     try {
@@ -55,18 +44,18 @@ export const DMListPage = () => {
       setResults(filtered);
       setSearched(true);
     } catch (err) {
-      setError(toUserMessage(err, '検索に失敗しました。時間をおいてから再度お試しください。'));
+      setSearchError(toUserMessage(err, '検索に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
   const handleStartDM = async (target: UserProfile) => {
     setStarting(target.ID);
-    setError('');
+    setSearchError('');
     try {
       const data = await getOrCreateDMRoom(target.ID);
       navigate(`/dm/${data.getOrCreateDMRoom.ID}`);
     } catch (err) {
-      setError(toUserMessage(err, 'DMの開始に失敗しました。時間をおいてから再度お試しください。'));
+      setSearchError(toUserMessage(err, 'DMの開始に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setStarting(null);
     }
@@ -92,7 +81,11 @@ export const DMListPage = () => {
             <button type="submit">検索</button>
           </form>
 
-          {error && <p style={{ color: 'red', marginTop: '0.5rem' }}>{error}</p>}
+          {(searchError || roomsError) && (
+            <p style={{ color: 'red', marginTop: '0.5rem' }}>
+              {searchError || 'DMルームの読み込みに失敗しました。'}
+            </p>
+          )}
           {searched && results.length === 0 && (
             <p style={{ marginTop: '0.5rem' }}>該当するユーザーが見つかりませんでした</p>
           )}
@@ -117,7 +110,7 @@ export const DMListPage = () => {
           )}
         </section>
 
-        {dmRooms.length > 0 && (
+        {dmRooms && dmRooms.length > 0 && (
           <section className={styles.dmSection}>
             <h2 className={styles.sectionTitle}>最近のDM</h2>
             <ul className={styles.dmList}>

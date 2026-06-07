@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useNotification } from '../context/NotificationContext';
 import {
@@ -10,7 +11,7 @@ import {
   deleteReadNotifications,
   type Notification,
 } from '../api/notification';
-import { listAnnouncements, type Announcement } from '../api/announcement';
+import { listAnnouncements } from '../api/announcement';
 import { toUserMessage } from '../../../lib/errorMessages';
 
 type Tab = 'notifications' | 'announcements';
@@ -43,58 +44,36 @@ export const NotificationListPage = () => {
   const lastSseAtRef = useRef(lastSseAt);
 
   const [tab, setTab] = useState<Tab>('notifications');
-
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [notifLoading, setNotifLoading] = useState(true);
   const [notifError, setNotifError] = useState('');
   const [markingAll, setMarkingAll] = useState(false);
-
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const { data: notifications, isLoading: notifLoading, mutate: mutateNotifications } = useSWR(
+    'my-notifications',
+    () => listMyNotifications(50),
+  );
 
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
-  const [announceLoading, setAnnounceLoading] = useState(false);
-  const [announceError, setAnnounceError] = useState('');
-
-  const loadNotifications = () => {
-    setNotifLoading(true);
-    listMyNotifications(50)
-      .then(setNotifications)
-      .catch(() => setNotifError('通知の読み込みに失敗しました'))
-      .finally(() => setNotifLoading(false));
-  };
-
-  useEffect(() => {
-    loadNotifications();
-  }, []);
+  const { data: announcements, isLoading: announceLoading } = useSWR(
+    tab === 'announcements' ? 'announcements' : null,
+    () => listAnnouncements(50),
+  );
 
   useEffect(() => {
     if (lastSseAt === 0 || lastSseAt === lastSseAtRef.current) return;
     lastSseAtRef.current = lastSseAt;
-    if (tab === 'notifications') loadNotifications();
-  }, [lastSseAt, tab]);
-
-  const handleTabChange = (next: Tab) => {
-    setTab(next);
-    if (next === 'announcements' && !announcementsLoaded) {
-      setAnnounceLoading(true);
-      listAnnouncements(50)
-        .then((data) => {
-          setAnnouncements(data);
-          setAnnouncementsLoaded(true);
-        })
-        .catch(() => setAnnounceError('お知らせの読み込みに失敗しました'))
-        .finally(() => setAnnounceLoading(false));
-    }
-  };
+    if (tab === 'notifications') void mutateNotifications();
+  }, [lastSseAt, tab, mutateNotifications]);
 
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
+    setNotifError('');
     try {
       await markAllNotificationsAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      mutateNotifications(
+        (prev) => prev?.map((n) => ({ ...n, isRead: true })),
+        { revalidate: false },
+      );
       resetUnread();
     } catch (err) {
       setNotifError(toUserMessage(err, '既読処理に失敗しました。時間をおいてから再度お試しください。'));
@@ -109,7 +88,10 @@ export const NotificationListPage = () => {
     setNotifError('');
     try {
       await deleteReadNotifications();
-      setNotifications((prev) => prev.filter((n) => !n.isRead));
+      mutateNotifications(
+        (prev) => prev?.filter((n) => !n.isRead),
+        { revalidate: false },
+      );
     } catch (err) {
       setNotifError(toUserMessage(err, '通知の削除に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -124,10 +106,13 @@ export const NotificationListPage = () => {
     setNotifError('');
     try {
       await deleteNotifications(Array.from(selectedIds));
-      const deletedUnreadCount = notifications.filter(
+      const deletedUnreadCount = (notifications ?? []).filter(
         (n) => selectedIds.has(n.ID) && !n.isRead,
       ).length;
-      setNotifications((prev) => prev.filter((n) => !selectedIds.has(n.ID)));
+      mutateNotifications(
+        (prev) => prev?.filter((n) => !selectedIds.has(n.ID)),
+        { revalidate: false },
+      );
       for (let i = 0; i < deletedUnreadCount; i++) decrementUnread();
       setSelectedIds(new Set());
       setSelectMode(false);
@@ -148,10 +133,10 @@ export const NotificationListPage = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === notifications.length) {
+    if (selectedIds.size === (notifications ?? []).length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(notifications.map((n) => n.ID)));
+      setSelectedIds(new Set((notifications ?? []).map((n) => n.ID)));
     }
   };
 
@@ -160,9 +145,10 @@ export const NotificationListPage = () => {
     setSelectedIds(new Set());
   };
 
-  const hasUnread = notifications.some((n) => !n.isRead);
-  const hasRead = notifications.some((n) => n.isRead);
-  const allSelected = notifications.length > 0 && selectedIds.size === notifications.length;
+  const notifList: Notification[] = notifications ?? [];
+  const hasUnread = notifList.some((n) => !n.isRead);
+  const hasRead = notifList.some((n) => n.isRead);
+  const allSelected = notifList.length > 0 && selectedIds.size === notifList.length;
 
   return (
     <div>
@@ -179,7 +165,7 @@ export const NotificationListPage = () => {
               通知
             </h1>
 
-            {tab === 'notifications' && notifications.length > 0 && (
+            {tab === 'notifications' && notifList.length > 0 && (
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 {selectMode ? (
                   <>
@@ -287,10 +273,10 @@ export const NotificationListPage = () => {
         </div>
 
         <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
-          <button style={TAB_STYLE(tab === 'notifications')} onClick={() => handleTabChange('notifications')}>
+          <button style={TAB_STYLE(tab === 'notifications')} onClick={() => setTab('notifications')}>
             通知
           </button>
-          <button style={TAB_STYLE(tab === 'announcements')} onClick={() => handleTabChange('announcements')}>
+          <button style={TAB_STYLE(tab === 'announcements')} onClick={() => setTab('announcements')}>
             お知らせ
           </button>
         </div>
@@ -300,11 +286,11 @@ export const NotificationListPage = () => {
             {notifError && <p style={{ color: 'red', padding: '1rem' }}>{notifError}</p>}
             {notifLoading ? (
               <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-            ) : notifications.length === 0 ? (
+            ) : notifList.length === 0 ? (
               <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>通知はありません</p>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {notifications.map((n) => (
+                {notifList.map((n) => (
                   <li
                     key={n.ID}
                     onClick={() => {
@@ -393,10 +379,9 @@ export const NotificationListPage = () => {
 
         {tab === 'announcements' && (
           <>
-            {announceError && <p style={{ color: 'red', padding: '1rem' }}>{announceError}</p>}
             {announceLoading ? (
               <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-            ) : announcements.length === 0 ? (
+            ) : !announcements || announcements.length === 0 ? (
               <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>お知らせはありません</p>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>

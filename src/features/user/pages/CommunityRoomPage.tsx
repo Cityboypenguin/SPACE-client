@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
@@ -34,13 +35,33 @@ export const CommunityRoomPage = () => {
 
   const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID);
 
-  const [community, setCommunity] = useState<Community | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [memberCount, setMemberCount] = useState<number | null>(null);
   const [reporting, setReporting] = useState(false);
+
+  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', listMyCommunities);
+
+  const community = useMemo((): Community | null => {
+    if (!communities || !roomId) return null;
+    const stateID = (location.state as { communityID?: string } | null)?.communityID;
+    if (stateID) return communities.find((c) => c.ID === stateID) ?? null;
+    return communities.find((c) => c.roomID === roomId) ?? null;
+  }, [communities, roomId, location.state]);
+
+  const communityID = community?.ID ?? null;
+
+  const { data: role } = useSWR(
+    communityID ? ['community-role', communityID] : null,
+    ([, cid]: [string, string]) => getMyRoleInCommunity(cid),
+  );
+  const isOwner = role === 'owner';
+
+  const { data: members } = useSWR(
+    communityID ? ['community-members', communityID] : null,
+    ([, cid]: [string, string]) => getCommunityMembers(cid),
+  );
+  const memberCount = members?.length ?? null;
 
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
@@ -48,6 +69,7 @@ export const CommunityRoomPage = () => {
     setLeaving(true);
     try {
       await leaveCommunity(roomId, currentUserID);
+      void mutateCommunities();
       navigate('/community', { replace: true });
     } catch {
       setLeaving(false);
@@ -88,46 +110,6 @@ export const CommunityRoomPage = () => {
       navigate('/community', { replace: true });
     }
   }, [error, navigate]);
-
-  useEffect(() => {
-    if (!roomId) return;
-
-    const stateID = (location.state as { communityID?: string } | null)?.communityID;
-
-    const resolveCommunity = async () => {
-      let communityID = stateID;
-      if (!communityID) {
-        try {
-          const communities = await listMyCommunities();
-          const found = communities.find((c) => c.roomID === roomId);
-          if (found) communityID = found.ID;
-          if (found) setCommunity(found);
-        } catch {
-          return;
-        }
-      } else {
-        try {
-          const communities = await listMyCommunities();
-          const found = communities.find((c) => c.ID === communityID);
-          if (found) setCommunity(found);
-        } catch {
-          // ignore
-        }
-      }
-
-      if (!communityID) return;
-      try {
-        const role = await getMyRoleInCommunity(communityID);
-        setIsOwner(role === 'owner');
-        const members = await getCommunityMembers(communityID);
-        setMemberCount(members.length);
-      } catch {
-        setIsOwner(false);
-      }
-    };
-
-    resolveCommunity();
-  }, [roomId, location.state]);
 
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
 
@@ -277,7 +259,12 @@ export const CommunityRoomPage = () => {
         <CommunitySettingsModal
           community={community}
           onClose={() => setShowSettings(false)}
-          onUpdated={(updated) => setCommunity(updated)}
+          onUpdated={(updated) => {
+            mutateCommunities(
+              (prev) => prev?.map((c) => c.ID === updated.ID ? { ...c, ...updated } : c),
+              { revalidate: true },
+            );
+          }}
         />
       )}
       {showMembers && community && (

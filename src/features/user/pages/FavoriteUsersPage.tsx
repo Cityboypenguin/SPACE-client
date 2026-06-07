@@ -1,44 +1,28 @@
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
-import { getFavoriteUsersByUserID, deleteFavoriteUser, type User } from '../api/favorite_user';
+import { getFavoriteUsersByUserID, deleteFavoriteUser } from '../api/favorite_user';
 import { storageUrl } from '../../../lib/storage';
 import { useToast } from '../../../context/ToastContext';
 
 export const FavoriteUsersPage = () => {
   const { userId } = useAuth();
   const navigate = useNavigate();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
 
-  useEffect(() => {
-    if (!userId) return;
-    let active = true;
-
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const data = await getFavoriteUsersByUserID(userId);
-        if (active) setUsers(data || []);
-      } catch (err) {
-        console.error('お気に入りの取得に失敗しました', err);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    fetchUsers();
-    return () => { active = false; };
-  }, [userId]);
+  const { data, isLoading, mutate } = useSWR(
+    userId ? ['favorite-users', userId] : null,
+    ([, uid]: [string, string]) => getFavoriteUsersByUserID(uid),
+  );
+  const users = data ?? [];
 
   const handleUnfavorite = async (targetId: string) => {
     if (!window.confirm('お気に入りを解除しますか？')) return;
     try {
       await deleteFavoriteUser(targetId);
-      setUsers((prev) => prev.filter((u) => u.ID !== targetId));
-    } catch (err) {
+      mutate(users.filter((u) => u.ID !== targetId), { revalidate: false });
+    } catch {
       addToast('お気に入りの解除に失敗しました', 'error');
     }
   };
@@ -50,7 +34,7 @@ export const FavoriteUsersPage = () => {
         <button onClick={() => navigate('/mypage')} style={{ marginBottom: '1rem' }}>← マイページに戻る</button>
         <h1>お気に入り一覧</h1>
 
-        {loading ? (
+        {isLoading ? (
           <p>読み込み中...</p>
         ) : users.length === 0 ? (
           <p style={{ color: 'gray' }}>お気に入り登録しているユーザーはいません。</p>

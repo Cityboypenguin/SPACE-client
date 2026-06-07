@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useNotification } from '../context/NotificationContext';
 import {
   listMyNotifications,
   markNotificationAsRead,
   deleteNotifications,
-  type Notification,
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
 
@@ -22,7 +22,7 @@ const TYPE_LABEL: Record<string, string> = {
 const TARGET_PATH: Record<string, (id: string) => string> = {
   post: (id) => `/posts/${id}`,
   room: (id) => `/community/chat/${id}`,
-  community: (id) => `/community`,
+  community: () => `/community`,
   announcement: (id) => `/announcements/${id}`,
 };
 
@@ -32,28 +32,29 @@ export const NotificationDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { decrementUnread } = useNotification();
-  const [notification, setNotification] = useState<Notification | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+
+  const { data: notifications, isLoading, mutate } = useSWR(
+    'my-notifications',
+    () => listMyNotifications(50),
+  );
+
+  const notification = notifications?.find((n) => n.ID === id) ?? null;
 
   useEffect(() => {
-    if (!id) return;
-
-    listMyNotifications()
-      .then((list) => {
-        const found = list.find((n) => n.ID === id) ?? null;
-        setNotification(found);
-        if (found && !found.isRead) {
-          return markNotificationAsRead(found.ID).then(() => {
-            setNotification((prev) => prev ? { ...prev, isRead: true } : prev);
-            decrementUnread();
-          });
-        }
+    if (!notification || notification.isRead) return;
+    markNotificationAsRead(notification.ID)
+      .then(() => {
+        mutate(
+          (prev) => prev?.map((n) => n.ID === notification.ID ? { ...n, isRead: true } : n),
+          { revalidate: false },
+        );
+        decrementUnread();
       })
-      .catch(() => setError('通知の読み込みに失敗しました'))
-      .finally(() => setLoading(false));
-  }, [id, decrementUnread]);
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notification?.ID, notification?.isRead]);
 
   const handleDelete = async () => {
     if (!notification) return;
@@ -121,7 +122,7 @@ export const NotificationDetailPage = () => {
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
 
-        {loading ? (
+        {isLoading ? (
           <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
         ) : !notification ? (
           <p style={{ color: '#94a3b8', textAlign: 'center' }}>通知が見つかりません</p>
