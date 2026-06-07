@@ -9,6 +9,7 @@ export const UserSettingsPage = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,7 +30,8 @@ export const UserSettingsPage = () => {
         setName(p.name);
         setEmail(p.email);
       })
-      .catch((err) => setError(toUserMessage(err, 'プロフィールの取得に失敗しました。ページを再読み込みしてください。')));
+      .catch((err) => setError(toUserMessage(err, 'プロフィールの取得に失敗しました。ページを再読み込みしてください。')))
+      .finally(() => setIsLoading(false));
   }, [token, navigate]);
 
   const handleUpdate = async (e: { preventDefault(): void }) => {
@@ -48,7 +50,8 @@ export const UserSettingsPage = () => {
     }
   };
 
-  if (!profile) return <p>読み込み中...</p>;
+  if (isLoading) return <p>読み込み中...</p>;
+  if (!profile) return <p style={{ color: 'red' }}>{error}</p>;
 
   return (
     <div>

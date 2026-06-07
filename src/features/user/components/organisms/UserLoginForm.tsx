@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
+import { toUserMessage } from '../../../../lib/errorMessages';
 
 export const UserLoginForm = () => {
   const [email, setEmail] = useState('');
@@ -18,11 +19,7 @@ export const UserLoginForm = () => {
       login(data.loginUser.token, data.loginUser.refreshToken, data.loginUser.user.ID);
       navigate('/mypage');
     } catch (e) {
-      if (e instanceof Error && e.message.includes('account is frozen')) {
-        setError('このアカウントは凍結されています。管理者にお問い合わせください。');
-      } else {
-        setError('メールアドレスまたはパスワードが正しくありません');
-      }
+      setError(toUserMessage(e, 'メールアドレスまたはパスワードが正しくありません'));
     }
   };
 

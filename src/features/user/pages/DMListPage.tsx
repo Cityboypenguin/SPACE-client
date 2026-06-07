@@ -27,8 +27,8 @@ export const DMListPage = () => {
         const serverRooms = await listMyDMRooms();
         if (!active) return;
         setDmRooms(serverRooms);
-      } catch {
-        if (active) setError('DMルームの読み込みに失敗しました');
+      } catch (err) {
+        if (active) setError(toUserMessage(err, 'DMルームの読み込みに失敗しました。時間をおいてから再度お試しください。'));
       }
     };
 
@@ -54,8 +54,8 @@ export const DMListPage = () => {
         : data.searchUsers;
       setResults(filtered);
       setSearched(true);
-    } catch {
-      setError('検索に失敗しました');
+    } catch (err) {
+      setError(toUserMessage(err, '検索に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 

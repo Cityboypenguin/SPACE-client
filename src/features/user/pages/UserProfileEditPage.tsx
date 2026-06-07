@@ -39,8 +39,7 @@ export const UserProfileEditPage = () => {
           setCurrentAvatarUrl(profile.avatarUrl);
         }
       } catch (err) {
-        setError('プロフィールの取得に失敗しました');
-        console.error(err);
+        setError(toUserMessage(err, 'プロフィールの取得に失敗しました。ページを再読み込みしてください。'));
       }
     };
     void init();
