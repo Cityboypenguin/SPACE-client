@@ -202,7 +202,6 @@ export const ReportsPage: React.FC = () => {
                       >
                         詳細を確認する
                       </Link>
-                      {renderTargetContent(report)}
                     </td>
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
