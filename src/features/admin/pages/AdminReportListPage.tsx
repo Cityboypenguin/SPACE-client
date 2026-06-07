@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { Link } from 'react-router-dom';
-import { getReports, adminUpdateReportStatus } from '../api/report';
+import { 
+  getReports, 
+  adminUpdateReportStatus, 
+  getReportServiceStatus,
+  updateReportServiceStatus,
+} from '../api/report';
 
 type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY';
 
@@ -25,7 +30,9 @@ export const ReportsPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<TargetTypeFilter>('ALL');
   const [error, setError] = useState('');
-
+  const [isServiceEnabled, setIsServiceEnabled] = useState<boolean>(true);
+  const [isStatusLoading, setIsStatusLoading] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const loadReports = () => {
     setError('');
     getReports(filterStatus, activeTab === 'ALL' ? undefined : activeTab)
@@ -42,9 +49,44 @@ export const ReportsPage: React.FC = () => {
       });
   };
 
+  const loadServiceStatus = async () => {
+    setIsStatusLoading(true);
+    try {
+      const isEnabled = await getReportServiceStatus();
+      setIsServiceEnabled(isEnabled);
+    } catch (err) {
+      console.error('システム設定の取得に失敗しました:', err);
+    } finally {
+      setIsStatusLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadReports();
+    loadServiceStatus();
   }, [filterStatus, activeTab]);
+
+  const handleToggleServiceStatus = async () => {
+    const nextStatus = !isServiceEnabled;
+    const actionText = nextStatus ? '稼働（再開）' : '停止';
+    
+    if (!window.confirm(`本当にシステム全体の通報機能を【${actionText}】しますか？\n停止すると一般ユーザーは通報を送信できなくなります。`)) {
+      return;
+    }
+
+    setIsUpdating(true);
+    setError('');
+    try {
+      const updatedStatus = await updateReportServiceStatus(nextStatus);
+      setIsServiceEnabled(updatedStatus);
+      alert('通報機能の設定を更新しました');
+    } catch (err: any) {
+      console.error(err);
+      setError(`システム設定の更新に失敗しました: ${err.message || 'エラー'}`);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleUpdateStatus = async (reportId: string, newStatus: string, statusLabel: string) => {
     if (!window.confirm(`ステータスを ${statusLabel} に変更しますか？`)) return;
@@ -68,34 +110,8 @@ export const ReportsPage: React.FC = () => {
     if (type === 'COMMENT') return `/admin/comments/${targetID}`;
     return '#';
   };
-
-  const renderTargetContent = (report: any) => {
-    if (report.targetType === 'POST') {
-      const postContent = report.content || report.postContent;
-      
-      return (
-        <div style={{ 
-          color: '#1e293b', 
-          fontSize: '0.85rem', 
-          fontWeight: 500,
-          backgroundColor: '#f8fafc',
-          padding: '0.6rem 0.8rem',
-          borderRadius: '6px',
-          borderLeft: '4px solid #cbd5e1',
-          wordBreak: 'break-all',
-          lineHeight: '1.4',
-          marginTop: '6px'
-        }}>
-          {postContent ? postContent : `対象ID: ${report.targetID}`}
-        </div>
-      );
-    }
-    return (
-      <div style={{ color: '#64748b', fontSize: '0.8rem', wordBreak: 'break-all', marginTop: '6px' }}>
-        対象ID: {report.targetID}
-      </div>
-    );
-  };
+  
+  const isProcessing = isStatusLoading || isUpdating;
 
   return (
     <div>
@@ -106,18 +122,60 @@ export const ReportsPage: React.FC = () => {
             通報管理一覧
           </h1>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-            <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>ステータス絞り込み：</span>
-            <select 
-              value={filterStatus} 
-              onChange={(e) => setFilterStatus(e.target.value)}
-              style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="ALL">すべて</option>
-              <option value="UNRESOLVED">未対応</option>
-              <option value="REVIEWING">対応中</option>
-              <option value="RESOLVED">対応済</option>
-            </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              background: '#fff', 
+              padding: '0.4rem 0.8rem', 
+              borderRadius: '8px', 
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              border: '1px solid #e2e8f0',
+              opacity: isStatusLoading ? 0.6 : 1
+            }}>
+              <span style={{ 
+                width: '8px', 
+                height: '8px', 
+                borderRadius: '50%', 
+                backgroundColor: isServiceEnabled ? '#10b981' : '#ef4444',
+                display: 'inline-block' 
+              }} />
+              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                システム通報枠: {isStatusLoading ? '読み込み中...' : isServiceEnabled ? '稼働中' : '停止中'}
+              </span>
+              <button
+                onClick={handleToggleServiceStatus}
+                disabled={isProcessing}
+                style={{
+                  padding: '0.25rem 0.6rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  border: 'none',
+                  color: '#fff',
+                  backgroundColor: isServiceEnabled ? '#ef4444' : '#2563eb',
+                  cursor: isProcessing ? 'not-allowed' : 'pointer',
+                  transition: 'background 0.15s'
+                }}
+              >
+                {isUpdating ? '更新中...' : isServiceEnabled ? '一括停止' : 'サービス再開'}
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>ステータス絞り込み：</span>
+              <select 
+                value={filterStatus} 
+                onChange={(e) => setFilterStatus(e.target.value)}
+                style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="ALL">すべて</option>
+                <option value="UNRESOLVED">未対応</option>
+                <option value="REVIEWING">対応中</option>
+                <option value="RESOLVED">対応済</option>
+              </select>
+            </div>
           </div>
         </div>
 
