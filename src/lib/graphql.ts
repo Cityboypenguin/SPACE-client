@@ -11,6 +11,7 @@ const ADMIN_REFRESH_TOKEN_KEY = 'space_admin_refresh_token';
 
 let _onUnauthorized: (() => void) | null = null;
 let _onTokenRefreshed: ((token: string, refreshToken: string) => void) | null = null;
+let _onMaintenance: (() => void) | null = null;
 
 export const registerUnauthorizedHandler = (fn: () => void) => {
   _onUnauthorized = fn;
@@ -18,6 +19,18 @@ export const registerUnauthorizedHandler = (fn: () => void) => {
 
 export const registerTokenRefreshedHandler = (fn: (token: string, refreshToken: string) => void) => {
   _onTokenRefreshed = fn;
+};
+
+export const registerMaintenanceHandler = (fn: () => void) => {
+  _onMaintenance = fn;
+};
+
+const handleMaintenance = () => {
+  if (_onMaintenance) {
+    _onMaintenance();
+  } else {
+    window.location.href = '/maintenance';
+  }
 };
 
 const handleUnauthorized = () => {
@@ -134,6 +147,12 @@ export const request = async <T>(
     headers,
     body: JSON.stringify({ query, variables }),
   });
+
+  if (response.status === 503) {
+    localStorage.setItem('space_maintenance', 'true');
+    handleMaintenance();
+    return Promise.reject(new Error('server_maintenance'));
+  }
 
   if (response.status === 401) {
     if (!_retrying) {

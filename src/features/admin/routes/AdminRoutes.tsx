@@ -22,6 +22,7 @@ import { AdminAnnouncementDetailPage } from '../pages/AdminAnnouncementDetailPag
 import { AdminTermsCreatePage } from '../pages/AdminTermsCreatePage';
 import { AdminTermsListPage } from '../pages/AdminTermsListPage';
 import { AdminTermsDetailPage } from '../pages/AdminTermsDetailPage';
+import { AdminMaintenancePage } from '../pages/AdminMaintenancePage';
 
 export const AdminRoutes = () => {
   return (
@@ -193,6 +194,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminTermsDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="maintenance"
+        element={
+          <AdminProtectedRoute>
+            <AdminMaintenancePage />
           </AdminProtectedRoute>
         }
       />
