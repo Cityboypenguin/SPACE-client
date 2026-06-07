@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { UserHeader } from '../components/organisms/UserHeader';
-import { toUserMessage } from '../../../lib/errorMessages';
 import {
   getMyProfile,
   getProfileByUserID,
