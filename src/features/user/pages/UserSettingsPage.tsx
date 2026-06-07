@@ -20,7 +20,7 @@ export const UserSettingsPage = () => {
 
   const handleClearCache = async () => {
     if (!window.confirm('キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？')) return;
-    await globalMutate(() => true, undefined, { revalidate: false });
+    await globalMutate(() => true);
     setCacheCleared(true);
     setTimeout(() => setCacheCleared(false), 3000);
   };
