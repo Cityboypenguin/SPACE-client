@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { getMyProfile, updateMyProfile } from '../api/profile';
 import { useAuth } from '../context/AuthContext';
 import { UserHeader } from '../components/organisms/UserHeader';
@@ -9,12 +9,21 @@ import { toUserMessage } from '../../../lib/errorMessages';
 export const UserSettingsPage = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { mutate: globalMutate } = useSWRConfig();
   const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [cacheCleared, setCacheCleared] = useState(false);
+
+  const handleClearCache = async () => {
+    if (!window.confirm('キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？')) return;
+    await globalMutate(() => true, undefined, { revalidate: false });
+    setCacheCleared(true);
+    setTimeout(() => setCacheCleared(false), 3000);
+  };
 
   const { data: profile, isLoading } = useSWR(
     token ? 'my-profile' : null,
@@ -101,6 +110,30 @@ export const UserSettingsPage = () => {
           </label>
           <button type="submit">更新する</button>
         </form>
+
+        <hr style={{ margin: '2rem 0', borderColor: '#e2e8f0' }} />
+        <section>
+          <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>データキャッシュ</h2>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.75rem' }}>
+            アプリが保持している一時データをクリアします。動作がおかしいと感じたときにお試しください。
+          </p>
+          {cacheCleared && <p style={{ color: 'green', marginBottom: '0.5rem' }}>キャッシュをクリアしました</p>}
+          <button
+            type="button"
+            onClick={handleClearCache}
+            style={{
+              padding: '0.4rem 1rem',
+              borderRadius: 6,
+              border: '1px solid #94a3b8',
+              background: '#fff',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              color: '#475569',
+            }}
+          >
+            キャッシュをクリア
+          </button>
+        </section>
       </main>
     </div>
   );
