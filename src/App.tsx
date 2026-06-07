@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/organisms/ToastContainer';
 import { OfflineBanner } from './components/organisms/OfflineBanner';
@@ -8,7 +8,6 @@ import { NotFoundPage } from './components/pages/NotFoundPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
 import { UserProtectedRoute } from './features/user/components/UserProtectedRoute';
 import { NotificationProvider } from './features/user/context/NotificationContext';
-import { registerMaintenanceHandler } from './lib/graphql';
 
 const AdminRoutes = lazy(() =>
   import('./features/admin/routes/AdminRoutes').then((m) => ({ default: m.AdminRoutes })),
@@ -77,17 +76,6 @@ const AnnouncementDetailPage = lazy(() =>
   import('./features/user/pages/AnnouncementDetailPage').then((m) => ({ default: m.AnnouncementDetailPage })),
 );
 function App() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    registerMaintenanceHandler(() => {
-      const path = window.location.pathname;
-      if (path !== '/login' && path !== '/maintenance' && !path.startsWith('/admin')) {
-        navigate('/maintenance');
-      }
-    });
-  }, [navigate]);
-
   return (
     <ToastProvider>
       <NotificationProvider>

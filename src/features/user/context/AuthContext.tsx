@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '../api/auth';
-import { registerUnauthorizedHandler, registerTokenRefreshedHandler } from '../../../lib/graphql';
+import { registerUnauthorizedHandler, registerTokenRefreshedHandler, registerMaintenanceHandler } from '../../../lib/graphql';
 
 const USER_TOKEN_KEY = 'space_user_token';
 const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
@@ -74,6 +74,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         navigate('/admin/login');
       } else {
         navigate('/login');
+      }
+    });
+  }, [clearAuth, navigate]);
+
+  useEffect(() => {
+    registerMaintenanceHandler(() => {
+      if (!window.location.pathname.startsWith('/admin')) {
+        clearAuth();
+        navigate('/maintenance');
       }
     });
   }, [clearAuth, navigate]);
