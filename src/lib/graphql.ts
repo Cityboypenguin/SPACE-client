@@ -133,6 +133,7 @@ export const request = async <T>(
   });
 
   if (response.status === 503) {
+    localStorage.setItem('space_maintenance', 'true');
     handleMaintenance();
     return Promise.reject(new Error('server_maintenance'));
   }
