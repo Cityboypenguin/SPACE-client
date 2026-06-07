@@ -18,7 +18,9 @@ export const UserLoginForm = () => {
       login(data.loginUser.token, data.loginUser.refreshToken, data.loginUser.user.ID);
       navigate('/mypage');
     } catch (e) {
-      if (e instanceof Error && e.message.includes('account is frozen')) {
+      if (e instanceof Error && e.message === 'server_maintenance') {
+        setError('現在メンテナンス中のため、アクセスできません。しばらく経ってからお試しください。');
+      } else if (e instanceof Error && e.message.includes('account is frozen')) {
         setError('このアカウントは凍結されています。管理者にお問い合わせください。');
       } else {
         setError('メールアドレスまたはパスワードが正しくありません');
