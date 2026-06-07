@@ -15,9 +15,9 @@ export const MaintenancePage = () => {
       try {
         const res = await fetch(API_URL, { method: 'GET' });
         if (res.status !== 503) {
-          // メンテナンス終了 → フラグをクリアしてログインへ
           localStorage.removeItem(MAINTENANCE_KEY);
-          window.location.href = '/login';
+          const hasToken = !!localStorage.getItem('space_user_token');
+          window.location.href = hasToken ? '/mypage' : '/login';
         }
       } catch {
         // ネットワークエラーは無視（次のポーリングまで待つ）
@@ -46,7 +46,7 @@ export const MaintenancePage = () => {
       <p style={{ fontSize: '1.1rem', color: '#555', maxWidth: '480px', lineHeight: 1.8 }}>
         現在、システムメンテナンスを実施しています。<br />
         ご不便をおかけして申し訳ございません。<br />
-        メンテナンス終了後、自動的にログイン画面へ移動します。
+        メンテナンス終了後、自動的にページへ移動します。
       </p>
     </div>
   );
