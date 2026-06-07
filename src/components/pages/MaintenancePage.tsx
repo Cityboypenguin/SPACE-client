@@ -24,6 +24,8 @@ export const MaintenancePage = () => {
       }
     };
 
+    // マウント時に即座に1回チェックし、その後は定期的にポーリングする
+    void checkIfOver();
     const timer = setInterval(checkIfOver, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
   }, []);

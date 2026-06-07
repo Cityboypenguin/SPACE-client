@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, Navigate, useNavigate } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import { API_URL } from '../lib/graphql';
 
 const MAINTENANCE_KEY = 'space_maintenance';
@@ -7,39 +7,33 @@ const MAINTENANCE_KEY = 'space_maintenance';
 /**
  * メンテナンス中にユーザー向けルートへのアクセスを遮断するレイアウトコンポーネント。
  *
- * - localStorage フラグがセットされていれば即座に /maintenance へリダイレクト
- * - フラグが未セットの場合でも、サーバーへ非同期チェックを行い
- *   503 が返ってきたら /maintenance へリダイレクト（フレッシュブラウザ対応）
- * - チェック中はページを表示しない（フラッシュ防止）
+ * - 毎回サーバーへ確認し、503 が返れば /maintenance へリダイレクト
+ * - 503 以外ならメンテナンス終了とみなし、localStorage フラグをクリアしてページを表示
+ * - ネットワークエラーのときは localStorage フラグをフォールバックとして使用
  */
 export const MaintenanceGuardLayout = () => {
-  const navigate = useNavigate();
-
-  const alreadyFlagged = localStorage.getItem(MAINTENANCE_KEY) === 'true';
-
-  // 既にフラグあり → 'maintenance' 確定、サーバー確認不要
-  const [status, setStatus] = useState<'checking' | 'ok' | 'maintenance'>(
-    alreadyFlagged ? 'maintenance' : 'checking',
-  );
+  const [status, setStatus] = useState<'checking' | 'ok' | 'maintenance'>('checking');
 
   useEffect(() => {
-    if (alreadyFlagged) return;
-
-    // フラグ未セットでも、サーバーが 503 を返すか確認する（URL 直打ち対応）
+    // localStorage のフラグの有無に関わらず、常にサーバーへ確認する。
+    // これにより「メンテナンス解除後もフラグが残り続ける」問題を防ぐ。
     fetch(API_URL, { method: 'GET' })
       .then((res) => {
         if (res.status === 503) {
           localStorage.setItem(MAINTENANCE_KEY, 'true');
           setStatus('maintenance');
         } else {
+          // メンテナンス終了（または未実施）→ フラグをクリア
+          localStorage.removeItem(MAINTENANCE_KEY);
           setStatus('ok');
         }
       })
       .catch(() => {
-        // ネットワークエラーは "ok" 扱い（通常の 401/404 フローに任せる）
-        setStatus('ok');
+        // ネットワークエラー時は localStorage フラグをフォールバックとして使う
+        const flagged = localStorage.getItem(MAINTENANCE_KEY) === 'true';
+        setStatus(flagged ? 'maintenance' : 'ok');
       });
-  }, [alreadyFlagged, navigate]);
+  }, []);
 
   if (status === 'maintenance') {
     return <Navigate to="/maintenance" replace />;
