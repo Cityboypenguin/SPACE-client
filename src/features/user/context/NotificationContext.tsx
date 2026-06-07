@@ -96,8 +96,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         .catch(() => {});
     };
 
-    // 接続・再接続のたびに同意状況を確認（切断中に terms_updated を逃した場合のリカバリ）
-    es.addEventListener('connected', refreshConsent);
+    // 初回接続は [token] useEffect 側がすでに呼んでいるためスキップし、再接続時のみ確認する
+    let isFirstConnect = true;
+    es.addEventListener('connected', () => {
+      if (isFirstConnect) {
+        isFirstConnect = false;
+        return;
+      }
+      refreshConsent();
+    });
     es.addEventListener('terms_updated', refreshConsent);
 
     es.addEventListener('notification', (e: MessageEvent) => {
