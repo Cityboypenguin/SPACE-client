@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCommunityMembers, type Community } from '../../api/community';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
+import { toUserMessage } from '../../../../lib/errorMessages';
 
 type Props = {
   community: Community;
@@ -35,7 +36,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
       await onJoin(community);
       if (memberCount !== null) setMemberCount(memberCount + 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '参加に失敗しました');
+      setError(toUserMessage(err, 'コミュニティへの参加に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setJoining(false);
     }

@@ -7,6 +7,7 @@ import { getOrCreateDMRoom, listMyDMRooms, type Room } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import styles from './DMListPage.module.css';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const DMListPage = () => {
   const [query, setQuery] = useState('');
@@ -65,7 +66,7 @@ export const DMListPage = () => {
       const data = await getOrCreateDMRoom(target.ID);
       navigate(`/dm/${data.getOrCreateDMRoom.ID}`);
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'DMの開始に失敗しました');
+      setError(toUserMessage(err, 'DMの開始に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setStarting(null);
     }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createReport } from '../../api/report';
 import styles from './reportModal.module.css';
+import { toUserMessage } from '../../../../lib/errorMessages';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -34,7 +35,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
       setCustomReason('');
       onClose();
     } catch (err: any) {
-      setError(err.message || '通報の送信に失敗しました。');
+      setError(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setLoading(false);
     }

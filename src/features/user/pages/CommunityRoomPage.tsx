@@ -14,6 +14,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import styles from '../components/organisms/chatRoom.module.css';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -76,8 +77,7 @@ export const CommunityRoomPage = () => {
       });
       window.alert('コミュニティの通報が完了しました。運営にて確認いたします。');
     } catch (err) {
-      console.error(err);
-      window.alert('通報の送信に失敗しました。');
+      window.alert(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setReporting(false);
     }

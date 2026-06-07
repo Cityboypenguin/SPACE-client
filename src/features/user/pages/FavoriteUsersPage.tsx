@@ -4,6 +4,7 @@ import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { getFavoriteUsersByUserID, deleteFavoriteUser, type User } from '../api/favorite_user';
 import { storageUrl } from '../../../lib/storage';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const FavoriteUsersPage = () => {
   const { userId } = useAuth();
@@ -37,7 +38,7 @@ export const FavoriteUsersPage = () => {
       await deleteFavoriteUser(targetId);
       setUsers((prev) => prev.filter((u) => u.ID !== targetId));
     } catch (err) {
-      alert('解除に失敗しました');
+      alert(toUserMessage(err, 'お気に入りの解除に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 

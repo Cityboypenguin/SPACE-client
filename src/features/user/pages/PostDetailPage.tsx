@@ -6,6 +6,7 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 import {
   getPostByID,
@@ -141,7 +142,7 @@ const ReportModal = ({ targetId, postContent, onClose }: ReportModalProps) => {
       onClose();
     } catch (err) {
       console.error(err);
-      alert('通報の送信に失敗しました');
+      alert(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setSubmitting(false);
     }
@@ -333,8 +334,7 @@ export const PostDetailPage = () => {
       setIsEditing(false);
       loadPost(id);
     } catch (err) {
-      console.error(err);
-      alert('更新に失敗しました');
+      alert(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
@@ -344,8 +344,7 @@ export const PostDetailPage = () => {
       await deletePost(id);
       navigate(-1);
     } catch (err) {
-      console.error(err);
-      alert('削除に失敗しました');
+      alert(toUserMessage(err, '投稿の削除に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 

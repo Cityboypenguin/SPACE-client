@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { getBlockersByUserID, deleteBlocker } from '../api/block';
-import type { User } from '../api/block'; // User型をインポート
+import type { User } from '../api/block';
 import { storageUrl } from '../../../lib/storage';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const BlockedUsersPage = () => {
   const { userId } = useAuth();
@@ -38,7 +39,7 @@ export const BlockedUsersPage = () => {
       await deleteBlocker(targetId);
       setUsers((prev) => prev.filter((u) => u.ID !== targetId));
     } catch (err) {
-      alert('解除に失敗しました');
+      alert(toUserMessage(err, 'ブロックの解除に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 

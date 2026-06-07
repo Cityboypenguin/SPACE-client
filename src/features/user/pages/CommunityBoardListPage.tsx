@@ -5,6 +5,7 @@ import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
 import { createReport } from '../api/report';
 import { useAuth } from '../context/AuthContext';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
@@ -66,7 +67,7 @@ export const CommunityBoardListPage = () => {
       setResults(data);
       setSearched(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '検索に失敗しました');
+      setError(toUserMessage(err, 'コミュニティの検索に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setSearching(false);
     }
@@ -93,7 +94,7 @@ export const CommunityBoardListPage = () => {
       alert('コミュニティの通報を送信しました。ご協力ありがとうございました。');
     } catch (err) {
       console.error('コミュニティの通報に失敗しました:', err);
-      alert('通報の送信に失敗しました。');
+      alert('通報の送信に失敗しました。時間をおいてから再度お試しください。');
     }
   }, []);
 
