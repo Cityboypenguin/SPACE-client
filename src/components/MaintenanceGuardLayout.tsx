@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { API_URL } from '../lib/graphql';
+import { HEALTH_URL } from '../lib/graphql';
 
 const MAINTENANCE_KEY = 'space_maintenance';
 
@@ -17,7 +17,7 @@ export const MaintenanceGuardLayout = () => {
   useEffect(() => {
     // localStorage のフラグの有無に関わらず、常にサーバーへ確認する。
     // これにより「メンテナンス解除後もフラグが残り続ける」問題を防ぐ。
-    fetch(API_URL, { method: 'GET' })
+    fetch(HEALTH_URL, { method: 'GET' })
       .then((res) => {
         if (res.status === 503) {
           localStorage.setItem(MAINTENANCE_KEY, 'true');
