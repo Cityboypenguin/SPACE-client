@@ -46,50 +46,66 @@ const REFRESH_ADMIN_MUTATION = `
   }
 `;
 
-let _refreshPromise: Promise<string | null> | null = null;
+let _userRefreshPromise: Promise<string | null> | null = null;
+let _adminRefreshPromise: Promise<string | null> | null = null;
 
-const tryRefreshAccessToken = (): Promise<string | null> => {
-  if (_refreshPromise) return _refreshPromise;
+// URLパスではなく、リクエストに使ったトークン自体でコンテキストを判断する。
+// 管理者ページにいながらユーザーAPIを呼ぶケースで誤って管理者トークンが
+// ユーザーセッションに上書きされるバグを防ぐ。
+const isAdminToken = (token?: string): boolean => {
+  if (!token) return false;
+  const adminToken = localStorage.getItem(ADMIN_TOKEN_KEY);
+  return !!adminToken && token === adminToken;
+};
 
-  _refreshPromise = (async () => {
-    try {
-      const isAdmin = window.location.pathname.startsWith('/admin');
-      const refreshKey = isAdmin ? ADMIN_REFRESH_TOKEN_KEY : USER_REFRESH_TOKEN_KEY;
-      const tokenKey = isAdmin ? ADMIN_TOKEN_KEY : USER_TOKEN_KEY;
-      const mutation = isAdmin ? REFRESH_ADMIN_MUTATION : REFRESH_USER_MUTATION;
-      const fieldName = isAdmin ? 'refreshAdministratorToken' : 'refreshUserToken';
+const tryRefreshAccessToken = (isAdmin: boolean): Promise<string | null> => {
+  if (isAdmin) {
+    if (_adminRefreshPromise) return _adminRefreshPromise;
+    _adminRefreshPromise = doRefresh(true).finally(() => { _adminRefreshPromise = null; });
+    return _adminRefreshPromise;
+  } else {
+    if (_userRefreshPromise) return _userRefreshPromise;
+    _userRefreshPromise = doRefresh(false).finally(() => { _userRefreshPromise = null; });
+    return _userRefreshPromise;
+  }
+};
 
-      const refreshToken = localStorage.getItem(refreshKey);
-      if (!refreshToken) return null;
+const doRefresh = async (isAdmin: boolean): Promise<string | null> => {
+  try {
+    const refreshKey = isAdmin ? ADMIN_REFRESH_TOKEN_KEY : USER_REFRESH_TOKEN_KEY;
+    const tokenKey = isAdmin ? ADMIN_TOKEN_KEY : USER_TOKEN_KEY;
+    const mutation = isAdmin ? REFRESH_ADMIN_MUTATION : REFRESH_USER_MUTATION;
+    const fieldName = isAdmin ? 'refreshAdministratorToken' : 'refreshUserToken';
 
-      const resp = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ query: mutation, variables: { refreshToken } }),
-      });
+    const refreshToken = localStorage.getItem(refreshKey);
+    if (!refreshToken) return null;
 
-      if (!resp.ok) return null;
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ query: mutation, variables: { refreshToken } }),
+    });
 
-      const json = await resp.json();
-      if (json.errors || !json.data?.[fieldName]) return null;
+    if (!resp.ok) return null;
 
-      const newToken: string = json.data[fieldName].token;
-      const newRefreshToken: string = json.data[fieldName].refreshToken;
+    const json = await resp.json();
+    if (json.errors || !json.data?.[fieldName]) return null;
 
-      localStorage.setItem(tokenKey, newToken);
-      localStorage.setItem(refreshKey, newRefreshToken);
+    const newToken: string = json.data[fieldName].token;
+    const newRefreshToken: string = json.data[fieldName].refreshToken;
 
+    localStorage.setItem(tokenKey, newToken);
+    localStorage.setItem(refreshKey, newRefreshToken);
+
+    // 管理者リフレッシュでユーザーのReact stateを汚染しないよう、ユーザー時のみ通知する
+    if (!isAdmin) {
       _onTokenRefreshed?.(newToken, newRefreshToken);
-
-      return newToken;
-    } catch {
-      return null;
-    } finally {
-      _refreshPromise = null;
     }
-  })();
 
-  return _refreshPromise;
+    return newToken;
+  } catch {
+    return null;
+  }
 };
 
 const isAuthError = (message: string): boolean =>
@@ -121,7 +137,7 @@ export const request = async <T>(
 
   if (response.status === 401) {
     if (!_retrying) {
-      const newToken = await tryRefreshAccessToken();
+      const newToken = await tryRefreshAccessToken(isAdminToken(token));
       if (newToken) {
         return request<T>(query, variables, newToken, true);
       }
@@ -155,7 +171,7 @@ export const request = async <T>(
     const message = json.errors.map((e: { message: string }) => e.message).join(', ');
 
     if (!_retrying && isAuthError(message)) {
-      const newToken = await tryRefreshAccessToken();
+      const newToken = await tryRefreshAccessToken(isAdminToken(token));
       if (newToken) {
         return request<T>(query, variables, newToken, true);
       }
