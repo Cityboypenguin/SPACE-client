@@ -317,8 +317,8 @@ export const PostDetailPage = () => {
       setReplyContent('');
       setReplyFiles([]);
       loadPost(id);
-    } catch {
-      setReplyError('返信に失敗しました');
+    } catch (err) {
+      setReplyError(toUserMessage(err, '返信の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setReplying(false);
     }

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { searchUsers, type UserProfile } from '../api/profile';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
+import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSearchPage.module.css';
 
 export const UserSearchPage = () => {
@@ -24,8 +25,8 @@ export const UserSearchPage = () => {
         : data.searchUsers;
       setResults(filtered);
       setSearched(true);
-    } catch {
-      setError('検索に失敗しました');
+    } catch (err) {
+      setError(toUserMessage(err, 'ユーザーの検索に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { storageUrl } from '../../../lib/storage';
+import { toUserMessage } from '../../../lib/errorMessages';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { toUserMessage } from '../../../lib/errorMessages';
 import {
@@ -79,6 +80,7 @@ export const UserProfileEditPage = () => {
       navigate('/mypage', { state: { message: 'プロフィールを更新しました！' } });
     } catch (err) {
       setError(toUserMessage(err, 'プロフィールの更新に失敗しました。時間をおいてから再度お試しください。'));
+      console.error(err);
     } finally {
       setIsUploading(false);
     }

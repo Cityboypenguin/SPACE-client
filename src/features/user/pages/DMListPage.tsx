@@ -6,8 +6,8 @@ import { searchUsers, type UserProfile } from '../api/profile';
 import { getOrCreateDMRoom, listMyDMRooms, type Room } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
-import styles from './DMListPage.module.css';
 import { toUserMessage } from '../../../lib/errorMessages';
+import styles from './DMListPage.module.css';
 
 export const DMListPage = () => {
   const [query, setQuery] = useState('');

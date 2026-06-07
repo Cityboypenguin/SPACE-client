@@ -11,6 +11,7 @@ import {
   type Notification,
 } from '../api/notification';
 import { listAnnouncements, type Announcement } from '../api/announcement';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 type Tab = 'notifications' | 'announcements';
 
@@ -95,8 +96,8 @@ export const NotificationListPage = () => {
       await markAllNotificationsAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       resetUnread();
-    } catch {
-      setNotifError('既読処理に失敗しました');
+    } catch (err) {
+      setNotifError(toUserMessage(err, '既読処理に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setMarkingAll(false);
     }
@@ -109,8 +110,8 @@ export const NotificationListPage = () => {
     try {
       await deleteReadNotifications();
       setNotifications((prev) => prev.filter((n) => !n.isRead));
-    } catch {
-      setNotifError('削除に失敗しました');
+    } catch (err) {
+      setNotifError(toUserMessage(err, '通知の削除に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setDeleting(false);
     }
@@ -130,8 +131,8 @@ export const NotificationListPage = () => {
       for (let i = 0; i < deletedUnreadCount; i++) decrementUnread();
       setSelectedIds(new Set());
       setSelectMode(false);
-    } catch {
-      setNotifError('削除に失敗しました');
+    } catch (err) {
+      setNotifError(toUserMessage(err, '通知の削除に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setDeleting(false);
     }

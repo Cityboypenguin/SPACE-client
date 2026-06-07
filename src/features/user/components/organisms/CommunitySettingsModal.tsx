@@ -100,8 +100,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     try {
       await kickUserFromCommunity(community.ID, member.user.ID);
       setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
-    } catch {
-      setMembersError('メンバーの削除に失敗しました。時間をおいてから再度お試しください。');
+    } catch (err) {
+      setMembersError(toUserMessage(err, 'メンバーの削除に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
@@ -112,8 +112,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
       setMembers((prev) =>
         prev.map((m) => (m.user.ID === member.user.ID ? { ...m, role: ROLE_OWNER } : m)),
       );
-    } catch {
-      setMembersError('オーナーへの昇格に失敗しました。時間をおいてから再度お試しください。');
+    } catch (err) {
+      setMembersError(toUserMessage(err, 'オーナーへの昇格に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
@@ -124,8 +124,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
       setMembers((prev) =>
         prev.map((m) => (m.user.ID === member.user.ID ? { ...m, role: 'member' } : m)),
       );
-    } catch {
-      setMembersError('メンバーへの降格に失敗しました。時間をおいてから再度お試しください。');
+    } catch (err) {
+      setMembersError(toUserMessage(err, 'メンバーへの降格に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
