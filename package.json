@@ -14,7 +14,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^8.0.7",
-    "react-router-dom": "^7.14.0"
+    "react-router-dom": "^7.14.0",
+    "swr": "^2.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -29,5 +30,8 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4"
+  },
+  "overrides": {
+    "typescript": "$typescript"
   }
 }

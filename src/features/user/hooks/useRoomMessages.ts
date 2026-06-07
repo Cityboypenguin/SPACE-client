@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { listMessages, getRoom, markRoomAsRead, MESSAGE_FIELDS, type Message, type Room } from '../api/message';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 const MESSAGE_ADDED_SUBSCRIPTION = `
   subscription MessageAdded($roomID: ID!) {
@@ -91,7 +92,7 @@ export const useRoomMessages = (roomId: string | undefined) => {
         }
       } catch (err) {
         if (!active) return;
-        const msg = err instanceof Error ? err.message : 'ルームの読み込みに失敗しました';
+        const msg = toUserMessage(err, 'チャットルームの読み込みに失敗しました。時間をおいてから再度お試しください。');
         setState((prev) => ({ ...prev, error: msg }));
       }
     })();

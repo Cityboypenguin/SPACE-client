@@ -1,50 +1,63 @@
 import { useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useProfile } from '../hooks/useProfile';
 import { storageUrl } from '../../../lib/storage';
 import { useAuth } from '../context/AuthContext';
-import { useEffect } from 'react';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { createReport } from '../api/report';
+import { PostCard } from '../components/organisms/PostCard';
+import { getPostsByUserID, createFavorite, deleteFavorite } from '../api/post';
+import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserPublicProfilePage.module.css';
 
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { profile, loading, error } = useProfile(id);
   const { userId: currentUserId } = useAuth();
   const isMe = currentUserId === id;
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
+
+  const { data: favoriteUsers, mutate: mutateFavorites } = useSWR(
+    currentUserId && !isMe ? ['favorite-users', currentUserId] : null,
+    ([, uid]: [string, string]) => getFavoriteUsersByUserID(uid),
+  );
+  const { data: blockedUsers, mutate: mutateBlocked } = useSWR(
+    currentUserId && !isMe ? ['blocked-users', currentUserId] : null,
+    ([, uid]: [string, string]) => getBlockersByUserID(uid),
+  );
+
+  const isFavorited = favoriteUsers?.some((u) => u.ID === id) ?? false;
+  const isBlocked = blockedUsers?.some((u) => u.ID === id) ?? false;
+
+  const { data: posts, isLoading: postsLoading, error: postsErr, mutate: mutatePosts } = useSWR(
+    id ? ['user-posts', id] : null,
+    ([, uid]: [string, string]) => getPostsByUserID(uid),
+  );
+
   const [actionLoading, setActionLoading] = useState(false);
   const [reporting, setReporting] = useState(false);
 
-  useEffect(() => {
-    if (!id || isMe) return;
-
-    let active = true;
-    const fetchInitialStatus = async () => {
-      try {
-        const [favorites, blockers] = await Promise.all([
-          getFavoriteUsersByUserID(currentUserId!),
-          getBlockersByUserID(currentUserId!),
-        ]);
-
-        if (!active) return;
-
-        setIsFavorited(favorites.some((u) => u.ID === id));
-        setIsBlocked(blockers.some((u) => u.ID === id));
-      } catch (err) {
-        console.error('状態の取得に失敗しました', err);
-      }
-    };
-
-    fetchInitialStatus();
-    return () => { active = false; };
-  }, [id, isMe]);
+  const handleLike = async (postId: string, isLiked: boolean) => {
+    if (isLiked) {
+      await deleteFavorite(postId);
+    } else {
+      await createFavorite(postId);
+    }
+    mutatePosts(
+      (prev) => prev?.map((p) => {
+        if (p.ID !== postId) return p;
+        if (isLiked) {
+          return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) };
+        } else {
+          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
+        }
+      }),
+      { revalidate: false },
+    );
+  };
 
   const handleFavoriteToggle = async () => {
     if (!id) return;
@@ -52,14 +65,13 @@ export const UserPublicProfilePage = () => {
     try {
       if (isFavorited) {
         await deleteFavoriteUser(id);
-        setIsFavorited(false);
+        mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
       } else {
         await createFavoriteUser(id);
-        setIsFavorited(true);
+        void mutateFavorites();
       }
     } catch (err) {
-      console.error('お気に入りの操作に失敗しました', err);
-      alert('操作に失敗しました。');
+      alert(toUserMessage(err, 'お気に入りの操作に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setActionLoading(false);
     }
@@ -67,23 +79,22 @@ export const UserPublicProfilePage = () => {
 
   const handleBlockToggle = async () => {
     if (!id) return;
-    if (!isBlocked && !window.confirm('本当にこのユーザーをブロックしますか？')) {
-      return;
-    }
+    if (!isBlocked && !window.confirm('本当にこのユーザーをブロックしますか？')) return;
 
     setActionLoading(true);
     try {
       if (isBlocked) {
         await deleteBlocker(id);
-        setIsBlocked(false);
+        mutateBlocked((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
       } else {
         await createBlocker(id);
-        setIsBlocked(true);
-        setIsFavorited(false);
+        void mutateBlocked();
+        if (isFavorited) {
+          mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
+        }
       }
     } catch (err) {
-      console.error('ブロックの操作に失敗しました', err);
-      alert('操作に失敗しました。');
+      alert(toUserMessage(err, 'ブロックの操作に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setActionLoading(false);
     }
@@ -106,18 +117,15 @@ export const UserPublicProfilePage = () => {
         targetType: 'USER',
         targetID: id,
         reason: 'ユーザー報告',
-        customReason: customReason
+        customReason: customReason,
       });
       alert('通報を送信しました。ご協力ありがとうございました。');
     } catch (err) {
-      console.error(err);
-      alert('通報の送信に失敗しました。');
+      alert(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setReporting(false);
     }
   };
-
-
 
   return (
     <div>
@@ -198,6 +206,36 @@ export const UserPublicProfilePage = () => {
               <dt className={styles.profileLabel}>自己紹介</dt>
               <dd>{profile.bio || '未設定'}</dd>
             </dl>
+            <div style={{ marginTop: '2rem' }}>
+              <h3 style={{ fontSize: '1.2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                投稿一覧
+              </h3>
+
+              {postsErr && <p style={{ color: 'red', marginBottom: '1rem' }}>投稿の読み込みに失敗しました</p>}
+              <div
+                style={{
+                  maxHeight: '50vh',
+                  overflowY: 'auto',
+                  paddingRight: '0.5rem',
+                }}
+              >
+                {posts && posts.length > 0 ? (
+                  posts.map((post) => (
+                    <PostCard
+                      key={post.ID}
+                      post={post}
+                      currentUserId={currentUserId}
+                      onLike={handleLike}
+                      onClick={() => navigate(`/posts/${post.ID}`)}
+                    />
+                  ))
+                ) : postsLoading ? (
+                  <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+                ) : (
+                  <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>

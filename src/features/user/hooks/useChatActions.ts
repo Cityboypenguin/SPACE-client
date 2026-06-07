@@ -8,6 +8,7 @@ import {
   type Message,
   type MediaInput,
 } from '../api/message';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const useChatActions = (
   roomId: string | undefined,
@@ -42,7 +43,7 @@ export const useChatActions = (
       setSelectedFiles([]);
       addMessage(data.sendMessage);
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : 'メッセージの送信に失敗しました');
+      setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setSending(false);
     }
@@ -54,7 +55,7 @@ export const useChatActions = (
     try {
       await deleteMessage(roomId, msgId);
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : 'メッセージの削除に失敗しました');
+      setSendError(toUserMessage(err, 'メッセージの削除に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
@@ -64,7 +65,7 @@ export const useChatActions = (
       await updateMessage(roomId, msgId, editContent.trim());
       setEditingId(null);
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : 'メッセージの編集に失敗しました');
+      setSendError(toUserMessage(err, 'メッセージの編集に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 

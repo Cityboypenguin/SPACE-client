@@ -1,23 +1,17 @@
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { UserHeader } from '../components/organisms/UserHeader';
-import { getAnnouncement, type Announcement } from '../api/announcement';
+import { getAnnouncement } from '../api/announcement';
 
 export const AnnouncementDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!id) return;
-    getAnnouncement(id)
-      .then(setAnnouncement)
-      .catch(() => setError('お知らせの読み込みに失敗しました'))
-      .finally(() => setLoading(false));
-  }, [id]);
+  const { data: announcement, isLoading, error } = useSWR(
+    id ? ['announcement', id] : null,
+    ([, announcementId]: [string, string]) => getAnnouncement(announcementId),
+  );
 
   return (
     <div>
@@ -38,9 +32,9 @@ export const AnnouncementDetailPage = () => {
           ← 戻る
         </button>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: 'red' }}>お知らせの読み込みに失敗しました</p>}
 
-        {loading ? (
+        {isLoading ? (
           <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
         ) : !announcement ? (
           <p style={{ color: '#94a3b8', textAlign: 'center' }}>お知らせが見つかりません</p>
