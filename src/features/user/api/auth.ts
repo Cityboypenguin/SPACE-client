@@ -54,6 +54,12 @@ const LOGOUT_USER_MUTATION = `
   }
 `;
 
+const SEND_EMAIL_OTP_MUTATION = `
+  mutation SendEmailOTP($email: String!) {
+    sendEmailOTP(email: $email)
+  }
+`;
+
 const CREATE_USER_MUTATION = `
   mutation CreateUser($input: CreateUserInput!) {
     createUser(input: $input) {
@@ -75,6 +81,10 @@ export const logoutUser = async (token: string) => {
   return await request<LogoutUserResponse>(LOGOUT_USER_MUTATION, { token });
 };
 
-export const registerUser = async (accountID: string, name: string, email: string, password: string) => {
-  return await request<RegisterUserResponse>(CREATE_USER_MUTATION, { input: { accountID, name, email, password } });
+export const sendEmailOTP = async (email: string) => {
+  return await request<{ sendEmailOTP: boolean }>(SEND_EMAIL_OTP_MUTATION, { email });
+};
+
+export const registerUser = async (accountID: string, name: string, email: string, password: string, otp: string) => {
+  return await request<RegisterUserResponse>(CREATE_USER_MUTATION, { input: { accountID, name, email, password, otp } });
 };

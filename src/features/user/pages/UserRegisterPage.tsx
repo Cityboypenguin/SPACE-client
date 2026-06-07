@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerUser, loginUser } from '../api/auth';
+import { registerUser, loginUser, sendEmailOTP } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
 import { TermsContent } from '../components/molecules/TermsContent';
@@ -35,6 +35,12 @@ export const UserRegisterPage = () => {
   const [scrolled, setScrolled] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [termsError, setTermsError] = useState(false);
+
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -47,6 +53,11 @@ export const UserRegisterPage = () => {
   const handleEmailChange = (value: string) => {
     setEmail(value);
     setEmailError(validateEmail(value));
+    if (otpSent) {
+      setOtpSent(false);
+      setOtp('');
+      setOtpError('');
+    }
   };
 
   const handlePasswordChange = (value: string) => {
@@ -54,11 +65,30 @@ export const UserRegisterPage = () => {
     setPasswordError(validatePassword(value));
   };
 
+  const handleSendOTP = async () => {
+    const emailErr = validateEmail(email);
+    if (emailErr || !email) {
+      setEmailError(emailErr || 'メールアドレスを入力してください');
+      return;
+    }
+    setSendingOtp(true);
+    setOtpError('');
+    try {
+      await sendEmailOTP(email);
+      setOtpSent(true);
+    } catch {
+      setOtpError('認証コードの送信に失敗しました。メールアドレスをご確認ください。');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
   const hasValidationError = !!emailError || !!passwordError;
+  const canSubmit = otpSent && otp.length === 6 && !hasValidationError && (!currentTerms || agreed);
 
   const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (currentTerms && !agreed) return;
+    if (!canSubmit) return;
 
     const emailErr = validateEmail(email);
     const passwordErr = validatePassword(password);
@@ -70,7 +100,7 @@ export const UserRegisterPage = () => {
 
     setError('');
     try {
-      await registerUser(accountID, name, email, password);
+      await registerUser(accountID, name, email, password, otp);
       const loginData = await loginUser(email, password);
       login(loginData.loginUser.token, loginData.loginUser.refreshToken, loginData.loginUser.user.ID);
       if (currentTerms) {
@@ -78,7 +108,7 @@ export const UserRegisterPage = () => {
       }
       navigate('/mypage');
     } catch {
-      setError('登録に失敗しました。入力内容をご確認ください。');
+      setError('登録に失敗しました。認証コードが正しいか、入力内容をご確認ください。');
     }
   };
 
@@ -100,14 +130,44 @@ export const UserRegisterPage = () => {
         placeholder="名前"
         required
       />
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => handleEmailChange(e.target.value)}
-        placeholder="メールアドレス"
-        required
-      />
-      {emailError && <p style={{ color: 'red', fontSize: '0.8rem', margin: '0.2rem 0' }}>{emailError}</p>}
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => handleEmailChange(e.target.value)}
+            placeholder="メールアドレス"
+            required
+            style={{ width: '100%' }}
+          />
+          {emailError && <p style={{ color: 'red', fontSize: '0.8rem', margin: '0.2rem 0' }}>{emailError}</p>}
+        </div>
+        <button
+          type="button"
+          onClick={handleSendOTP}
+          disabled={sendingOtp || !!emailError || !email}
+          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+        >
+          {sendingOtp ? '送信中...' : otpSent ? '再送信' : '認証コードを送信'}
+        </button>
+      </div>
+      {otpError && <p style={{ color: 'red', fontSize: '0.8rem', margin: '0.2rem 0' }}>{otpError}</p>}
+      {otpSent && (
+        <div>
+          <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0.5rem 0 0.3rem' }}>
+            {email} に認証コードを送信しました。6桁のコードを入力してください（有効期限10分）。
+          </p>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+            placeholder="認証コード（6桁）"
+            required
+          />
+        </div>
+      )}
       <input
         type="password"
         value={password}
@@ -152,7 +212,7 @@ export const UserRegisterPage = () => {
           </label>
         </div>
       )}
-      <button type="submit" disabled={(!!currentTerms && !agreed) || hasValidationError}>登録する</button>
+      <button type="submit" disabled={!canSubmit}>登録する</button>
       <p>
         すでにアカウントをお持ちの方は<Link to="/login">ログイン</Link>
       </p>
