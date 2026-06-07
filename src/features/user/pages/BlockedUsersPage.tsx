@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { getBlockersByUserID, deleteBlocker } from '../api/block';
-import type { User } from '../api/block'; // User型をインポート
+import type { User } from '../api/block';
 import { storageUrl } from '../../../lib/storage';
 import { useToast } from '../../../context/ToastContext';
 
@@ -40,7 +40,7 @@ export const BlockedUsersPage = () => {
       await deleteBlocker(targetId);
       setUsers((prev) => prev.filter((u) => u.ID !== targetId));
     } catch (err) {
-      addToast('ブロック解除に失敗しました', 'error');
+      addToast('ブロックの解除に失敗しました', 'error');
     }
   };
 

@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 import {
   getTopLevelPosts,
@@ -50,8 +51,8 @@ export const PostListPage = () => {
       setSelectedFiles([]);
 
       mutate([newPost, ...(posts || [])], { revalidate: false });
-    } catch {
-      setPostError('投稿に失敗しました');
+    } catch (err) {
+      setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setPosting(false);
     }

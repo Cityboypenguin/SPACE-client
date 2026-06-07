@@ -7,6 +7,7 @@ import { ReplyThread } from '../components/organisms/ReplyThread';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
 import { useToast } from '../../../context/ToastContext';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 import {
   getPostByID,
@@ -143,7 +144,7 @@ const ReportModal = ({ targetId, postContent, onClose }: ReportModalProps) => {
       onClose();
     } catch (err) {
       console.error(err);
-      addToast('通報の送信に失敗しました', 'error');
+      addToast(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -320,8 +321,8 @@ export const PostDetailPage = () => {
       setReplyContent('');
       setReplyFiles([]);
       loadPost(id);
-    } catch {
-      setReplyError('返信に失敗しました');
+    } catch (err) {
+      setReplyError(toUserMessage(err, '返信の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setReplying(false);
     }
@@ -360,8 +361,7 @@ export const PostDetailPage = () => {
       setEditDeletedMediaIDs([]);
       loadPost(id);
     } catch (err) {
-      console.error(err);
-      setUpdateError('更新に失敗しました');
+      setUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setIsUpdating(false);
     }
@@ -373,8 +373,7 @@ export const PostDetailPage = () => {
       await deletePost(id);
       navigate(-1);
     } catch (err) {
-      console.error(err);
-
+      alert(toUserMessage(err, '投稿の削除に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getProfileByUserID, type Profile } from '../api/profile';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 type State = {
   profile: Profile | null;
@@ -30,7 +31,7 @@ export const useProfile = (userId: string | null | undefined) => {
       })
       .catch((err: unknown) => {
         if (!active) return;
-        const message = err instanceof Error ? err.message : '取得に失敗しました';
+        const message = toUserMessage(err, 'プロフィールの読み込みに失敗しました。時間をおいてから再度お試しください。');
         setState({ profile: null, loading: false, error: message });
       });
 

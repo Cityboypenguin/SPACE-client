@@ -6,6 +6,7 @@ import { searchUsers, type UserProfile } from '../api/profile';
 import { getOrCreateDMRoom, listMyDMRooms, type Room } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
+import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './DMListPage.module.css';
 
 export const DMListPage = () => {
@@ -26,8 +27,8 @@ export const DMListPage = () => {
         const serverRooms = await listMyDMRooms();
         if (!active) return;
         setDmRooms(serverRooms);
-      } catch {
-        if (active) setError('DMルームの読み込みに失敗しました');
+      } catch (err) {
+        if (active) setError(toUserMessage(err, 'DMルームの読み込みに失敗しました。時間をおいてから再度お試しください。'));
       }
     };
 
@@ -53,8 +54,8 @@ export const DMListPage = () => {
         : data.searchUsers;
       setResults(filtered);
       setSearched(true);
-    } catch {
-      setError('検索に失敗しました');
+    } catch (err) {
+      setError(toUserMessage(err, '検索に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
@@ -65,7 +66,7 @@ export const DMListPage = () => {
       const data = await getOrCreateDMRoom(target.ID);
       navigate(`/dm/${data.getOrCreateDMRoom.ID}`);
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'DMの開始に失敗しました');
+      setError(toUserMessage(err, 'DMの開始に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setStarting(null);
     }

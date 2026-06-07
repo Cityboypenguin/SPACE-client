@@ -39,7 +39,7 @@ export const FavoriteUsersPage = () => {
       await deleteFavoriteUser(targetId);
       setUsers((prev) => prev.filter((u) => u.ID !== targetId));
     } catch (err) {
-      addToast('お気に入り解除に失敗しました', 'error');
+      addToast('お気に入りの解除に失敗しました', 'error');
     }
   };
 

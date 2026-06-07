@@ -10,6 +10,7 @@ import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block'
 import { createReport } from '../api/report';
 import { PostCard } from '../components/organisms/PostCard';
 import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
+import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserPublicProfilePage.module.css';
 
 
@@ -103,8 +104,7 @@ export const UserPublicProfilePage = () => {
         setIsFavorited(true);
       }
     } catch (err) {
-      console.error('お気に入りの操作に失敗しました', err);
-      alert('操作に失敗しました。');
+      alert(toUserMessage(err, 'お気に入りの操作に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setActionLoading(false);
     }
@@ -127,8 +127,7 @@ export const UserPublicProfilePage = () => {
         setIsFavorited(false);
       }
     } catch (err) {
-      console.error('ブロックの操作に失敗しました', err);
-      alert('操作に失敗しました。');
+      alert(toUserMessage(err, 'ブロックの操作に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setActionLoading(false);
     }
@@ -155,8 +154,7 @@ export const UserPublicProfilePage = () => {
       });
       alert('通報を送信しました。ご協力ありがとうございました。');
     } catch (err) {
-      console.error(err);
-      alert('通報の送信に失敗しました。');
+      alert(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setReporting(false);
     }

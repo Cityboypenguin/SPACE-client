@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { storageUrl } from '../../../lib/storage';
+import { toUserMessage } from '../../../lib/errorMessages';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { toUserMessage } from '../../../lib/errorMessages';
 import {
   getMyProfile,
   getProfileByUserID,
@@ -38,8 +40,7 @@ export const UserProfileEditPage = () => {
           setCurrentAvatarUrl(profile.avatarUrl);
         }
       } catch (err) {
-        setError('プロフィールの取得に失敗しました');
-        console.error(err);
+        setError(toUserMessage(err, 'プロフィールの取得に失敗しました。ページを再読み込みしてください。'));
       }
     };
     void init();
@@ -78,7 +79,7 @@ export const UserProfileEditPage = () => {
       await updateProfile({ bio });
       navigate('/mypage', { state: { message: 'プロフィールを更新しました！' } });
     } catch (err) {
-      setError('更新に失敗しました。');
+      setError(toUserMessage(err, 'プロフィールの更新に失敗しました。時間をおいてから再度お試しください。'));
       console.error(err);
     } finally {
       setIsUploading(false);

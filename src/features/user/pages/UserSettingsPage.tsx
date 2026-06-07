@@ -3,11 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { getMyProfile, updateMyProfile, type UserProfile } from '../api/profile';
 import { useAuth } from '../context/AuthContext';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { toUserMessage } from '../../../lib/errorMessages';
 
 export const UserSettingsPage = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -28,7 +30,8 @@ export const UserSettingsPage = () => {
         setName(p.name);
         setEmail(p.email);
       })
-      .catch(() => setError('プロフィールの取得に失敗しました'));
+      .catch((err) => setError(toUserMessage(err, 'プロフィールの取得に失敗しました。ページを再読み込みしてください。')))
+      .finally(() => setIsLoading(false));
   }, [token, navigate]);
 
   const handleUpdate = async (e: { preventDefault(): void }) => {
@@ -42,12 +45,13 @@ export const UserSettingsPage = () => {
       setProfile(data.updateUser);
       setPassword('');
       setSuccess('更新しました');
-    } catch {
-      setError('更新に失敗しました');
+    } catch (err) {
+      setError(toUserMessage(err, 'アカウント情報の更新に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
-  if (!profile) return <p>読み込み中...</p>;
+  if (isLoading) return <p>読み込み中...</p>;
+  if (!profile) return <p style={{ color: 'red' }}>{error}</p>;
 
   return (
     <div>
