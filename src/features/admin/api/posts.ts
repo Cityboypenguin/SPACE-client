@@ -77,11 +77,23 @@ const POSTS_QUERY = `
 `;
 
 const GET_POST_BY_ID_QUERY = `
-  query GetAdminPostByID($id: ID!) {
-    getPostByID(id: $id) {
+  query GetPostByIDIncludeDeleted($id: ID!) {
+    getPostByIDIncludeDeleted(id: $id) {
       ${POST_FIELDS}
       replies {
         ${POST_FIELDS}
+        replies {
+          ${POST_FIELDS}
+          replies {
+            ${POST_FIELDS}
+            replies {
+              ${POST_FIELDS}
+              replies {
+                ID
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -99,12 +111,12 @@ export const getPosts = async (): Promise<Post[]> => {
 };
 
 export const getPostByID = async (id: string): Promise<Post | null> => {
-  const data = await request<{ getPostByID: Post | null }>(
+  const data = await request<{ getPostByIDIncludeDeleted: Post | null }>(
     GET_POST_BY_ID_QUERY,
     { id },
     getAdminToken(),
   );
-  return data.getPostByID;
+  return data.getPostByIDIncludeDeleted;
 };
 
 export const adminDeletePost = async (id: string): Promise<void> => {

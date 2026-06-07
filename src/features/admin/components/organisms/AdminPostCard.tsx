@@ -14,6 +14,7 @@ type Props = {
 
 export const AdminPostCard = ({ post, isDetail = false }: Props) => {
   const navigate = useNavigate();
+  const isDeleted = post.deletedAt != null;
 
   const handleCardClick = () => {
     if (!isDetail) {
@@ -28,18 +29,30 @@ export const AdminPostCard = ({ post, isDetail = false }: Props) => {
         display: 'flex', gap: '0.75rem', padding: '1rem',
         borderBottom: '1px solid #e2e8f0',
         cursor: isDetail ? 'default' : 'pointer',
-        background: '#fff', transition: 'background 0.1s',
+        background: isDeleted ? '#fef2f2' : '#fff',
+        transition: 'background 0.1s',
       }}
-      onMouseEnter={(e) => { if (!isDetail) e.currentTarget.style.background = '#f8faff' }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = '#fff' }}
+      onMouseEnter={(e) => { if (!isDetail) e.currentTarget.style.background = isDeleted ? '#fee2e2' : '#f8faff' }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = isDeleted ? '#fef2f2' : '#fff' }}
     >
       <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <UserMeta name={post.user.name} accountID={post.user.accountID} timestamp={formatTime(post.createdAt)} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <UserMeta name={post.user.name} accountID={post.user.accountID} timestamp={formatTime(post.createdAt)} />
+
+          {isDeleted && (
+            <span style={{
+              background: '#ef4444', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold',
+              padding: '0.15rem 0.4rem', borderRadius: '4px', whiteSpace: 'nowrap'
+            }}>
+              削除済み
+            </span>
+          )}
+        </div>
 
         {post.content && (
-          <p style={{ margin: '0 0 0.5rem', color: '#1e293b', lineHeight: 1.6, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+          <p style={{ margin: '0.25rem 0 0.5rem', color: isDeleted ? '#64748b' : '#1e293b', lineHeight: 1.6, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
             {post.content}
           </p>
         )}
@@ -53,7 +66,6 @@ export const AdminPostCard = ({ post, isDetail = false }: Props) => {
         <div style={{ display: 'flex', gap: '1.5rem', fontSize: '1.2rem', alignItems: 'center' }}>
           <span style={{ color: '#94a3b8' }}>💬 {post.replyCount}</span>
 
-          {/* ⭕️ 修正：LikeButton を配置し、管理者は操作できないようポインターイベントを無効化する */}
           <div style={{ pointerEvents: 'none' }}>
             <LikeButton post={post} currentUserId={null} onLike={async () => { }} />
           </div>

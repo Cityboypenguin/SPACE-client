@@ -8,7 +8,7 @@ import { LikeButton } from '../../user/components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
 
-// ⭕️ User側の美しい画像プレビューコンポーネントを完全流用
+// (ImageLightbox と PostMediaDetail は変更なしのためそのまま)
 const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div
     onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -107,7 +107,7 @@ export const AdminPostDetailPage = () => {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { addToast } = useToast(); // ⭕️ 装備
+  const { addToast } = useToast();
 
   const loadPost = (postId: string) => {
     setLoading(true);
@@ -126,7 +126,9 @@ export const AdminPostDetailPage = () => {
     if (!id || !window.confirm('この親投稿を削除しますか？')) return;
     try {
       await adminDeletePost(id);
-      navigate(-1);
+      // ⭕️ 修正: navigate(-1) で逃げずに、現在の投稿に deletedAt を付与する
+      setPost(prev => prev ? { ...prev, deletedAt: new Date().toISOString() } : null);
+      addToast('削除しました', 'success');
     } catch (err) {
       console.error(err);
       addToast('削除に失敗しました', 'error');
@@ -137,13 +139,20 @@ export const AdminPostDetailPage = () => {
     if (!window.confirm('この返信を削除しますか？')) return;
     try {
       await adminDeletePost(replyId);
-      // 削除後、画面上の返信リストから除外
-      setPost(prev => prev ? { ...prev, replies: prev.replies.filter(r => r.ID !== replyId) } : null);
+      // ⭕️ 修正: 返信リストから filter で消すのではなく、map で deletedAt を付与する
+      setPost(prev => prev ? {
+        ...prev,
+        replies: prev.replies.map(r => r.ID === replyId ? { ...r, deletedAt: new Date().toISOString() } : r)
+      } : null);
+      addToast('削除しました', 'success');
     } catch (err) {
       console.error(err);
       addToast('削除に失敗しました', 'error');
     }
   };
+
+  // ⭕️ 追加: 親投稿が削除されているかどうかの判定フラグ
+  const isDeleted = post?.deletedAt != null;
 
   return (
     <div>
@@ -165,8 +174,24 @@ export const AdminPostDetailPage = () => {
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
         ) : (
           <>
-            {/* 🛡 親投稿の表示領域（User側と完全一致＋管理者削除ボタン） */}
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
+            {/* 🛡 親投稿の表示領域 */}
+            <div style={{
+              padding: '1rem',
+              borderBottom: '1px solid #e2e8f0',
+              background: isDeleted ? '#fef2f2' : '#ffffff' // ⭕️ 削除済みなら薄い赤背景
+            }}>
+
+              {/* ⭕️ 削除済みバッジの表示 */}
+              {isDeleted && (
+                <div style={{
+                  display: 'inline-block',
+                  background: '#ef4444', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold',
+                  padding: '0.25rem 0.5rem', borderRadius: '4px', marginBottom: '0.75rem'
+                }}>
+                  削除済み ({new Date(post.deletedAt!).toLocaleString('ja-JP')})
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
@@ -176,14 +201,17 @@ export const AdminPostDetailPage = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={handleMainDelete}
-                  style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
-                >削除</button>
+                {/* ⭕️ 削除されていない場合のみ「削除」ボタンを表示する */}
+                {!isDeleted && (
+                  <button
+                    onClick={handleMainDelete}
+                    style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
+                  >削除</button>
+                )}
               </div>
 
               {post.content && (
-                <p style={{ margin: '0 0 0.75rem', color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                <p style={{ margin: '0 0 0.75rem', color: isDeleted ? '#64748b' : '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                   {post.content}
                 </p>
               )}
@@ -200,14 +228,13 @@ export const AdminPostDetailPage = () => {
                 <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
                   💬 <strong>{post.replyCount}</strong> 件の返信
                 </span>
-                {/* 🛡 管理者はいいね不可にするため、pointer-events でガード */}
                 <div style={{ pointerEvents: 'none' }}>
                   <LikeButton post={post} currentUserId={null} onLike={async () => { }} large />
                 </div>
               </div>
             </div>
 
-            {/* 🛡 返信一覧（AdminPostCardを使用し、入力フォームは完全に排除） */}
+            {/* 🛡 返信一覧 */}
             {post.replies.length > 0 && (
               <div>
                 {post.replies.map((reply) => (
