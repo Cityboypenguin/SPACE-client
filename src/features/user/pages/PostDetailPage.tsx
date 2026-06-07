@@ -6,6 +6,7 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
+import { useToast } from '../../../context/ToastContext';
 
 import {
   getPostByID,
@@ -126,6 +127,7 @@ const ReportModal = ({ targetId, postContent, onClose }: ReportModalProps) => {
   const [reason, setReason] = useState('SPAM');
   const [customReason, setCustomReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { addToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,11 +139,11 @@ const ReportModal = ({ targetId, postContent, onClose }: ReportModalProps) => {
         reason,
         customReason: customReason.trim() || null,
       });
-      alert('通報を送信しました');
+      addToast('通報が送信されました', 'success');
       onClose();
     } catch (err) {
       console.error(err);
-      alert('通報の送信に失敗しました');
+      addToast('通報の送信に失敗しました', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -251,11 +253,13 @@ export const PostDetailPage = () => {
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [editSelectedFiles, setEditSelectedFiles] = useState<File[]>([]);
+  const [editDeletedMediaIDs, setEditDeletedMediaIDs] = useState<string[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState('');
   const [editContent, setEditContent] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
-
   const isMyPost = post?.user.ID === userId;
-  const canSubmitEdit = editContent.trim() !== '';
 
   const loadPost = (postId: string, activeSignal = { active: true }) => {
     setLoading(true);
@@ -324,17 +328,42 @@ export const PostDetailPage = () => {
   };
 
   const handleUpdate = async () => {
-    if (!id || !editContent.trim() || editContent === post?.content) {
+    const remainingExistingMedia = post?.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) || [];
+    const hasAnyMedia = remainingExistingMedia.length > 0 || editSelectedFiles.length > 0;
+    if (!id || (!editContent.trim() && !hasAnyMedia) || isUpdating) return;
+    const isContentChanged = editContent !== post?.content;
+    const hasNewMedia = editSelectedFiles.length > 0;
+    const hasDeletedMedia = editDeletedMediaIDs.length > 0;
+    if (!isContentChanged && !hasNewMedia && !hasDeletedMedia) {
       setIsEditing(false);
       return;
     }
+
+    setIsUpdating(true);
+    setUpdateError('');
     try {
-      await updatePost(id, editContent);
+      let mediaInputs: MediaInput[] | undefined;
+      if (editSelectedFiles.length > 0) {
+        mediaInputs = await Promise.all(
+          editSelectedFiles.map(async (file) => {
+            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+          })
+        );
+      }
+
+      await updatePost(id, editContent.trim(), mediaInputs, editDeletedMediaIDs);
+
       setIsEditing(false);
+      setEditSelectedFiles([]);
+      setEditDeletedMediaIDs([]);
       loadPost(id);
     } catch (err) {
       console.error(err);
-      alert('更新に失敗しました');
+      setUpdateError('更新に失敗しました');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -345,7 +374,7 @@ export const PostDetailPage = () => {
       navigate(-1);
     } catch (err) {
       console.error(err);
-      alert('削除に失敗しました');
+
     }
   };
 
@@ -382,7 +411,13 @@ export const PostDetailPage = () => {
                 {isMyPost && !isEditing && (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
-                      onClick={() => { setIsEditing(true); setEditContent(post.content); }}
+                      onClick={() => {
+                        setIsEditing(true);
+                        setEditContent(post.content);
+                        setEditSelectedFiles([]);
+                        setEditDeletedMediaIDs([]);
+                        setUpdateError('');
+                      }}
                       style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: '#f1f5f9', border: 'none', borderRadius: '4px' }}
                     >編集</button>
                     <button
@@ -394,48 +429,33 @@ export const PostDetailPage = () => {
               </div>
 
               {isEditing ? (
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <textarea
+                <div style={{ marginBottom: '0.75rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  {updateError && <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{updateError}</p>}
+
+                  <PostComposer
                     value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    style={{
-                      width: '100%',
-                      minHeight: '100px',
-                      padding: '0.5rem',
-                      margin: '0 0 0.75rem',
-                      fontFamily: 'inherit',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
-                      color: '#1e293b',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.7,
+                    onChange={setEditContent}
+                    onSubmit={handleUpdate}
+                    submitting={isUpdating}
+                    userId={userId}
+                    avatarUrl={profile?.avatarUrl}
+                    userName={profile?.user.name}
+                    selectedFiles={editSelectedFiles}
+                    onFileSelect={setEditSelectedFiles}
+                    existingMedia={post.media}
+                    deletedMediaIDs={editDeletedMediaIDs}
+                    onDeleteExistingMedia={(id) => setEditDeletedMediaIDs(prev => [...prev, id])}
+                    submitLabel="保存する"
+                    submittingLabel="保存中..."
+                    placeholder="投稿を編集..."
+                    onCancel={() => {
+                      setIsEditing(false);
+                      setEditContent(post.content);
+                      setEditSelectedFiles([]);
+                      setEditDeletedMediaIDs([]);
                     }}
+                    isEmbedded={true}
                   />
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={() => { setIsEditing(false); setEditContent(post.content); }}
-                      style={{
-                        padding: '0.25rem 0.75rem',
-                        cursor: 'pointer',
-                        background: '#f1f5f9',
-                        border: 'none',
-                        borderRadius: '20px',
-                      }}
-                    >キャンセル</button>
-                    <button
-                      onClick={handleUpdate}
-                      disabled={!canSubmitEdit}
-                      style={{
-                        padding: '0.45rem 1.2rem',
-                        borderRadius: '20px',
-                        background: canSubmitEdit ? '#646cff' : '#c7d2fe',
-                        color: '#fff', border: 'none', fontWeight: 700,
-                        fontSize: '0.9rem',
-                        cursor: canSubmitEdit ? 'pointer' : 'default',
-                        transition: 'background 0.1s',
-                      }}
-                    >保存</button>
-                  </div>
                 </div>
               ) : (
                 post.content && (
@@ -452,7 +472,7 @@ export const PostDetailPage = () => {
                 )
               )}
 
-              {post.media && post.media.length > 0 && (
+              {!isEditing && post.media && post.media.length > 0 && (
                 <PostMediaDetail media={post.media} />
               )}
 

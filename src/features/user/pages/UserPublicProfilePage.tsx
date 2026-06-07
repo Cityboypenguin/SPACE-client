@@ -8,7 +8,10 @@ import { useEffect } from 'react';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { createReport } from '../api/report';
+import { PostCard } from '../components/organisms/PostCard';
+import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
 import styles from './UserPublicProfilePage.module.css';
+
 
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +24,9 @@ export const UserPublicProfilePage = () => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState('');
 
   useEffect(() => {
     if (!id || isMe) return;
@@ -45,6 +51,45 @@ export const UserPublicProfilePage = () => {
     fetchInitialStatus();
     return () => { active = false; };
   }, [id, isMe]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    let active = true;
+    setPostsLoading(true);
+    setPostsError('');
+
+    getPostsByUserID(id)
+      .then((data) => {
+        if (active) setPosts(data);
+      })
+      .catch(() => {
+        if (active) setPostsError('投稿の読み込みに失敗しました');
+      })
+      .finally(() => {
+        if (active) setPostsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [id]);
+
+  const handleLike = async (postId: string, isLiked: boolean) => {
+    if (isLiked) {
+      await deleteFavorite(postId);
+    } else {
+      await createFavorite(postId);
+    }
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.ID !== postId) return p;
+        if (isLiked) {
+          return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) };
+        } else {
+          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
+        }
+      }),
+    );
+  };
 
   const handleFavoriteToggle = async () => {
     if (!id) return;
@@ -198,6 +243,36 @@ export const UserPublicProfilePage = () => {
               <dt className={styles.profileLabel}>自己紹介</dt>
               <dd>{profile.bio || '未設定'}</dd>
             </dl>
+            <div style={{ marginTop: '2rem' }}>
+              <h3 style={{ fontSize: '1.2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                投稿一覧
+              </h3>
+
+              {postsError && <p style={{ color: 'red', marginBottom: '1rem' }}>{postsError}</p>}
+              <div
+                style={{
+                  maxHeight: '50vh',
+                  overflowY: 'auto',
+                  paddingRight: '0.5rem',
+                }}
+              >
+                {posts.length > 0 ? (
+                  posts.map((post) => (
+                    <PostCard
+                      key={post.ID}
+                      post={post}
+                      currentUserId={currentUserId}
+                      onLike={handleLike}
+                      onClick={() => navigate(`/posts/${post.ID}`)}
+                    />
+                  ))
+                ) : postsLoading ? (
+                  <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+                ) : (
+                  <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>
