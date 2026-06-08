@@ -36,6 +36,18 @@ export const CREATE_REPORT_MUTATION = `
   }
 `;
 
+export const GET_REPORT_SERVICE_STATUS_QUERY = `
+  query GetReportServiceStatus {
+    isReportServiceEnabled
+  }
+`;
+
+export const SET_REPORT_SERVICE_STATUS_MUTATION = `
+  mutation SetReportServiceStatus($enabled: Boolean!) {
+    setReportServiceStatus(enabled: $enabled)
+  }
+`;
+
 export const getReports = async (filterStatus?: string, targetType?: string) => {
   const filter: any = {};
   if (filterStatus && filterStatus !== 'ALL') {
@@ -66,4 +78,22 @@ export const createReport = async (input: {
     getUserToken()
   );
   return data;
+};
+
+export const getReportServiceStatus = async (): Promise<boolean> => {
+  const data = await request<{ isReportServiceEnabled: boolean }>(
+    GET_REPORT_SERVICE_STATUS_QUERY,
+    {},
+    getAdminToken()
+  );
+  return data?.isReportServiceEnabled ?? true;
+};
+
+export const updateReportServiceStatus = async (enabled: boolean): Promise<boolean> => {
+  const data = await request<{ setReportServiceStatus: boolean }>(
+    SET_REPORT_SERVICE_STATUS_MUTATION,
+    { enabled },
+    getAdminToken()
+  );
+  return data?.setReportServiceStatus ?? enabled;
 };
