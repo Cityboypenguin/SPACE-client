@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerUser, loginUser, sendEmailOTP } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
 import { TermsContent } from '../components/molecules/TermsContent';
+
+const OTP_COOLDOWN_SECONDS = 60;
 
 const studentEmailRe = /^(EE|EL|EW|JL|JP|MA|MD|CM|CA|LB|LA|LT|LR|LK|LM|NE|HP|HS|GN|GC|E)(2[0-9]|[3-9][0-9])\d{4}@senshu-u\.jp$/i;
 
@@ -76,6 +78,8 @@ export const UserRegisterPage = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const otpCooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [accountID, setAccountID] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -98,6 +102,23 @@ export const UserRegisterPage = () => {
       .catch(() => {});
   }, []);
 
+  const startOtpCooldown = () => {
+    if (otpCooldownRef.current) clearInterval(otpCooldownRef.current);
+    setOtpCooldown(OTP_COOLDOWN_SECONDS);
+    otpCooldownRef.current = setInterval(() => {
+      setOtpCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(otpCooldownRef.current!);
+          otpCooldownRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => () => { if (otpCooldownRef.current) clearInterval(otpCooldownRef.current); }, []);
+
   const handleEmailChange = (value: string) => {
     setEmail(value);
     setEmailError(validateEmail(value));
@@ -118,8 +139,15 @@ export const UserRegisterPage = () => {
     try {
       await sendEmailOTP(email);
       setOtpSent(true);
-    } catch {
-      setOtpError('認証コードの送信に失敗しました。メールアドレスをご確認ください。');
+      startOtpCooldown();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('1分後に再送信')) {
+        setOtpError('認証コードは1分後に再送信できます。');
+        startOtpCooldown();
+      } else {
+        setOtpError('認証コードの送信に失敗しました。メールアドレスをご確認ください。');
+      }
     } finally {
       setSendingOtp(false);
     }
@@ -184,10 +212,10 @@ export const UserRegisterPage = () => {
             <button
               type="button"
               onClick={handleSendOTP}
-              disabled={sendingOtp || !!emailError || !email}
+              disabled={sendingOtp || !!emailError || !email || otpCooldown > 0}
               style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
             >
-              {sendingOtp ? '送信中...' : otpSent ? '再送信' : '認証コードを送信'}
+              {sendingOtp ? '送信中...' : otpCooldown > 0 ? `${otpCooldown}秒後に再送信可能` : otpSent ? '再送信' : '認証コードを送信'}
             </button>
           </div>
           {otpSent && (
