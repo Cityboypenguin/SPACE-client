@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useProfile } from '../hooks/useProfile';
 import { storageUrl } from '../../../lib/storage';
@@ -16,7 +16,6 @@ import styles from './UserPublicProfilePage.module.css';
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { profile, loading, error } = useProfile(id);
   const { userId: currentUserId } = useAuth();
   const isMe = currentUserId === id;

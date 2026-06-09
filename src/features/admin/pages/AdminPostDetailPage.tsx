@@ -4,7 +4,7 @@ import { storageUrl } from '../../../lib/storage';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { AdminUserAvatar } from '../../../components/atoms/AdminUserAvatar';
-import { LikeButton } from '../../user/components/molecules/LikeButton';
+import { LikeButton } from '../components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
 
@@ -227,7 +227,7 @@ export const AdminPostDetailPage = () => {
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
               </div>
 
-              <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '1.5rem', fontSize: '1.2rem', alignItems: 'center' }}>
                 <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
                   💬 <strong>{post.replyCount}</strong> 件の返信
                 </span>

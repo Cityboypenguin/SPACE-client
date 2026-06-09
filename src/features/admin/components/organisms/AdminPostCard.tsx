@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { AdminUserAvatar } from '../../../../components/atoms/AdminUserAvatar';
 import { UserMeta } from '../../../user/components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../user/components/molecules/PostMediaGrid';
-import { LikeButton } from '../../../user/components/molecules/LikeButton';
+import { LikeButton } from '../..//components/molecules/LikeButton';
 import { formatTime } from '../../../user/utils/formatTime';
 import { type Post } from '../../api/posts';
 
