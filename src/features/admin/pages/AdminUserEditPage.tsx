@@ -28,16 +28,22 @@ export const AdminUserEditPage = () => {
       .catch(() => setError('ユーザー情報の取得に失敗しました'));
   }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     if (!id || !user) return;
+
+    if (!accountID.trim()) { setError('ユーザーIDは必須です'); return; }
+    if (!name.trim()) { setError('名前は必須です'); return; }
+    if (!email.trim()) { setError('メールアドレスは必須です'); return; }
+
     try {
-      const input: { accountID?: string; name?: string; email?: string; password?: string } = {};
-      if (accountID !== user.accountID) input.accountID = accountID;
-      if (name !== user.name) input.name = name;
-      if (email !== user.email) input.email = email;
+      const input: { accountID: string; name: string; email: string; password?: string } = {
+        accountID,
+        name,
+        email,
+      };
       if (password) input.password = password;
 
       const data = await adminUpdateUser(id, input);

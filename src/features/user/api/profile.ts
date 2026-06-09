@@ -30,6 +30,7 @@ type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
 type UpdateProfileResponse = { updateProfile: Profile };
 type PresignedUploadUrlResponse = { presignedAvatarUploadUrl: { uploadUrl: string; objectKey: string } };
 type SetAvatarResponse = { setAvatar: Profile };
+type DeleteAvatarResponse = { deleteAvatar: Profile };
 
 const ME_QUERY = `
   query Me {
@@ -86,6 +87,18 @@ const PRESIGNED_AVATAR_UPLOAD_URL_QUERY = `
 const SET_AVATAR_MUTATION = `
   mutation SetAvatar($objectKey: String!) {
     setAvatar(objectKey: $objectKey) {
+      username
+      bio
+      avatarUrl
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const DELETE_AVATAR_MUTATION = `
+  mutation DeleteAvatar {
+    deleteAvatar {
       username
       bio
       avatarUrl
@@ -186,4 +199,10 @@ export const setAvatar = async (objectKey: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
   return await request<SetAvatarResponse>(SET_AVATAR_MUTATION, { objectKey }, token);
+};
+
+export const deleteAvatar = async () => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await request<DeleteAvatarResponse>(DELETE_AVATAR_MUTATION, undefined, token);
 };

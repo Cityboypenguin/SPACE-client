@@ -178,7 +178,7 @@ export const unfreezeUser = async (id: string) => {
 
 export const adminUpdateUser = async (
   id: string,
-  input: { accountID?: string; name?: string; email?: string; password?: string },
+  input: { accountID: string; name: string; email: string; password?: string },
 ) => {
   return await request<AdminUpdateUserResponse>(ADMIN_UPDATE_USER_MUTATION, { id, input }, getAdminToken());
 };
