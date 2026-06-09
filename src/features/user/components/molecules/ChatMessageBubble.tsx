@@ -5,6 +5,28 @@ import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { storageUrl } from '../../../../lib/storage';
 import styles from '../organisms/chatRoom.module.css';
 
+const URL_REGEX = /(https?:\/\/[^\s　《》「」（）、。！？]+)/g;
+
+const renderWithLinks = (text: string) => {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) =>
+    URL_REGEX.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: 'inherit', textDecoration: 'underline', wordBreak: 'break-all' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
+};
+
 const getFileIcon = (contentType: string): string => {
   if (contentType === 'application/pdf') return '📄';
   if (contentType.includes('word')) return '📝';
@@ -179,7 +201,7 @@ export const ChatMessageBubble = ({
           <>
             {hasText && (
               <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                {msg.content}
+                {renderWithLinks(msg.content)}
               </div>
             )}
             {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
