@@ -3,12 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { storageUrl } from '../../../lib/storage';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
-import { UserAvatar } from '../../../components/atoms/UserAvatar';
-import { LikeButton } from '../../user/components/molecules/LikeButton';
+import { AdminUserAvatar } from '../../../components/atoms/AdminUserAvatar';
+import { LikeButton } from '../components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
 
-// (ImageLightbox と PostMediaDetail は変更なしのためそのまま)
 const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div
     onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -126,7 +125,6 @@ export const AdminPostDetailPage = () => {
     if (!id || !window.confirm('この親投稿を削除しますか？')) return;
     try {
       await adminDeletePost(id);
-      // ⭕️ 修正: navigate(-1) で逃げずに、現在の投稿に deletedAt を付与する
       setPost(prev => prev ? { ...prev, deletedAt: new Date().toISOString() } : null);
       addToast('削除しました', 'success');
     } catch (err) {
@@ -139,7 +137,6 @@ export const AdminPostDetailPage = () => {
     if (!window.confirm('この返信を削除しますか？')) return;
     try {
       await adminDeletePost(replyId);
-      // ⭕️ 修正: 返信リストから filter で消すのではなく、map で deletedAt を付与する
       setPost(prev => prev ? {
         ...prev,
         replies: prev.replies.map(r => r.ID === replyId ? { ...r, deletedAt: new Date().toISOString() } : r)
@@ -151,7 +148,6 @@ export const AdminPostDetailPage = () => {
     }
   };
 
-  // ⭕️ 追加: 親投稿が削除されているかどうかの判定フラグ
   const isDeleted = post?.deletedAt != null;
 
   return (
@@ -174,14 +170,22 @@ export const AdminPostDetailPage = () => {
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
         ) : (
           <>
-            {/* 🛡 親投稿の表示領域 */}
+            {post.rootPost && (
+              <div style={{ paddingBottom: '0.5rem' }}>
+                <AdminPostCard
+                  post={post.rootPost}
+                  isDetail={false}
+                  onDelete={async () => { }}
+                />
+              </div>
+            )}
+
             <div style={{
               padding: '1rem',
               borderBottom: '1px solid #e2e8f0',
-              background: isDeleted ? '#fef2f2' : '#ffffff' // ⭕️ 削除済みなら薄い赤背景
+              background: isDeleted ? '#fef2f2' : '#ffffff'
             }}>
 
-              {/* ⭕️ 削除済みバッジの表示 */}
               {isDeleted && (
                 <div style={{
                   display: 'inline-block',
@@ -194,14 +198,13 @@ export const AdminPostDetailPage = () => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
+                  <AdminUserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
                   <div>
                     <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
                     <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
                   </div>
                 </div>
 
-                {/* ⭕️ 削除されていない場合のみ「削除」ボタンを表示する */}
                 {!isDeleted && (
                   <button
                     onClick={handleMainDelete}
@@ -224,7 +227,7 @@ export const AdminPostDetailPage = () => {
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
               </div>
 
-              <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '1.5rem', fontSize: '1.2rem', alignItems: 'center' }}>
                 <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
                   💬 <strong>{post.replyCount}</strong> 件の返信
                 </span>

@@ -63,7 +63,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) =
             </div>
           )}
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.82rem' }}>
-            <span style={{ color: '#94a3b8' }}>💬 {countAllReplies(post)}</span>
+            <span style={{ color: '#94a3b8', display: 'flex', gap: '1.5rem', fontSize: '1.2rem' }}>💬 {countAllReplies(post)}</span>
             <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />
           </div>
         </div>

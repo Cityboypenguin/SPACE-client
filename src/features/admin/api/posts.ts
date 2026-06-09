@@ -33,6 +33,7 @@ export type Post = {
   replyCount: number;
   user: PostUser;
   favorites: PostFavorite[];
+  rootPost?: Post | null;
   parent?: Post | null;
   replies: Post[];
   media: Media[];
@@ -80,6 +81,9 @@ const GET_POST_BY_ID_QUERY = `
   query GetPostByIDIncludeDeleted($id: ID!) {
     getPostByIDIncludeDeleted(id: $id) {
       ${POST_FIELDS}
+      rootPost {
+        ${POST_FIELDS}
+      }
       replies {
         ${POST_FIELDS}
         replies {

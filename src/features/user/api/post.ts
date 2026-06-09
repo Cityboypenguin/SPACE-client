@@ -24,7 +24,9 @@ export type Post = {
   content: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
   replyCount: number;
+  rootPost: Post | null;
   user: PostUser;
   favorites: PostFavorite[];
   parent?: Post | null;
@@ -37,6 +39,7 @@ const POST_FIELDS = `
   content
   createdAt
   replyCount
+  deletedAt
   user {
     ID
     name
@@ -71,6 +74,9 @@ const GET_POST_BY_ID_QUERY = `
   query GetPostByID($id: ID!) {
     getPostByID(id: $id) {
       ${POST_FIELDS}
+      rootPost {
+        ${POST_FIELDS}
+      }
       replies {
         ${POST_FIELDS}
         replies {
