@@ -28,7 +28,6 @@ const renderWithLinks = (text: string) => {
 };
 
 const getFileIcon = (contentType: string): string => {
-  if (contentType === 'application/pdf') return '📄';
   if (contentType.includes('word')) return '📝';
   if (contentType.includes('excel') || contentType.includes('spreadsheet')) return '📊';
   if (contentType.includes('zip') || contentType.includes('compressed')) return '🗜️';

@@ -6,7 +6,7 @@ const ACCEPTED_FILE_TYPES = [
   'image/png',
   'image/gif',
   'image/webp',
-  'application/pdf',
+  'image/svg+xml',
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
@@ -37,7 +37,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
 
     const invalid = incoming.find((f) => !ACCEPTED_FILE_TYPES.includes(f.type));
     if (invalid) {
-      alert('JPEG・PNG・GIF・WebP・PDF のみ送信できます。');
+      alert('JPEG・PNG・GIF・WebP・SVG のみ送信できます。');
       e.target.value = '';
       return;
     }
