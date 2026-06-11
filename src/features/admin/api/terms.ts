@@ -1,4 +1,5 @@
 import { request } from '../../../lib/graphql';
+import { storageUrl } from '../../../lib/storage';
 
 const ADMIN_TOKEN_KEY = 'space_admin_token';
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -32,7 +33,7 @@ export const getPresignedTermsDocumentUploadUrl = async (): Promise<{
 
 export const uploadTermsDocument = async (uploadUrl: string, file: File): Promise<void> => {
   const buffer = await file.arrayBuffer();
-  const res = await fetch(uploadUrl, {
+  const res = await fetch(storageUrl(uploadUrl) ?? uploadUrl, {
     method: 'PUT',
     body: new Blob([buffer]),
   });
@@ -71,25 +72,30 @@ export const listTerms = async (): Promise<TermsOfService[]> => {
   return data.adminListTerms;
 };
 
+export type TermsConsentPage = { items: TermsConsentRecord[]; total: number };
+
 const LIST_CONSENTS_QUERY = `
-  query AdminListConsents($termsID: ID!) {
-    adminListConsents(termsID: $termsID) {
-      ID
-      user {
+  query AdminListConsents($termsID: ID!, $limit: Int, $offset: Int) {
+    adminListConsents(termsID: $termsID, limit: $limit, offset: $offset) {
+      items {
         ID
-        accountID
-        name
-        email
+        user {
+          ID
+          accountID
+          name
+          email
+        }
+        consentedAt
       }
-      consentedAt
+      total
     }
   }
 `;
 
-export const listConsents = async (termsID: string): Promise<TermsConsentRecord[]> => {
-  const data = await request<{ adminListConsents: TermsConsentRecord[] }>(
+export const listConsents = async (termsID: string, limit = 20, offset = 0): Promise<TermsConsentPage> => {
+  const data = await request<{ adminListConsents: TermsConsentPage }>(
     LIST_CONSENTS_QUERY,
-    { termsID },
+    { termsID, limit, offset },
     getAdminToken(),
   );
   return data.adminListConsents;

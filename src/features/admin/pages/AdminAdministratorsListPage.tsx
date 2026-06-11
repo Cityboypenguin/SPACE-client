@@ -3,30 +3,47 @@ import { useNavigate } from 'react-router-dom';
 import { getAdministrators, searchAdministrators, type Administrator } from '../api/administrators';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 
+const PAGE_SIZE = 20;
+
 export const AdminAdministratorListPage = () => {
   const [administrators, setAdministrators] = useState<Administrator[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [query, setQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    getAdministrators()
-      .then((data) => setAdministrators(data.administrators))
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const loadPage = (p: number) => {
+    setError('');
+    getAdministrators(PAGE_SIZE, p * PAGE_SIZE)
+      .then((data) => {
+        setAdministrators(data.administrators.items);
+        setTotal(data.administrators.total);
+        setPage(p);
+      })
       .catch(() => setError('管理者一覧の取得に失敗しました'));
+  };
+
+  useEffect(() => {
+    loadPage(0);
   }, []);
 
   const handleSearch = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     setError('');
     if (!query.trim()) {
-      getAdministrators()
-        .then((data) => setAdministrators(data.administrators))
-        .catch(() => setError('管理者一覧の取得に失敗しました'));
+      setIsSearching(false);
+      loadPage(0);
       return;
     }
     try {
       const data = await searchAdministrators(query);
       setAdministrators(data.searchAdministrators as Administrator[]);
+      setTotal(data.searchAdministrators.length);
+      setIsSearching(true);
     } catch {
       setError('検索に失敗しました');
     }
@@ -35,9 +52,8 @@ export const AdminAdministratorListPage = () => {
   const handleClear = () => {
     setQuery('');
     setError('');
-    getAdministrators()
-      .then((data) => setAdministrators(data.administrators))
-      .catch(() => setError('管理者一覧の取得に失敗しました'));
+    setIsSearching(false);
+    loadPage(0);
   };
 
   return (
@@ -60,6 +76,7 @@ export const AdminAdministratorListPage = () => {
           )}
         </form>
         {error && <p style={{ color: 'red' }}>{error}</p>}
+        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</p>
         <table>
           <thead>
             <tr>
@@ -81,6 +98,13 @@ export const AdminAdministratorListPage = () => {
           </tbody>
         </table>
         {administrators.length === 0 && !error && <p>該当する管理者が見つかりませんでした</p>}
+        {!isSearching && totalPages > 1 && (
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button onClick={() => loadPage(page - 1)} disabled={page === 0}>前へ</button>
+            <span>{page + 1} / {totalPages}</span>
+            <button onClick={() => loadPage(page + 1)} disabled={page >= totalPages - 1}>次へ</button>
+          </div>
+        )}
       </main>
     </div>
   );

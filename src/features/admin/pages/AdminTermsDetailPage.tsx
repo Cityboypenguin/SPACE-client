@@ -3,24 +3,41 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { listTerms, listConsents, type TermsOfService, type TermsConsentRecord } from '../api/terms';
 
+const PAGE_SIZE = 20;
+
 export const AdminTermsDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [terms, setTerms] = useState<TermsOfService | null>(null);
   const [consents, setConsents] = useState<TermsConsentRecord[]>([]);
+  const [consentTotal, setConsentTotal] = useState(0);
+  const [consentPage, setConsentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const totalPages = Math.ceil(consentTotal / PAGE_SIZE);
+
+  const loadConsents = (p: number) => {
+    if (!id) return;
+    listConsents(id, PAGE_SIZE, p * PAGE_SIZE)
+      .then((data) => {
+        setConsents(data.items);
+        setConsentTotal(data.total);
+        setConsentPage(p);
+      })
+      .catch(() => setError('同意者一覧の取得に失敗しました'));
+  };
+
   useEffect(() => {
     if (!id) return;
-    Promise.all([listTerms(), listConsents(id)])
-      .then(([allTerms, consentList]) => {
+    listTerms()
+      .then((allTerms) => {
         const found = allTerms.find((t) => t.ID === id) ?? null;
         setTerms(found);
-        setConsents(consentList);
       })
       .catch(() => setError('データの取得に失敗しました'))
       .finally(() => setLoading(false));
+    loadConsents(0);
   }, [id]);
 
   return (
@@ -73,7 +90,7 @@ export const AdminTermsDetailPage: React.FC = () => {
                 fontSize: '0.82rem',
                 fontWeight: 600,
               }}>
-                {consents.length}人
+                {consentTotal}人
               </span>
             </div>
 
@@ -108,6 +125,14 @@ export const AdminTermsDetailPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            )}
+
+            {totalPages > 1 && (
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+                <button onClick={() => loadConsents(consentPage - 1)} disabled={consentPage === 0}>前へ</button>
+                <span>{consentPage + 1} / {totalPages}</span>
+                <button onClick={() => loadConsents(consentPage + 1)} disabled={consentPage >= totalPages - 1}>次へ</button>
+              </div>
             )}
           </>
         )}

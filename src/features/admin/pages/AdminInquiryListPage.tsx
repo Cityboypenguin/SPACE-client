@@ -26,16 +26,26 @@ const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
   RESOLVED: { bg: '#dcfce7', color: '#15803d' },
 };
 
+const PAGE_SIZE = 20;
+
 export const AdminInquiryListPage: React.FC = () => {
   const navigate = useNavigate();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [error, setError] = useState('');
 
-  const loadInquiries = () => {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const loadPage = (p: number, status: string) => {
     setError('');
-    getInquiries(filterStatus)
-      .then(setInquiries)
+    getInquiries(status, PAGE_SIZE, p * PAGE_SIZE)
+      .then((data) => {
+        setInquiries(data.items);
+        setTotal(data.total);
+        setPage(p);
+      })
       .catch((err) => {
         console.error(err);
         setError('問い合わせ一覧の取得に失敗しました');
@@ -43,15 +53,19 @@ export const AdminInquiryListPage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadInquiries();
+    loadPage(0, filterStatus);
   }, [filterStatus]);
+
+  const handleFilterChange = (status: string) => {
+    setFilterStatus(status);
+  };
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     if (!window.confirm(`ステータスを「${STATUS_LABEL[newStatus]}」に変更しますか？`)) return;
     try {
       setError('');
       await updateInquiryStatus(id, newStatus);
-      loadInquiries();
+      loadPage(page, filterStatus);
     } catch (err) {
       console.error(err);
       setError('ステータスの更新に失敗しました');
@@ -68,20 +82,23 @@ export const AdminInquiryListPage: React.FC = () => {
           </h1>
         </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ fontWeight: 500, marginRight: '0.5rem', color: '#475569' }}>
-            ステータス絞り込み：
-          </label>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ padding: '0.4rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}
-          >
-            <option value="ALL">すべて</option>
-            <option value="PENDING">未対応</option>
-            <option value="IN_PROGRESS">対応中</option>
-            <option value="RESOLVED">対応済</option>
-          </select>
+        <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <label style={{ fontWeight: 500, marginRight: '0.5rem', color: '#475569' }}>
+              ステータス絞り込み：
+            </label>
+            <select
+              value={filterStatus}
+              onChange={(e) => handleFilterChange(e.target.value)}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}
+            >
+              <option value="ALL">すべて</option>
+              <option value="PENDING">未対応</option>
+              <option value="IN_PROGRESS">対応中</option>
+              <option value="RESOLVED">対応済</option>
+            </select>
+          </div>
+          <span style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</span>
         </div>
 
         {error && <p style={{ color: 'red', textAlign: 'center', padding: '1rem' }}>{error}</p>}
@@ -157,6 +174,26 @@ export const AdminInquiryListPage: React.FC = () => {
 
         {inquiries.length === 0 && !error && (
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>問い合わせが見つかりませんでした</p>
+        )}
+
+        {totalPages > 1 && (
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+            <button
+              onClick={() => loadPage(page - 1, filterStatus)}
+              disabled={page === 0}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page === 0 ? 'not-allowed' : 'pointer', background: '#fff' }}
+            >
+              前へ
+            </button>
+            <span style={{ color: '#475569' }}>{page + 1} / {totalPages}</span>
+            <button
+              onClick={() => loadPage(page + 1, filterStatus)}
+              disabled={page >= totalPages - 1}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', background: '#fff' }}
+            >
+              次へ
+            </button>
+          </div>
         )}
       </main>
     </div>

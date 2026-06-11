@@ -16,7 +16,7 @@ export default defineConfig({
         target: 'http://host.docker.internal:8080',
         changeOrigin: true,
       },
-      '/space-avatars': {
+      '/space-storage': {
         target: 'http://host.docker.internal:9000',
         changeOrigin: true,
       },

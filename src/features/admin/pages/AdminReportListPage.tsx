@@ -25,29 +25,36 @@ const statusJa: Record<string, string> = {
   DISMISSED: '却下（問題なし）',
 };
 
+const PAGE_SIZE = 20;
+
 export const ReportsPage: React.FC = () => {
   const [reports, setReports] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<TargetTypeFilter>('ALL');
   const [error, setError] = useState('');
   const [isServiceEnabled, setIsServiceEnabled] = useState<boolean>(true);
   const [isStatusLoading, setIsStatusLoading] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
-  const loadReports = () => {
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const loadPage = (p: number) => {
     setError('');
-    getReports(filterStatus, activeTab === 'ALL' ? undefined : activeTab)
+    getReports(filterStatus, activeTab === 'ALL' ? undefined : activeTab, PAGE_SIZE, p * PAGE_SIZE)
       .then((data) => {
-        if (data && data.searchReports) {
-          setReports(data.searchReports);
-        } else {
-          setReports([]);
-        }
+        setReports(data.items ?? []);
+        setTotal(data.total ?? 0);
+        setPage(p);
       })
       .catch((err) => {
         console.error(err);
         setError('通報一覧の取得に失敗しました');
       });
   };
+
+  const loadReports = () => loadPage(0);
 
   const loadServiceStatus = async () => {
     setIsStatusLoading(true);
@@ -62,7 +69,7 @@ export const ReportsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadReports();
+    loadPage(0);
     loadServiceStatus();
   }, [filterStatus, activeTab]);
 
@@ -118,9 +125,12 @@ export const ReportsPage: React.FC = () => {
       <AdminHeader />
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.4rem', color: '#0f172a', fontWeight: 700 }}>
-            通報管理一覧
-          </h1>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.4rem', color: '#0f172a', fontWeight: 700 }}>
+              通報管理一覧
+            </h1>
+            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>全 {total} 件</span>
+          </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ 
@@ -326,6 +336,26 @@ export const ReportsPage: React.FC = () => {
         {reports.length === 0 && !error && (
           <div style={{ color: '#94a3b8', padding: '3rem', textAlign: 'center', fontSize: '0.85rem' }}>
             指定された条件の通報は見つかりませんでした
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+            <button
+              onClick={() => loadPage(page - 1)}
+              disabled={page === 0}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page === 0 ? 'not-allowed' : 'pointer', background: '#fff' }}
+            >
+              前へ
+            </button>
+            <span style={{ color: '#475569' }}>{page + 1} / {totalPages}</span>
+            <button
+              onClick={() => loadPage(page + 1)}
+              disabled={page >= totalPages - 1}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', background: '#fff' }}
+            >
+              次へ
+            </button>
           </div>
         )}
       </main>

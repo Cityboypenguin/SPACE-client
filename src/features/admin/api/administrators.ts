@@ -8,6 +8,8 @@ export type Administrator = {
   email: string;
 };
 
+export type AdministratorPage = { items: Administrator[]; total: number };
+
 type CreateAdministratorResponse = {
   createAdministrator: Administrator;
 };
@@ -51,20 +53,23 @@ const SEARCH_ADMINISTRATORS_QUERY = `
 `;
 
 const GET_ADMINISTRATORS_QUERY = `
-  query {
-    administrators {
-      ID
-      name
-      email
+  query Administrators($limit: Int, $offset: Int) {
+    administrators(limit: $limit, offset: $offset) {
+      items {
+        ID
+        name
+        email
+      }
+      total
     }
   }
 `;
 
-export const getAdministrators = async () => {
+export const getAdministrators = async (limit = 20, offset = 0) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<{ administrators: Administrator[] }>(
+  return await request<{ administrators: AdministratorPage }>(
     GET_ADMINISTRATORS_QUERY,
-    {},
+    { limit, offset },
     token,
   );
 };
@@ -78,11 +83,11 @@ export const searchAdministrators = async (name: string) => {
   );
 };
 
-export const getAllAdministrators = async () => {
+export const getAllAdministrators = async (limit = 20, offset = 0) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<{ administrators: Administrator[] }>(
+  return await request<{ administrators: AdministratorPage }>(
     GET_ADMINISTRATORS_QUERY,
-    {},
+    { limit, offset },
     token,
   );
 };

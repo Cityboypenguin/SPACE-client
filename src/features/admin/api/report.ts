@@ -4,16 +4,21 @@ import { ADMIN_TOKEN_KEY } from './auth';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
+export type ReportPage = { items: any[]; total: number };
+
 export const SEARCH_REPORTS_QUERY = `
-  query SearchReports($filter: ReportSearchFilter) {
-    searchReports(filter: $filter) {
-      ID
-      targetType
-      targetID
-      reason
-      customReason
-      status
-      createdAt
+  query SearchReports($filter: ReportSearchFilter, $limit: Int, $offset: Int) {
+    searchReports(filter: $filter, limit: $limit, offset: $offset) {
+      items {
+        ID
+        targetType
+        targetID
+        reason
+        customReason
+        status
+        createdAt
+      }
+      total
     }
   }
 `;
@@ -48,7 +53,7 @@ export const SET_REPORT_SERVICE_STATUS_MUTATION = `
   }
 `;
 
-export const getReports = async (filterStatus?: string, targetType?: string) => {
+export const getReports = async (filterStatus?: string, targetType?: string, limit = 20, offset = 0): Promise<ReportPage> => {
   const filter: any = {};
   if (filterStatus && filterStatus !== 'ALL') {
     filter.status = filterStatus;
@@ -56,9 +61,10 @@ export const getReports = async (filterStatus?: string, targetType?: string) => 
   if (targetType && targetType !== 'ALL') {
     filter.targetType = targetType;
   }
-  const variables = Object.keys(filter).length > 0 ? { filter } : {};
-  const data = await request<{ searchReports: any[] }>(SEARCH_REPORTS_QUERY, variables, getAdminToken());
-  return data;
+  const variables: any = { limit, offset };
+  if (Object.keys(filter).length > 0) variables.filter = filter;
+  const data = await request<{ searchReports: ReportPage }>(SEARCH_REPORTS_QUERY, variables, getAdminToken());
+  return data.searchReports;
 };
 
 export const adminUpdateReportStatus = async (id: string, status: string) => {
