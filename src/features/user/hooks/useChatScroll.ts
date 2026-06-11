@@ -7,6 +7,7 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
   const [hasScrolled, setHasScrolled] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(false);
+  const isAtBottomRef = useRef(false);
   const seenCountRef = useRef(0);
 
   useEffect(() => {
@@ -14,12 +15,12 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsAtBottom(true);
+        const atBottom = entry.isIntersecting;
+        isAtBottomRef.current = atBottom;
+        setIsAtBottom(atBottom);
+        if (atBottom) {
           seenCountRef.current = messages.length;
           setNewMessageCount(0);
-        } else {
-          setIsAtBottom(false);
         }
       },
       { threshold: 0.1 },
@@ -45,6 +46,16 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
     if (!hasScrolled) return;
     const unseen = messages.length - seenCountRef.current;
     setNewMessageCount(unseen > 0 ? unseen : 0);
+  }, [messages.length, hasScrolled]);
+
+  // 一番下を見ているときに新着メッセージが来たら自動スクロール
+  useEffect(() => {
+    if (!hasScrolled || messages.length === 0) return;
+    if (isAtBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      seenCountRef.current = messages.length;
+      setNewMessageCount(0);
+    }
   }, [messages.length, hasScrolled]);
 
   // 自分が送信したメッセージは最下部へ自動スクロール
