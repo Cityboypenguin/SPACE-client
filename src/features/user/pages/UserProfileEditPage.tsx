@@ -14,7 +14,7 @@ import {
   deleteAvatar,
 } from '../api/profile';
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export const UserProfileEditPage = () => {

@@ -213,7 +213,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
-                  accept="image/*" 
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
                   style={{ display: 'none' }} 
                 />
               </div>
