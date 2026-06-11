@@ -26,21 +26,20 @@ const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
   RESOLVED: { bg: '#dcfce7', color: '#15803d' },
 };
 
-const PAGE_SIZE = 20;
-
 export const AdminInquiryListPage: React.FC = () => {
   const navigate = useNavigate();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [error, setError] = useState('');
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, status: string) => {
+  const loadPage = (p: number, status: string, size = pageSize) => {
     setError('');
-    getInquiries(status, PAGE_SIZE, p * PAGE_SIZE)
+    getInquiries(status, size, p * size)
       .then((data) => {
         setInquiries(data.items);
         setTotal(data.total);
@@ -54,7 +53,7 @@ export const AdminInquiryListPage: React.FC = () => {
 
   useEffect(() => {
     loadPage(0, filterStatus);
-  }, [filterStatus]);
+  }, [filterStatus, pageSize]);
 
   const handleFilterChange = (status: string) => {
     setFilterStatus(status);
@@ -98,7 +97,19 @@ export const AdminInquiryListPage: React.FC = () => {
               <option value="RESOLVED">対応済</option>
             </select>
           </div>
-          <span style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
+              表示件数
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                style={{ padding: '0.4rem 0.5rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
+              </select>
+            </label>
+          </div>
         </div>
 
         {error && <p style={{ color: 'red', textAlign: 'center', padding: '1rem' }}>{error}</p>}

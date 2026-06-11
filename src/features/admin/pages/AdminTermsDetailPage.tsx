@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { listTerms, listConsents, type TermsOfService, type TermsConsentRecord } from '../api/terms';
 
-const PAGE_SIZE = 20;
-
 export const AdminTermsDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -12,14 +10,15 @@ export const AdminTermsDetailPage: React.FC = () => {
   const [consents, setConsents] = useState<TermsConsentRecord[]>([]);
   const [consentTotal, setConsentTotal] = useState(0);
   const [consentPage, setConsentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const totalPages = Math.ceil(consentTotal / PAGE_SIZE);
+  const totalPages = Math.ceil(consentTotal / pageSize);
 
-  const loadConsents = (p: number) => {
+  const loadConsents = (p: number, size = pageSize) => {
     if (!id) return;
-    listConsents(id, PAGE_SIZE, p * PAGE_SIZE)
+    listConsents(id, size, p * size)
       .then((data) => {
         setConsents(data.items);
         setConsentTotal(data.total);
@@ -39,6 +38,10 @@ export const AdminTermsDetailPage: React.FC = () => {
       .finally(() => setLoading(false));
     loadConsents(0);
   }, [id]);
+
+  useEffect(() => {
+    loadConsents(0);
+  }, [pageSize]);
 
   return (
     <div>
@@ -80,7 +83,7 @@ export const AdminTermsDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
               <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>同意ユーザー一覧</h2>
               <span style={{
                 background: '#dbeafe',
@@ -92,6 +95,16 @@ export const AdminTermsDetailPage: React.FC = () => {
               }}>
                 {consentTotal}人
               </span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569', marginLeft: 'auto' }}>
+                表示件数
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                >
+                  {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
+                </select>
+              </label>
             </div>
 
             {consents.length === 0 ? (

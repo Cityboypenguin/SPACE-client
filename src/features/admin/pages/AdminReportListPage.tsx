@@ -25,12 +25,11 @@ const statusJa: Record<string, string> = {
   DISMISSED: '却下（問題なし）',
 };
 
-const PAGE_SIZE = 20;
-
 export const ReportsPage: React.FC = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<TargetTypeFilter>('ALL');
   const [error, setError] = useState('');
@@ -38,11 +37,11 @@ export const ReportsPage: React.FC = () => {
   const [isStatusLoading, setIsStatusLoading] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number) => {
+  const loadPage = (p: number, size = pageSize) => {
     setError('');
-    getReports(filterStatus, activeTab === 'ALL' ? undefined : activeTab, PAGE_SIZE, p * PAGE_SIZE)
+    getReports(filterStatus, activeTab === 'ALL' ? undefined : activeTab, size, p * size)
       .then((data) => {
         setReports(data.items ?? []);
         setTotal(data.total ?? 0);
@@ -70,8 +69,11 @@ export const ReportsPage: React.FC = () => {
 
   useEffect(() => {
     loadPage(0);
+  }, [filterStatus, activeTab, pageSize]);
+
+  useEffect(() => {
     loadServiceStatus();
-  }, [filterStatus, activeTab]);
+  }, []);
 
   const handleToggleServiceStatus = async () => {
     const nextStatus = !isServiceEnabled;
@@ -175,8 +177,8 @@ export const ReportsPage: React.FC = () => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
               <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>ステータス絞り込み：</span>
-              <select 
-                value={filterStatus} 
+              <select
+                value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
                 style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
               >
@@ -184,6 +186,17 @@ export const ReportsPage: React.FC = () => {
                 <option value="UNRESOLVED">未対応</option>
                 <option value="REVIEWING">対応中</option>
                 <option value="RESOLVED">対応済</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>表示件数：</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
+              >
+                {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
               </select>
             </div>
           </div>

@@ -3,22 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { getAdministrators, searchAdministrators, type Administrator } from '../api/administrators';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 
-const PAGE_SIZE = 20;
-
 export const AdminAdministratorListPage = () => {
   const [administrators, setAdministrators] = useState<Administrator[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number) => {
+  const loadPage = (p: number, size = pageSize) => {
     setError('');
-    getAdministrators(PAGE_SIZE, p * PAGE_SIZE)
+    getAdministrators(size, p * size)
       .then((data) => {
         setAdministrators(data.administrators.items);
         setTotal(data.administrators.total);
@@ -28,8 +27,8 @@ export const AdminAdministratorListPage = () => {
   };
 
   useEffect(() => {
-    loadPage(0);
-  }, []);
+    if (!isSearching) loadPage(0);
+  }, [pageSize]);
 
   const handleSearch = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -76,7 +75,19 @@ export const AdminAdministratorListPage = () => {
           )}
         </form>
         {error && <p style={{ color: 'red' }}>{error}</p>}
-        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>全 {total} 件</p>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
+            表示件数
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
+            >
+              {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
+            </select>
+          </label>
+        </div>
         <table>
           <thead>
             <tr>

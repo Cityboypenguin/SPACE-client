@@ -4,20 +4,20 @@ import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { getPosts, adminDeletePost, type Post } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
 
-const PAGE_SIZE = 20;
 
 export const AdminPostListPage = () => {
   const { addToast } = useToast();
   const [posts, setPosts] = useState<Post[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [error, setError] = useState('');
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number) => {
+  const loadPage = (p: number, size = pageSize) => {
     setError('');
-    getPosts(PAGE_SIZE, p * PAGE_SIZE)
+    getPosts(size, p * size)
       .then((data) => {
         setPosts(data.items);
         setTotal(data.total);
@@ -28,7 +28,7 @@ export const AdminPostListPage = () => {
 
   useEffect(() => {
     loadPage(0);
-  }, []);
+  }, [pageSize]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -49,7 +49,19 @@ export const AdminPostListPage = () => {
           <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
             投稿管理
           </h1>
-          <span style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
+              表示件数
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
+              >
+                {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
+              </select>
+            </label>
+          </div>
         </div>
 
         {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
@@ -65,7 +77,7 @@ export const AdminPostListPage = () => {
         {totalPages > 1 && (
           <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
             <button onClick={() => loadPage(page - 1)} disabled={page === 0}>前へ</button>
-            <span>{page + 1} / {totalPages}</span>
+            <span style={{ fontSize: '0.85rem', color: '#475569' }}>{page + 1} / {totalPages}</span>
             <button onClick={() => loadPage(page + 1)} disabled={page >= totalPages - 1}>次へ</button>
           </div>
         )}
