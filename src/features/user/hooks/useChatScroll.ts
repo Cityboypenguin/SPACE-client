@@ -49,8 +49,10 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
   }, [messages.length, hasScrolled]);
 
   // 一番下を見ているときに新着メッセージが来たら自動スクロール
+  // messages.length <= seenCountRef.current の場合は初回ロード時なのでスキップ
   useEffect(() => {
     if (!hasScrolled || messages.length === 0) return;
+    if (messages.length <= seenCountRef.current) return;
     if (isAtBottomRef.current) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       seenCountRef.current = messages.length;

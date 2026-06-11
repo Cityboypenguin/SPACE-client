@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getAdminAnnouncements, type Announcement } from '../api/announcements';
+import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 
 export const AdminAnnouncementListPage: React.FC = () => {
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize('announcements');
   const [error, setError] = useState('');
 
   const totalPages = Math.ceil(total / pageSize);

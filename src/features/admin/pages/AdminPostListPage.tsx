@@ -3,6 +3,7 @@ import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { getPosts, adminDeletePost, type Post } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
+import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 
 
 export const AdminPostListPage = () => {
@@ -10,7 +11,7 @@ export const AdminPostListPage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize('posts');
   const [error, setError] = useState('');
 
   const totalPages = Math.ceil(total / pageSize);

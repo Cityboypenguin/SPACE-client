@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getInquiries, updateInquiryStatus } from '../api/inquiry';
+import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 
 type Inquiry = {
   id: string;
@@ -31,7 +32,7 @@ export const AdminInquiryListPage: React.FC = () => {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize('inquiry');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [error, setError] = useState('');
 

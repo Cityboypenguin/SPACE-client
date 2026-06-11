@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdministrators, searchAdministrators, type Administrator } from '../api/administrators';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 
 export const AdminAdministratorListPage = () => {
   const [administrators, setAdministrators] = useState<Administrator[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize('administrators');
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');

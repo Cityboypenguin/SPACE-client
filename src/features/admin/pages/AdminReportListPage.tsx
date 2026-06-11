@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 import { Link } from 'react-router-dom';
 import { 
   getReports, 
@@ -29,7 +30,7 @@ export const ReportsPage: React.FC = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize('reports');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<TargetTypeFilter>('ALL');
   const [error, setError] = useState('');

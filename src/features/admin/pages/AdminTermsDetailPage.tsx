@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { listTerms, listConsents, type TermsOfService, type TermsConsentRecord } from '../api/terms';
+import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 
 export const AdminTermsDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,7 +11,7 @@ export const AdminTermsDetailPage: React.FC = () => {
   const [consents, setConsents] = useState<TermsConsentRecord[]>([]);
   const [consentTotal, setConsentTotal] = useState(0);
   const [consentPage, setConsentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize('terms');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

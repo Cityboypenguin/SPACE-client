@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCommunities, type Community } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 
 export const AdminCommunityListPage = () => {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize('communities');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
