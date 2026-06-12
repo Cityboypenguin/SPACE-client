@@ -11,6 +11,7 @@ import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import commentIcon from '../../../assets/パーツ_コメント.svg';
 
 import {
   getPostByID,
@@ -284,8 +285,9 @@ export const PostDetailPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
-                  <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
-                    💬 <strong>{post.replyCount}</strong> 件の返信
+                  <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <img src={commentIcon} alt="返信" style={{ width: 22, height: 22, filter: 'opacity(0.45)' }} />
+                    <strong>{post.replyCount}</strong> 件の返信
                   </span>
                   <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
 

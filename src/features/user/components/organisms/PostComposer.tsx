@@ -3,6 +3,7 @@ import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import { useToast } from '../../../../context/ToastContext';
+import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -219,9 +220,9 @@ export const PostComposer = ({
                   onClick={() => fileInputRef.current?.click()}
                   disabled={submitting}
                   title={`写真を追加 (最大${MAX_IMAGES}枚)`}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b7280', padding: '0 4px' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', display: 'flex', alignItems: 'center' }}
                 >
-                  🖼️
+                  <img src={cameraIcon} alt="写真を追加" style={{ width: 32, height: 32, filter: 'opacity(0.45)' }} />
                 </button>
                 <input
                   ref={fileInputRef}

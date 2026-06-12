@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import styles from '../organisms/chatRoom.module.css';
+import sendIcon from '../../../../assets/パーツ_送信.svg';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -92,11 +93,6 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
 
   const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
 
-  const getButtonText = () => {
-    if (isBlocked) return '送信不可';
-    if (disabled) return '送信中...';
-    return '送信';
-  };
 
   return (
     <div
@@ -249,9 +245,26 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
         <button
           type="submit"
           disabled={!canSubmit}
-          style={{ cursor: !canSubmit ? 'default' : 'pointer' }}
+          title={isBlocked ? '送信不可' : disabled ? '送信中...' : '送信'}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '0 4px',
+            cursor: canSubmit ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
-          {getButtonText()}
+          <img
+            src={sendIcon}
+            alt="送信"
+            style={{
+              width: 28,
+              height: 28,
+              filter: canSubmit ? 'none' : 'opacity(0.3)',
+              transition: 'filter 0.15s',
+            }}
+          />
         </button>
       </form>
     </div>

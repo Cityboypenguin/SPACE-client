@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
+import { ReplyModal } from '../components/organisms/ReplyModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 
 import {
@@ -148,6 +149,24 @@ export const PostListPage = () => {
     }
   };
 
+  const [replyingTo, setReplyingTo] = useState<Post | null>(null);
+
+  const handleReplySubmit = async (content: string, files: File[]) => {
+    if (!replyingTo) return;
+    let mediaInputs: MediaInput[] | undefined;
+    if (files.length > 0) {
+      mediaInputs = await Promise.all(
+        files.map(async (file) => {
+          const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+          await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+          return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+        }),
+      );
+    }
+    await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    setPosts(prev => prev.map(p => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p));
+  };
+
   const handleLike = async (postId: string, isLiked: boolean) => {
     try {
       if (isLiked) {
@@ -172,6 +191,16 @@ export const PostListPage = () => {
   return (
     <div>
       <UserSidebar />
+      {replyingTo && (
+        <ReplyModal
+          post={replyingTo}
+          onClose={() => setReplyingTo(null)}
+          onSubmit={handleReplySubmit}
+          userId={userId}
+          avatarUrl={profile?.avatarUrl}
+          userName={profile?.user.name}
+        />
+      )}
       <main style={{ maxWidth: '600px', margin: '0 auto' }}>
         <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
           <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>みんなの投稿</h1>
@@ -203,6 +232,7 @@ export const PostListPage = () => {
                 currentUserId={userId}
                 onLike={handleLike}
                 onClick={() => handlePostClick(post.ID)}
+                onReply={() => setReplyingTo(post)}
               />
             ))}
             <div ref={sentinelRef} style={{ height: '1px' }} />

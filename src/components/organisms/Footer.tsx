@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-
 export const Footer = () => {
   return (
     <footer style={{
@@ -10,9 +8,7 @@ export const Footer = () => {
       color: '#64748b',
       marginTop: 'auto',
     }}>
-      <Link to="/inquiry" style={{ color: '#64748b', textDecoration: 'underline' }}>
-        お問い合わせ
-      </Link>
+      © 2026 小杉プロジェクト. All rights reserved.
     </footer>
   );
 };

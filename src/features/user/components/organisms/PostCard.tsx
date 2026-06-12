@@ -4,15 +4,17 @@ import { UserMeta } from '../molecules/UserMeta';
 import { PostMediaGrid } from '../molecules/PostMediaGrid';
 import { formatTime } from '../../utils/formatTime';
 import { type Post } from '../../api/post';
+import commentIcon from '../../../../assets/パーツ_コメント.svg';
 
 type Props = {
   post: Post;
   currentUserId: string | null;
   onLike: (postId: string, isLiked: boolean) => Promise<void>;
   onClick: () => void;
+  onReply?: () => void;
 };
 
-export const PostCard = ({ post, currentUserId, onLike, onClick }: Props) => (
+export const PostCard = ({ post, currentUserId, onLike, onClick, onReply }: Props) => (
   <div
     onClick={onClick}
     style={{
@@ -37,7 +39,18 @@ export const PostCard = ({ post, currentUserId, onLike, onClick }: Props) => (
         </div>
       )}
       <div style={{ display: 'flex', gap: '1.5rem', fontSize: '1.2rem' }}>
-        <span style={{ color: '#94a3b8' }}>💬 {post.replyCount}</span>
+        <button
+          onClick={(e) => { e.stopPropagation(); onReply?.(); }}
+          style={{
+            background: 'none', border: 'none', padding: 0,
+            cursor: onReply ? 'pointer' : 'default',
+            display: 'flex', alignItems: 'center', gap: '0.3rem',
+            color: '#94a3b8',
+          }}
+        >
+          <img src={commentIcon} alt="返信" style={{ width: 20, height: 20, filter: 'opacity(0.35)' }} />
+          {post.replyCount}
+        </button>
         <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />
       </div>
     </div>

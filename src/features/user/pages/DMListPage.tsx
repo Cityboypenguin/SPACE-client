@@ -168,7 +168,6 @@ export const DMListPage = () => {
             )}
             {!dmLoadingMore && dmRooms.length >= dmTotal && dmTotal > 0 && (
               <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.875rem' }}>
-                すべてのDMを表示しました
               </p>
             )}
           </section>

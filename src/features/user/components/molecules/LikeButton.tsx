@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { type Post } from '../../api/post';
+import likeIcon from '../../../../assets/パーツ_いいね.svg';
 
 type Props = {
   post: Post;
@@ -23,6 +24,8 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
     }
   };
 
+  const iconSize = large ? 22 : 20;
+
   return (
     <button
       onClick={handle}
@@ -32,18 +35,28 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
         border: 'none',
         padding: 0,
         cursor: currentUserId ? 'pointer' : 'default',
-        color: isLiked ? '#f43f5e' : '#94a3b8',
-        fontSize: large ? '1.3rem' : '1.2rem',
-        fontWeight: isLiked ? 600 : 400,
-        transition: 'color 0.1s',
         display: 'flex',
         alignItems: 'center',
-        gap: '0.25rem',
+        gap: '0.3rem',
+        transition: 'opacity 0.1s',
       }}
     >
-      {isLiked ? '❤️' : '🤍'}
-      {large ? <strong>{post.favorites.length}</strong> : post.favorites.length}
-      {large && <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 2 }}>いいね</span>}
+      <img
+        src={likeIcon}
+        alt="いいね"
+        style={{
+          width: iconSize,
+          height: iconSize,
+          filter: isLiked
+            ? 'brightness(0) invert(42%) sepia(100%) saturate(2000%) hue-rotate(325deg)'
+            : 'opacity(0.35)',
+          transition: 'filter 0.15s',
+        }}
+      />
+      <span style={{ color: isLiked ? '#f43f5e' : '#94a3b8', fontWeight: isLiked ? 600 : 400, fontSize: large ? '0.95rem' : '0.9rem' }}>
+        {large ? <strong>{post.favorites.length}</strong> : post.favorites.length}
+        {large && <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 4 }}>いいね</span>}
+      </span>
     </button>
   );
 };

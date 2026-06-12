@@ -6,6 +6,7 @@ import { PostMediaGrid } from '../molecules/PostMediaGrid';
 import { formatTime } from '../../utils/formatTime';
 import { type Post } from '../../api/post';
 import { countAllReplies } from '../../utils/post';
+import commentIcon from '../../../../assets/パーツ_コメント.svg';
 
 type Props = {
   post: Post;
@@ -63,7 +64,10 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) =
             </div>
           )}
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.82rem' }}>
-            <span style={{ color: '#94a3b8', display: 'flex', gap: '1.5rem', fontSize: '1.2rem' }}>💬 {countAllReplies(post)}</span>
+            <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <img src={commentIcon} alt="返信" style={{ width: 20, height: 20, filter: 'opacity(0.35)' }} />
+              {countAllReplies(post)}
+            </span>
             <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />
           </div>
         </div>

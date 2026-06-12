@@ -7,6 +7,8 @@ import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import styles from './UserSidebar.module.css';
 
+import appIcon from '../../../../assets/Senshu-Universe.svg';
+import appLogo from '../../../../assets/Senshu-Universe_logo.svg';
 import homeIcon from '../../../../assets/パーツ_ホーム.svg';
 import dmIcon from '../../../../assets/パーツ_メール.svg';
 import communityIcon from '../../../../assets/パーツ_コミュニティマーク.svg';
@@ -38,8 +40,10 @@ export const UserSidebar = () => {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.logo} onClick={() => navigate('/mypage')}>
-        <span className={styles.logoMark}>S</span>
-        <span className={styles.logoText}>S-Universe</span>
+        <span className={styles.logoIconWrap}>
+          <img src={appIcon} alt="Senshu-Universe" className={styles.logoMark} />
+        </span>
+        <img src={appLogo} alt="Senshu-Universe" className={styles.logoText} />
       </div>
 
       <nav className={styles.nav}>
