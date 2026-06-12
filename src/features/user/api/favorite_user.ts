@@ -47,6 +47,17 @@ const DELETE_FAVORITE_USER_MUTATION = `
   }
 `;
 
+const LIST_FAVORITE_USERS_QUERY = `
+  query ListFavoriteUsers($limit: Int, $offset: Int) {
+    listFavoriteUsers(limit: $limit, offset: $offset) {
+      items {
+        ${USER_FIELDS}
+      }
+      total
+    }
+  }
+`;
+
 export const getFavoriteUsersByUserID = async (userID: string): Promise<User[]> => {
   const data = await request<{ GetFavoriteUsersByUserID: User[] }>(
     GET_FAVORITE_USERS_BY_USER_ID_QUERY,
@@ -71,4 +82,15 @@ export const deleteFavoriteUser = async (favoriteUserID: string): Promise<void> 
     { favoriteUserID },
     getUserToken(),
   );
+};
+
+export type UserPage = { items: User[]; total: number };
+
+export const listFavoriteUsers = async (limit = 20, offset = 0): Promise<UserPage> => {
+  const data = await request<{ listFavoriteUsers: UserPage }>(
+    LIST_FAVORITE_USERS_QUERY,
+    { limit, offset },
+    getUserToken(),
+  );
+  return data.listFavoriteUsers;
 };

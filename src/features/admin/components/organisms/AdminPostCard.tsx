@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { AdminUserAvatar } from '../../../../components/atoms/AdminUserAvatar';
 import { UserMeta } from '../../../user/components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../user/components/molecules/PostMediaGrid';
-import { LikeButton } from '../../../user/components/molecules/LikeButton';
+import { LikeButton } from '../..//components/molecules/LikeButton';
 import { formatTime } from '../../../user/utils/formatTime';
 import { type Post } from '../../api/posts';
 
@@ -12,14 +12,12 @@ type Props = {
   isDetail?: boolean;
 };
 
-export const AdminPostCard = ({ post, isDetail = false }: Props) => {
+export const AdminPostCard = ({ post }: Props) => {
   const navigate = useNavigate();
   const isDeleted = post.deletedAt != null;
 
   const handleCardClick = () => {
-    if (!isDetail) {
-      navigate(`/admin/posts/${post.ID}`);
-    }
+    navigate(`/admin/posts/${post.ID}`);
   };
 
   return (
@@ -28,14 +26,14 @@ export const AdminPostCard = ({ post, isDetail = false }: Props) => {
       style={{
         display: 'flex', gap: '0.75rem', padding: '1rem',
         borderBottom: '1px solid #e2e8f0',
-        cursor: isDetail ? 'default' : 'pointer',
+        cursor: 'pointer',
         background: isDeleted ? '#fef2f2' : '#fff',
         transition: 'background 0.1s',
       }}
-      onMouseEnter={(e) => { if (!isDetail) e.currentTarget.style.background = isDeleted ? '#fee2e2' : '#f8faff' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = isDeleted ? '#fee2e2' : '#f8faff' }}
       onMouseLeave={(e) => { e.currentTarget.style.background = isDeleted ? '#fef2f2' : '#fff' }}
     >
-      <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
+      <AdminUserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

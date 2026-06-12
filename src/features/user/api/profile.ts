@@ -24,12 +24,14 @@ export type Profile = {
 };
 
 type MeResponse = { me: UserProfile };
-type SearchUsersResponse = { searchUsers: UserProfile[] };
+type SearchUsersPage = { items: UserProfile[]; total: number };
+type SearchUsersResponse = { searchUsers: SearchUsersPage };
 type UpdateUserResponse = { updateUser: UserProfile };
 type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
 type UpdateProfileResponse = { updateProfile: Profile };
 type PresignedUploadUrlResponse = { presignedAvatarUploadUrl: { uploadUrl: string; objectKey: string } };
 type SetAvatarResponse = { setAvatar: Profile };
+type DeleteAvatarResponse = { deleteAvatar: Profile };
 
 const ME_QUERY = `
   query Me {
@@ -47,14 +49,17 @@ const ME_QUERY = `
 `;
 
 const SEARCH_USERS_QUERY = `
-  query SearchUsers($keyword: String!) {
-    searchUsers(keyword: $keyword) {
-      ID
-      accountID
-      name
-      email
-      role
-      status
+  query SearchUsers($keyword: String!, $limit: Int, $offset: Int) {
+    searchUsers(keyword: $keyword, limit: $limit, offset: $offset) {
+      items {
+        ID
+        accountID
+        name
+        email
+        role
+        status
+      }
+      total
     }
   }
 `;
@@ -86,6 +91,18 @@ const PRESIGNED_AVATAR_UPLOAD_URL_QUERY = `
 const SET_AVATAR_MUTATION = `
   mutation SetAvatar($objectKey: String!) {
     setAvatar(objectKey: $objectKey) {
+      username
+      bio
+      avatarUrl
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const DELETE_AVATAR_MUTATION = `
+  mutation DeleteAvatar {
+    deleteAvatar {
       username
       bio
       avatarUrl
@@ -144,8 +161,9 @@ export const updateMyProfile = async (input: {
   return await request<UpdateUserResponse>(UPDATE_USER_MUTATION, { input }, getUserToken());
 };
 
-export const searchUsers = async (keyword: string) => {
-  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword }, getUserToken());
+export const searchUsers = async (keyword: string, limit = 20, offset = 0): Promise<SearchUsersPage> => {
+  const data = await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword, limit, offset }, getUserToken());
+  return data.searchUsers;
 };
 
 export const getProfileByUserID = async (userID: string) => {
@@ -186,4 +204,10 @@ export const setAvatar = async (objectKey: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
   return await request<SetAvatarResponse>(SET_AVATAR_MUTATION, { objectKey }, token);
+};
+
+export const deleteAvatar = async () => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await request<DeleteAvatarResponse>(DELETE_AVATAR_MUTATION, undefined, token);
 };

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { storageUrl } from '../../../../lib/storage';
 
 interface Props {
   documentUrl: string;
@@ -15,7 +16,7 @@ export const TermsContent = ({ documentUrl, onScrolledToBottom, onError, style }
   const notified = useRef(false);
 
   useEffect(() => {
-    fetch(documentUrl)
+    fetch(storageUrl(documentUrl))
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.text();

@@ -11,9 +11,10 @@ import {
   getPresignedAvatarUploadUrl,
   uploadAvatarToStorage,
   setAvatar,
+  deleteAvatar,
 } from '../api/profile';
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export const UserProfileEditPage = () => {
@@ -31,6 +32,7 @@ export const UserProfileEditPage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -79,6 +81,21 @@ export const UserProfileEditPage = () => {
     }
   };
 
+  const handleDeleteAvatar = async () => {
+    setError('');
+    setIsDeletingAvatar(true);
+    try {
+      await deleteAvatar();
+      setCurrentAvatarUrl(null);
+      setPreviewUrl(null);
+      setSelectedFile(null);
+    } catch (err) {
+      setError(toUserMessage(err, 'アイコンの削除に失敗しました。'));
+    } finally {
+      setIsDeletingAvatar(false);
+    }
+  };
+
   const displayAvatarUrl = previewUrl ?? currentAvatarUrl;
 
   return (
@@ -110,13 +127,25 @@ export const UserProfileEditPage = () => {
                 <span style={{ fontSize: '2rem', color: '#94a3b8' }}>＋</span>
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              style={{ fontSize: '0.875rem', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-            >
-              画像を変更
-            </button>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{ fontSize: '0.875rem', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                画像を変更
+              </button>
+              {(displayAvatarUrl) && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAvatar}
+                  disabled={isDeletingAvatar}
+                  style={{ fontSize: '0.875rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  {isDeletingAvatar ? '削除中...' : 'アイコンを削除'}
+                </button>
+              )}
+            </div>
             <input
               ref={fileInputRef}
               type="file"

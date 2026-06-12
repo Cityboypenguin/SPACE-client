@@ -29,6 +29,8 @@ export type Community = {
   updatedAt: string;
 };
 
+export type CommunityPage = { items: Community[]; total: number };
+
 export type RoomUser = {
   ID: string;
   accountID: string;
@@ -48,14 +50,17 @@ export type Room = {
 };
 
 const COMMUNITIES_QUERY = `
-  query {
-    communities {
-      ID
-      roomID
-      name
-      description
-      createdAt
-      updatedAt
+  query Communities($limit: Int, $offset: Int) {
+    communities(limit: $limit, offset: $offset) {
+      items {
+        ID
+        roomID
+        name
+        description
+        createdAt
+        updatedAt
+      }
+      total
     }
   }
 `;
@@ -108,8 +113,8 @@ const GET_COMMUNITY_MEMBERS_QUERY = `
   }
 `;
 
-export const getCommunities = async () => {
-  return await request<{ communities: Community[] }>(COMMUNITIES_QUERY, undefined, getAdminToken());
+export const getCommunities = async (limit = 20, offset = 0) => {
+  return await request<{ communities: CommunityPage }>(COMMUNITIES_QUERY, { limit, offset }, getAdminToken());
 };
 
 export const updateCommunity = async (

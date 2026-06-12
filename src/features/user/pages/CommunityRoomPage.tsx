@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
+import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import styles from '../components/organisms/chatRoom.module.css';
 import { toUserMessage } from '../../../lib/errorMessages';
 
@@ -22,7 +23,7 @@ export const CommunityRoomPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { userId: currentUserID } = useAuth();
-  const { room, messages, wsConnected, error, addMessage, initialLastReadAt } = useRoomMessages(roomId);
+  const { room, messages, wsConnected, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -33,20 +34,59 @@ export const CommunityRoomPage = () => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
-  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID);
+  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
+
+  // 双方向スクロールページング
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+
+  const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
+
+  const loadOlderWithScrollRestore = async () => {
+    beginRestore();
+    await loadOlderMessages();
+  };
+
+  // 上センチネル: 古いメッセージを取得
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    const container = messageListRef.current;
+    if (!sentinel || !container || !hasMoreBefore) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadOlderWithScrollRestore(); },
+      { root: container, rootMargin: '200px 0px 0px 0px', threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMoreBefore, loadOlderMessages]);
+
+  // 下センチネル: 新しいメッセージを取得（歴史閲覧中のみ active）
+  useEffect(() => {
+    const sentinel = bottomSentinelRef.current;
+    const container = messageListRef.current;
+    if (!sentinel || !container || !hasMoreAfter) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadNewerMessages(); },
+      { root: container, rootMargin: '0px 0px 200px 0px', threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreAfter, loadNewerMessages]);
 
   const [showSettings, setShowSettings] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [reporting, setReporting] = useState(false);
 
-  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', listMyCommunities);
+  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', () => listMyCommunities());
 
   const community = useMemo((): Community | null => {
     if (!communities || !roomId) return null;
     const stateID = (location.state as { communityID?: string } | null)?.communityID;
-    if (stateID) return communities.find((c) => c.ID === stateID) ?? null;
-    return communities.find((c) => c.roomID === roomId) ?? null;
+    if (stateID) return communities.items.find((c) => c.ID === stateID) ?? null;
+    return communities.items.find((c) => c.roomID === roomId) ?? null;
   }, [communities, roomId, location.state]);
 
   const communityID = community?.ID ?? null;
@@ -203,8 +243,13 @@ export const CommunityRoomPage = () => {
       </div>
 
       <div className={styles.messageListWrapper}>
-        <div className={styles.messageList}>
+        <div className={styles.messageList} ref={messageListRef}>
+          <div ref={topSentinelRef} style={{ height: '1px' }} />
+          {loadingOlder && (
+            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+          )}
           {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
+
           {messages.map((msg, index) => {
             const isMine = msg.user.ID === currentUserID;
             const prevMsg = index > 0 ? messages[index - 1] : null;
@@ -240,6 +285,10 @@ export const CommunityRoomPage = () => {
               </div>
             );
           })}
+          <div ref={bottomSentinelRef} style={{ height: '1px' }} />
+          {loadingNewer && (
+            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+          )}
           <div ref={bottomRef} />
         </div>
 
@@ -261,7 +310,12 @@ export const CommunityRoomPage = () => {
           onClose={() => setShowSettings(false)}
           onUpdated={(updated) => {
             mutateCommunities(
-              (prev) => prev?.map((c) => c.ID === updated.ID ? { ...c, ...updated } : c),
+              (prev) => prev
+                ? {
+                    ...prev,
+                    items: prev.items.map((c) => c.ID === updated.ID ? { ...c, ...updated } : c),
+                  }
+                : prev,
               { revalidate: true },
             );
           }}

@@ -19,22 +19,27 @@ export type Notification = {
   createdAt: string;
 };
 
+export type NotificationPage = { items: Notification[]; total: number };
+
 const MY_NOTIFICATIONS_QUERY = `
-  query MyNotifications($limit: Int) {
-    myNotifications(limit: $limit) {
-      ID
-      type
-      actor {
+  query MyNotifications($limit: Int, $offset: Int) {
+    myNotifications(limit: $limit, offset: $offset) {
+      items {
         ID
-        name
-        accountID
-        avatarUrl
+        type
+        actor {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        targetType
+        targetID
+        message
+        isRead
+        createdAt
       }
-      targetType
-      targetID
-      message
-      isRead
-      createdAt
+      total
     }
   }
 `;
@@ -57,13 +62,13 @@ const MARK_ALL_AS_READ_MUTATION = `
   }
 `;
 
-export const listMyNotifications = async (limit?: number): Promise<Notification[]> => {
-  const data = await request<{ myNotifications: Notification[] }>(
+export const listMyNotifications = async (limit = 20, offset = 0): Promise<NotificationPage> => {
+  const data = await request<{ myNotifications: NotificationPage }>(
     MY_NOTIFICATIONS_QUERY,
-    limit !== undefined ? { limit } : undefined,
+    { limit, offset },
     getUserToken(),
   );
-  return data.myNotifications ?? [];
+  return data.myNotifications ?? { items: [], total: 0 };
 };
 
 export const getUnreadNotificationCount = async (): Promise<number> => {

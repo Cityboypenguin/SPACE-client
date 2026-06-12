@@ -14,6 +14,8 @@ import {
 import { listAnnouncements } from '../api/announcement';
 import { toUserMessage } from '../../../lib/errorMessages';
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
 type Tab = 'notifications' | 'announcements';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -49,15 +51,26 @@ export const NotificationListPage = () => {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
-  const { data: notifications, isLoading: notifLoading, mutate: mutateNotifications } = useSWR(
-    'my-notifications',
-    () => listMyNotifications(50),
+  const [notifPage, setNotifPage] = useState(0);
+  const [announcePage, setAnnouncePage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+
+  const { data: notifData, isLoading: notifLoading, mutate: mutateNotifications } = useSWR(
+    ['my-notifications', notifPage, pageSize],
+    () => listMyNotifications(pageSize, notifPage * pageSize),
   );
 
-  const { data: announcements, isLoading: announceLoading } = useSWR(
-    tab === 'announcements' ? 'announcements' : null,
-    () => listAnnouncements(50),
+  const { data: announceData, isLoading: announceLoading } = useSWR(
+    tab === 'announcements' ? ['announcements', announcePage, pageSize] : null,
+    () => listAnnouncements(pageSize, announcePage * pageSize),
   );
+
+  useEffect(() => {
+    setNotifPage(0);
+    setAnnouncePage(0);
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, [pageSize]);
 
   useEffect(() => {
     if (lastSseAt === 0 || lastSseAt === lastSseAtRef.current) return;
@@ -71,7 +84,7 @@ export const NotificationListPage = () => {
     try {
       await markAllNotificationsAsRead();
       mutateNotifications(
-        (prev) => prev?.map((n) => ({ ...n, isRead: true })),
+        (prev) => prev ? { ...prev, items: prev.items.map((n) => ({ ...n, isRead: true })) } : prev,
         { revalidate: false },
       );
       resetUnread();
@@ -89,7 +102,7 @@ export const NotificationListPage = () => {
     try {
       await deleteReadNotifications();
       mutateNotifications(
-        (prev) => prev?.filter((n) => !n.isRead),
+        (prev) => prev ? { ...prev, items: prev.items.filter((n) => !n.isRead) } : prev,
         { revalidate: false },
       );
     } catch (err) {
@@ -106,11 +119,11 @@ export const NotificationListPage = () => {
     setNotifError('');
     try {
       await deleteNotifications(Array.from(selectedIds));
-      const deletedUnreadCount = (notifications ?? []).filter(
+      const deletedUnreadCount = notifList.filter(
         (n) => selectedIds.has(n.ID) && !n.isRead,
       ).length;
       mutateNotifications(
-        (prev) => prev?.filter((n) => !selectedIds.has(n.ID)),
+        (prev) => prev ? { ...prev, items: prev.items.filter((n) => !selectedIds.has(n.ID)) } : prev,
         { revalidate: false },
       );
       for (let i = 0; i < deletedUnreadCount; i++) decrementUnread();
@@ -133,10 +146,10 @@ export const NotificationListPage = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === (notifications ?? []).length) {
+    if (selectedIds.size === notifList.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set((notifications ?? []).map((n) => n.ID)));
+      setSelectedIds(new Set(notifList.map((n) => n.ID)));
     }
   };
 
@@ -145,7 +158,12 @@ export const NotificationListPage = () => {
     setSelectedIds(new Set());
   };
 
-  const notifList: Notification[] = notifications ?? [];
+  const notifList: Notification[] = notifData?.items ?? [];
+  const notifTotal = notifData?.total ?? 0;
+  const notifTotalPages = Math.ceil(notifTotal / pageSize);
+  const announceList = announceData?.items ?? [];
+  const announceTotal = announceData?.total ?? 0;
+  const announceTotalPages = Math.ceil(announceTotal / pageSize);
   const hasUnread = notifList.some((n) => !n.isRead);
   const hasRead = notifList.some((n) => n.isRead);
   const allSelected = notifList.length > 0 && selectedIds.size === notifList.length;
@@ -273,10 +291,10 @@ export const NotificationListPage = () => {
         </div>
 
         <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
-          <button style={TAB_STYLE(tab === 'notifications')} onClick={() => setTab('notifications')}>
+          <button style={TAB_STYLE(tab === 'notifications')} onClick={() => { setTab('notifications'); setNotifPage(0); setSelectMode(false); setSelectedIds(new Set()); }}>
             通知
           </button>
-          <button style={TAB_STYLE(tab === 'announcements')} onClick={() => setTab('announcements')}>
+          <button style={TAB_STYLE(tab === 'announcements')} onClick={() => { setTab('announcements'); setAnnouncePage(0); }}>
             お知らせ
           </button>
         </div>
@@ -291,6 +309,7 @@ export const NotificationListPage = () => {
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {notifList.map((n) => (
+
                   <li
                     key={n.ID}
                     onClick={() => {
@@ -374,6 +393,35 @@ export const NotificationListPage = () => {
                 ))}
               </ul>
             )}
+            <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+              {notifTotalPages > 1 && (
+                <>
+                  <button
+                    onClick={() => { setNotifPage((p) => p - 1); setSelectMode(false); setSelectedIds(new Set()); }}
+                    disabled={notifPage === 0}
+                    style={{ padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: notifPage === 0 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: '#475569' }}
+                  >
+                    前へ
+                  </button>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{notifPage + 1} / {notifTotalPages}</span>
+                  <button
+                    onClick={() => { setNotifPage((p) => p + 1); setSelectMode(false); setSelectedIds(new Set()); }}
+                    disabled={notifPage >= notifTotalPages - 1}
+                    style={{ padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: notifPage >= notifTotalPages - 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: '#475569' }}
+                  >
+                    次へ
+                  </button>
+                  <span style={{ width: '1px', height: '1rem', background: '#e2e8f0', margin: '0 0.25rem' }} />
+                </>
+              )}
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                style={{ padding: '0.3rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.8rem', color: '#475569', cursor: 'pointer' }}
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}件</option>)}
+              </select>
+            </div>
           </>
         )}
 
@@ -381,11 +429,11 @@ export const NotificationListPage = () => {
           <>
             {announceLoading ? (
               <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-            ) : !announcements || announcements.length === 0 ? (
+            ) : announceList.length === 0 ? (
               <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>お知らせはありません</p>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {announcements.map((a) => (
+                {announceList.map((a) => (
                   <li
                     key={a.ID}
                     onClick={() => navigate(`/announcements/${a.ID}`)}
@@ -420,6 +468,35 @@ export const NotificationListPage = () => {
                 ))}
               </ul>
             )}
+            <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+              {announceTotalPages > 1 && (
+                <>
+                  <button
+                    onClick={() => setAnnouncePage((p) => p - 1)}
+                    disabled={announcePage === 0}
+                    style={{ padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: announcePage === 0 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: '#475569' }}
+                  >
+                    前へ
+                  </button>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{announcePage + 1} / {announceTotalPages}</span>
+                  <button
+                    onClick={() => setAnnouncePage((p) => p + 1)}
+                    disabled={announcePage >= announceTotalPages - 1}
+                    style={{ padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: announcePage >= announceTotalPages - 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: '#475569' }}
+                  >
+                    次へ
+                  </button>
+                  <span style={{ width: '1px', height: '1rem', background: '#e2e8f0', margin: '0 0.25rem' }} />
+                </>
+              )}
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                style={{ padding: '0.3rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.8rem', color: '#475569', cursor: 'pointer' }}
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}件</option>)}
+              </select>
+            </div>
           </>
         )}
       </main>

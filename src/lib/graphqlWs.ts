@@ -50,18 +50,24 @@ function connect() {
   }
 
   const token = localStorage.getItem(USER_TOKEN_KEY);
-  ws = new WebSocket(getWsUrl(), 'graphql-transport-ws');
+  // Capture the socket in a local variable so closures don't rely on the
+  // module-level `ws`, which can be reassigned by a concurrent connect().
+  const socket = new WebSocket(getWsUrl(), 'graphql-transport-ws');
+  ws = socket;
   isAcknowledged = false;
 
-  ws.onopen = () => {
+  socket.onopen = () => {
+    // Guard against stale callbacks: if a newer connection has taken over, ignore this one.
+    if (ws !== socket) return;
     const initPayload: Record<string, unknown> = {};
     if (token) {
       initPayload['Authorization'] = `Bearer ${token}`;
     }
-    ws!.send(JSON.stringify({ type: 'connection_init', payload: initPayload }));
+    socket.send(JSON.stringify({ type: 'connection_init', payload: initPayload }));
   };
 
-  ws.onmessage = (event: MessageEvent) => {
+  socket.onmessage = (event: MessageEvent) => {
+    if (ws !== socket) return;
     const msg = JSON.parse(event.data as string) as WsMessage;
 
     switch (msg.type) {
@@ -76,7 +82,7 @@ function connect() {
         break;
 
       case 'ping':
-        ws!.send(JSON.stringify({ type: 'pong' }));
+        socket.send(JSON.stringify({ type: 'pong' }));
         break;
 
       case 'next':
@@ -100,11 +106,14 @@ function connect() {
     }
   };
 
-  ws.onerror = (event) => {
+  socket.onerror = (event) => {
     console.error('[GraphQL WS] connection error:', event);
   };
 
-  ws.onclose = (event) => {
+  socket.onclose = (event) => {
+    // Only update shared state if this is still the active connection.
+    // A concurrent connect() may have already replaced `ws` with a new socket.
+    if (ws !== socket) return;
     console.warn('[GraphQL WS] connection closed', event.code, event.reason);
     isAcknowledged = false;
     ws = null;
@@ -169,12 +178,15 @@ export const subscribeToGraphQL = <T>(
         reconnectTimer = null;
       }
       if (ws) {
-        if (ws.readyState === WebSocket.CONNECTING) {
-          ws.onopen = () => ws?.close();
-        } else if (ws.readyState === WebSocket.OPEN) {
-          ws.close();
-        }
+        // Capture socket reference before nulling `ws` so the onopen handler
+        // closes this specific socket instance, not a future one.
+        const socketToClose = ws;
         ws = null;
+        if (socketToClose.readyState === WebSocket.CONNECTING) {
+          socketToClose.onopen = () => socketToClose.close();
+        } else if (socketToClose.readyState === WebSocket.OPEN) {
+          socketToClose.close();
+        }
       }
       isAcknowledged = false;
     }

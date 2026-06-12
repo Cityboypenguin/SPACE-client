@@ -4,16 +4,21 @@ import { ADMIN_TOKEN_KEY } from './auth';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
+export type ReportPage = { items: any[]; total: number };
+
 export const SEARCH_REPORTS_QUERY = `
-  query SearchReports($filter: ReportSearchFilter) {
-    searchReports(filter: $filter) {
-      ID
-      targetType
-      targetID
-      reason
-      customReason
-      status
-      createdAt
+  query SearchReports($filter: ReportSearchFilter, $limit: Int, $offset: Int) {
+    searchReports(filter: $filter, limit: $limit, offset: $offset) {
+      items {
+        ID
+        targetType
+        targetID
+        reason
+        customReason
+        status
+        createdAt
+      }
+      total
     }
   }
 `;
@@ -36,7 +41,19 @@ export const CREATE_REPORT_MUTATION = `
   }
 `;
 
-export const getReports = async (filterStatus?: string, targetType?: string) => {
+export const GET_REPORT_SERVICE_STATUS_QUERY = `
+  query GetReportServiceStatus {
+    isReportServiceEnabled
+  }
+`;
+
+export const SET_REPORT_SERVICE_STATUS_MUTATION = `
+  mutation SetReportServiceStatus($enabled: Boolean!) {
+    setReportServiceStatus(enabled: $enabled)
+  }
+`;
+
+export const getReports = async (filterStatus?: string, targetType?: string, limit = 20, offset = 0): Promise<ReportPage> => {
   const filter: any = {};
   if (filterStatus && filterStatus !== 'ALL') {
     filter.status = filterStatus;
@@ -44,9 +61,10 @@ export const getReports = async (filterStatus?: string, targetType?: string) => 
   if (targetType && targetType !== 'ALL') {
     filter.targetType = targetType;
   }
-  const variables = Object.keys(filter).length > 0 ? { filter } : {};
-  const data = await request<{ searchReports: any[] }>(SEARCH_REPORTS_QUERY, variables, getAdminToken());
-  return data;
+  const variables: any = { limit, offset };
+  if (Object.keys(filter).length > 0) variables.filter = filter;
+  const data = await request<{ searchReports: ReportPage }>(SEARCH_REPORTS_QUERY, variables, getAdminToken());
+  return data.searchReports;
 };
 
 export const adminUpdateReportStatus = async (id: string, status: string) => {
@@ -66,4 +84,22 @@ export const createReport = async (input: {
     getUserToken()
   );
   return data;
+};
+
+export const getReportServiceStatus = async (): Promise<boolean> => {
+  const data = await request<{ isReportServiceEnabled: boolean }>(
+    GET_REPORT_SERVICE_STATUS_QUERY,
+    {},
+    getAdminToken()
+  );
+  return data?.isReportServiceEnabled ?? true;
+};
+
+export const updateReportServiceStatus = async (enabled: boolean): Promise<boolean> => {
+  const data = await request<{ setReportServiceStatus: boolean }>(
+    SET_REPORT_SERVICE_STATUS_MUTATION,
+    { enabled },
+    getAdminToken()
+  );
+  return data?.setReportServiceStatus ?? enabled;
 };

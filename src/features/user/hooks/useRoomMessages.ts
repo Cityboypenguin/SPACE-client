@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { listMessages, getRoom, markRoomAsRead, MESSAGE_FIELDS, type Message, type Room } from '../api/message';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -59,32 +59,87 @@ export const useRoomMessages = (roomId: string | undefined) => {
     initialLastReadAt: null,
     partnerLastReadAt: null,
   });
+  const [hasMoreBefore, setHasMoreBefore] = useState(false);
+  const [hasMoreAfter, setHasMoreAfter] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [loadingNewer, setLoadingNewer] = useState(false);
 
   const markedAsRead = useRef(false);
+  const loadingOlderRef = useRef(false);
+  const loadingNewerRef = useRef(false);
+  const oldestIDRef = useRef<string | undefined>(undefined);
+  const newestIDRef = useRef<string | undefined>(undefined);
+  // 歴史閲覧中（hasMoreAfter=true）はWebSocketメッセージをスキップする
+  const hasMoreAfterRef = useRef(false);
 
   useEffect(() => {
     if (!roomId) return;
     let active = true;
     markedAsRead.current = false;
+    oldestIDRef.current = undefined;
+    newestIDRef.current = undefined;
+
+    // ルーム切り替え時にリセット
+    setState({ room: null, messages: [], wsConnected: false, error: '', initialLastReadAt: null, partnerLastReadAt: null });
+    setHasMoreBefore(false);
+    setHasMoreAfter(false);
+    hasMoreAfterRef.current = false;
 
     (async () => {
       try {
-        const [roomData, msgData] = await Promise.all([
-          getRoom(roomId),
-          listMessages(roomId),
-        ]);
+        const roomData = await getRoom(roomId);
         if (!active) return;
 
-        const initialLastReadAt = roomData.room?.lastReadAt ?? null;
-        const partnerLastReadAt = roomData.room?.partnerLastReadAt ?? null;
+        const lastReadAt = roomData.room?.lastReadAt ?? null;
+        const unreadCount = roomData.room?.unreadCount ?? 0;
+
+        let messages: Message[];
+        let moreBefore: boolean;
+        let moreAfter: boolean;
+
+        if (unreadCount > 0 && lastReadAt) {
+          // 未読あり: 未読開始点の前後25件ずつ取得
+          const unreadResult = await listMessages(roomId, 25, { afterTime: lastReadAt });
+          if (!active) return;
+
+          if (unreadResult.items.length > 0) {
+            const firstUnreadId = unreadResult.items[0].ID;
+            const beforeResult = await listMessages(roomId, 25, { before: firstUnreadId });
+            if (!active) return;
+
+            messages = [...beforeResult.items, ...unreadResult.items];
+            moreBefore = beforeResult.hasMoreBefore;
+            moreAfter = unreadResult.hasMoreAfter;
+          } else {
+            // 未読が実際には存在しない（別端末で既読済みなど）→最新50件
+            const result = await listMessages(roomId, 50);
+            if (!active) return;
+            messages = result.items;
+            moreBefore = result.hasMoreBefore;
+            moreAfter = false;
+          }
+        } else {
+          // 未読なし: 最新50件
+          const result = await listMessages(roomId, 50);
+          if (!active) return;
+          messages = result.items;
+          moreBefore = result.hasMoreBefore;
+          moreAfter = false;
+        }
+
+        oldestIDRef.current = messages[0]?.ID;
+        newestIDRef.current = messages[messages.length - 1]?.ID;
 
         setState((prev) => ({
           ...prev,
           room: roomData.room,
-          messages: msgData.messages,
-          initialLastReadAt,
-          partnerLastReadAt,
+          messages,
+          initialLastReadAt: lastReadAt,
+          partnerLastReadAt: roomData.room?.partnerLastReadAt ?? null,
         }));
+        setHasMoreBefore(moreBefore);
+        setHasMoreAfter(moreAfter);
+        hasMoreAfterRef.current = moreAfter;
 
         if (!markedAsRead.current) {
           markedAsRead.current = true;
@@ -100,6 +155,60 @@ export const useRoomMessages = (roomId: string | undefined) => {
     return () => { active = false; };
   }, [roomId]);
 
+  // 上スクロール: 古いメッセージを50件追加取得
+  const loadOlderMessages = useCallback(async () => {
+    if (!roomId || loadingOlderRef.current) return;
+    const before = oldestIDRef.current;
+    if (!before) return;
+
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+    try {
+      const result = await listMessages(roomId, 50, { before });
+      if (result.items.length > 0) {
+        oldestIDRef.current = result.items[0]?.ID;
+        setState((prev) => ({
+          ...prev,
+          messages: [...result.items, ...prev.messages],
+        }));
+      }
+      setHasMoreBefore(result.hasMoreBefore);
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
+  }, [roomId]);
+
+  // 下スクロール: 新しいメッセージを50件追加取得
+  const loadNewerMessages = useCallback(async () => {
+    if (!roomId || loadingNewerRef.current) return;
+    const after = newestIDRef.current;
+    if (!after) return;
+
+    loadingNewerRef.current = true;
+    setLoadingNewer(true);
+    try {
+      const result = await listMessages(roomId, 50, { after });
+      if (result.items.length > 0) {
+        newestIDRef.current = result.items[result.items.length - 1]?.ID;
+        setState((prev) => ({
+          ...prev,
+          messages: [
+            ...prev.messages,
+            ...result.items.filter((m) => !prev.messages.some((e) => e.ID === m.ID)),
+          ],
+        }));
+      }
+      const newHasMoreAfter = result.hasMoreAfter;
+      setHasMoreAfter(newHasMoreAfter);
+      hasMoreAfterRef.current = newHasMoreAfter;
+    } finally {
+      loadingNewerRef.current = false;
+      setLoadingNewer(false);
+    }
+  }, [roomId]);
+
+  // WebSocket: 新着メッセージ（歴史閲覧中はスキップ）
   useEffect(() => {
     if (!roomId) return;
 
@@ -107,12 +216,15 @@ export const useRoomMessages = (roomId: string | undefined) => {
       MESSAGE_ADDED_SUBSCRIPTION,
       { roomID: roomId },
       (data) => {
+        const newMsg = data.messageAdded;
+        if (!newMsg) return;
+        // 歴史閲覧中は新着をスキップ（ページングで追いつく）
+        if (hasMoreAfterRef.current) return;
         setState((prev) => {
-          const newMsg = data.messageAdded;
-          if (!newMsg) return prev;
           if (prev.messages.some((m) => m.ID === newMsg.ID)) return prev;
           return { ...prev, wsConnected: true, messages: [...prev.messages, newMsg] };
         });
+        newestIDRef.current = newMsg.ID;
         markRoomAsRead(roomId).catch(() => {});
       },
       (err) => {
@@ -192,7 +304,17 @@ export const useRoomMessages = (roomId: string | undefined) => {
         ? prev.messages
         : [...prev.messages, msg],
     }));
+    newestIDRef.current = msg.ID;
   };
 
-  return { ...state, addMessage };
+  return {
+    ...state,
+    hasMoreBefore,
+    hasMoreAfter,
+    loadingOlder,
+    loadingNewer,
+    loadOlderMessages,
+    loadNewerMessages,
+    addMessage,
+  };
 };

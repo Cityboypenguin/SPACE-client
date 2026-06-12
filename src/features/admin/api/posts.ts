@@ -33,6 +33,7 @@ export type Post = {
   replyCount: number;
   user: PostUser;
   favorites: PostFavorite[];
+  rootPost?: Post | null;
   parent?: Post | null;
   replies: Post[];
   media: Media[];
@@ -65,13 +66,18 @@ const POST_FIELDS = `
   }
 `;
 
+export type PostPage = { items: Post[]; total: number };
+
 const POSTS_QUERY = `
-  query GetAdminPosts {
-    posts {
-      ${POST_FIELDS}
-      replies {
-        ID
+  query GetAdminPosts($limit: Int, $offset: Int) {
+    posts(limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
       }
+      total
     }
   }
 `;
@@ -80,6 +86,9 @@ const GET_POST_BY_ID_QUERY = `
   query GetPostByIDIncludeDeleted($id: ID!) {
     getPostByIDIncludeDeleted(id: $id) {
       ${POST_FIELDS}
+      rootPost {
+        ${POST_FIELDS}
+      }
       replies {
         ${POST_FIELDS}
         replies {
@@ -105,8 +114,8 @@ const ADMIN_DELETE_POST_MUTATION = `
   }
 `;
 
-export const getPosts = async (): Promise<Post[]> => {
-  const data = await request<{ posts: Post[] }>(POSTS_QUERY, undefined, getAdminToken());
+export const getPosts = async (limit = 20, offset = 0): Promise<PostPage> => {
+  const data = await request<{ posts: PostPage }>(POSTS_QUERY, { limit, offset }, getAdminToken());
   return data.posts;
 };
 

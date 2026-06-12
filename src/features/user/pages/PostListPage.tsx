@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
@@ -19,17 +18,70 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 
+const LIMIT = 20;
+
 export const PostListPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
 
-  const { data: posts, error, isLoading, mutate } = useSWR<Post[]>('user-posts', getTopLevelPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const loadingRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
+
+  const loadPosts = useCallback(async (currentOffset: number, isInitial: boolean) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    if (isInitial) setInitialLoading(true);
+    else setLoadingMore(true);
+    try {
+      const result = await getTopLevelPosts(LIMIT, currentOffset);
+      setPosts(prev => isInitial ? result.items : [...prev, ...result.items]);
+      setTotal(result.total);
+      setOffset(currentOffset + result.items.length);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    } finally {
+      loadingRef.current = false;
+      if (isInitial) setInitialLoading(false);
+      else setLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPosts(0, true);
+  }, [loadPosts]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setOffset(prev => {
+            if (!loadingRef.current && prev < total) {
+              loadPosts(prev, false);
+            }
+            return prev;
+          });
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [total, loadPosts]);
 
   const handlePost = async () => {
     if ((!content.trim() && selectedFiles.length === 0) || posting) return;
@@ -49,8 +101,8 @@ export const PostListPage = () => {
       const newPost = await createPost(content.trim(), undefined, mediaInputs);
       setContent('');
       setSelectedFiles([]);
-
-      mutate([newPost, ...(posts || [])], { revalidate: false });
+      setPosts(prev => [newPost, ...prev]);
+      setTotal(prev => prev + 1);
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -65,20 +117,19 @@ export const PostListPage = () => {
       } else {
         await createFavorite(postId);
       }
-
-      const updatedPosts = posts?.map((p) => {
+      setPosts(prev => prev.map((p) => {
         if (p.ID !== postId) return p;
         if (isLiked) {
           return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
-        } else {
-          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
         }
-      });
-      mutate(updatedPosts, { revalidate: false });
+        return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+      }));
     } catch (err) {
       console.error('いいねの更新に失敗しました', err);
     }
   };
+
+  const hasMore = posts.length < total;
 
   return (
     <div>
@@ -101,20 +152,31 @@ export const PostListPage = () => {
           onFileSelect={setSelectedFiles}
         />
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
+        {loadError && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
 
-        {isLoading ? (
+        {initialLoading ? (
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-        ) : posts && posts.length > 0 ? (
-          posts.map((post) => (
-            <PostCard
-              key={post.ID}
-              post={post}
-              currentUserId={userId}
-              onLike={handleLike}
-              onClick={() => navigate(`/posts/${post.ID}`)}
-            />
-          ))
+        ) : posts.length > 0 ? (
+          <>
+            {posts.map((post) => (
+              <PostCard
+                key={post.ID}
+                post={post}
+                currentUserId={userId}
+                onLike={handleLike}
+                onClick={() => navigate(`/posts/${post.ID}`)}
+              />
+            ))}
+            <div ref={sentinelRef} style={{ height: '1px' }} />
+            {loadingMore && (
+              <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>読み込み中...</p>
+            )}
+            {!hasMore && posts.length > 0 && (
+              <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center', fontSize: '0.875rem' }}>
+                すべての投稿を表示しました
+              </p>
+            )}
+          </>
         ) : (
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
         )}

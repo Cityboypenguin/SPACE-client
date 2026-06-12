@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
@@ -9,7 +9,7 @@ import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { createReport } from '../api/report';
 import { PostCard } from '../components/organisms/PostCard';
-import { getPostsByUserID, createFavorite, deleteFavorite } from '../api/post';
+import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserPublicProfilePage.module.css';
 
@@ -32,10 +32,58 @@ export const UserPublicProfilePage = () => {
   const isFavorited = favoriteUsers?.some((u) => u.ID === id) ?? false;
   const isBlocked = blockedUsers?.some((u) => u.ID === id) ?? false;
 
-  const { data: posts, isLoading: postsLoading, error: postsErr, mutate: mutatePosts } = useSWR(
-    id ? ['user-posts', id] : null,
-    ([, uid]: [string, string]) => getPostsByUserID(uid),
-  );
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsTotal, setPostsTotal] = useState(0);
+  const [postsOffset, setPostsOffset] = useState(0);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsLoadingMore, setPostsLoadingMore] = useState(false);
+  const [postsErr, setPostsErr] = useState(false);
+  const postsLoadingRef = useRef(false);
+  const postsSentinelRef = useRef<HTMLDivElement>(null);
+
+  const loadPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean) => {
+    if (postsLoadingRef.current) return;
+    postsLoadingRef.current = true;
+    if (isInitial) setPostsLoading(true);
+    else setPostsLoadingMore(true);
+    try {
+      const page = await getPostsByUserID(userID, 20, currentOffset);
+      setPosts((prev) => isInitial ? page.items : [...prev, ...page.items]);
+      setPostsTotal(page.total);
+      setPostsOffset(currentOffset + page.items.length);
+      setPostsErr(false);
+    } catch {
+      setPostsErr(true);
+    } finally {
+      postsLoadingRef.current = false;
+      if (isInitial) setPostsLoading(false);
+      else setPostsLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (id) loadPosts(id, 0, true);
+  }, [id, loadPosts]);
+
+  useEffect(() => {
+    const sentinel = postsSentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPostsOffset((prev) => {
+            if (!postsLoadingRef.current && prev < postsTotal && id) {
+              loadPosts(id, prev, false);
+            }
+            return prev;
+          });
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [id, postsTotal, loadPosts]);
 
   const [actionLoading, setActionLoading] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -46,17 +94,14 @@ export const UserPublicProfilePage = () => {
     } else {
       await createFavorite(postId);
     }
-    mutatePosts(
-      (prev) => prev?.map((p) => {
-        if (p.ID !== postId) return p;
-        if (isLiked) {
-          return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) };
-        } else {
-          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
-        }
-      }),
-      { revalidate: false },
-    );
+    setPosts((prev) => prev.map((p) => {
+      if (p.ID !== postId) return p;
+      if (isLiked) {
+        return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) };
+      } else {
+        return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
+      }
+    }));
   };
 
   const handleFavoriteToggle = async () => {
@@ -219,18 +264,24 @@ export const UserPublicProfilePage = () => {
                   paddingRight: '0.5rem',
                 }}
               >
-                {posts && posts.length > 0 ? (
-                  posts.map((post) => (
-                    <PostCard
-                      key={post.ID}
-                      post={post}
-                      currentUserId={currentUserId}
-                      onLike={handleLike}
-                      onClick={() => navigate(`/posts/${post.ID}`)}
-                    />
-                  ))
-                ) : postsLoading ? (
+                {postsLoading ? (
                   <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+                ) : posts.length > 0 ? (
+                  <>
+                    {posts.map((post) => (
+                      <PostCard
+                        key={post.ID}
+                        post={post}
+                        currentUserId={currentUserId}
+                        onLike={handleLike}
+                        onClick={() => navigate(`/posts/${post.ID}`)}
+                      />
+                    ))}
+                    <div ref={postsSentinelRef} style={{ height: '1px' }} />
+                    {postsLoadingMore && (
+                      <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>読み込み中...</p>
+                    )}
+                  </>
                 ) : (
                   <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
                 )}

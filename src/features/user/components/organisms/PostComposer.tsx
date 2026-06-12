@@ -4,7 +4,7 @@ import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import { useToast } from '../../../../context/ToastContext';
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_IMAGES = 4;
 

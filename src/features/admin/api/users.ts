@@ -22,7 +22,8 @@ export type Profile = {
   user: User;
 };
 
-type UsersResponse = { users: User[] };
+export type UserPage = { items: User[]; total: number };
+type UsersResponse = { users: UserPage };
 type SearchUsersResponse = { searchUsers: User[] };
 type GetUserByIDResponse = { getUserByID: User };
 type DeleteUserResponse = { deleteUser: boolean };
@@ -33,16 +34,19 @@ type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
 type AdminUpdateProfileResponse = { adminUpdateProfile: Profile };
 
 const USERS_QUERY = `
-  query {
-    users {
-      ID
-      accountID
-      name
-      email
-      role
-      status
-      createdAt
-      updatedAt
+  query Users($limit: Int, $offset: Int) {
+    users(limit: $limit, offset: $offset) {
+      items {
+        ID
+        accountID
+        name
+        email
+        role
+        status
+        createdAt
+        updatedAt
+      }
+      total
     }
   }
 `;
@@ -152,8 +156,8 @@ const GET_PROFILE_BY_USER_ID_QUERY = `
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
-export const getUsers = async () => {
-  return await request<UsersResponse>(USERS_QUERY, undefined, getAdminToken());
+export const getUsers = async (limit = 20, offset = 0) => {
+  return await request<UsersResponse>(USERS_QUERY, { limit, offset }, getAdminToken());
 };
 
 export const searchUsers = async (keyword: string) => {
@@ -178,7 +182,7 @@ export const unfreezeUser = async (id: string) => {
 
 export const adminUpdateUser = async (
   id: string,
-  input: { accountID?: string; name?: string; email?: string; password?: string },
+  input: { accountID: string; name: string; email: string; password?: string },
 ) => {
   return await request<AdminUpdateUserResponse>(ADMIN_UPDATE_USER_MUTATION, { id, input }, getAdminToken());
 };

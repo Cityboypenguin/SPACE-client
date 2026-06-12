@@ -14,17 +14,22 @@ type Inquiry = {
   updatedAt: string;
 };
 
+export type InquiryPage = { items: Inquiry[]; total: number };
+
 const SEARCH_INQUIRIES_QUERY = `
-  query SearchInquiries($status: InquiryStatus) {
-    searchInquiries(status: $status) {
-      id
-      name
-      email
-      subject
-      content
-      status
-      createdAt
-      updatedAt
+  query SearchInquiries($status: InquiryStatus, $limit: Int, $offset: Int) {
+    searchInquiries(status: $status, limit: $limit, offset: $offset) {
+      items {
+        id
+        name
+        email
+        subject
+        content
+        status
+        createdAt
+        updatedAt
+      }
+      total
     }
   }
 `;
@@ -53,9 +58,10 @@ const UPDATE_INQUIRY_STATUS_MUTATION = `
   }
 `;
 
-export const getInquiries = async (status?: string) => {
-  const variables = status && status !== 'ALL' ? { status } : {};
-  const data = await request<{ searchInquiries: Inquiry[] }>(
+export const getInquiries = async (status?: string, limit = 20, offset = 0) => {
+  const variables: Record<string, unknown> = { limit, offset };
+  if (status && status !== 'ALL') variables.status = status;
+  const data = await request<{ searchInquiries: InquiryPage }>(
     SEARCH_INQUIRIES_QUERY,
     variables,
     getAdminToken(),

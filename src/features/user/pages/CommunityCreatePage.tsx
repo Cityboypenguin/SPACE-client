@@ -81,7 +81,7 @@ export const CommunityCreatePage = () => {
               <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600, marginBottom: '0.4rem' }}>コミュニティアイコン</div>
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 style={{ display: 'none' }}

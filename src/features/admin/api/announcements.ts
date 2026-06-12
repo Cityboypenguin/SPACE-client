@@ -21,6 +21,8 @@ const GET_ANNOUNCEMENT_QUERY = `
   }
 `;
 
+export type AnnouncementPage = { items: Announcement[]; total: number };
+
 const ANNOUNCEMENTS_QUERY = `
   query Announcements($limit: Int) {
     announcements(limit: $limit) {
@@ -28,6 +30,20 @@ const ANNOUNCEMENTS_QUERY = `
       title
       body
       createdAt
+    }
+  }
+`;
+
+const ADMIN_ANNOUNCEMENTS_QUERY = `
+  query AdminListAnnouncements($limit: Int, $offset: Int) {
+    adminListAnnouncements(limit: $limit, offset: $offset) {
+      items {
+        ID
+        title
+        body
+        createdAt
+      }
+      total
     }
   }
 `;
@@ -59,6 +75,15 @@ export const getAnnouncements = async (limit = 50): Promise<Announcement[]> => {
     getAdminToken(),
   );
   return data.announcements ?? [];
+};
+
+export const getAdminAnnouncements = async (limit = 20, offset = 0): Promise<AnnouncementPage> => {
+  const data = await request<{ adminListAnnouncements: AnnouncementPage }>(
+    ADMIN_ANNOUNCEMENTS_QUERY,
+    { limit, offset },
+    getAdminToken(),
+  );
+  return data.adminListAnnouncements;
 };
 
 const UPDATE_ANNOUNCEMENT_MUTATION = `

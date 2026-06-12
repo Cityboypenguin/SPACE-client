@@ -5,6 +5,8 @@ import { storageUrl } from '../../../lib/storage';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
+// ⭕️ 追加: 大元投稿の表示用
+import { PostCard } from '../components/organisms/PostCard';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
 import { useToast } from '../../../context/ToastContext';
@@ -264,7 +266,10 @@ export const PostDetailPage = () => {
   const [updateError, setUpdateError] = useState('');
   const [editContent, setEditContent] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
+
   const isMyPost = post?.user.ID === userId;
+  // ⭕️ 追加: メイン投稿が削除されているかどうかのフラグ
+  const isDeleted = post?.deletedAt != null;
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) {
@@ -346,7 +351,7 @@ export const PostDetailPage = () => {
       await deletePost(id);
       navigate(-1);
     } catch (err) {
-      alert(toUserMessage(err, '投稿の削除に失敗しました。時間をおいてから再度お試しください。'));
+      console.error(err);
     }
   };
 
@@ -370,135 +375,181 @@ export const PostDetailPage = () => {
           <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
         ) : (
           <>
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
-                    <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+            {post.rootPost && (
+              <div style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+
+                {post.rootPost.deletedAt != null ? (
+                  /* 🛡 大元が削除されている場合 */
+                  <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    この投稿は削除されました
                   </div>
+                ) : (
+                  /* 🛡 大元が正常な場合 */
+                  <PostCard
+                    post={post.rootPost}
+                    currentUserId={userId}
+                    onLike={handleLike}
+                    onClick={() => navigate(`/posts/${post.rootPost!.ID}`)}
+                  />
+                )}
+
+                {/* 繋がりの縦線（削除されていようがいまいが、下に繋げる） */}
+                <div style={{
+                  width: '2px',
+                  height: '24px',
+                  background: '#cbd5e1',
+                  marginLeft: '37px',
+                  marginTop: '-1px',
+                  marginBottom: '-1px',
+                  zIndex: 1,
+                  position: 'relative'
+                }} />
+              </div>
+            )}
+
+            {isDeleted ? (
+              // 削除済みプレースホルダー
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                この投稿は削除されました
+              </div>
+            ) : (
+              // 正常な投稿の表示
+              <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+                    </div>
+                  </div>
+
+                  {isMyPost && !isEditing && (
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        onClick={() => {
+                          setIsEditing(true);
+                          setEditContent(post.content);
+                          setEditSelectedFiles([]);
+                          setEditDeletedMediaIDs([]);
+                          setUpdateError('');
+                        }}
+                        style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: '#f1f5f9', border: 'none', borderRadius: '4px' }}
+                      >編集</button>
+                      <button
+                        onClick={handleDelete}
+                        style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
+                      >削除</button>
+                    </div>
+                  )}
                 </div>
 
-                {isMyPost && !isEditing && (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      onClick={() => {
-                        setIsEditing(true);
+                {isEditing ? (
+                  <div style={{ marginBottom: '0.75rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    {updateError && <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{updateError}</p>}
+
+                    <PostComposer
+                      value={editContent}
+                      onChange={setEditContent}
+                      onSubmit={handleUpdate}
+                      submitting={isUpdating}
+                      userId={userId}
+                      avatarUrl={profile?.avatarUrl}
+                      userName={profile?.user.name}
+                      selectedFiles={editSelectedFiles}
+                      onFileSelect={setEditSelectedFiles}
+                      existingMedia={post.media}
+                      deletedMediaIDs={editDeletedMediaIDs}
+                      onDeleteExistingMedia={(mediaId) => setEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                      submitLabel="保存する"
+                      submittingLabel="保存中..."
+                      placeholder="投稿を編集..."
+                      onCancel={() => {
+                        setIsEditing(false);
                         setEditContent(post.content);
                         setEditSelectedFiles([]);
                         setEditDeletedMediaIDs([]);
-                        setUpdateError('');
                       }}
-                      style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: '#f1f5f9', border: 'none', borderRadius: '4px' }}
-                    >編集</button>
-                    <button
-                      onClick={handleDelete}
-                      style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
-                    >削除</button>
+                      isEmbedded={true}
+                    />
                   </div>
+                ) : (
+                  post.content && (
+                    <p style={{
+                      margin: '0 0 0.75rem',
+                      color: '#1e293b',
+                      fontSize: '1.1rem',
+                      lineHeight: 1.7,
+                      wordBreak: 'break-word',
+                      whiteSpace: 'pre-wrap',
+                    }}>
+                      {post.content}
+                    </p>
+                  )
                 )}
-              </div>
 
-              {isEditing ? (
-                <div style={{ marginBottom: '0.75rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  {updateError && <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{updateError}</p>}
+                {!isEditing && post.media && post.media.length > 0 && (
+                  <PostMediaDetail media={post.media} />
+                )}
 
-                  <PostComposer
-                    value={editContent}
-                    onChange={setEditContent}
-                    onSubmit={handleUpdate}
-                    submitting={isUpdating}
-                    userId={userId}
-                    avatarUrl={profile?.avatarUrl}
-                    userName={profile?.user.name}
-                    selectedFiles={editSelectedFiles}
-                    onFileSelect={setEditSelectedFiles}
-                    existingMedia={post.media}
-                    deletedMediaIDs={editDeletedMediaIDs}
-                    onDeleteExistingMedia={(mediaId) => setEditDeletedMediaIDs(prev => [...prev, mediaId])}
-                    submitLabel="保存する"
-                    submittingLabel="保存中..."
-                    placeholder="投稿を編集..."
-                    onCancel={() => {
-                      setIsEditing(false);
-                      setEditContent(post.content);
-                      setEditSelectedFiles([]);
-                      setEditDeletedMediaIDs([]);
-                    }}
-                    isEmbedded={true}
-                  />
+                <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                  {new Date(post.createdAt).toLocaleString('ja-JP')}
                 </div>
-              ) : (
-                post.content && (
-                  <p style={{
-                    margin: '0 0 0.75rem',
-                    color: '#1e293b',
-                    fontSize: '1.1rem',
-                    lineHeight: 1.7,
-                    wordBreak: 'break-word',
-                    whiteSpace: 'pre-wrap',
-                  }}>
-                    {post.content}
-                  </p>
-                )
-              )}
 
-              {!isEditing && post.media && post.media.length > 0 && (
-                <PostMediaDetail media={post.media} />
-              )}
+                <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
+                  <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
+                    💬 <strong>{post.replyCount}</strong> 件の返信
+                  </span>
+                  <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
 
-              <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-                {new Date(post.createdAt).toLocaleString('ja-JP')}
+                  {!isMyPost && (
+                    <button
+                      onClick={() => setIsReportOpen(true)}
+                      style={{
+                        background: 'none', border: 'none', color: '#64748b',
+                        fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', gap: '4px', padding: '0.25rem 0.5rem',
+                        borderRadius: '6px', transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                    >
+                      🚩 <span style={{ fontSize: '0.9rem' }}>通報</span>
+                    </button>
+                  )}
+                </div>
               </div>
+            )}
 
-              <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
-                <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
-                  💬 <strong>{post.replyCount}</strong> 件の返信
-                </span>
-                <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
+            {/* 🛡 ⭕️ 返信入力フォーム（メインが削除されていない場合のみ） */}
+            {!isDeleted && (
+              <PostComposer
+                value={replyContent}
+                onChange={setReplyContent}
+                onSubmit={handleReply}
+                submitting={replying}
+                error={replyError}
+                placeholder="返信する..."
+                rows={2}
+                submitLabel="返信する"
+                submittingLabel="送信中..."
+                iconSize={36}
+                userId={userId}
+                avatarUrl={profile?.avatarUrl}
+                userName={profile?.user.name}
+                selectedFiles={replyFiles}
+                onFileSelect={setReplyFiles}
+              />
+            )}
 
-                {!isMyPost && (
-                  <button
-                    onClick={() => setIsReportOpen(true)}
-                    style={{
-                      background: 'none', border: 'none', color: '#64748b',
-                      fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-                      alignItems: 'center', gap: '4px', padding: '0.25rem 0.5rem',
-                      borderRadius: '6px', transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-                  >
-                    🚩 <span style={{ fontSize: '0.9rem' }}>通報</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <PostComposer
-              value={replyContent}
-              onChange={setReplyContent}
-              onSubmit={handleReply}
-              submitting={replying}
-              error={replyError}
-              placeholder="返信する..."
-              rows={2}
-              submitLabel="返信する"
-              submittingLabel="送信中..."
-              iconSize={36}
-              userId={userId}
-              avatarUrl={profile?.avatarUrl}
-              userName={profile?.user.name}
-              selectedFiles={replyFiles}
-              onFileSelect={setReplyFiles}
-            />
-
-            {post.replies.length > 0 && (
+            {/* 🛡 ⭕️ 返信一覧（削除済みのリプライを除外して表示） */}
+            {post.replies && post.replies.length > 0 && (
               <div>
-                {post.replies.map((reply) => (
-                  <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
-                ))}
+                {post.replies
+                  .filter(reply => reply.deletedAt == null) // ここで削除済みを除外
+                  .map((reply) => (
+                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
+                  ))}
               </div>
             )}
 

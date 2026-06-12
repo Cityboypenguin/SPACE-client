@@ -35,19 +35,19 @@ export const NotificationDetailPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
-  const { data: notifications, isLoading, mutate } = useSWR(
-    'my-notifications',
-    () => listMyNotifications(50),
+  const { data, isLoading, mutate } = useSWR(
+    ['my-notifications-detail', id],
+    () => listMyNotifications(50, 0),
   );
 
-  const notification = notifications?.find((n) => n.ID === id) ?? null;
+  const notification = data?.items.find((n) => n.ID === id) ?? null;
 
   useEffect(() => {
     if (!notification || notification.isRead) return;
     markNotificationAsRead(notification.ID)
       .then(() => {
         mutate(
-          (prev) => prev?.map((n) => n.ID === notification.ID ? { ...n, isRead: true } : n),
+          (prev) => prev ? { ...prev, items: prev.items.map((n) => n.ID === notification.ID ? { ...n, isRead: true } : n) } : prev,
           { revalidate: false },
         );
         decrementUnread();

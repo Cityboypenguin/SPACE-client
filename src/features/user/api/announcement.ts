@@ -8,13 +8,18 @@ export type Announcement = {
   createdAt: string;
 };
 
+export type AnnouncementPage = { items: Announcement[]; total: number };
+
 const LIST_ANNOUNCEMENTS_QUERY = `
-  query ListAnnouncements($limit: Int) {
-    announcements(limit: $limit) {
-      ID
-      title
-      body
-      createdAt
+  query ListAnnouncements($limit: Int, $offset: Int) {
+    announcements(limit: $limit, offset: $offset) {
+      items {
+        ID
+        title
+        body
+        createdAt
+      }
+      total
     }
   }
 `;
@@ -30,13 +35,13 @@ const GET_ANNOUNCEMENT_QUERY = `
   }
 `;
 
-export const listAnnouncements = async (limit = 50): Promise<Announcement[]> => {
-  const data = await request<{ announcements: Announcement[] }>(
+export const listAnnouncements = async (limit = 20, offset = 0): Promise<AnnouncementPage> => {
+  const data = await request<{ announcements: AnnouncementPage }>(
     LIST_ANNOUNCEMENTS_QUERY,
-    { limit },
+    { limit, offset },
     getUserToken(),
   );
-  return data.announcements;
+  return data.announcements ?? { items: [], total: 0 };
 };
 
 export const getAnnouncement = async (id: string): Promise<Announcement> => {
