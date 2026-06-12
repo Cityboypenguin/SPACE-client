@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { listTerms, listConsents, type TermsOfService, type TermsConsentRecord } from '../api/terms';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const AdminTermsDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -60,7 +61,7 @@ export const AdminTermsDetailPage: React.FC = () => {
             padding: 0,
           }}
         >
-          ← 利用規約一覧に戻る
+          <ChevronLeft /> 利用規約一覧に戻る
         </button>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}

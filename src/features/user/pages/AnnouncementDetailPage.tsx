@@ -1,8 +1,9 @@
 import useSWR from 'swr';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { getAnnouncement } from '../api/announcement';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const AnnouncementDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +16,7 @@ export const AnnouncementDetailPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
         <button
           onClick={() => navigate(-1)}
@@ -29,7 +30,7 @@ export const AnnouncementDetailPage = () => {
             marginBottom: '1rem',
           }}
         >
-          ← 戻る
+          <ChevronLeft /> 戻る
         </button>
 
         {error && <p style={{ color: 'red' }}>お知らせの読み込みに失敗しました</p>}

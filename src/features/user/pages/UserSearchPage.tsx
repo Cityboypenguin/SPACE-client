@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { searchUsers, type UserProfile } from '../api/profile';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { SearchBar } from '../components/molecules/SearchBar';
 import { useAuth } from '../context/AuthContext';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -65,7 +65,7 @@ export const UserSearchPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main className={styles.main}>
         <h1>ユーザー検索</h1>
         <SearchBar value={query} onChange={setQuery} onSubmit={handleSearch} />

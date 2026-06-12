@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
@@ -133,7 +133,7 @@ export const UserDashboard = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main className={styles.main}>
         {flashMessage && (
           <p style={{ color: 'green', fontWeight: 'bold', marginBottom: '1rem' }}>

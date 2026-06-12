@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { createCommunity, getPresignedCommunityIconUploadUrl } from '../api/community';
 import { uploadAvatarToStorage } from '../api/profile';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const CommunityCreatePage = () => {
   const navigate = useNavigate();
@@ -59,14 +60,14 @@ export const CommunityCreatePage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ padding: '2rem', maxWidth: '560px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
           <button
             onClick={() => navigate('/community')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#646cff', fontWeight: 600, padding: 0 }}
           >
-            ← 戻る
+            <ChevronLeft /> 戻る
           </button>
           <h1 style={{ margin: 0, fontSize: '1.5rem' }}>コミュニティを作成</h1>
         </div>

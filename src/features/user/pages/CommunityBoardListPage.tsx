@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { SearchBar } from '../components/molecules/SearchBar';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { ReportModal } from '../components/organisms/ReportMadal';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
@@ -116,14 +117,14 @@ export const CommunityBoardListPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ padding: '2rem', maxWidth: '700px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
           <button
             onClick={() => navigate('/community')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#646cff', fontWeight: 600, padding: 0 }}
           >
-            ← 戻る
+            <ChevronLeft /> 戻る
           </button>
           <h1 style={{ margin: 0, fontSize: '1.5rem' }}>コミュニティを探す</h1>
         </div>

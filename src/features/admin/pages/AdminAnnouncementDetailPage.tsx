@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getAnnouncement, updateAnnouncement, deleteAnnouncement, type Announcement } from '../api/announcements';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const AdminAnnouncementDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -77,7 +78,7 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
             marginBottom: '1.5rem',
           }}
         >
-          ← お知らせ一覧に戻る
+          <ChevronLeft /> お知らせ一覧に戻る
         </button>
 
         {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}

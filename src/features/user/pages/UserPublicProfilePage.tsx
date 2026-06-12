@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/AuthContext';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
@@ -14,6 +14,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import styles from './UserPublicProfilePage.module.css';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -188,10 +189,10 @@ export const UserPublicProfilePage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main className={styles.main}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <button onClick={() => navigate(-1)}>← 戻る</button>
+          <button onClick={() => navigate(-1)}><ChevronLeft /> 戻る</button>
 
           {profile && (
             <button

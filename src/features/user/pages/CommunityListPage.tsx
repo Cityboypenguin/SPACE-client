@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, type Community } from '../api/community';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
@@ -61,7 +61,7 @@ export const CommunityListPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main className={styles.main}>
         <div className={styles.header}>
           <h1 className={styles.title}>コミュニティ</h1>

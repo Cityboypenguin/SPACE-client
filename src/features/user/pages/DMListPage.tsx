@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { SearchBar } from '../components/molecules/SearchBar';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { searchUsers, type UserProfile } from '../api/profile';
@@ -100,7 +100,7 @@ export const DMListPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main className={styles.main}>
         <h1>ダイレクトメッセージ</h1>
 

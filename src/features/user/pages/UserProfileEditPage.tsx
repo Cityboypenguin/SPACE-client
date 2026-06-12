@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useAuth } from '../context/AuthContext';
 import {
   getProfileByUserID,
@@ -100,7 +100,7 @@ export const UserProfileEditPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ padding: '2rem' }}>
         <h1>プロフィール編集</h1>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 400 }}>

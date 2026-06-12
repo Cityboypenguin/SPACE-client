@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
@@ -12,6 +12,7 @@ import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { saveRecentDM } from '../utils/recentDM';
 import styles from '../components/organisms/chatRoom.module.css';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const DMPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -103,10 +104,10 @@ export const DMPage = () => {
 
   return (
     <div className={styles.container}>
-      <UserHeader />
+      <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/dm')}>← 戻る</button>
+        <button className={styles.backButton} onClick={() => navigate('/dm')}><ChevronLeft /> 戻る</button>
         <strong className={styles.roomTitle}>{partnerName}</strong>
         <span
           className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}

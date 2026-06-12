@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Pagination } from '../components/molecules/Pagination';
 import { useNotification } from '../context/NotificationContext';
 import {
@@ -169,7 +169,7 @@ export const NotificationListPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ maxWidth: '600px', margin: '0 auto' }}>
         <div
           style={{

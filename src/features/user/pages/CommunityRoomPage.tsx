@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
@@ -17,6 +17,7 @@ import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import styles from '../components/organisms/chatRoom.module.css';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -131,10 +132,10 @@ export const CommunityRoomPage = () => {
 
   return (
     <div className={styles.container}>
-      <UserHeader />
+      <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/community')}>← 戻る</button>
+        <button className={styles.backButton} onClick={() => navigate('/community')}><ChevronLeft /> 戻る</button>
         <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         {memberCount !== null && (
           <button

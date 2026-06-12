@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useNotification } from '../context/NotificationContext';
 import {
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
   listMyNotifications,
   markNotificationAsRead,
   deleteNotifications,
@@ -81,7 +82,7 @@ export const NotificationDetailPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <button
@@ -98,7 +99,7 @@ export const NotificationDetailPage = () => {
               gap: '0.25rem',
             }}
           >
-            ← 通知一覧に戻る
+            <ChevronLeft /> 通知一覧に戻る
           </button>
           {notification && (
             <button

@@ -7,6 +7,7 @@ import { AdminUserAvatar } from '../../../components/atoms/AdminUserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div
@@ -158,7 +159,7 @@ export const AdminPostDetailPage = () => {
           <button
             onClick={() => navigate(-1)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.1rem', padding: '0.25rem 0.5rem', borderRadius: '50%' }}
-          >←</button>
+          ><ChevronLeft /></button>
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿詳細 (管理者)</h1>
         </div>
 

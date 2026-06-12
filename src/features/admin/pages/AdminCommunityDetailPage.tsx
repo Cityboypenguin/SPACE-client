@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
   getCommunities,
   getCommunityMembers,
   updateCommunity,
@@ -127,7 +128,7 @@ export const AdminCommunityDetailPage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate('/admin/communities')}>← 一覧に戻る</button>
+        <button onClick={() => navigate('/admin/communities')}><ChevronLeft /> 一覧に戻る</button>
         <h1>コミュニティ詳細</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}

@@ -4,6 +4,7 @@ import { registerUser, loginUser, sendEmailOTP } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
 import { TermsContent } from '../components/molecules/TermsContent';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 const OTP_COOLDOWN_SECONDS = 60;
 
@@ -324,7 +325,7 @@ export const UserRegisterPage = () => {
           {submitError && <p style={{ color: 'red', margin: '0.5rem 0' }}>{submitError}</p>}
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
             <button type="button" onClick={() => { setStep(1); setOtp(''); setSubmitError(''); }} style={{ flex: 1 }}>
-              ← 戻る
+              <ChevronLeft /> 戻る
             </button>
             <button
               type="button"
