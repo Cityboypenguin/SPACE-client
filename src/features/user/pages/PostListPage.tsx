@@ -17,6 +17,7 @@ import {
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+import { getPostListCache, savePostListCache } from '../cache/postListCache';
 
 const LIMIT = 20;
 
@@ -25,14 +26,32 @@ export const PostListPage = () => {
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const initialCacheRef = useRef(getPostListCache());
+  const initialCache = initialCacheRef.current;
+
+  const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
+  const [total, setTotal] = useState(initialCache?.total ?? 0);
+  const [offset, setOffset] = useState(initialCache?.offset ?? 0);
+  const [initialLoading, setInitialLoading] = useState(!initialCache);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const postsRef = useRef(posts);
+  const totalRef = useRef(total);
+  const offsetRef = useRef(offset);
+  const scrollYRef = useRef(initialCache?.scrollY ?? 0);
+  useEffect(() => { postsRef.current = posts; }, [posts]);
+  useEffect(() => { totalRef.current = total; }, [total]);
+  useEffect(() => { offsetRef.current = offset; }, [offset]);
+
+  // スクロール位置を常時追跡（アンマウント時に window.scrollY が 0 にリセットされるため）
+  useEffect(() => {
+    const onScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -60,8 +79,31 @@ export const PostListPage = () => {
   }, []);
 
   useEffect(() => {
+    if (initialCache) return;
     loadPosts(0, true);
-  }, [loadPosts]);
+  }, [loadPosts, initialCache]);
+
+  // スクロール位置の復元（rAF でブラウザの描画後に実行）
+  useEffect(() => {
+    if (!initialCache) return;
+    const scrollY = initialCache.scrollY;
+    const raf = requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [initialCache]);
+
+  // アンマウント時にキャッシュ保存
+  useEffect(() => {
+    return () => {
+      savePostListCache({
+        posts: postsRef.current,
+        total: totalRef.current,
+        offset: offsetRef.current,
+        scrollY: scrollYRef.current,
+      });
+    };
+  }, []);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -82,6 +124,16 @@ export const PostListPage = () => {
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [total, loadPosts]);
+
+  const handlePostClick = (postId: string) => {
+    savePostListCache({
+      posts: postsRef.current,
+      total: totalRef.current,
+      offset: offsetRef.current,
+      scrollY: scrollYRef.current,
+    });
+    navigate(`/posts/${postId}`);
+  };
 
   const handlePost = async () => {
     if ((!content.trim() && selectedFiles.length === 0) || posting) return;
@@ -164,7 +216,7 @@ export const PostListPage = () => {
                 post={post}
                 currentUserId={userId}
                 onLike={handleLike}
-                onClick={() => navigate(`/posts/${post.ID}`)}
+                onClick={() => handlePostClick(post.ID)}
               />
             ))}
             <div ref={sentinelRef} style={{ height: '1px' }} />
