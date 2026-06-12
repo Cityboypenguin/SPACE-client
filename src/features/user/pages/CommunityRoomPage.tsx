@@ -73,7 +73,6 @@ export const CommunityRoomPage = () => {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMoreAfter, loadNewerMessages]);
 
   const [showSettings, setShowSettings] = useState(false);
@@ -81,13 +80,13 @@ export const CommunityRoomPage = () => {
   const [leaving, setLeaving] = useState(false);
   const [reporting, setReporting] = useState(false);
 
-  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', listMyCommunities);
+  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', () => listMyCommunities());
 
   const community = useMemo((): Community | null => {
     if (!communities || !roomId) return null;
     const stateID = (location.state as { communityID?: string } | null)?.communityID;
-    if (stateID) return communities.find((c) => c.ID === stateID) ?? null;
-    return communities.find((c) => c.roomID === roomId) ?? null;
+    if (stateID) return communities.items.find((c) => c.ID === stateID) ?? null;
+    return communities.items.find((c) => c.roomID === roomId) ?? null;
   }, [communities, roomId, location.state]);
 
   const communityID = community?.ID ?? null;
@@ -311,7 +310,12 @@ export const CommunityRoomPage = () => {
           onClose={() => setShowSettings(false)}
           onUpdated={(updated) => {
             mutateCommunities(
-              (prev) => prev?.map((c) => c.ID === updated.ID ? { ...c, ...updated } : c),
+              (prev) => prev
+                ? {
+                    ...prev,
+                    items: prev.items.map((c) => c.ID === updated.ID ? { ...c, ...updated } : c),
+                  }
+                : prev,
               { revalidate: true },
             );
           }}

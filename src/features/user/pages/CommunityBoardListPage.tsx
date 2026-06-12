@@ -15,7 +15,7 @@ export const CommunityBoardListPage = () => {
   const [activeKeyword, setActiveKeyword] = useState('');
   const [results, setResults] = useState<Community[]>([]);
   const [searchTotal, setSearchTotal] = useState(0);
-  const [searchOffset, setSearchOffset] = useState(0);
+  const [, setSearchOffset] = useState(0);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -23,20 +23,20 @@ export const CommunityBoardListPage = () => {
   const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const { data: myCommunities, mutate: mutateMyCommunities } = useSWR('my-communities', listMyCommunities);
+  const { data: myCommunities, mutate: mutateMyCommunities } = useSWR('my-communities', () => listMyCommunities());
   const { data: randomCommunities, isLoading: loadingRandom } = useSWR(
     'random-communities',
     () => getRandomCommunities(10),
   );
 
   const joinedIDs = useMemo(
-    () => new Set(myCommunities?.map((c) => c.ID) ?? []),
+    () => new Set(myCommunities?.items.map((c) => c.ID) ?? []),
     [myCommunities],
   );
 
   const randomResults = useMemo(
-    () => randomCommunities?.filter((c) => !joinedIDs.has(c.ID)) ?? [],
-    [randomCommunities, joinedIDs],
+    () => randomCommunities ?? [],
+    [randomCommunities],
   );
 
   const loadSearchResults = useCallback(async (keyword: string, currentOffset: number, isFirst: boolean) => {
@@ -121,9 +121,24 @@ export const CommunityBoardListPage = () => {
   const handleJoin = useCallback(async (community: Community) => {
     try {
       await joinCommunity(community.roomID);
-      void mutateMyCommunities();
+      const joinedCommunity = {
+        ...community,
+        isMember: true,
+        memberCount: (community.memberCount ?? 0) + 1,
+      };
+      setResults((prev) => prev.map((c) => c.ID === community.ID ? joinedCommunity : c));
+      await mutateMyCommunities((current) => {
+        if (!current) return current;
+        if (current.items.some((c) => c.ID === community.ID)) return current;
+        return {
+          ...current,
+          items: [joinedCommunity, ...current.items],
+          total: current.total + 1,
+        };
+      }, { revalidate: true });
     } catch (err) {
       console.error('コミュニティへの参加に失敗しました:', err);
+      throw err;
     }
   }, [mutateMyCommunities]);
 
@@ -182,7 +197,7 @@ export const CommunityBoardListPage = () => {
                     key={c.ID}
                     community={c}
                     currentUserID={currentUserID}
-                    joined={joinedIDs.has(c.ID)}
+                    joined={c.isMember || joinedIDs.has(c.ID)}
                     onJoin={handleJoin}
                     onReport={handleReportCommunity}
                   />
@@ -207,7 +222,7 @@ export const CommunityBoardListPage = () => {
                   key={c.ID}
                   community={c}
                   currentUserID={currentUserID}
-                  joined={joinedIDs.has(c.ID)}
+                  joined={c.isMember || joinedIDs.has(c.ID)}
                   onJoin={handleJoin}
                   onReport={handleReportCommunity}
                 />

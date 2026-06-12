@@ -7,6 +7,8 @@ export type Community = {
   name: string;
   description: string;
   avatarURL: string;
+  memberCount: number;
+  isMember: boolean;
   unreadCount: number;
   createdAt: string;
   updatedAt: string;
@@ -32,8 +34,11 @@ const MY_COMMUNITIES_QUERY = `
         name
         description
         avatarURL
+        memberCount
+        isMember
         unreadCount
         createdAt
+        updatedAt
       }
       total
     }
@@ -49,7 +54,10 @@ const SEARCH_COMMUNITIES_QUERY = `
         name
         description
         avatarURL
+        memberCount
+        isMember
         createdAt
+        updatedAt
       }
       total
     }
@@ -64,7 +72,10 @@ const CREATE_COMMUNITY_MUTATION = `
       name
       description
       avatarURL
+      memberCount
+      isMember
       createdAt
+      updatedAt
     }
   }
 `;
@@ -110,6 +121,8 @@ const UPDATE_COMMUNITY_MUTATION = `
       name
       description
       avatarURL
+      memberCount
+      isMember
       createdAt
       updatedAt
     }
@@ -142,7 +155,10 @@ const RANDOM_COMMUNITIES_QUERY = `
       name
       description
       avatarURL
+      memberCount
+      isMember
       createdAt
+      updatedAt
     }
   }
 `;
