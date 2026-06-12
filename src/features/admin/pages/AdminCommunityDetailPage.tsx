@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import {
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import {
   getCommunities,
   getCommunityMembers,
   updateCommunity,
@@ -37,7 +37,7 @@ export const AdminCommunityDetailPage = () => {
     if (!id) return;
     try {
       const data = await getCommunities();
-      const found = data.communities.find((c) => c.ID === id);
+      const found = data.communities.items.find((c) => c.ID === id);
       if (found) {
         setCommunity(found);
         setName(found.name);
