@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
+import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { saveRecentDM } from '../utils/recentDM';
 import styles from '../components/organisms/chatRoom.module.css';
 
@@ -16,7 +17,7 @@ export const DMPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
-  const { room, messages, wsConnected, error, addMessage, initialLastReadAt, partnerLastReadAt } = useRoomMessages(roomId);
+  const { room, messages, wsConnected, error, addMessage, initialLastReadAt, partnerLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const isBlocked = room?.isMessagingDisabled ?? false;
   const {
     content, setContent,
@@ -28,7 +29,47 @@ export const DMPage = () => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
-  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID);
+  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
+
+  // 双方向スクロールページング
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+
+  const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
+
+  const loadOlderWithScrollRestore = async () => {
+    beginRestore();
+    await loadOlderMessages();
+  };
+
+  // 上センチネル: 古いメッセージを取得
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    const container = messageListRef.current;
+    if (!sentinel || !container || !hasMoreBefore) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadOlderWithScrollRestore(); },
+      { root: container, rootMargin: '200px 0px 0px 0px', threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMoreBefore, loadOlderMessages]);
+
+  // 下センチネル: 新しいメッセージを取得（歴史閲覧中のみ active）
+  useEffect(() => {
+    const sentinel = bottomSentinelRef.current;
+    const container = messageListRef.current;
+    if (!sentinel || !container || !hasMoreAfter) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadNewerMessages(); },
+      { root: container, rootMargin: '0px 0px 200px 0px', threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMoreAfter, loadNewerMessages]);
 
   useEffect(() => {
     if (!room || !roomId) return;
@@ -74,7 +115,12 @@ export const DMPage = () => {
       </div>
 
       <div className={styles.messageListWrapper}>
-        <div className={styles.messageList}>
+        <div className={styles.messageList} ref={messageListRef}>
+          <div ref={topSentinelRef} style={{ height: '1px' }} />
+          {loadingOlder && (
+            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+          )}
+
           {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
 
           {messages.map((msg, index) => {
@@ -118,6 +164,10 @@ export const DMPage = () => {
               </div>
             );
           })}
+          <div ref={bottomSentinelRef} style={{ height: '1px' }} />
+          {loadingNewer && (
+            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+          )}
           <div ref={bottomRef} />
         </div>
 

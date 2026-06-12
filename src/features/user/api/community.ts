@@ -24,28 +24,34 @@ export type CommunityMember = {
 };
 
 const MY_COMMUNITIES_QUERY = `
-  query MyCommunities {
-    myCommunities {
-      ID
-      roomID
-      name
-      description
-      avatarURL
-      unreadCount
-      createdAt
+  query MyCommunities($limit: Int, $offset: Int) {
+    myCommunities(limit: $limit, offset: $offset) {
+      items {
+        ID
+        roomID
+        name
+        description
+        avatarURL
+        unreadCount
+        createdAt
+      }
+      total
     }
   }
 `;
 
 const SEARCH_COMMUNITIES_QUERY = `
-  query SearchCommunities($name: String!) {
-    searchCommunities(name: $name) {
-      ID
-      roomID
-      name
-      description
-      avatarURL
-      createdAt
+  query SearchCommunities($name: String!, $limit: Int, $offset: Int) {
+    searchCommunities(name: $name, limit: $limit, offset: $offset) {
+      items {
+        ID
+        roomID
+        name
+        description
+        avatarURL
+        createdAt
+      }
+      total
     }
   }
 `;
@@ -150,19 +156,24 @@ const PRESIGNED_COMMUNITY_ICON_UPLOAD_URL_QUERY = `
   }
 `;
 
-export const listMyCommunities = async (): Promise<Community[]> => {
-  const data = await request<{ myCommunities: Community[] }>(
+export type CommunityPage = {
+  items: Community[];
+  total: number;
+};
+
+export const listMyCommunities = async (limit = 20, offset = 0): Promise<CommunityPage> => {
+  const data = await request<{ myCommunities: CommunityPage }>(
     MY_COMMUNITIES_QUERY,
-    undefined,
+    { limit, offset },
     getUserToken(),
   );
   return data.myCommunities;
 };
 
-export const searchCommunities = async (name: string): Promise<Community[]> => {
-  const data = await request<{ searchCommunities: Community[] }>(
+export const searchCommunities = async (name: string, limit = 20, offset = 0): Promise<CommunityPage> => {
+  const data = await request<{ searchCommunities: CommunityPage }>(
     SEARCH_COMMUNITIES_QUERY,
-    { name },
+    { name, limit, offset },
     getUserToken(),
   );
   return data.searchCommunities;

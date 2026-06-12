@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
@@ -12,10 +12,16 @@ export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
   const [query, setQuery] = useState('');
+  const [activeKeyword, setActiveKeyword] = useState('');
   const [results, setResults] = useState<Community[]>([]);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [searchOffset, setSearchOffset] = useState(0);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const loadingRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data: myCommunities, mutate: mutateMyCommunities } = useSWR('my-communities', listMyCommunities);
   const { data: randomCommunities, isLoading: loadingRandom } = useSWR(
@@ -33,21 +39,59 @@ export const CommunityBoardListPage = () => {
     [randomCommunities, joinedIDs],
   );
 
+  const loadSearchResults = useCallback(async (keyword: string, currentOffset: number, isFirst: boolean) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    if (!isFirst) setLoadingMore(true);
+    try {
+      const page = await searchCommunities(keyword, 20, currentOffset);
+      setResults((prev) => isFirst ? page.items : [...prev, ...page.items]);
+      setSearchTotal(page.total);
+      setSearchOffset(currentOffset + page.items.length);
+    } catch (err) {
+      if (isFirst) setError(toUserMessage(err, 'コミュニティの検索に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      loadingRef.current = false;
+      if (!isFirst) setLoadingMore(false);
+    }
+  }, []);
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSearching(true);
     setSearched(false);
+    setResults([]);
+    setSearchTotal(0);
+    setSearchOffset(0);
+    setActiveKeyword(query);
     try {
-      const data = await searchCommunities(query);
-      setResults(data);
+      await loadSearchResults(query, 0, true);
       setSearched(true);
-    } catch (err) {
-      setError(toUserMessage(err, 'コミュニティの検索に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setSearching(false);
     }
   };
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !searched) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setSearchOffset((prev) => {
+            if (!loadingRef.current && prev < searchTotal) {
+              loadSearchResults(activeKeyword, prev, false);
+            }
+            return prev;
+          });
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [searched, searchTotal, activeKeyword, loadSearchResults]);
 
   const handleReportCommunity = useCallback(async (community: Community) => {
     const customReason = window.prompt(
@@ -169,6 +213,10 @@ export const CommunityBoardListPage = () => {
                 />
               ))}
             </div>
+            <div ref={sentinelRef} style={{ height: '1px' }} />
+            {loadingMore && (
+              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '0.5rem' }}>読み込み中...</p>
+            )}
           </div>
         )}
       </main>
