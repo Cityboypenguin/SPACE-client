@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   { icon: homeIcon, label: 'ホーム', path: '/mypage', iconSize: 26 },
   { icon: dmIcon, label: 'DM', path: '/dm', iconSize: 32 },
   { icon: communityIcon, label: 'コミュニティ', path: '/community', iconSize: 32 },
-  { icon: notificationIcon, label: '通知', path: '/notifications', iconSize: 46 },
+  { icon: notificationIcon, label: '通知', path: '/notifications', iconSize: 24 },
   { icon: searchIcon, label: '検索', path: '/search', iconSize: 24 },
   { icon: settingsIcon, label: '設定', path: '/mypage/settings', iconSize: 40 },
 ] as const;
