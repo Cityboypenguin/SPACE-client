@@ -25,6 +25,7 @@ import {
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+import { updatePostInCache } from '../cache/postListCache';
 
 
 export const PostDetailPage = () => {
@@ -120,7 +121,9 @@ export const PostDetailPage = () => {
       setIsEditing(false);
       setEditSelectedFiles([]);
       setEditDeletedMediaIDs([]);
-      void mutate();
+      mutate().then(updatedPost => {
+        if (updatedPost && id) updatePostInCache(id, () => updatedPost);
+      });
     } catch (err) {
       setUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
     } finally {

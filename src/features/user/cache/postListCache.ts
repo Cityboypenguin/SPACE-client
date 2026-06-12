@@ -8,7 +8,7 @@ type PostListCacheData = {
   cachedAt: number;
 };
 
-const CACHE_TTL_MS = 30 * 60 * 1000;
+const CACHE_TTL_MS = 15 * 60 * 1000;
 
 let cache: PostListCacheData | null = null;
 
@@ -23,6 +23,11 @@ export const getPostListCache = (): PostListCacheData | null => {
 
 export const savePostListCache = (data: Omit<PostListCacheData, 'cachedAt'>) => {
   cache = { ...data, cachedAt: Date.now() };
+};
+
+export const updatePostInCache = (postId: string, updater: (post: Post) => Post) => {
+  if (!cache) return;
+  cache = { ...cache, posts: cache.posts.map(p => p.ID === postId ? updater(p) : p) };
 };
 
 export const clearPostListCache = () => {

@@ -35,7 +35,6 @@ export const UserPublicProfilePage = () => {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsTotal, setPostsTotal] = useState(0);
-  const [postsOffset, setPostsOffset] = useState(0);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsLoadingMore, setPostsLoadingMore] = useState(false);
   const [postsErr, setPostsErr] = useState(false);
@@ -50,7 +49,6 @@ export const UserPublicProfilePage = () => {
       const page = await getPostsByUserID(userID, 20, currentOffset);
       setPosts((prev) => isInitial ? page.items : [...prev, ...page.items]);
       setPostsTotal(page.total);
-      setPostsOffset(currentOffset + page.items.length);
       setPostsErr(false);
     } catch {
       setPostsErr(true);
@@ -67,8 +65,8 @@ export const UserPublicProfilePage = () => {
 
   const postsSentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setPostsOffset((prev) => {
-        if (!postsLoadingRef.current && prev < postsTotal && id) loadPosts(id, prev, false);
+      setPosts((prev) => {
+        if (!postsLoadingRef.current && prev.length < postsTotal && id) loadPosts(id, prev.length, false);
         return prev;
       });
     }, [postsTotal, id, loadPosts]),

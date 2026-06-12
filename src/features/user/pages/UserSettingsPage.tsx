@@ -5,6 +5,7 @@ import { getMyProfile, updateMyProfile } from '../api/profile';
 import { useAuth } from '../context/AuthContext';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { clearPostListCache } from '../cache/postListCache';
 
 export const UserSettingsPage = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export const UserSettingsPage = () => {
   const handleClearCache = async () => {
     if (!window.confirm('キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？')) return;
     await globalMutate(() => true);
+    clearPostListCache();
     setCacheCleared(true);
     setTimeout(() => setCacheCleared(false), 3000);
   };
@@ -45,6 +47,7 @@ export const UserSettingsPage = () => {
       const input: Parameters<typeof updateMyProfile>[0] = { accountID, name, email };
       if (password) input.password = password;
       await updateMyProfile(input);
+      clearPostListCache();
       setPassword('');
       setSuccess('更新しました');
     } catch (err) {
