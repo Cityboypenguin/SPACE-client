@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { SearchBar } from '../components/molecules/SearchBar';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { searchUsers, type UserProfile } from '../api/profile';
 import { getOrCreateDMRoom, listMyDMRooms, type Room } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './DMListPage.module.css';
 
@@ -22,12 +24,10 @@ export const DMListPage = () => {
 
   const [dmRooms, setDmRooms] = useState<Room[]>([]);
   const [dmTotal, setDmTotal] = useState(0);
-  const [dmOffset, setDmOffset] = useState(0);
   const [dmInitialLoading, setDmInitialLoading] = useState(true);
   const [dmLoadingMore, setDmLoadingMore] = useState(false);
   const [dmError, setDmError] = useState(false);
   const dmLoadingRef = useRef(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadDMRooms = useCallback(async (currentOffset: number, isInitial: boolean) => {
     if (dmLoadingRef.current) return;
@@ -38,7 +38,6 @@ export const DMListPage = () => {
       const page = await listMyDMRooms(LIMIT, currentOffset);
       setDmRooms((prev) => isInitial ? page.items : [...prev, ...page.items]);
       setDmTotal(page.total);
-      setDmOffset(currentOffset + page.items.length);
       setDmError(false);
     } catch {
       setDmError(true);
@@ -53,25 +52,15 @@ export const DMListPage = () => {
     loadDMRooms(0, true);
   }, [loadDMRooms]);
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setDmOffset((prev) => {
-            if (!dmLoadingRef.current && prev < dmTotal) {
-              loadDMRooms(prev, false);
-            }
-            return prev;
-          });
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [dmTotal, loadDMRooms]);
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setDmRooms((prev) => {
+        if (!dmLoadingRef.current && prev.length < dmTotal) loadDMRooms(prev.length, false);
+        return prev;
+      });
+    }, [dmTotal, loadDMRooms]),
+    dmLoadingMore,
+  );
 
   useUnreadSubscription(({ roomID, unreadCount }) => {
     setDmRooms((prev) =>
@@ -117,17 +106,7 @@ export const DMListPage = () => {
 
         <section>
           <h2 className={styles.sectionTitle}>新しいDMを開始</h2>
-          <form onSubmit={handleSearch} className={styles.searchForm}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="名前で検索"
-              required
-              className={styles.searchInput}
-            />
-            <button type="submit">検索</button>
-          </form>
+          <SearchBar value={query} onChange={setQuery} onSubmit={handleSearch} />
 
           {(searchError || dmError) && (
             <p style={{ color: 'red', marginTop: '0.5rem' }}>

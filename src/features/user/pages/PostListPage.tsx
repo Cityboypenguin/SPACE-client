@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 const LIMIT = 20;
 
@@ -36,7 +37,6 @@ export const PostListPage = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const loadingRef = useRef(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const postsRef = useRef(posts);
   const totalRef = useRef(total);
@@ -105,25 +105,15 @@ export const PostListPage = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setOffset(prev => {
-            if (!loadingRef.current && prev < total) {
-              loadPosts(prev, false);
-            }
-            return prev;
-          });
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [total, loadPosts]);
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setOffset(prev => {
+        if (!loadingRef.current && prev < total) loadPosts(prev, false);
+        return prev;
+      });
+    }, [total, loadPosts]),
+    loadingMore,
+  );
 
   const handlePostClick = (postId: string) => {
     savePostListCache({

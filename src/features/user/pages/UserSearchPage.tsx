@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { searchUsers, type UserProfile } from '../api/profile';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { SearchBar } from '../components/molecules/SearchBar';
 import { useAuth } from '../context/AuthContext';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import styles from './UserSearchPage.module.css';
 
 const LIMIT = 20;
@@ -21,7 +23,6 @@ export const UserSearchPage = () => {
   const location = useLocation();
   const { userId: currentUserID } = useAuth();
   const loadingRef = useRef(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadMore = useCallback(async (keyword: string, currentOffset: number, isFirst: boolean) => {
     if (loadingRef.current) return;
@@ -54,42 +55,23 @@ export const UserSearchPage = () => {
     await loadMore(query, 0, true);
   };
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || !searched) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setOffset((prev) => {
-            if (!loadingRef.current && prev < total) {
-              loadMore(activeKeyword, prev, false);
-            }
-            return prev;
-          });
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [searched, total, activeKeyword, loadMore]);
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setOffset((prev) => {
+        if (!loadingRef.current && prev < total) loadMore(activeKeyword, prev, false);
+        return prev;
+      });
+    }, [total, activeKeyword, loadMore]),
+    loadingMore,
+    searched,
+  );
 
   return (
     <div>
       <UserHeader />
       <main className={styles.main}>
         <h1>ユーザー検索</h1>
-        <form onSubmit={handleSearch} className={styles.searchForm}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="名前で検索"
-            required
-            className={styles.searchInput}
-          />
-          <button type="submit">検索</button>
-        </form>
+        <SearchBar value={query} onChange={setQuery} onSubmit={handleSearch} />
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {searched && results.length === 0 && !loadingRef.current && <p>該当するユーザーが見つかりませんでした</p>}

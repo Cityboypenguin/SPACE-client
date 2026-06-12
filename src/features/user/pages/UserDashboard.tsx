@@ -3,9 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-import { storageUrl } from '../../../lib/storage';
+import { UserAvatar } from '../../../components/atoms/UserAvatar';
+import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import styles from './UserDashboard.module.css';
-import { PostCard } from '../components/organisms/PostCard';
 import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
 
 export const UserDashboard = () => {
@@ -17,12 +18,10 @@ export const UserDashboard = () => {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsTotal, setPostsTotal] = useState(0);
-  const [postsOffset, setPostsOffset] = useState(0);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsLoadingMore, setPostsLoadingMore] = useState(false);
   const [postsErr, setPostsErr] = useState(false);
   const postsLoadingRef = useRef(false);
-  const postsSentinelRef = useRef<HTMLDivElement>(null);
 
   const loadPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean) => {
     if (postsLoadingRef.current) return;
@@ -33,7 +32,6 @@ export const UserDashboard = () => {
       const page = await getPostsByUserID(userID, 20, currentOffset);
       setPosts((prev) => isInitial ? page.items : [...prev, ...page.items]);
       setPostsTotal(page.total);
-      setPostsOffset(currentOffset + page.items.length);
       setPostsErr(false);
     } catch {
       setPostsErr(true);
@@ -48,25 +46,17 @@ export const UserDashboard = () => {
     if (userId) loadPosts(userId, 0, true);
   }, [userId, loadPosts]);
 
-  useEffect(() => {
-    const sentinel = postsSentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setPostsOffset((prev) => {
-            if (!postsLoadingRef.current && prev < postsTotal && userId) {
-              loadPosts(userId, prev, false);
-            }
-            return prev;
-          });
+  const postsSentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setPosts((prev) => {
+        if (!postsLoadingRef.current && prev.length < postsTotal && userId) {
+          loadPosts(userId, prev.length, false);
         }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [userId, postsTotal, loadPosts]);
+        return prev;
+      });
+    }, [postsTotal, userId, loadPosts]),
+    postsLoadingMore,
+  );
 
   useEffect(() => {
     if (location.state && (location.state as { message?: string }).message) {
@@ -109,17 +99,7 @@ export const UserDashboard = () => {
         {profile ? (
           <div>
             <div className={styles.profileHeader}>
-              {profile.avatarUrl ? (
-                <img
-                  src={storageUrl(profile.avatarUrl) ?? undefined}
-                  alt={profile.user.name}
-                  className={styles.avatar}
-                />
-              ) : (
-                <div className={styles.avatarPlaceholder}>
-                  {profile.user.name.charAt(0)}
-                </div>
-              )}
+              <UserAvatar userId={profile.user.ID} name={profile.user.name} avatarUrl={profile.avatarUrl} size={64} />
               <div>
                 <h2 className={styles.displayName}>{profile.user.name}</h2>
                 <p className={styles.username}>@{profile.user.accountID}</p>
@@ -158,38 +138,16 @@ export const UserDashboard = () => {
           <h2 style={{ fontSize: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
             自分の投稿
           </h2>
-
-          {postsErr && <p style={{ color: 'red', marginBottom: '1rem' }}>投稿の読み込みに失敗しました</p>}
-
-          <div
-            style={{
-              maxHeight: '50vh',
-              overflowY: 'auto',
-              paddingRight: '0.5rem',
-            }}
-          >
-            {postsLoading ? (
-              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-            ) : posts.length > 0 ? (
-              <>
-                {posts.map((post) => (
-                  <PostCard
-                    key={post.ID}
-                    post={post}
-                    currentUserId={userId}
-                    onLike={handleLike}
-                    onClick={() => navigate(`/posts/${post.ID}`)}
-                  />
-                ))}
-                <div ref={postsSentinelRef} style={{ height: '1px' }} />
-                {postsLoadingMore && (
-                  <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>読み込み中...</p>
-                )}
-              </>
-            ) : (
-              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
-            )}
-          </div>
+          <ScrollablePostsList
+            posts={posts}
+            loading={postsLoading}
+            loadingMore={postsLoadingMore}
+            error={postsErr}
+            currentUserId={userId}
+            sentinelRef={postsSentinelRef}
+            onLike={handleLike}
+            onPostClick={(postId) => navigate(`/posts/${postId}`)}
+          />
         </div>
 
       </main>

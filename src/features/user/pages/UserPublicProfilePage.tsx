@@ -3,14 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useProfile } from '../hooks/useProfile';
-import { storageUrl } from '../../../lib/storage';
 import { useAuth } from '../context/AuthContext';
+import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
-import { createReport } from '../api/report';
-import { PostCard } from '../components/organisms/PostCard';
+import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
+import { ReportModal } from '../components/organisms/ReportMadal';
 import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import styles from './UserPublicProfilePage.module.css';
 
 export const UserPublicProfilePage = () => {
@@ -39,7 +40,6 @@ export const UserPublicProfilePage = () => {
   const [postsLoadingMore, setPostsLoadingMore] = useState(false);
   const [postsErr, setPostsErr] = useState(false);
   const postsLoadingRef = useRef(false);
-  const postsSentinelRef = useRef<HTMLDivElement>(null);
 
   const loadPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean) => {
     if (postsLoadingRef.current) return;
@@ -65,28 +65,18 @@ export const UserPublicProfilePage = () => {
     if (id) loadPosts(id, 0, true);
   }, [id, loadPosts]);
 
-  useEffect(() => {
-    const sentinel = postsSentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setPostsOffset((prev) => {
-            if (!postsLoadingRef.current && prev < postsTotal && id) {
-              loadPosts(id, prev, false);
-            }
-            return prev;
-          });
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [id, postsTotal, loadPosts]);
+  const postsSentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setPostsOffset((prev) => {
+        if (!postsLoadingRef.current && prev < postsTotal && id) loadPosts(id, prev, false);
+        return prev;
+      });
+    }, [postsTotal, id, loadPosts]),
+    postsLoadingMore,
+  );
 
   const [actionLoading, setActionLoading] = useState(false);
-  const [reporting, setReporting] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) {
@@ -145,31 +135,9 @@ export const UserPublicProfilePage = () => {
     }
   };
 
-  const handleReportUser = async () => {
+  const handleReportUser = () => {
     if (!profile || !id) return;
-    const customReason = window.prompt(
-      `ユーザー「${profile.user.name}」を通報する具体的な理由を入力してください。\n（例: スパム行為、嫌がらせ、不適切な発言など）`
-    );
-    if (customReason === null) return;
-    if (customReason.trim() === '') {
-      alert('通報には具体的な理由の入力が必要です。');
-      return;
-    }
-
-    try {
-      setReporting(true);
-      await createReport({
-        targetType: 'USER',
-        targetID: id,
-        reason: 'ユーザー報告',
-        customReason: customReason,
-      });
-      alert('通報を送信しました。ご協力ありがとうございました。');
-    } catch (err) {
-      alert(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'));
-    } finally {
-      setReporting(false);
-    }
+    setIsReportOpen(true);
   };
 
   return (
@@ -182,7 +150,6 @@ export const UserPublicProfilePage = () => {
           {profile && (
             <button
               onClick={handleReportUser}
-              disabled={reporting}
               style={{
                 padding: '0.4rem 1rem',
                 background: '#fef2f2',
@@ -190,14 +157,14 @@ export const UserPublicProfilePage = () => {
                 border: '1px solid #fca5a5',
                 borderRadius: '20px',
                 fontWeight: 600,
-                cursor: reporting ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 fontSize: '0.85rem',
                 transition: 'all 0.2s'
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = '#fee2e2')}
               onMouseLeave={(e) => (e.currentTarget.style.background = '#fef2f2')}
             >
-              {reporting ? '送信中...' : '⚠️ このユーザーを通報'}
+              ⚠️ このユーザーを通報
             </button>
           )}
         </div>
@@ -208,17 +175,7 @@ export const UserPublicProfilePage = () => {
         {profile && (
           <div>
             <div className={styles.profileHeader}>
-              {profile.avatarUrl ? (
-                <img
-                  src={storageUrl(profile.avatarUrl) ?? undefined}
-                  alt={profile.user.name}
-                  className={styles.avatar}
-                />
-              ) : (
-                <div className={styles.avatarPlaceholder}>
-                  {profile.user.name.charAt(0)}
-                </div>
-              )}
+              <UserAvatar userId={profile.user.ID} name={profile.user.name} avatarUrl={profile.avatarUrl} size={80} />
               <div>
                 <h2 className={styles.displayName}>{profile.user.name}</h2>
                 <p className={styles.username}>@{profile.user.accountID}</p>
@@ -255,41 +212,28 @@ export const UserPublicProfilePage = () => {
               <h3 style={{ fontSize: '1.2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                 投稿一覧
               </h3>
-
-              {postsErr && <p style={{ color: 'red', marginBottom: '1rem' }}>投稿の読み込みに失敗しました</p>}
-              <div
-                style={{
-                  maxHeight: '50vh',
-                  overflowY: 'auto',
-                  paddingRight: '0.5rem',
-                }}
-              >
-                {postsLoading ? (
-                  <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-                ) : posts.length > 0 ? (
-                  <>
-                    {posts.map((post) => (
-                      <PostCard
-                        key={post.ID}
-                        post={post}
-                        currentUserId={currentUserId}
-                        onLike={handleLike}
-                        onClick={() => navigate(`/posts/${post.ID}`)}
-                      />
-                    ))}
-                    <div ref={postsSentinelRef} style={{ height: '1px' }} />
-                    {postsLoadingMore && (
-                      <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>読み込み中...</p>
-                    )}
-                  </>
-                ) : (
-                  <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
-                )}
-              </div>
+              <ScrollablePostsList
+                posts={posts}
+                loading={postsLoading}
+                loadingMore={postsLoadingMore}
+                error={postsErr}
+                currentUserId={currentUserId}
+                sentinelRef={postsSentinelRef}
+                onLike={handleLike}
+                onPostClick={(postId) => navigate(`/posts/${postId}`)}
+              />
             </div>
           </div>
         )}
       </main>
+      {id && (
+        <ReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          targetType="USER"
+          targetID={id}
+        />
+      )}
     </div>
   );
 };
