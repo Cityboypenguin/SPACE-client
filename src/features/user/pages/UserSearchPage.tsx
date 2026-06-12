@@ -15,7 +15,6 @@ export const UserSearchPage = () => {
   const [activeKeyword, setActiveKeyword] = useState('');
   const [results, setResults] = useState<UserProfile[]>([]);
   const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
   const [searched, setSearched] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
@@ -35,7 +34,6 @@ export const UserSearchPage = () => {
         : page.items;
       setResults((prev) => isFirst ? filtered : [...prev, ...filtered]);
       setTotal(page.total);
-      setOffset(currentOffset + page.items.length);
     } catch (err) {
       setError(toUserMessage(err, 'ユーザーの検索に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -49,7 +47,6 @@ export const UserSearchPage = () => {
     setError('');
     setResults([]);
     setTotal(0);
-    setOffset(0);
     setSearched(true);
     setActiveKeyword(query);
     await loadMore(query, 0, true);
@@ -57,8 +54,8 @@ export const UserSearchPage = () => {
 
   const sentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setOffset((prev) => {
-        if (!loadingRef.current && prev < total) loadMore(activeKeyword, prev, false);
+      setResults((prev) => {
+        if (!loadingRef.current && prev.length < total) loadMore(activeKeyword, prev.length, false);
         return prev;
       });
     }, [total, activeKeyword, loadMore]),

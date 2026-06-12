@@ -32,7 +32,6 @@ export const PostListPage = () => {
 
   const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
   const [total, setTotal] = useState(initialCache?.total ?? 0);
-  const [offset, setOffset] = useState(initialCache?.offset ?? 0);
   const [initialLoading, setInitialLoading] = useState(!initialCache);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -40,11 +39,9 @@ export const PostListPage = () => {
 
   const postsRef = useRef(posts);
   const totalRef = useRef(total);
-  const offsetRef = useRef(offset);
   const scrollYRef = useRef(initialCache?.scrollY ?? 0);
   useEffect(() => { postsRef.current = posts; }, [posts]);
   useEffect(() => { totalRef.current = total; }, [total]);
-  useEffect(() => { offsetRef.current = offset; }, [offset]);
 
   // スクロール位置を常時追跡（アンマウント時に window.scrollY が 0 にリセットされるため）
   useEffect(() => {
@@ -67,7 +64,6 @@ export const PostListPage = () => {
       const result = await getTopLevelPosts(LIMIT, currentOffset);
       setPosts(prev => isInitial ? result.items : [...prev, ...result.items]);
       setTotal(result.total);
-      setOffset(currentOffset + result.items.length);
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -99,7 +95,7 @@ export const PostListPage = () => {
       savePostListCache({
         posts: postsRef.current,
         total: totalRef.current,
-        offset: offsetRef.current,
+        offset: postsRef.current.length,
         scrollY: scrollYRef.current,
       });
     };
@@ -107,8 +103,8 @@ export const PostListPage = () => {
 
   const sentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setOffset(prev => {
-        if (!loadingRef.current && prev < total) loadPosts(prev, false);
+      setPosts(prev => {
+        if (!loadingRef.current && prev.length < total) loadPosts(prev.length, false);
         return prev;
       });
     }, [total, loadPosts]),
@@ -119,7 +115,7 @@ export const PostListPage = () => {
     savePostListCache({
       posts: postsRef.current,
       total: totalRef.current,
-      offset: offsetRef.current,
+      offset: postsRef.current.length,
       scrollY: scrollYRef.current,
     });
     navigate(`/posts/${postId}`);
