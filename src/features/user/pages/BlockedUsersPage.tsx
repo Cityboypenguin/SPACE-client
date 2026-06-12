@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { UserListItem } from '../components/molecules/UserListItem';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
-import { storageUrl } from '../../../lib/storage';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useToast } from '../../../context/ToastContext';
+import { useRef } from 'react';
 
 const LIMIT = 20;
 
@@ -13,11 +15,9 @@ export const BlockedUsersPage = () => {
 
   const [users, setUsers] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadingRef = useRef(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadUsers = useCallback(async (currentOffset: number, isInitial: boolean) => {
     if (loadingRef.current) return;
@@ -28,7 +28,6 @@ export const BlockedUsersPage = () => {
       const page = await listBlockedUsers(LIMIT, currentOffset);
       setUsers((prev) => isInitial ? page.items : [...prev, ...page.items]);
       setTotal(page.total);
-      setOffset(currentOffset + page.items.length);
     } finally {
       loadingRef.current = false;
       if (isInitial) setInitialLoading(false);
@@ -40,25 +39,15 @@ export const BlockedUsersPage = () => {
     loadUsers(0, true);
   }, [loadUsers]);
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setOffset((prev) => {
-            if (!loadingRef.current && prev < total) {
-              loadUsers(prev, false);
-            }
-            return prev;
-          });
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [total, loadUsers]);
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setUsers((prev) => {
+        if (!loadingRef.current && prev.length < total) loadUsers(prev.length, false);
+        return prev;
+      });
+    }, [total, loadUsers]),
+    loadingMore,
+  );
 
   const handleUnblock = async (targetId: string) => {
     if (!window.confirm('ブロックを解除しますか？')) return;
@@ -86,22 +75,13 @@ export const BlockedUsersPage = () => {
           <>
             <ul style={{ listStyle: 'none', padding: 0 }}>
               {users.map((user) => (
-                <li key={user.ID} style={{ display: 'flex', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #eee' }}>
-                  <div onClick={() => navigate(`/users/${user.ID}`)} style={{ cursor: 'pointer', marginRight: '16px' }}>
-                    {user.avatarUrl ? (
-                      <img src={storageUrl(user.avatarUrl) ?? undefined} alt={user.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                    ) : (
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{user.name.charAt(0)}</div>
-                    )}
-                  </div>
-                  <div style={{ flexGrow: 1 }}>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>{user.name}</p>
-                    <p style={{ margin: 0, fontSize: '0.8em', color: 'gray' }}>@{user.accountID}</p>
-                  </div>
-                  <button onClick={() => handleUnblock(user.ID)} style={{ padding: '6px 12px', color: 'red', cursor: 'pointer', borderRadius: '4px', border: '1px solid red', background: '#fff' }}>
-                    ブロック解除
-                  </button>
-                </li>
+                <UserListItem
+                  key={user.ID}
+                  user={user}
+                  actionLabel="ブロック解除"
+                  onAction={() => handleUnblock(user.ID)}
+                  actionVariant="danger"
+                />
               ))}
             </ul>
             <div ref={sentinelRef} style={{ height: '1px' }} />

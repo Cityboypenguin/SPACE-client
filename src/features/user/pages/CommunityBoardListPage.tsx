@@ -1,16 +1,19 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { SearchBar } from '../components/molecules/SearchBar';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
-import { createReport } from '../api/report';
 import { useAuth } from '../context/AuthContext';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { ReportModal } from '../components/organisms/ReportMadal';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
+  const [reportTarget, setReportTarget] = useState<Community | null>(null);
   const [query, setQuery] = useState('');
   const [activeKeyword, setActiveKeyword] = useState('');
   const [results, setResults] = useState<Community[]>([]);
@@ -21,7 +24,6 @@ export const CommunityBoardListPage = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const loadingRef = useRef(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data: myCommunities, mutate: mutateMyCommunities } = useSWR('my-communities', () => listMyCommunities());
   const { data: randomCommunities, isLoading: loadingRandom } = useSWR(
@@ -73,49 +75,19 @@ export const CommunityBoardListPage = () => {
     }
   };
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || !searched) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setSearchOffset((prev) => {
-            if (!loadingRef.current && prev < searchTotal) {
-              loadSearchResults(activeKeyword, prev, false);
-            }
-            return prev;
-          });
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [searched, searchTotal, activeKeyword, loadSearchResults]);
-
-  const handleReportCommunity = useCallback(async (community: Community) => {
-    const customReason = window.prompt(
-      `コミュニティ「${community.name}」を通報する具体的な理由を入力してください。`
-    );
-
-    if (customReason === null) return;
-    if (customReason.trim() === '') {
-      alert('通報には具体的な理由の入力が必要です。');
-      return;
-    }
-
-    try {
-      await createReport({
-        targetType: 'COMMUNITY',
-        targetID: community.ID,
-        reason: 'COMMUNITY_VIOLATION',
-        customReason: customReason,
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setSearchOffset((prev) => {
+        if (!loadingRef.current && prev < searchTotal) loadSearchResults(activeKeyword, prev, false);
+        return prev;
       });
-      alert('コミュニティの通報を送信しました。ご協力ありがとうございました。');
-    } catch (err) {
-      console.error('コミュニティの通報に失敗しました:', err);
-      alert('通報の送信に失敗しました。時間をおいてから再度お試しください。');
-    }
+    }, [searchTotal, activeKeyword, loadSearchResults]),
+    loadingMore,
+    searched,
+  );
+
+  const handleReportCommunity = useCallback((community: Community) => {
+    setReportTarget(community);
   }, []);
 
   const handleJoin = useCallback(async (community: Community) => {
@@ -156,30 +128,15 @@ export const CommunityBoardListPage = () => {
           <h1 style={{ margin: 0, fontSize: '1.5rem' }}>コミュニティを探す</h1>
         </div>
 
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          <input
-            type="text"
+        <div style={{ marginBottom: '1.5rem' }}>
+          <SearchBar
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
+            onSubmit={handleSearch}
             placeholder="コミュニティ名で検索"
-            style={{ flex: 1, padding: '0.6rem 0.9rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+            submitting={searching}
           />
-          <button
-            type="submit"
-            disabled={searching || !query.trim()}
-            style={{
-              padding: '0.6rem 1.2rem',
-              borderRadius: '8px',
-              background: searching || !query.trim() ? '#94a3b8' : '#646cff',
-              color: '#fff',
-              border: 'none',
-              cursor: searching || !query.trim() ? 'not-allowed' : 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            {searching ? '検索中...' : '検索'}
-          </button>
-        </form>
+        </div>
 
         {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
 
@@ -235,6 +192,15 @@ export const CommunityBoardListPage = () => {
           </div>
         )}
       </main>
+
+      {reportTarget && (
+        <ReportModal
+          isOpen={true}
+          onClose={() => setReportTarget(null)}
+          targetType="COMMUNITY"
+          targetID={reportTarget.ID}
+        />
+      )}
     </div>
   );
 };

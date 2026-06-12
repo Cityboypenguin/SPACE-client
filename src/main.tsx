@@ -5,6 +5,9 @@ import './index.css';
 import App from './App.tsx';
 import { AuthProvider } from './features/user/context/AuthContext';
 
+// SPA のスクロール管理はアプリ側で行う
+window.history.scrollRestoration = 'manual';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

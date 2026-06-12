@@ -5,6 +5,7 @@ import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, type Community } from '../api/community';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import styles from './CommunityListPage.module.css';
 
 const LIMIT = 20;
@@ -14,12 +15,10 @@ export const CommunityListPage = () => {
 
   const [communities, setCommunities] = useState<Community[]>([]);
   const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const loadingRef = useRef(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadCommunities = useCallback(async (currentOffset: number, isInitial: boolean) => {
     if (loadingRef.current) return;
@@ -30,7 +29,6 @@ export const CommunityListPage = () => {
       const result = await listMyCommunities(LIMIT, currentOffset);
       setCommunities(prev => isInitial ? result.items : [...prev, ...result.items]);
       setTotal(result.total);
-      setOffset(currentOffset + result.items.length);
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -45,25 +43,15 @@ export const CommunityListPage = () => {
     loadCommunities(0, true);
   }, [loadCommunities]);
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setOffset(prev => {
-            if (!loadingRef.current && prev < total) {
-              loadCommunities(prev, false);
-            }
-            return prev;
-          });
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [total, loadCommunities]);
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setCommunities((prev) => {
+        if (!loadingRef.current && prev.length < total) loadCommunities(prev.length, false);
+        return prev;
+      });
+    }, [total, loadCommunities]),
+    loadingMore,
+  );
 
   useUnreadSubscription(({ roomID, unreadCount }) => {
     setCommunities(prev => prev.map(c => c.roomID === roomID ? { ...c, unreadCount } : c));

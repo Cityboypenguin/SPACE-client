@@ -8,8 +8,8 @@ import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, getCommunityMembers, type Community } from '../api/community';
-import { createReport } from '../api/report';
 import { CommunityMembersModal } from '../components/organisms/CommunityMemberModal';
+import { ReportModal } from '../components/organisms/ReportMadal';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
@@ -78,7 +78,7 @@ export const CommunityRoomPage = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [reporting, setReporting] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', () => listMyCommunities());
 
@@ -116,33 +116,9 @@ export const CommunityRoomPage = () => {
     }
   };
 
-  const handleReportCommunity = async () => {
+  const handleReportCommunity = () => {
     if (!community) return;
-
-    const reason = window.prompt(
-      `コミュニティ「${community.name}」を通報する理由を入力してください。\n(例: 荒らし行為、利用規約違反、不適切なコンテンツなど)`
-    );
-
-    if (reason === null) return;
-    if (!reason.trim()) {
-      window.alert('通報理由は必須です。');
-      return;
-    }
-
-    setReporting(true);
-    try {
-      await createReport({
-        targetType: 'COMMUNITY',
-        targetID: community.ID,
-        reason: '違反報告',
-        customReason: reason,
-      });
-      window.alert('コミュニティの通報が完了しました。運営にて確認いたします。');
-    } catch (err) {
-      window.alert(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'));
-    } finally {
-      setReporting(false);
-    }
+    setIsReportOpen(true);
   };
 
   useEffect(() => {
@@ -201,7 +177,6 @@ export const CommunityRoomPage = () => {
         {community && (
           <button
             onClick={handleReportCommunity}
-            disabled={reporting}
             style={{
               marginLeft: 'auto',
               padding: '3px 10px',
@@ -210,9 +185,8 @@ export const CommunityRoomPage = () => {
               border: '1px solid #fca5a5',
               background: '#fff',
               color: '#dc2626',
-              cursor: reporting ? 'not-allowed' : 'pointer',
+              cursor: 'pointer',
               fontWeight: 600,
-              opacity: reporting ? 0.6 : 1,
             }}
           >
             🚩 通報
@@ -325,6 +299,14 @@ export const CommunityRoomPage = () => {
         <CommunityMembersModal
           community={community}
           onClose={() => setShowMembers(false)}
+        />
+      )}
+      {community && (
+        <ReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          targetType="COMMUNITY"
+          targetID={community.ID}
         />
       )}
     </div>
