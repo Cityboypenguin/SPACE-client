@@ -8,6 +8,7 @@ import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import styles from './UserDashboard.module.css';
 import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
+import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 
 export const UserDashboard = () => {
   const location = useLocation();
@@ -16,12 +17,46 @@ export const UserDashboard = () => {
   const { userId } = useAuth();
   const { profile, loading, error } = useProfile(userId);
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [postsTotal, setPostsTotal] = useState(0);
-  const [postsLoading, setPostsLoading] = useState(true);
+  const initialCacheRef = useRef(userId ? getUserPostListCache(userId) : null);
+  const initialCache = initialCacheRef.current;
+
+  const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
+  const [postsTotal, setPostsTotal] = useState(initialCache?.total ?? 0);
+  const [postsLoading, setPostsLoading] = useState(!initialCache);
   const [postsLoadingMore, setPostsLoadingMore] = useState(false);
   const [postsErr, setPostsErr] = useState(false);
   const postsLoadingRef = useRef(false);
+
+  const postsRef = useRef(posts);
+  const totalRef = useRef(postsTotal);
+  const scrollYRef = useRef(initialCache?.scrollY ?? 0);
+  useEffect(() => { postsRef.current = posts; }, [posts]);
+  useEffect(() => { totalRef.current = postsTotal; }, [postsTotal]);
+
+  useEffect(() => {
+    const onScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!initialCache) return;
+    const raf = requestAnimationFrame(() => window.scrollTo(0, initialCache.scrollY));
+    return () => cancelAnimationFrame(raf);
+  }, [initialCache]);
+
+  useEffect(() => {
+    return () => {
+      if (userId) {
+        saveUserPostListCache(userId, {
+          posts: postsRef.current,
+          total: totalRef.current,
+          offset: postsRef.current.length,
+          scrollY: scrollYRef.current,
+        });
+      }
+    };
+  }, [userId]);
 
   const loadPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean) => {
     if (postsLoadingRef.current) return;
@@ -43,8 +78,9 @@ export const UserDashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (initialCache) return;
     if (userId) loadPosts(userId, 0, true);
-  }, [userId, loadPosts]);
+  }, [userId, loadPosts, initialCache]);
 
   const postsSentinelRef = useInfiniteScroll(
     useCallback(() => {
@@ -79,6 +115,18 @@ export const UserDashboard = () => {
         return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
       }
     }));
+  };
+
+  const handlePostClick = (postId: string) => {
+    if (userId) {
+      saveUserPostListCache(userId, {
+        posts: postsRef.current,
+        total: totalRef.current,
+        offset: postsRef.current.length,
+        scrollY: scrollYRef.current,
+      });
+    }
+    navigate(`/posts/${postId}`);
   };
 
   if (loading) return <p>読み込み中...</p>;
@@ -146,10 +194,9 @@ export const UserDashboard = () => {
             currentUserId={userId}
             sentinelRef={postsSentinelRef}
             onLike={handleLike}
-            onPostClick={(postId) => navigate(`/posts/${postId}`)}
+            onPostClick={handlePostClick}
           />
         </div>
-
       </main>
     </div>
   );

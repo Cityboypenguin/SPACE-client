@@ -12,6 +12,7 @@ import { ReportModal } from '../components/organisms/ReportMadal';
 import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import styles from './UserPublicProfilePage.module.css';
 
 export const UserPublicProfilePage = () => {
@@ -33,12 +34,46 @@ export const UserPublicProfilePage = () => {
   const isFavorited = favoriteUsers?.some((u) => u.ID === id) ?? false;
   const isBlocked = blockedUsers?.some((u) => u.ID === id) ?? false;
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [postsTotal, setPostsTotal] = useState(0);
-  const [postsLoading, setPostsLoading] = useState(true);
+  const initialCacheRef = useRef(id ? getUserPostListCache(id) : null);
+  const initialCache = initialCacheRef.current;
+
+  const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
+  const [postsTotal, setPostsTotal] = useState(initialCache?.total ?? 0);
+  const [postsLoading, setPostsLoading] = useState(!initialCache);
   const [postsLoadingMore, setPostsLoadingMore] = useState(false);
   const [postsErr, setPostsErr] = useState(false);
   const postsLoadingRef = useRef(false);
+
+  const postsRef = useRef(posts);
+  const totalRef = useRef(postsTotal);
+  const scrollYRef = useRef(initialCache?.scrollY ?? 0);
+  useEffect(() => { postsRef.current = posts; }, [posts]);
+  useEffect(() => { totalRef.current = postsTotal; }, [postsTotal]);
+
+  useEffect(() => {
+    const onScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!initialCache) return;
+    const raf = requestAnimationFrame(() => window.scrollTo(0, initialCache.scrollY));
+    return () => cancelAnimationFrame(raf);
+  }, [initialCache]);
+
+  useEffect(() => {
+    return () => {
+      if (id) {
+        saveUserPostListCache(id, {
+          posts: postsRef.current,
+          total: totalRef.current,
+          offset: postsRef.current.length,
+          scrollY: scrollYRef.current,
+        });
+      }
+    };
+  }, [id]);
 
   const loadPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean) => {
     if (postsLoadingRef.current) return;
@@ -60,8 +95,9 @@ export const UserPublicProfilePage = () => {
   }, []);
 
   useEffect(() => {
+    if (initialCache) return;
     if (id) loadPosts(id, 0, true);
-  }, [id, loadPosts]);
+  }, [id, loadPosts, initialCache]);
 
   const postsSentinelRef = useInfiniteScroll(
     useCallback(() => {
@@ -131,6 +167,18 @@ export const UserPublicProfilePage = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handlePostClick = (postId: string) => {
+    if (id) {
+      saveUserPostListCache(id, {
+        posts: postsRef.current,
+        total: totalRef.current,
+        offset: postsRef.current.length,
+        scrollY: scrollYRef.current,
+      });
+    }
+    navigate(`/posts/${postId}`);
   };
 
   const handleReportUser = () => {
@@ -218,7 +266,7 @@ export const UserPublicProfilePage = () => {
                 currentUserId={currentUserId}
                 sentinelRef={postsSentinelRef}
                 onLike={handleLike}
-                onPostClick={(postId) => navigate(`/posts/${postId}`)}
+                onPostClick={handlePostClick}
               />
             </div>
           </div>
