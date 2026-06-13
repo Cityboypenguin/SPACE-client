@@ -63,17 +63,19 @@ export const PostListPage = () => {
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
 
-  const loadPosts = useCallback(async (currentOffset: number, isInitial: boolean) => {
+  const loadPosts = useCallback(async (currentOffset: number, mode: 'initial' | 'refresh' | 'more') => {
     if (loadingRef.current) return;
     loadingRef.current = true;
-    if (isInitial) setInitialLoading(true);
-    else setLoadingMore(true);
+    if (mode === 'initial') setInitialLoading(true);
+    else if (mode === 'more') setLoadingMore(true);
     try {
       const result = await getTopLevelPosts(LIMIT, currentOffset);
       setPosts(prev => {
-        if (isInitial) return result.items;
+        if (mode === 'initial') return result.items;
         const existingIds = new Set(prev.map(p => p.ID));
-        return [...prev, ...result.items.filter(p => !existingIds.has(p.ID))];
+        const newItems = result.items.filter(p => !existingIds.has(p.ID));
+        if (mode === 'refresh') return [...newItems, ...prev];
+        return [...prev, ...newItems];
       });
       setTotal(result.total);
       setLoadError(false);
@@ -81,8 +83,8 @@ export const PostListPage = () => {
       setLoadError(true);
     } finally {
       loadingRef.current = false;
-      if (isInitial) setInitialLoading(false);
-      else setLoadingMore(false);
+      if (mode === 'initial') setInitialLoading(false);
+      else if (mode === 'more') setLoadingMore(false);
     }
   }, []);
 
@@ -92,7 +94,7 @@ export const PostListPage = () => {
     setNewPostsCount(0);
     feedLoadedAtRef.current = new Date();
     window.scrollTo(0, 0);
-    loadPosts(0, true);
+    loadPosts(0, 'refresh');
   }, [loadPosts]);
 
   // 上に戻るボタン（クールダウン中はスクロールのみ）
@@ -102,7 +104,7 @@ export const PostListPage = () => {
       lastRefreshedAtRef.current = Date.now();
       setNewPostsCount(0);
       feedLoadedAtRef.current = new Date();
-      loadPosts(0, true);
+      loadPosts(0, 'refresh');
     }
   }, [loadPosts]);
 
@@ -124,7 +126,7 @@ export const PostListPage = () => {
   useEffect(() => {
     feedLoadedAtRef.current = new Date();
     if (initialCache) return;
-    loadPosts(0, true);
+    loadPosts(0, 'initial');
   }, [loadPosts, initialCache]);
 
   // スクロール位置の復元（描画前に実行してちらつきを防ぐ）
@@ -148,7 +150,7 @@ export const PostListPage = () => {
   const sentinelRef = useInfiniteScroll(
     useCallback(() => {
       setPosts(prev => {
-        if (!loadingRef.current && prev.length < total) loadPosts(prev.length, false);
+        if (!loadingRef.current && prev.length < total) loadPosts(prev.length, 'more');
         return prev;
       });
     }, [total, loadPosts]),
