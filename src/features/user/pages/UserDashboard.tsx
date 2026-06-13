@@ -65,7 +65,11 @@ export const UserDashboard = () => {
     else setPostsLoadingMore(true);
     try {
       const page = await getPostsByUserID(userID, 20, currentOffset);
-      setPosts((prev) => isInitial ? page.items : [...prev, ...page.items]);
+      setPosts((prev) => {
+        if (isInitial) return page.items;
+        const existingIds = new Set(prev.map(p => p.ID));
+        return [...prev, ...page.items.filter(p => !existingIds.has(p.ID))];
+      });
       setPostsTotal(page.total);
       setPostsErr(false);
     } catch {

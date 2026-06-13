@@ -166,6 +166,12 @@
   word-break: break-all;
 }
 
+.descriptionLink {
+  color: #3b82f6;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
 /* 右パネル */
 .membersPane {
   flex: 1;

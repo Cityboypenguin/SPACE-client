@@ -10,6 +10,7 @@ export type Community = {
   memberCount: number;
   isMember: boolean;
   unreadCount: number;
+  lastMessage?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -37,6 +38,7 @@ const MY_COMMUNITIES_QUERY = `
         memberCount
         isMember
         unreadCount
+        lastMessage
         createdAt
         updatedAt
       }

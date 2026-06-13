@@ -63,7 +63,11 @@ export const PostListPage = () => {
     else setLoadingMore(true);
     try {
       const result = await getTopLevelPosts(LIMIT, currentOffset);
-      setPosts(prev => isInitial ? result.items : [...prev, ...result.items]);
+      setPosts(prev => {
+        if (isInitial) return result.items;
+        const existingIds = new Set(prev.map(p => p.ID));
+        return [...prev, ...result.items.filter(p => !existingIds.has(p.ID))];
+      });
       setTotal(result.total);
       setLoadError(false);
     } catch {

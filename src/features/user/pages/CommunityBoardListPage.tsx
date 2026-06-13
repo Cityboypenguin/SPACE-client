@@ -62,6 +62,14 @@ export const CommunityBoardListPage = () => {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!query.trim()) {
+      setSearched(false);
+      setResults([]);
+      setSearchTotal(0);
+      setSearchOffset(0);
+      setActiveKeyword('');
+      return;
+    }
     setSearching(true);
     setSearched(false);
     setResults([]);

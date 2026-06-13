@@ -122,8 +122,8 @@ export const CommunityListPage = () => {
                     <span className={styles.itemName}>{c.name}</span>
                   </div>
                   <div className={styles.itemRight}>
-                    {c.description && (
-                      <p className={styles.itemDescription}>{c.description}</p>
+                    {c.lastMessage && (
+                      <p className={styles.itemDescription}>{c.lastMessage}</p>
                     )}
                     <UnreadCountBadge count={c.unreadCount ?? 0} />
                   </div>
