@@ -30,6 +30,11 @@ export const updatePostInCache = (postId: string, updater: (post: Post) => Post)
   cache = { ...cache, posts: cache.posts.map(p => p.ID === postId ? updater(p) : p) };
 };
 
+export const removePostFromCache = (postId: string) => {
+  if (!cache) return;
+  cache = { ...cache, posts: cache.posts.filter(p => p.ID !== postId), total: Math.max(0, cache.total - 1) };
+};
+
 export const clearPostListCache = () => { cache = null; };
 
 export const getUserPostListCache = (userId: string): PostListCacheData | null => {
@@ -47,6 +52,12 @@ export const updatePostInUserPostListCache = (userId: string, postId: string, up
   const data = userPostCaches.get(userId);
   if (!data) return;
   userPostCaches.set(userId, { ...data, posts: data.posts.map(p => p.ID === postId ? updater(p) : p) });
+};
+
+export const removePostFromUserPostListCache = (userId: string, postId: string) => {
+  const data = userPostCaches.get(userId);
+  if (!data) return;
+  userPostCaches.set(userId, { ...data, posts: data.posts.filter(p => p.ID !== postId), total: Math.max(0, data.total - 1) });
 };
 
 export const clearAllUserPostListCaches = () => { userPostCaches.clear(); };

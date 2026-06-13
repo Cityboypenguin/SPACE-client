@@ -1,4 +1,4 @@
-import type { Post } from '../api/post';
+import type { Post } from '../api/posts';
 
 export const countAllReplies = (post: Post): number => {
   if (!post.replies) {

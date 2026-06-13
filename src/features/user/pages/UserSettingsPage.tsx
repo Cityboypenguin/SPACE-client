@@ -198,6 +198,7 @@ const GeneralView = ({
   const { logout } = useAuth();
   const { mutate: globalMutate } = useSWRConfig();
   const [cacheCleared, setCacheCleared] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleClearCache = async () => {
     if (!window.confirm('キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？')) return;
@@ -208,8 +209,7 @@ const GeneralView = ({
     setTimeout(() => setCacheCleared(false), 3000);
   };
 
-  const handleLogout = async () => {
-    if (!window.confirm('ログアウトしますか？')) return;
+  const doLogout = async () => {
     await logout();
     navigate('/login');
   };
@@ -237,13 +237,57 @@ const GeneralView = ({
         <button type="button" className={styles.actionBtn} onClick={handleClearCache}>
           キャッシュの削除
         </button>
-        <button type="button" className={`${styles.actionBtn} ${styles.logoutBtn}`} onClick={handleLogout}>
+        <button type="button" className={`${styles.actionBtn} ${styles.logoutBtn}`} onClick={() => setShowLogoutConfirm(true)}>
           ログアウト
         </button>
         <button type="button" className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={handleDeleteAccount}>
           アカウント削除
         </button>
       </div>
+
+      {showLogoutConfirm && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLogoutConfirm(false); }}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 12, padding: '2rem',
+              width: '90%', maxWidth: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              textAlign: 'center',
+            }}
+          >
+            <p style={{ margin: '0 0 1.5rem', fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>
+              ログアウトしますか？
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: 8,
+                  border: '1px solid #cbd5e1', background: '#fff',
+                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => { setShowLogoutConfirm(false); void doLogout(); }}
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: 8,
+                  border: 'none', background: '#ef4444',
+                  cursor: 'pointer', fontWeight: 500, color: '#fff',
+                }}
+              >
+                ログアウト
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

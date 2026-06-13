@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -27,7 +27,7 @@ import {
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-import { updatePostInCache } from '../cache/postListCache';
+import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache } from '../cache/postListCache';
 
 
 export const PostDetailPage = () => {
@@ -137,6 +137,8 @@ export const PostDetailPage = () => {
     if (!id || !window.confirm('本当にこの投稿を削除しますか？')) return;
     try {
       await deletePost(id);
+      removePostFromCache(id);
+      if (userId) removePostFromUserPostListCache(userId, id);
       navigate(-1);
     } catch (err) {
       console.error(err);

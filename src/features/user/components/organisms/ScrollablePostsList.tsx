@@ -9,7 +9,7 @@ type Props = {
   error: boolean;
   currentUserId: string | null | undefined;
   sentinelRef: RefObject<HTMLDivElement | null>;
-  onLike: (postId: string, isLiked: boolean) => void;
+  onLike: (postId: string, isLiked: boolean) => Promise<void>;
   onPostClick: (postId: string) => void;
   emptyMessage?: string;
   errorMessage?: string;
@@ -38,7 +38,7 @@ export const ScrollablePostsList = ({
             <PostCard
               key={post.ID}
               post={post}
-              currentUserId={currentUserId}
+              currentUserId={currentUserId ?? null}
               onLike={onLike}
               onClick={() => onPostClick(post.ID)}
             />

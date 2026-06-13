@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useNotification } from '../context/NotificationContext';
-import {
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import {
   listMyNotifications,
   markNotificationAsRead,
   deleteNotifications,

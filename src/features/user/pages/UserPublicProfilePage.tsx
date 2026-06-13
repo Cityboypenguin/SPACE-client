@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -57,10 +57,9 @@ export const UserPublicProfilePage = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!initialCache) return;
-    const raf = requestAnimationFrame(() => window.scrollTo(0, initialCache.scrollY));
-    return () => cancelAnimationFrame(raf);
+    window.scrollTo(0, initialCache.scrollY);
   }, [initialCache]);
 
   useEffect(() => {

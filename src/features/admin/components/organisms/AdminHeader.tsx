@@ -11,7 +11,7 @@ export const AdminHeader = () => {
 
   const refreshPendingCount = () => {
     getInquiries('PENDING')
-      .then((inquiries) => setPendingCount(inquiries.length))
+      .then((inquiries) => setPendingCount(inquiries.total))
       .catch(() => {});
   };
 

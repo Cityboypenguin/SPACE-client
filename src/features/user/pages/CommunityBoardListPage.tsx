@@ -87,7 +87,7 @@ export const CommunityBoardListPage = () => {
     searched,
   );
 
-  const handleReportCommunity = useCallback((community: Community) => {
+  const handleReportCommunity = useCallback(async (community: Community) => {
     setReportTarget(community);
   }, []);
 

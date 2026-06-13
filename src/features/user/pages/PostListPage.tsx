@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostCard } from '../components/organisms/PostCard';
@@ -80,14 +80,10 @@ export const PostListPage = () => {
     loadPosts(0, true);
   }, [loadPosts, initialCache]);
 
-  // スクロール位置の復元（rAF でブラウザの描画後に実行）
-  useEffect(() => {
+  // スクロール位置の復元（描画前に実行してちらつきを防ぐ）
+  useLayoutEffect(() => {
     if (!initialCache) return;
-    const scrollY = initialCache.scrollY;
-    const raf = requestAnimationFrame(() => {
-      window.scrollTo(0, scrollY);
-    });
-    return () => cancelAnimationFrame(raf);
+    window.scrollTo(0, initialCache.scrollY);
   }, [initialCache]);
 
   // アンマウント時にキャッシュ保存
