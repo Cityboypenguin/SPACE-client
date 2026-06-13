@@ -6,6 +6,7 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { PostCard } from '../components/organisms/PostCard';
 import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PostMediaGrid } from '../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';
@@ -27,7 +28,7 @@ import {
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache } from '../cache/postListCache';
+import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache, updatePostInUserPostListCache } from '../cache/postListCache';
 
 
 export const PostDetailPage = () => {
@@ -52,6 +53,7 @@ export const PostDetailPage = () => {
   const [updateError, setUpdateError] = useState('');
   const [editContent, setEditContent] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Post | null>(null);
 
   const isMyPost = post?.user.ID === userId;
   // ⭕️ 追加: メイン投稿が削除されているかどうかのフラグ
@@ -62,6 +64,34 @@ export const PostDetailPage = () => {
       await deleteFavorite(postId);
     } else {
       await createFavorite(postId);
+    }
+    if (postId === id) {
+      const updater = (p: Post): Post => isLiked
+        ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
+        : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+      updatePostInCache(postId, updater);
+      if (userId) updatePostInUserPostListCache(userId, postId, updater);
+    }
+    void mutate();
+  };
+
+  const handleReplyToPost = async (content: string, files: File[]) => {
+    if (!replyingTo) return;
+    let mediaInputs: MediaInput[] | undefined;
+    if (files.length > 0) {
+      mediaInputs = await Promise.all(
+        files.map(async (file) => {
+          const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+          await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+          return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+        }),
+      );
+    }
+    await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    if (id) {
+      const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
+      updatePostInCache(id, updater);
+      if (userId) updatePostInUserPostListCache(userId, id, updater);
     }
     void mutate();
   };
@@ -84,6 +114,11 @@ export const PostDetailPage = () => {
       await createPost(replyContent.trim(), id, mediaInputs);
       setReplyContent('');
       setReplyFiles([]);
+      if (id) {
+        const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
+        updatePostInCache(id, updater);
+        if (userId) updatePostInUserPostListCache(userId, id, updater);
+      }
       void mutate();
     } catch (err) {
       setReplyError(toUserMessage(err, '返信の送信に失敗しました。時間をおいてから再度お試しください。'));
@@ -339,9 +374,20 @@ export const PostDetailPage = () => {
                 {post.replies
                   .filter(reply => reply.deletedAt == null) // ここで削除済みを除外
                   .map((reply) => (
-                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
+                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} onReply={setReplyingTo} />
                   ))}
               </div>
+            )}
+
+            {replyingTo && (
+              <ReplyModal
+                post={replyingTo}
+                onClose={() => setReplyingTo(null)}
+                onSubmit={handleReplyToPost}
+                userId={userId}
+                avatarUrl={profile?.avatarUrl}
+                userName={profile?.user.name}
+              />
             )}
 
             {id && (

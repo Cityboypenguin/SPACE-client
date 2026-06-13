@@ -13,9 +13,10 @@ type Props = {
   depth?: number;
   currentUserId: string | null;
   onLike: (postId: string, isLiked: boolean) => Promise<void>;
+  onReply?: (post: Post) => void;
 };
 
-export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) => {
+export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }: Props) => {
   const navigate = useNavigate();
 
   return (
@@ -64,10 +65,13 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) =
             </div>
           )}
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.82rem' }}>
-            <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onReply?.(post); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.3rem', padding: 0 }}
+            >
               <img src={commentIcon} alt="返信" style={{ width: 20, height: 20, filter: 'opacity(0.35)' }} />
               {countAllReplies(post)}
-            </span>
+            </button>
             <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />
           </div>
         </div>
@@ -83,6 +87,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike }: Props) =
                 depth={depth + 1}
                 currentUserId={currentUserId}
                 onLike={onLike}
+                onReply={onReply}
               />
             ))}
         </div>
