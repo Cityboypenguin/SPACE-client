@@ -10,7 +10,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
-import { saveRecentDM } from '../utils/recentDM';
+import { saveRecentDM } from '../../../lib/recentDM';
 import styles from '../components/organisms/chatRoom.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { Avatar } from '../../../components/atoms/Avatar';

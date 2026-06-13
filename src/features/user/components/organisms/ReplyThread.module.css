@@ -1,0 +1,74 @@
+.item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  background: #fff;
+  transition: background 0.1s;
+}
+
+.item:hover {
+  background: #f8faff;
+}
+
+.avatarCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.threadLine {
+  width: 2px;
+  flex: 1;
+  background: #e2e8f0;
+  margin-top: 4px;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.content {
+  margin: 0 0 0.4rem;
+  color: #1e293b;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+}
+
+.mediaWrapper {
+  margin-bottom: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.82rem;
+}
+
+.replyButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+}
+
+.commentIcon {
+  width: 20px;
+  height: 20px;
+  filter: opacity(0.35);
+}
+
+.replies {
+  border-left: 2px solid #e2e8f0;
+}
+
+.separator {
+  border-bottom: 1px solid #e2e8f0;
+}

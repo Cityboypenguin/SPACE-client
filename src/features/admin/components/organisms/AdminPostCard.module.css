@@ -1,0 +1,76 @@
+.card {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+  background: #fff;
+  transition: background 0.1s;
+}
+
+.card:hover {
+  background: #f8faff;
+}
+
+.cardDeleted {
+  background: #fef2f2;
+}
+
+.cardDeleted:hover {
+  background: #fee2e2;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.bodyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.deletedBadge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.content {
+  margin: 0.25rem 0 0.5rem;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.contentNormal {
+  color: #1e293b;
+}
+
+.contentDeleted {
+  color: #64748b;
+}
+
+.mediaWrapper {
+  margin-bottom: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 1.2rem;
+  align-items: center;
+}
+
+.replyCount {
+  color: #94a3b8;
+}
+
+.likeWrapper {
+  pointer-events: none;
+}

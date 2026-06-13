@@ -4,7 +4,8 @@ import { PostComposer } from './PostComposer';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
-import { formatTime } from '../../utils/formatTime';
+import { formatTime } from '../../../../lib/formatTime';
+import styles from './ReplyModal.module.css';
 
 type Props = {
   post: Post;
@@ -41,95 +42,42 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
   };
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(15, 23, 42, 0.55)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '1rem',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: '#fff',
-          borderRadius: '16px',
-          width: '100%',
-          maxWidth: '560px',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-        }}
-      >
-        {/* ヘッダー */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0.875rem 1rem',
-          borderBottom: '1px solid #e2e8f0',
-        }}>
-          <span style={{ fontWeight: 700, fontSize: '1rem', color: '#1e293b' }}>返信</span>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '1.25rem', color: '#94a3b8', lineHeight: 1,
-              display: 'flex', alignItems: 'center', padding: '2px',
-              borderRadius: '50%', width: 28, height: 28, justifyContent: 'center',
-            }}
-          >✕</button>
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.header}>
+          <span className={styles.title}>返信</span>
+          <button className={styles.closeButton} onClick={onClose}>✕</button>
         </div>
 
-        {/* 親投稿プレビュー */}
-        <div style={{
-          padding: '1rem',
-          borderBottom: '2px solid #e2e8f0',
-          overflowY: 'auto',
-          maxHeight: '35vh',
-        }}>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div className={styles.preview}>
+          <div className={styles.previewInner}>
             {post.user.avatarUrl ? (
               <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={40} />
             ) : (
               <Avatar name={post.user.name} size={40} />
             )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline', marginBottom: '0.25rem' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>{post.user.name}</span>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>@{post.user.accountID}</span>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}> · {formatTime(post.createdAt)}</span>
+            <div className={styles.previewBody}>
+              <div className={styles.previewMeta}>
+                <span className={styles.previewName}>{post.user.name}</span>
+                <span className={styles.previewAccount}>@{post.user.accountID}</span>
+                <span className={styles.previewAccount}> · {formatTime(post.createdAt)}</span>
               </div>
-              {post.content && (
-                <p style={{
-                  margin: 0, color: '#374151', lineHeight: 1.6,
-                  fontSize: '0.95rem', wordBreak: 'break-word', whiteSpace: 'pre-wrap',
-                }}>
-                  {post.content}
-                </p>
-              )}
+              {post.content && <p className={styles.previewContent}>{post.content}</p>}
               {post.media && post.media.length > 0 && (
-                <div style={{ marginTop: '0.5rem', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div className={styles.previewImages}>
                   {post.media.filter(m => m.contentType.startsWith('image/')).slice(0, 4).map((m) => (
-                    <img
-                      key={m.ID}
-                      src={storageUrl(m.url)}
-                      alt=""
-                      style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                    />
+                    <img key={m.ID} src={storageUrl(m.url)} alt="" className={styles.previewImage} />
                   ))}
                 </div>
               )}
-              <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
-                返信先: <span style={{ color: '#f97316' }}>@{post.user.accountID}</span>
+              <div className={styles.replyTo}>
+                返信先: <span className={styles.replyToName}>@{post.user.accountID}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 返信入力 */}
-        <div style={{ overflowY: 'auto' }}>
+        <div className={styles.composerWrapper}>
           <PostComposer
             value={content}
             onChange={setContent}

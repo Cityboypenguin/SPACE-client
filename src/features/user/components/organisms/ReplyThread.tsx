@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
-import { LikeButton } from '../molecules/LikeButton';
-import { UserMeta } from '../molecules/UserMeta';
-import { PostMediaGrid } from '../molecules/PostMediaGrid';
-import { formatTime } from '../../utils/formatTime';
+import { LikeButton } from '../../../../components/molecules/LikeButton';
+import { UserMeta } from '../../../../components/molecules/UserMeta';
+import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { formatTime } from '../../../../lib/formatTime';
 import { type Post } from '../../api/post';
-import { countAllReplies } from '../../utils/post';
+import { countAllReplies } from '../../../../lib/postUtils';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
+import styles from './ReplyThread.module.css';
 
 type Props = {
   post: Post;
@@ -21,55 +22,30 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
 
   return (
     <div>
-      <div
-        onClick={() => navigate(`/posts/${post.ID}`)}
-        style={{
-          display: 'flex',
-          gap: '0.75rem',
-          padding: '0.75rem 1rem',
-          cursor: 'pointer',
-          background: '#fff',
-          transition: 'background 0.1s',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = '#f8faff')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div className={styles.item} onClick={() => navigate(`/posts/${post.ID}`)}>
+        <div className={styles.avatarCol}>
           <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={36} />
-          {post.replies.length > 0 && (
-            <div style={{ width: 2, flex: 1, background: '#e2e8f0', marginTop: 4 }} />
-          )}
+          {post.replies.length > 0 && <div className={styles.threadLine} />}
         </div>
-        <div style={{ flex: 1, minWidth: 0, paddingBottom: post.replies.length > 0 ? '0.5rem' : 0 }}>
+        <div className={styles.body} style={{ paddingBottom: post.replies.length > 0 ? '0.5rem' : 0 }}>
           <UserMeta
             name={post.user.name}
             accountID={post.user.accountID}
             timestamp={formatTime(post.createdAt)}
             small
           />
-          <p
-            style={{
-              margin: '0 0 0.4rem',
-              color: '#1e293b',
-              lineHeight: 1.6,
-              wordBreak: 'break-word',
-              whiteSpace: 'pre-wrap',
-              fontSize: '0.95rem',
-            }}
-          >
-            {post.content}
-          </p>
+          <p className={styles.content}>{post.content}</p>
           {post.media && post.media.length > 0 && (
-            <div style={{ marginBottom: '0.5rem' }}>
+            <div className={styles.mediaWrapper}>
               <PostMediaGrid media={post.media} />
             </div>
           )}
-          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.82rem' }}>
+          <div className={styles.actions}>
             <button
+              className={styles.replyButton}
               onClick={(e) => { e.stopPropagation(); onReply?.(post); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.3rem', padding: 0 }}
             >
-              <img src={commentIcon} alt="返信" style={{ width: 20, height: 20, filter: 'opacity(0.35)' }} />
+              <img src={commentIcon} alt="返信" className={styles.commentIcon} />
               {countAllReplies(post)}
             </button>
             <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />
@@ -78,22 +54,24 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
       </div>
 
       {post.replies.length > 0 && (
-        <div style={{ marginLeft: depth === 0 ? '2.75rem' : '2rem', borderLeft: '2px solid #e2e8f0' }}>
-          {post.replies
-            .map((reply) => (
-              <ReplyThread
-                key={reply.ID}
-                post={reply}
-                depth={depth + 1}
-                currentUserId={currentUserId}
-                onLike={onLike}
-                onReply={onReply}
-              />
-            ))}
+        <div
+          className={styles.replies}
+          style={{ marginLeft: depth === 0 ? '2.75rem' : '2rem' }}
+        >
+          {post.replies.map((reply) => (
+            <ReplyThread
+              key={reply.ID}
+              post={reply}
+              depth={depth + 1}
+              currentUserId={currentUserId}
+              onLike={onLike}
+              onReply={onReply}
+            />
+          ))}
         </div>
       )}
 
-      {depth === 0 && <div style={{ borderBottom: '1px solid #e2e8f0' }} />}
+      {depth === 0 && <div className={styles.separator} />}
     </div>
   );
 };

@@ -4,7 +4,7 @@ import { storageUrl } from '../../../lib/storage';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { AdminUserAvatar } from '../../../components/atoms/AdminUserAvatar';
-import { LikeButton } from '../components/molecules/LikeButton';
+import { LikeButton } from '../../../components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';

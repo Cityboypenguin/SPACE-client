@@ -249,3 +249,18 @@ export const deleteFavorite = async (postId: string): Promise<void> => {
     getUserToken(),
   );
 };
+
+const NEW_FEED_POSTS_COUNT_QUERY = `
+  query NewFeedPostsCount($since: String!) {
+    newFeedPostsCount(since: $since)
+  }
+`;
+
+export const getNewFeedPostsCount = async (since: Date): Promise<number> => {
+  const data = await request<{ newFeedPostsCount: number }>(
+    NEW_FEED_POSTS_COUNT_QUERY,
+    { since: since.toISOString() },
+    getUserToken(),
+  );
+  return data.newFeedPostsCount;
+};

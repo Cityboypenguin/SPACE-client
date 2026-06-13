@@ -5,9 +5,11 @@ import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { toUserMessage } from '../../../lib/errorMessages';
+import styles from './PostListPage.module.css';
 
 import {
   getTopLevelPosts,
+  getNewFeedPostsCount,
   createPost,
   createFavorite,
   deleteFavorite,
@@ -22,6 +24,7 @@ import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 const LIMIT = 20;
+const REFRESH_COOLDOWN_MS = 60 * 1000;
 
 export const PostListPage = () => {
   const navigate = useNavigate();
@@ -51,6 +54,10 @@ export const PostListPage = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const [newPostsCount, setNewPostsCount] = useState(0);
+  const feedLoadedAtRef = useRef<Date | null>(null);
+  const lastRefreshedAtRef = useRef<number>(0);
+
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [posting, setPosting] = useState(false);
@@ -79,7 +86,43 @@ export const PostListPage = () => {
     }
   }, []);
 
+  // バナーからの更新（常にフェッチ）
+  const handleRefresh = useCallback(() => {
+    lastRefreshedAtRef.current = Date.now();
+    setNewPostsCount(0);
+    feedLoadedAtRef.current = new Date();
+    window.scrollTo(0, 0);
+    loadPosts(0, true);
+  }, [loadPosts]);
+
+  // 上に戻るボタン（クールダウン中はスクロールのみ）
+  const handleScrollToTop = useCallback(() => {
+    window.scrollTo(0, 0);
+    if (Date.now() - lastRefreshedAtRef.current >= REFRESH_COOLDOWN_MS) {
+      lastRefreshedAtRef.current = Date.now();
+      setNewPostsCount(0);
+      feedLoadedAtRef.current = new Date();
+      loadPosts(0, true);
+    }
+  }, [loadPosts]);
+
+  // 5分ごとに新着件数をポーリング
   useEffect(() => {
+    const poll = async () => {
+      if (!feedLoadedAtRef.current) return;
+      try {
+        const count = await getNewFeedPostsCount(feedLoadedAtRef.current);
+        setNewPostsCount(count);
+      } catch {
+        // ポーリング失敗は無視
+      }
+    };
+    const id = setInterval(poll, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    feedLoadedAtRef.current = new Date();
     if (initialCache) return;
     loadPosts(0, true);
   }, [loadPosts, initialCache]);
@@ -142,6 +185,7 @@ export const PostListPage = () => {
       setSelectedFiles([]);
       setPosts(prev => [newPost, ...prev]);
       setTotal(prev => prev + 1);
+      setComposerOpen(false);
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -149,6 +193,7 @@ export const PostListPage = () => {
     }
   };
 
+  const [composerOpen, setComposerOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
 
   const handleReplySubmit = async (content: string, files: File[]) => {
@@ -191,6 +236,40 @@ export const PostListPage = () => {
   return (
     <div>
       <UserSidebar />
+
+      <button className={styles.fab} onClick={() => setComposerOpen(true)} aria-label="新しい投稿を作成">
+        <span className={styles.fabIcon}>
+          <span className={styles.fabIconH} />
+          <span className={styles.fabIconV} />
+        </span>
+      </button>
+
+      {composerOpen && (
+        <div className={styles.composerOverlay} onClick={() => setComposerOpen(false)}>
+          <div className={styles.composerModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.composerModalHeader}>
+              <span className={styles.composerModalTitle}>新しい投稿</span>
+              <button className={styles.composerModalClose} onClick={() => setComposerOpen(false)}>✕</button>
+            </div>
+            <PostComposer
+              value={content}
+              onChange={setContent}
+              onSubmit={handlePost}
+              submitting={posting}
+              error={postError}
+              userId={userId}
+              avatarUrl={profile?.avatarUrl}
+              userName={profile?.user.name}
+              selectedFiles={selectedFiles}
+              onFileSelect={setSelectedFiles}
+              onCancel={() => setComposerOpen(false)}
+              isEmbedded
+              rows={3}
+            />
+          </div>
+        </div>
+      )}
+
       {replyingTo && (
         <ReplyModal
           post={replyingTo}
@@ -201,10 +280,17 @@ export const PostListPage = () => {
           userName={profile?.user.name}
         />
       )}
-      <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>みんなの投稿</h1>
+      <main className={styles.main}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>みんなの投稿</h1>
+          <button className={styles.scrollTopButton} onClick={handleScrollToTop} title="上に戻る">↑</button>
         </div>
+
+        {newPostsCount > 0 && (
+          <button className={styles.newPostsBanner} onClick={handleRefresh}>
+            新着{newPostsCount}件を表示
+          </button>
+        )}
 
         <PostComposer
           value={content}
@@ -219,10 +305,10 @@ export const PostListPage = () => {
           onFileSelect={setSelectedFiles}
         />
 
-        {loadError && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
+        {loadError && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
         {initialLoading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+          <p className={styles.loadingText}>読み込み中...</p>
         ) : posts.length > 0 ? (
           <>
             {posts.map((post) => (
@@ -235,18 +321,14 @@ export const PostListPage = () => {
                 onReply={() => setReplyingTo(post)}
               />
             ))}
-            <div ref={sentinelRef} style={{ height: '1px' }} />
-            {loadingMore && (
-              <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>読み込み中...</p>
-            )}
+            <div ref={sentinelRef} className={styles.sentinel} />
+            {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
             {!hasMore && posts.length > 0 && (
-              <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center', fontSize: '0.875rem' }}>
-                すべての投稿を表示しました
-              </p>
+              <p className={styles.allLoadedText}>すべての投稿を表示しました</p>
             )}
           </>
         ) : (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
+          <p className={styles.emptyText}>投稿がまだありません</p>
         )}
       </main>
     </div>

@@ -1,6 +1,11 @@
 import { useState } from 'react';
-import { storageUrl } from '../../../../lib/storage';
-import { type Media } from '../../api/posts';
+import { storageUrl } from '../../lib/storage';
+
+type MediaItem = {
+  ID: string;
+  url: string;
+  contentType: string;
+};
 
 export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div
@@ -27,27 +32,32 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
   </div>
 );
 
-export const PostMediaGrid = ({ media }: { media: Media[] }) => {
+export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; large?: boolean }) => {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const images = media.filter((m) => m.contentType.startsWith('image/'));
   const files = media.filter((m) => !m.contentType.startsWith('image/'));
   const count = images.length;
 
+  const gap = large ? 3 : 2;
+  const maxWidth = large ? 420 : 300;
+  const imgHeight = large ? 160 : 110;
+  const imgBorderRadius = large ? 8 : 6;
+
   const gridStyle: React.CSSProperties =
     count === 1
       ? { display: 'block' }
       : count === 2
-        ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }
+        ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap }
         : count === 3
-          ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 2 }
-          : { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 2 };
+          ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap }
+          : { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap };
 
   const imgStyle = (i: number): React.CSSProperties => ({
     width: '100%',
-    height: count === 1 ? 'auto' : 110,
-    maxHeight: count === 1 ? 300 : 110,
+    height: count === 1 ? 'auto' : imgHeight,
+    maxHeight: count === 1 ? (large ? 400 : 300) : imgHeight,
     objectFit: 'cover',
-    borderRadius: count === 1 ? 10 : i === 0 && count === 3 ? '10px 0 0 10px' : 6,
+    borderRadius: count === 1 ? 10 : i === 0 && count === 3 ? '10px 0 0 10px' : imgBorderRadius,
     cursor: 'zoom-in',
     display: 'block',
     gridColumn: count === 3 && i === 0 ? '1 / 2' : undefined,
@@ -57,7 +67,7 @@ export const PostMediaGrid = ({ media }: { media: Media[] }) => {
   return (
     <>
       {images.length > 0 && (
-        <div style={{ ...gridStyle, marginBottom: files.length > 0 ? 4 : 0, maxWidth: 300 }}>
+        <div style={{ ...gridStyle, marginBottom: files.length > 0 ? (large ? 8 : 4) : 0, maxWidth }}>
           {images.map((m, i) => {
             const url = storageUrl(m.url);
             return (
@@ -73,7 +83,7 @@ export const PostMediaGrid = ({ media }: { media: Media[] }) => {
         </div>
       )}
       {files.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: large ? 6 : 4 }}>
           {files.map((m) => (
             <a
               key={m.ID}
@@ -82,10 +92,10 @@ export const PostMediaGrid = ({ media }: { media: Media[] }) => {
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '4px 10px', background: '#f3f4f6',
+                display: 'flex', alignItems: 'center', gap: large ? 6 : 5,
+                padding: large ? '6px 12px' : '4px 10px', background: '#f3f4f6',
                 border: '1px solid #e5e7eb', borderRadius: 8,
-                fontSize: '0.78rem', color: '#374151', textDecoration: 'none',
+                fontSize: large ? '0.85rem' : '0.78rem', color: '#374151', textDecoration: 'none',
               }}
             >
               📎 {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}

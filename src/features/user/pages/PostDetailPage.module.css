@@ -1,0 +1,195 @@
+.main {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 1.1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50%;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.loadError {
+  color: red;
+  padding: 1rem;
+}
+
+.loadingText {
+  color: #94a3b8;
+  padding: 2rem;
+  text-align: center;
+}
+
+.rootPostContainer {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.deletedPost {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.threadConnector {
+  width: 2px;
+  height: 24px;
+  background: #cbd5e1;
+  margin-left: 37px;
+  margin-top: -1px;
+  margin-bottom: -1px;
+  z-index: 1;
+  position: relative;
+}
+
+.deletedMain {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.postBody {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.postBodyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.userInfo {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.userName {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.userAccount {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.postActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.editButton {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 4px;
+}
+
+.deleteButton {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #ef4444;
+}
+
+.editForm {
+  margin-bottom: 0.75rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.editError {
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.postContent {
+  margin: 0 0 0.75rem;
+  color: #1e293b;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.timestamp {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.postStats {
+  display: flex;
+  gap: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  align-items: center;
+}
+
+.replyCount {
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.commentIcon {
+  width: 22px;
+  height: 22px;
+  filter: opacity(0.45);
+}
+
+.reportButton {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.reportButton:hover {
+  background: #f1f5f9;
+}
+
+.reportLabel {
+  font-size: 0.9rem;
+}

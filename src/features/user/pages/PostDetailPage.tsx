@@ -7,12 +7,13 @@ import { ReplyThread } from '../components/organisms/ReplyThread';
 import { PostCard } from '../components/organisms/PostCard';
 import { ReportModal } from '../components/organisms/ReportMadal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
-import { PostMediaGrid } from '../components/molecules/PostMediaGrid';
+import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
-import { LikeButton } from '../components/molecules/LikeButton';
+import { LikeButton } from '../../../components/molecules/LikeButton';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import commentIcon from '../../../assets/パーツ_コメント.svg';
+import styles from './PostDetailPage.module.css';
 
 import {
   getPostByID,
@@ -183,33 +184,25 @@ export const PostDetailPage = () => {
   return (
     <div>
       <UserSidebar />
-      <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0' }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.1rem', padding: '0.25rem 0.5rem', borderRadius: '50%' }}
-          ><ChevronLeft /></button>
-          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿</h1>
+      <main className={styles.main}>
+        <div className={styles.pageHeader}>
+          <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
+          <h1 className={styles.pageTitle}>投稿</h1>
         </div>
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
+        {error && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
         {isLoading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+          <p className={styles.loadingText}>読み込み中...</p>
         ) : !post ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
+          <p className={styles.loadingText}>投稿が見つかりません</p>
         ) : (
           <>
             {post.rootPost && (
-              <div style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
-
+              <div className={styles.rootPostContainer}>
                 {post.rootPost.deletedAt != null ? (
-                  /* 🛡 大元が削除されている場合 */
-                  <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    この投稿は削除されました
-                  </div>
+                  <div className={styles.deletedPost}>この投稿は削除されました</div>
                 ) : (
-                  /* 🛡 大元が正常な場合 */
                   <PostCard
                     post={post.rootPost}
                     currentUserId={userId}
@@ -217,41 +210,27 @@ export const PostDetailPage = () => {
                     onClick={() => navigate(`/posts/${post.rootPost!.ID}`)}
                   />
                 )}
-
-                {/* 繋がりの縦線（削除されていようがいまいが、下に繋げる） */}
-                <div style={{
-                  width: '2px',
-                  height: '24px',
-                  background: '#cbd5e1',
-                  marginLeft: '37px',
-                  marginTop: '-1px',
-                  marginBottom: '-1px',
-                  zIndex: 1,
-                  position: 'relative'
-                }} />
+                <div className={styles.threadConnector} />
               </div>
             )}
 
             {isDeleted ? (
-              // 削除済みプレースホルダー
-              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                この投稿は削除されました
-              </div>
+              <div className={styles.deletedMain}>この投稿は削除されました</div>
             ) : (
-              // 正常な投稿の表示
-              <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div className={styles.postBody}>
+                <div className={styles.postBodyHeader}>
+                  <div className={styles.userInfo}>
                     <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
                     <div>
-                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+                      <div className={styles.userName}>{post.user.name}</div>
+                      <div className={styles.userAccount}>@{post.user.accountID}</div>
                     </div>
                   </div>
 
                   {isMyPost && !isEditing && (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className={styles.postActions}>
                       <button
+                        className={styles.editButton}
                         onClick={() => {
                           setIsEditing(true);
                           setEditContent(post.content);
@@ -259,20 +238,15 @@ export const PostDetailPage = () => {
                           setEditDeletedMediaIDs([]);
                           setUpdateError('');
                         }}
-                        style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: '#f1f5f9', border: 'none', borderRadius: '4px' }}
                       >編集</button>
-                      <button
-                        onClick={handleDelete}
-                        style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
-                      >削除</button>
+                      <button className={styles.deleteButton} onClick={handleDelete}>削除</button>
                     </div>
                   )}
                 </div>
 
                 {isEditing ? (
-                  <div style={{ marginBottom: '0.75rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    {updateError && <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{updateError}</p>}
-
+                  <div className={styles.editForm}>
+                    {updateError && <p className={styles.editError}>{updateError}</p>}
                     <PostComposer
                       value={editContent}
                       onChange={setEditContent}
@@ -295,52 +269,30 @@ export const PostDetailPage = () => {
                         setEditSelectedFiles([]);
                         setEditDeletedMediaIDs([]);
                       }}
-                      isEmbedded={true}
+                      isEmbedded
                     />
                   </div>
                 ) : (
-                  post.content && (
-                    <p style={{
-                      margin: '0 0 0.75rem',
-                      color: '#1e293b',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.7,
-                      wordBreak: 'break-word',
-                      whiteSpace: 'pre-wrap',
-                    }}>
-                      {post.content}
-                    </p>
-                  )
+                  post.content && <p className={styles.postContent}>{post.content}</p>
                 )}
 
                 {!isEditing && post.media && post.media.length > 0 && (
                   <PostMediaGrid media={post.media} large />
                 )}
 
-                <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                <div className={styles.timestamp}>
                   {new Date(post.createdAt).toLocaleString('ja-JP')}
                 </div>
 
-                <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
-                  <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <img src={commentIcon} alt="返信" style={{ width: 22, height: 22, filter: 'opacity(0.45)' }} />
+                <div className={styles.postStats}>
+                  <span className={styles.replyCount}>
+                    <img src={commentIcon} alt="返信" className={styles.commentIcon} />
                     <strong>{post.replyCount}</strong> 件の返信
                   </span>
                   <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
-
                   {!isMyPost && (
-                    <button
-                      onClick={() => setIsReportOpen(true)}
-                      style={{
-                        background: 'none', border: 'none', color: '#64748b',
-                        fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-                        alignItems: 'center', gap: '4px', padding: '0.25rem 0.5rem',
-                        borderRadius: '6px', transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-                    >
-                      🚩 <span style={{ fontSize: '0.9rem' }}>通報</span>
+                    <button className={styles.reportButton} onClick={() => setIsReportOpen(true)}>
+                      🚩 <span className={styles.reportLabel}>通報</span>
                     </button>
                   )}
                 </div>
