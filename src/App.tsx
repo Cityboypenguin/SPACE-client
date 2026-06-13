@@ -49,6 +49,12 @@ const CommunityCreatePage = lazy(() =>
 const CommunityRoomPage = lazy(() =>
   import('./features/user/pages/CommunityRoomPage').then((m) => ({ default: m.CommunityRoomPage })),
 );
+const CommunityEditPage = lazy(() =>
+  import('./features/user/pages/CommunityEditPage').then((m) => ({ default: m.CommunityEditPage })),
+);
+const CommunityMembersPage = lazy(() =>
+  import('./features/user/pages/CommunityMembersPage').then((m) => ({ default: m.CommunityMembersPage })),
+);
 const UserProfileEditPage = lazy(() =>
   import('./features/user/pages/UserProfileEditPage').then((m) => ({ default: m.UserProfileEditPage })),
 );
@@ -195,6 +201,22 @@ function App() {
                 element={
                   <UserProtectedRoute>
                     <CommunityRoomPage />
+                  </UserProtectedRoute>
+                }
+              />
+              <Route
+                path="/community/edit/:communityID"
+                element={
+                  <UserProtectedRoute>
+                    <CommunityEditPage />
+                  </UserProtectedRoute>
+                }
+              />
+              <Route
+                path="/community/members/:communityID"
+                element={
+                  <UserProtectedRoute>
+                    <CommunityMembersPage />
                   </UserProtectedRoute>
                 }
               />

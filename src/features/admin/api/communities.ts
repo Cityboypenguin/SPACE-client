@@ -171,6 +171,34 @@ const LIST_ROOM_MESSAGES_QUERY = `
   }
 `;
 
+const PROMOTE_TO_OWNER_MUTATION = `
+  mutation PromoteToCommunityOwner($communityID: ID!, $userID: ID!) {
+    promoteToCommunityOwner(communityID: $communityID, userID: $userID)
+  }
+`;
+
+const DEMOTE_FROM_OWNER_MUTATION = `
+  mutation DemoteFromCommunityOwner($communityID: ID!, $userID: ID!) {
+    demoteFromCommunityOwner(communityID: $communityID, userID: $userID)
+  }
+`;
+
+export const promoteToCommunityOwner = async (communityID: string, userID: string) => {
+  return await request<{ promoteToCommunityOwner: boolean }>(
+    PROMOTE_TO_OWNER_MUTATION,
+    { communityID, userID },
+    getAdminToken(),
+  );
+};
+
+export const demoteFromCommunityOwner = async (communityID: string, userID: string) => {
+  return await request<{ demoteFromCommunityOwner: boolean }>(
+    DEMOTE_FROM_OWNER_MUTATION,
+    { communityID, userID },
+    getAdminToken(),
+  );
+};
+
 const DELETE_MESSAGE_MUTATION = `
   mutation DeleteMessage($roomID: ID!, $id: ID!) {
     deleteMessage(roomID: $roomID, id: $id)

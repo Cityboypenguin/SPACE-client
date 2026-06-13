@@ -6,6 +6,8 @@ import {
   getCommunityMembers,
   updateCommunity,
   kickUserFromCommunity,
+  promoteToCommunityOwner,
+  demoteFromCommunityOwner,
   listRoomMessages,
   adminDeleteMessage,
   type Community,
@@ -111,14 +113,46 @@ export const AdminCommunityDetailPage = () => {
     }
   };
 
+  const ownerCount = members.filter((m) => m.role === ROLE_OWNER).length;
+
   const handleKick = async (member: CommunityMember) => {
     if (!id) return;
+    if (member.role === ROLE_OWNER && ownerCount <= 1) {
+      setError('オーナーが1人しかいないためキックできません。先に別のメンバーをオーナーに昇格させてください。');
+      return;
+    }
     if (!window.confirm(`${member.user.name} をコミュニティから削除しますか？`)) return;
     try {
       await kickUserFromCommunity(id, member.user.ID);
       setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
     } catch {
       setError('キックに失敗しました');
+    }
+  };
+
+  const handleToggleRole = async (member: CommunityMember) => {
+    if (!id) return;
+    const isOwner = member.role === ROLE_OWNER;
+    if (isOwner && ownerCount <= 1) {
+      setError('オーナーが1人しかいないため降格できません。先に別のメンバーをオーナーに昇格させてください。');
+      return;
+    }
+    const label = isOwner ? 'メンバーに降格' : 'オーナーに昇格';
+    if (!window.confirm(`${member.user.name} を${label}しますか？`)) return;
+    setError('');
+    try {
+      if (isOwner) {
+        await demoteFromCommunityOwner(id, member.user.ID);
+      } else {
+        await promoteToCommunityOwner(id, member.user.ID);
+      }
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.user.ID === member.user.ID ? { ...m, role: isOwner ? 'member' : ROLE_OWNER } : m,
+        ),
+      );
+    } catch {
+      setError(`${label}に失敗しました`);
     }
   };
 
@@ -193,7 +227,13 @@ export const AdminCommunityDetailPage = () => {
                       {member.role === ROLE_OWNER ? 'オーナー' : 'メンバー'}
                     </span>
                   </td>
-                  <td>
+                  <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button
+                      onClick={() => handleToggleRole(member)}
+                      style={{ color: member.role === ROLE_OWNER ? '#7c3aed' : '#2563eb' }}
+                    >
+                      {member.role === ROLE_OWNER ? '降格' : '昇格'}
+                    </button>
                     <button
                       onClick={() => handleKick(member)}
                       style={{ color: 'red' }}
