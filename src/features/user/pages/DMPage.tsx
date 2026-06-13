@@ -13,6 +13,8 @@ import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { saveRecentDM } from '../utils/recentDM';
 import styles from '../components/organisms/chatRoom.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { Avatar } from '../../../components/atoms/Avatar';
+import { storageUrl } from '../../../lib/storage';
 
 export const DMPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -107,7 +109,19 @@ export const DMPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/dm')}><ChevronLeft /> 戻る</button>
+        <button className={styles.backButton} onClick={() => navigate('/dm')}><ChevronLeft /></button>
+        {(() => {
+          const partner = room?.user.find((u) => u.ID !== currentUserID);
+          return partner?.avatarUrl ? (
+            <img
+              src={storageUrl(partner.avatarUrl) ?? undefined}
+              alt={partner.name}
+              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+            />
+          ) : (
+            <Avatar name={partnerName} size={36} />
+          );
+        })()}
         <strong className={styles.roomTitle}>{partnerName}</strong>
         <span
           className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}

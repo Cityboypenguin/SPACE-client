@@ -41,6 +41,7 @@ export type Room = {
   lastReadAt?: string | null;
   unreadCount: number;
   partnerLastReadAt?: string | null;
+  lastMessage?: string | null;
 };
 
 export const MESSAGE_FIELDS = `
@@ -76,6 +77,7 @@ const ROOM_FIELDS = `
   lastReadAt
   unreadCount
   partnerLastReadAt
+  content
 `;
 
 const MARK_ROOM_AS_READ_MUTATION = `
@@ -236,12 +238,13 @@ export const deleteMessage = async (roomID: string, id: string) => {
 
 export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Room[]; total: number }> => {
   const token = getUserToken();
-  const data = await request<{ myDMRooms: { items: Room[]; total: number } }>(
+  const data = await request<{ myDMRooms: { items: (Omit<Room, 'lastMessage'> & { content?: string | null })[]; total: number } }>(
     MY_DM_ROOMS_QUERY,
     { limit, offset },
     token,
   );
-  return data.myDMRooms;
+  const items = data.myDMRooms.items.map(({ content, ...rest }) => ({ ...rest, lastMessage: content ?? null }));
+  return { items, total: data.myDMRooms.total };
 };
 
 export const getPresignedMediaUploadUrl = async (contentType: string) => {
