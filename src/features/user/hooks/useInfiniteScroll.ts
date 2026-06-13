@@ -22,7 +22,7 @@ export const useInfiniteScroll = (
           onLoadMore();
         }
       },
-      { threshold: 0.1 },
+      { rootMargin: '400px', threshold: 0 },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
