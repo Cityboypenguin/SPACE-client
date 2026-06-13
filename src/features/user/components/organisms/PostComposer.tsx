@@ -270,7 +270,7 @@ export const PostComposer = ({
               style={{
                 padding: rows >= 3 ? '0.45rem 1.2rem' : '0.4rem 1rem',
                 borderRadius: '20px',
-                background: canSubmit ? '#646cff' : '#c7d2fe',
+                background: canSubmit ? '#FF7430' : '#F89150',
                 color: '#fff', border: 'none', fontWeight: 700,
                 fontSize: rows >= 3 ? '0.9rem' : '0.85rem',
                 cursor: canSubmit ? 'pointer' : 'default',

@@ -7,7 +7,7 @@ import { updateCommunityInfo, getPresignedCommunityIconUploadUrl, type Community
 import { uploadAvatarToStorage } from '../api/profile';
 import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
-import cameraIconSvg from '../../../assets/パーツ_カメラ.svg';
+import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import styles from './CommunityEditPage.module.css';
 
 export const CommunityEditPage = () => {
@@ -131,17 +131,12 @@ export const CommunityEditPage = () => {
               style={{ display: 'none' }}
             />
             <div className={styles.iconCol}>
-              <button
-                type="button"
-                className={styles.iconButton}
+              <div
+                className={styles.iconClickable}
                 onClick={() => fileInputRef.current?.click()}
               >
-                {previewUrl ? (
-                  <img src={previewUrl} alt="アイコン" className={styles.iconPreview} />
-                ) : (
-                  <img src={cameraIconSvg} alt="画像を選択" className={styles.cameraIcon} />
-                )}
-              </button>
+                <CommunityAvatar name={name} directSrc={previewUrl} size={120} />
+              </div>
               {previewUrl && (
                 <button type="button" className={styles.removeBtn} onClick={handleRemoveImage}>
                   画像を削除
