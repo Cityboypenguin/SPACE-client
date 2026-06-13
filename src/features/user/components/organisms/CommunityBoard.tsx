@@ -17,12 +17,20 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
   const [expanded, setExpanded] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
-  const [memberCount, setMemberCount] = useState<number | null>(null);
+  const [fetchedMemberCount, setFetchedMemberCount] = useState<number | null>(null);
+  const [localJoinedCommunityID, setLocalJoinedCommunityID] = useState<string | null>(null);
+
+  const locallyJoined = localJoinedCommunityID === community.ID;
+  const joinedState = joined || community.isMember || locallyJoined;
+  const memberCount = community.memberCount ?? fetchedMemberCount;
+  const shownMemberCount = memberCount === null
+    ? null
+    : memberCount + (locallyJoined && !joined && !community.isMember ? 1 : 0);
 
   useEffect(() => {
     if (expanded && memberCount === null) {
       getCommunityMembers(community.ID)
-        .then((members) => setMemberCount(members.length))
+        .then((members) => setFetchedMemberCount(members.length))
         .catch(() => console.error('メンバー数の取得に失敗しました'));
     }
   }, [expanded, community.ID, memberCount]);
@@ -34,7 +42,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
     setError('');
     try {
       await onJoin(community);
-      if (memberCount !== null) setMemberCount(memberCount + 1);
+      setLocalJoinedCommunityID(community.ID);
     } catch (err) {
       setError(toUserMessage(err, 'コミュニティへの参加に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -94,7 +102,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
           onClick={(e) => e.stopPropagation()}
           style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}
         >
-          {memberCount !== null && (
+          {shownMemberCount !== null && (
             <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <span style={{ fontSize: '0.82rem', color: '#64748b' }}>メンバー数:</span>
               <span
@@ -107,7 +115,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
                   borderRadius: 12,
                 }}
               >
-                {memberCount} 人
+                {shownMemberCount} 人
               </span>
             </div>
           )}
@@ -117,7 +125,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
           {error && <p style={{ color: 'red', margin: '0 0 0.5rem', fontSize: '0.85rem' }}>{error}</p>}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             
-            {joined ? (
+            {joinedState ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span
                   style={{

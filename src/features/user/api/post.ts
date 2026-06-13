@@ -60,12 +60,15 @@ const POST_FIELDS = `
 `;
 
 const TOP_LEVEL_POSTS_QUERY = `
-  query TopLevelPosts {
-    topLevelPosts {
-      ${POST_FIELDS}
-      replies {
-        ID
+  query TopLevelPosts($limit: Int, $offset: Int) {
+    topLevelPosts(limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
       }
+      total
     }
   }
 `;
@@ -97,12 +100,15 @@ const GET_POST_BY_ID_QUERY = `
 `;
 
 const GET_POSTS_BY_USER_ID_QUERY = `
-  query GetPostsByUserID($user_id: ID!) {
-    getPostsByUserID(user_id: $user_id) {
-      ${POST_FIELDS}
-      replies {
-        ID
+  query GetPostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {
+    getPostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
       }
+      total
     }
   }
 `;
@@ -163,10 +169,15 @@ const DELETE_FAVORITE_MUTATION = `
 }
 `;
 
-export const getTopLevelPosts = async (): Promise<Post[]> => {
-  const data = await request<{ topLevelPosts: Post[] }>(
+export type PostPage = {
+  items: Post[];
+  total: number;
+};
+
+export const getTopLevelPosts = async (limit = 20, offset = 0): Promise<PostPage> => {
+  const data = await request<{ topLevelPosts: PostPage }>(
     TOP_LEVEL_POSTS_QUERY,
-    undefined,
+    { limit, offset },
     getUserToken(),
   );
   return data.topLevelPosts;
@@ -242,10 +253,10 @@ export const createFavorite = async (postId: string): Promise<void> => {
   );
 };
 
-export const getPostsByUserID = async (userId: string): Promise<Post[]> => {
-  const data = await request<{ getPostsByUserID: Post[] }>(
+export const getPostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
+  const data = await request<{ getPostsByUserID: { items: Post[]; total: number } }>(
     GET_POSTS_BY_USER_ID_QUERY,
-    { user_id: userId },
+    { user_id: userId, limit, offset },
     getUserToken(),
   );
   return data.getPostsByUserID;

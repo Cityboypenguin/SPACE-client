@@ -24,7 +24,8 @@ export type Profile = {
 };
 
 type MeResponse = { me: UserProfile };
-type SearchUsersResponse = { searchUsers: UserProfile[] };
+type SearchUsersPage = { items: UserProfile[]; total: number };
+type SearchUsersResponse = { searchUsers: SearchUsersPage };
 type UpdateUserResponse = { updateUser: UserProfile };
 type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
 type UpdateProfileResponse = { updateProfile: Profile };
@@ -48,14 +49,17 @@ const ME_QUERY = `
 `;
 
 const SEARCH_USERS_QUERY = `
-  query SearchUsers($keyword: String!) {
-    searchUsers(keyword: $keyword) {
-      ID
-      accountID
-      name
-      email
-      role
-      status
+  query SearchUsers($keyword: String!, $limit: Int, $offset: Int) {
+    searchUsers(keyword: $keyword, limit: $limit, offset: $offset) {
+      items {
+        ID
+        accountID
+        name
+        email
+        role
+        status
+      }
+      total
     }
   }
 `;
@@ -157,8 +161,9 @@ export const updateMyProfile = async (input: {
   return await request<UpdateUserResponse>(UPDATE_USER_MUTATION, { input }, getUserToken());
 };
 
-export const searchUsers = async (keyword: string) => {
-  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword }, getUserToken());
+export const searchUsers = async (keyword: string, limit = 20, offset = 0): Promise<SearchUsersPage> => {
+  const data = await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword, limit, offset }, getUserToken());
+  return data.searchUsers;
 };
 
 export const getProfileByUserID = async (userID: string) => {

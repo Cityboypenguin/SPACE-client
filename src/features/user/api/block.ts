@@ -47,6 +47,17 @@ const DELETE_BLOCKER_MUTATION = `
   }
 `;
 
+const LIST_BLOCKED_USERS_QUERY = `
+  query ListBlockedUsers($limit: Int, $offset: Int) {
+    listBlockedUsers(limit: $limit, offset: $offset) {
+      items {
+        ${USER_FIELDS}
+      }
+      total
+    }
+  }
+`;
+
 export const getBlockersByUserID = async (userID: string): Promise<User[]> => {
   const data = await request<{ GetBlockersByUserID: User[] }>(
     GET_BLOCKERS_BY_USER_ID_QUERY,
@@ -71,4 +82,15 @@ export const deleteBlocker = async (blockedUserID: string): Promise<void> => {
     { blockedUserID },
     getUserToken(),
   );
+};
+
+export type UserPage = { items: User[]; total: number };
+
+export const listBlockedUsers = async (limit = 20, offset = 0): Promise<UserPage> => {
+  const data = await request<{ listBlockedUsers: UserPage }>(
+    LIST_BLOCKED_USERS_QUERY,
+    { limit, offset },
+    getUserToken(),
+  );
+  return data.listBlockedUsers;
 };

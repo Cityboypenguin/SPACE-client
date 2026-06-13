@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { useProfile } from '../hooks/useProfile';
-import { storageUrl } from '../../../lib/storage';
 import { useAuth } from '../context/AuthContext';
+import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
-import { createReport } from '../api/report';
-import { PostCard } from '../components/organisms/PostCard';
-import { getPostsByUserID, createFavorite, deleteFavorite } from '../api/post';
+import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
+import { ReportModal } from '../components/organisms/ReportMadal';
+import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import styles from './UserPublicProfilePage.module.css';
 
 export const UserPublicProfilePage = () => {
@@ -32,13 +34,83 @@ export const UserPublicProfilePage = () => {
   const isFavorited = favoriteUsers?.some((u) => u.ID === id) ?? false;
   const isBlocked = blockedUsers?.some((u) => u.ID === id) ?? false;
 
-  const { data: posts, isLoading: postsLoading, error: postsErr, mutate: mutatePosts } = useSWR(
-    id ? ['user-posts', id] : null,
-    ([, uid]: [string, string]) => getPostsByUserID(uid),
+  const initialCacheRef = useRef(id ? getUserPostListCache(id) : null);
+  const initialCache = initialCacheRef.current;
+
+  const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
+  const [postsTotal, setPostsTotal] = useState(initialCache?.total ?? 0);
+  const [postsLoading, setPostsLoading] = useState(!initialCache);
+  const [postsLoadingMore, setPostsLoadingMore] = useState(false);
+  const [postsErr, setPostsErr] = useState(false);
+  const postsLoadingRef = useRef(false);
+
+  const postsRef = useRef(posts);
+  const totalRef = useRef(postsTotal);
+  const scrollYRef = useRef(initialCache?.scrollY ?? 0);
+  useEffect(() => { postsRef.current = posts; }, [posts]);
+  useEffect(() => { totalRef.current = postsTotal; }, [postsTotal]);
+
+  useEffect(() => {
+    const onScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!initialCache) return;
+    const raf = requestAnimationFrame(() => window.scrollTo(0, initialCache.scrollY));
+    return () => cancelAnimationFrame(raf);
+  }, [initialCache]);
+
+  useEffect(() => {
+    return () => {
+      if (id) {
+        saveUserPostListCache(id, {
+          posts: postsRef.current,
+          total: totalRef.current,
+          offset: postsRef.current.length,
+          scrollY: scrollYRef.current,
+        });
+      }
+    };
+  }, [id]);
+
+  const loadPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean) => {
+    if (postsLoadingRef.current) return;
+    postsLoadingRef.current = true;
+    if (isInitial) setPostsLoading(true);
+    else setPostsLoadingMore(true);
+    try {
+      const page = await getPostsByUserID(userID, 20, currentOffset);
+      setPosts((prev) => isInitial ? page.items : [...prev, ...page.items]);
+      setPostsTotal(page.total);
+      setPostsErr(false);
+    } catch {
+      setPostsErr(true);
+    } finally {
+      postsLoadingRef.current = false;
+      if (isInitial) setPostsLoading(false);
+      else setPostsLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (initialCache) return;
+    if (id) loadPosts(id, 0, true);
+  }, [id, loadPosts, initialCache]);
+
+  const postsSentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setPosts((prev) => {
+        if (!postsLoadingRef.current && prev.length < postsTotal && id) loadPosts(id, prev.length, false);
+        return prev;
+      });
+    }, [postsTotal, id, loadPosts]),
+    postsLoadingMore,
   );
 
   const [actionLoading, setActionLoading] = useState(false);
-  const [reporting, setReporting] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) {
@@ -46,17 +118,14 @@ export const UserPublicProfilePage = () => {
     } else {
       await createFavorite(postId);
     }
-    mutatePosts(
-      (prev) => prev?.map((p) => {
-        if (p.ID !== postId) return p;
-        if (isLiked) {
-          return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) };
-        } else {
-          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
-        }
-      }),
-      { revalidate: false },
-    );
+    setPosts((prev) => prev.map((p) => {
+      if (p.ID !== postId) return p;
+      if (isLiked) {
+        return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) };
+      } else {
+        return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
+      }
+    }));
   };
 
   const handleFavoriteToggle = async () => {
@@ -100,31 +169,21 @@ export const UserPublicProfilePage = () => {
     }
   };
 
-  const handleReportUser = async () => {
-    if (!profile || !id) return;
-    const customReason = window.prompt(
-      `ユーザー「${profile.user.name}」を通報する具体的な理由を入力してください。\n（例: スパム行為、嫌がらせ、不適切な発言など）`
-    );
-    if (customReason === null) return;
-    if (customReason.trim() === '') {
-      alert('通報には具体的な理由の入力が必要です。');
-      return;
-    }
-
-    try {
-      setReporting(true);
-      await createReport({
-        targetType: 'USER',
-        targetID: id,
-        reason: 'ユーザー報告',
-        customReason: customReason,
+  const handlePostClick = (postId: string) => {
+    if (id) {
+      saveUserPostListCache(id, {
+        posts: postsRef.current,
+        total: totalRef.current,
+        offset: postsRef.current.length,
+        scrollY: scrollYRef.current,
       });
-      alert('通報を送信しました。ご協力ありがとうございました。');
-    } catch (err) {
-      alert(toUserMessage(err, '通報の送信に失敗しました。時間をおいてから再度お試しください。'));
-    } finally {
-      setReporting(false);
     }
+    navigate(`/posts/${postId}`);
+  };
+
+  const handleReportUser = () => {
+    if (!profile || !id) return;
+    setIsReportOpen(true);
   };
 
   return (
@@ -137,7 +196,6 @@ export const UserPublicProfilePage = () => {
           {profile && (
             <button
               onClick={handleReportUser}
-              disabled={reporting}
               style={{
                 padding: '0.4rem 1rem',
                 background: '#fef2f2',
@@ -145,14 +203,14 @@ export const UserPublicProfilePage = () => {
                 border: '1px solid #fca5a5',
                 borderRadius: '20px',
                 fontWeight: 600,
-                cursor: reporting ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 fontSize: '0.85rem',
                 transition: 'all 0.2s'
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = '#fee2e2')}
               onMouseLeave={(e) => (e.currentTarget.style.background = '#fef2f2')}
             >
-              {reporting ? '送信中...' : '⚠️ このユーザーを通報'}
+              ⚠️ このユーザーを通報
             </button>
           )}
         </div>
@@ -163,17 +221,7 @@ export const UserPublicProfilePage = () => {
         {profile && (
           <div>
             <div className={styles.profileHeader}>
-              {profile.avatarUrl ? (
-                <img
-                  src={storageUrl(profile.avatarUrl) ?? undefined}
-                  alt={profile.user.name}
-                  className={styles.avatar}
-                />
-              ) : (
-                <div className={styles.avatarPlaceholder}>
-                  {profile.user.name.charAt(0)}
-                </div>
-              )}
+              <UserAvatar userId={profile.user.ID} name={profile.user.name} avatarUrl={profile.avatarUrl} size={80} />
               <div>
                 <h2 className={styles.displayName}>{profile.user.name}</h2>
                 <p className={styles.username}>@{profile.user.accountID}</p>
@@ -210,35 +258,28 @@ export const UserPublicProfilePage = () => {
               <h3 style={{ fontSize: '1.2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                 投稿一覧
               </h3>
-
-              {postsErr && <p style={{ color: 'red', marginBottom: '1rem' }}>投稿の読み込みに失敗しました</p>}
-              <div
-                style={{
-                  maxHeight: '50vh',
-                  overflowY: 'auto',
-                  paddingRight: '0.5rem',
-                }}
-              >
-                {posts && posts.length > 0 ? (
-                  posts.map((post) => (
-                    <PostCard
-                      key={post.ID}
-                      post={post}
-                      currentUserId={currentUserId}
-                      onLike={handleLike}
-                      onClick={() => navigate(`/posts/${post.ID}`)}
-                    />
-                  ))
-                ) : postsLoading ? (
-                  <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-                ) : (
-                  <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
-                )}
-              </div>
+              <ScrollablePostsList
+                posts={posts}
+                loading={postsLoading}
+                loadingMore={postsLoadingMore}
+                error={postsErr}
+                currentUserId={currentUserId}
+                sentinelRef={postsSentinelRef}
+                onLike={handleLike}
+                onPostClick={handlePostClick}
+              />
             </div>
           </div>
         )}
       </main>
+      {id && (
+        <ReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          targetType="USER"
+          targetID={id}
+        />
+      )}
     </div>
   );
 };

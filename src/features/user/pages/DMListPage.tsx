@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { SearchBar } from '../components/molecules/SearchBar';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { searchUsers, type UserProfile } from '../api/profile';
-import { getOrCreateDMRoom, listMyDMRooms } from '../api/message';
+import { getOrCreateDMRoom, listMyDMRooms, type Room } from '../api/message';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './DMListPage.module.css';
+
+const LIMIT = 20;
 
 export const DMListPage = () => {
   const [query, setQuery] = useState('');
@@ -19,15 +22,49 @@ export const DMListPage = () => {
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
 
-  const { data: dmRooms, error: roomsError, mutate: mutateDmRooms } = useSWR(
-    'dm-rooms',
-    listMyDMRooms,
+  const [dmRooms, setDmRooms] = useState<Room[]>([]);
+  const [dmTotal, setDmTotal] = useState(0);
+  const [dmInitialLoading, setDmInitialLoading] = useState(true);
+  const [dmLoadingMore, setDmLoadingMore] = useState(false);
+  const [dmError, setDmError] = useState(false);
+  const dmLoadingRef = useRef(false);
+
+  const loadDMRooms = useCallback(async (currentOffset: number, isInitial: boolean) => {
+    if (dmLoadingRef.current) return;
+    dmLoadingRef.current = true;
+    if (isInitial) setDmInitialLoading(true);
+    else setDmLoadingMore(true);
+    try {
+      const page = await listMyDMRooms(LIMIT, currentOffset);
+      setDmRooms((prev) => isInitial ? page.items : [...prev, ...page.items]);
+      setDmTotal(page.total);
+      setDmError(false);
+    } catch {
+      setDmError(true);
+    } finally {
+      dmLoadingRef.current = false;
+      if (isInitial) setDmInitialLoading(false);
+      else setDmLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDMRooms(0, true);
+  }, [loadDMRooms]);
+
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setDmRooms((prev) => {
+        if (!dmLoadingRef.current && prev.length < dmTotal) loadDMRooms(prev.length, false);
+        return prev;
+      });
+    }, [dmTotal, loadDMRooms]),
+    dmLoadingMore,
   );
 
   useUnreadSubscription(({ roomID, unreadCount }) => {
-    mutateDmRooms(
-      (prev) => prev?.map((room) => room.ID === roomID ? { ...room, unreadCount } : room),
-      { revalidate: false },
+    setDmRooms((prev) =>
+      prev.map((room) => room.ID === roomID ? { ...room, unreadCount } : room),
     );
   });
 
@@ -37,10 +74,10 @@ export const DMListPage = () => {
     setResults([]);
     setSearched(false);
     try {
-      const data = await searchUsers(query);
+      const page = await searchUsers(query);
       const filtered = currentUserID
-        ? data.searchUsers.filter((u) => u.ID !== currentUserID)
-        : data.searchUsers;
+        ? page.items.filter((u) => u.ID !== currentUserID)
+        : page.items;
       setResults(filtered);
       setSearched(true);
     } catch (err) {
@@ -69,19 +106,9 @@ export const DMListPage = () => {
 
         <section>
           <h2 className={styles.sectionTitle}>新しいDMを開始</h2>
-          <form onSubmit={handleSearch} className={styles.searchForm}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="名前で検索"
-              required
-              className={styles.searchInput}
-            />
-            <button type="submit">検索</button>
-          </form>
+          <SearchBar value={query} onChange={setQuery} onSubmit={handleSearch} />
 
-          {(searchError || roomsError) && (
+          {(searchError || dmError) && (
             <p style={{ color: 'red', marginTop: '0.5rem' }}>
               {searchError || 'DMルームの読み込みに失敗しました。'}
             </p>
@@ -110,7 +137,9 @@ export const DMListPage = () => {
           )}
         </section>
 
-        {dmRooms && dmRooms.length > 0 && (
+        {dmInitialLoading ? (
+          <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: '1rem' }}>読み込み中...</p>
+        ) : dmRooms.length > 0 && (
           <section className={styles.dmSection}>
             <h2 className={styles.sectionTitle}>最近のDM</h2>
             <ul className={styles.dmList}>
@@ -133,6 +162,15 @@ export const DMListPage = () => {
                 );
               })}
             </ul>
+            <div ref={sentinelRef} style={{ height: '1px' }} />
+            {dmLoadingMore && (
+              <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center' }}>読み込み中...</p>
+            )}
+            {!dmLoadingMore && dmRooms.length >= dmTotal && dmTotal > 0 && (
+              <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.875rem' }}>
+                すべてのDMを表示しました
+              </p>
+            )}
           </section>
         )}
       </main>

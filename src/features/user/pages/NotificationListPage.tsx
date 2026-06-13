@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
+import { Pagination } from '../components/molecules/Pagination';
 import { useNotification } from '../context/NotificationContext';
 import {
   listMyNotifications,
@@ -13,8 +14,6 @@ import {
 } from '../api/notification';
 import { listAnnouncements } from '../api/announcement';
 import { toUserMessage } from '../../../lib/errorMessages';
-
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 type Tab = 'notifications' | 'announcements';
 
@@ -393,35 +392,13 @@ export const NotificationListPage = () => {
                 ))}
               </ul>
             )}
-            <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
-              {notifTotalPages > 1 && (
-                <>
-                  <button
-                    onClick={() => { setNotifPage((p) => p - 1); setSelectMode(false); setSelectedIds(new Set()); }}
-                    disabled={notifPage === 0}
-                    style={{ padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: notifPage === 0 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: '#475569' }}
-                  >
-                    前へ
-                  </button>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{notifPage + 1} / {notifTotalPages}</span>
-                  <button
-                    onClick={() => { setNotifPage((p) => p + 1); setSelectMode(false); setSelectedIds(new Set()); }}
-                    disabled={notifPage >= notifTotalPages - 1}
-                    style={{ padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: notifPage >= notifTotalPages - 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: '#475569' }}
-                  >
-                    次へ
-                  </button>
-                  <span style={{ width: '1px', height: '1rem', background: '#e2e8f0', margin: '0 0.25rem' }} />
-                </>
-              )}
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                style={{ padding: '0.3rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.8rem', color: '#475569', cursor: 'pointer' }}
-              >
-                {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}件</option>)}
-              </select>
-            </div>
+            <Pagination
+              page={notifPage}
+              totalPages={notifTotalPages}
+              pageSize={pageSize}
+              onPageChange={(p) => { setNotifPage(p); setSelectMode(false); setSelectedIds(new Set()); }}
+              onPageSizeChange={setPageSize}
+            />
           </>
         )}
 
@@ -468,35 +445,13 @@ export const NotificationListPage = () => {
                 ))}
               </ul>
             )}
-            <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
-              {announceTotalPages > 1 && (
-                <>
-                  <button
-                    onClick={() => setAnnouncePage((p) => p - 1)}
-                    disabled={announcePage === 0}
-                    style={{ padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: announcePage === 0 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: '#475569' }}
-                  >
-                    前へ
-                  </button>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{announcePage + 1} / {announceTotalPages}</span>
-                  <button
-                    onClick={() => setAnnouncePage((p) => p + 1)}
-                    disabled={announcePage >= announceTotalPages - 1}
-                    style={{ padding: '0.35rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: announcePage >= announceTotalPages - 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: '#475569' }}
-                  >
-                    次へ
-                  </button>
-                  <span style={{ width: '1px', height: '1rem', background: '#e2e8f0', margin: '0 0.25rem' }} />
-                </>
-              )}
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                style={{ padding: '0.3rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.8rem', color: '#475569', cursor: 'pointer' }}
-              >
-                {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}件</option>)}
-              </select>
-            </div>
+            <Pagination
+              page={announcePage}
+              totalPages={announceTotalPages}
+              pageSize={pageSize}
+              onPageChange={setAnnouncePage}
+              onPageSizeChange={setPageSize}
+            />
           </>
         )}
       </main>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
@@ -19,28 +19,122 @@ import {
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+import { getPostListCache, savePostListCache } from '../cache/postListCache';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+
+const LIMIT = 20;
 
 export const PostListPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
+
+  // === 検索機能のState（HEAD） ===
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get('q') || '';
   const [inputValue, setInputValue] = useState(q);
-  const { data: posts, mutate: mutatePosts } = useSWR<Post[]>(
-    !q ? 'user-posts' : null, 
-    getTopLevelPosts, 
-    { revalidateOnFocus: false, revalidateOnReconnect: false }
-  );
+
   const { data: searchResults, isLoading: isSearchLoading, mutate: mutateSearch } = useSWR<Post[]>(
     q ? ['search-posts', q] : null,
-    () => searchPosts(q), 
+    () => searchPosts(q),
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
+
+  // === 無限スクロールとタイムラインのState（Develop） ===
+  const initialCacheRef = useRef(getPostListCache());
+  const initialCache = initialCacheRef.current;
+
+  const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
+  const [total, setTotal] = useState(initialCache?.total ?? 0);
+  const [initialLoading, setInitialLoading] = useState(!initialCache);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const loadingRef = useRef(false);
+
+  const postsRef = useRef(posts);
+  const totalRef = useRef(total);
+  const scrollYRef = useRef(initialCache?.scrollY ?? 0);
+  
+  useEffect(() => { postsRef.current = posts; }, [posts]);
+  useEffect(() => { totalRef.current = total; }, [total]);
+
+  // スクロール位置を常時追跡（アンマウント時に window.scrollY が 0 にリセットされるため）
+  useEffect(() => {
+    const onScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
+
+  const loadPosts = useCallback(async (currentOffset: number, isInitial: boolean) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    if (isInitial) setInitialLoading(true);
+    else setLoadingMore(true);
+    try {
+      const result = await getTopLevelPosts(LIMIT, currentOffset);
+      setPosts(prev => isInitial ? result.items : [...prev, ...result.items]);
+      setTotal(result.total);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    } finally {
+      loadingRef.current = false;
+      if (isInitial) setInitialLoading(false);
+      else setLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (initialCache) return;
+    loadPosts(0, true);
+  }, [loadPosts, initialCache]);
+
+  // スクロール位置の復元（rAF でブラウザの描画後に実行）
+  useEffect(() => {
+    if (!initialCache) return;
+    const scrollY = initialCache.scrollY;
+    const raf = requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [initialCache]);
+
+  // アンマウント時にキャッシュ保存
+  useEffect(() => {
+    return () => {
+      savePostListCache({
+        posts: postsRef.current,
+        total: totalRef.current,
+        offset: postsRef.current.length,
+        scrollY: scrollYRef.current,
+      });
+    };
+  }, []);
+
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setPosts(prev => {
+        if (!loadingRef.current && prev.length < total) loadPosts(prev.length, false);
+        return prev;
+      });
+    }, [total, loadPosts]),
+    loadingMore,
+  );
+
+  const handlePostClick = (postId: string) => {
+    savePostListCache({
+      posts: postsRef.current,
+      total: totalRef.current,
+      offset: postsRef.current.length,
+      scrollY: scrollYRef.current,
+    });
+    navigate(`/posts/${postId}`);
+  };
 
   const handlePost = async () => {
     if ((!content.trim() && selectedFiles.length === 0) || posting) return;
@@ -61,7 +155,9 @@ export const PostListPage = () => {
       setContent('');
       setSelectedFiles([]);
 
-      mutatePosts([newPost, ...(posts || [])], { revalidate: false });
+      // 投稿はタイムライン（!q）でのみ行われるため、手動キャッシュ側に直接追加する
+      setPosts(prev => [newPost, ...prev]);
+      setTotal(prev => prev + 1);
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -77,21 +173,21 @@ export const PostListPage = () => {
         await createFavorite(postId);
       }
 
-      // SWRのキャッシュ更新関数（共通化）
-      const updater = (currentData?: Post[]) => currentData?.map((p) => {
-        if (p.ID !== postId) return p;
-        if (isLiked) {
-          return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
-        } else {
-          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
-        }
-      });
-
-      // 現在表示されている方のSWRキャッシュを更新する
       if (q) {
+        // 検索中：SWRのキャッシュを更新
+        const updater = (currentData?: Post[]) => currentData?.map((p) => {
+          if (p.ID !== postId) return p;
+          if (isLiked) return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
+          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+        });
         mutateSearch(updater, { revalidate: false });
       } else {
-        mutatePosts(updater, { revalidate: false });
+        // タイムライン中：手動Stateを更新
+        setPosts(prev => prev.map((p) => {
+          if (p.ID !== postId) return p;
+          if (isLiked) return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
+          return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+        }));
       }
     } catch (err) {
       console.error('いいねの更新に失敗しました', err);
@@ -101,17 +197,19 @@ export const PostListPage = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) {
-      setSearchParams({}); // URLの ?q= を削除して一覧に戻る
+      setSearchParams({});
       return;
     }
-    setSearchParams({ q: inputValue.trim() }); // URLを ?q=キーワード に更新
+    setSearchParams({ q: inputValue.trim() });
   };
+
+  const hasMore = posts.length < total;
 
   return (
     <div>
       <UserHeader />
       <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <form 
+        <form 
           onSubmit={handleSearch} 
           style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}
         >
@@ -123,7 +221,7 @@ export const PostListPage = () => {
               onChange={(e) => setInputValue(e.target.value)}
               style={{
                 width: '100%', 
-                padding: '0.6rem 2.5rem 0.6rem 1rem', // ⭕️ 右側の余白(2.5rem)を広げ、入力文字とボタンが被るのを防ぐ
+                padding: '0.6rem 2.5rem 0.6rem 1rem',
                 borderRadius: '9999px',
                 border: '1px solid #cbd5e1', 
                 backgroundColor: '#f8fafc',
@@ -133,14 +231,14 @@ export const PostListPage = () => {
             />
             {inputValue && (
               <button
-                type="button" // 👈 エンターキーで誤送信されるのを防ぐ必須属性
+                type="button"
                 onClick={() => {
-                  setInputValue('');   // 入力欄を空にする
-                  setSearchParams({}); // URLの ?q= を削除して一覧画面に戻す
+                  setInputValue('');
+                  setSearchParams({});
                 }}
                 style={{
                   position: 'absolute', 
-                  right: '0.8rem', // コンテナの右端から少し内側に固定
+                  right: '0.8rem',
                   background: 'transparent', 
                   border: 'none', 
                   cursor: 'pointer',
@@ -164,45 +262,72 @@ export const PostListPage = () => {
           </h1>
         </div>
 
-        {/* トップレベル表示時のみ投稿フォームを出す（任意） */}
+        {/* タイムライン表示時のみ投稿フォームを出す */}
         {!q && (
           <PostComposer
-          value={content}
-          onChange={setContent}
-          onSubmit={handlePost}
-          submitting={posting}
-          error={postError}
-          userId={userId}
-          avatarUrl={profile?.avatarUrl}
-          userName={profile?.user.name}
-          selectedFiles={selectedFiles}
-          onFileSelect={setSelectedFiles}
+            value={content}
+            onChange={setContent}
+            onSubmit={handlePost}
+            submitting={posting}
+            error={postError}
+            userId={userId}
+            avatarUrl={profile?.avatarUrl}
+            userName={profile?.user.name}
+            selectedFiles={selectedFiles}
+            onFileSelect={setSelectedFiles}
           />
         )}
 
-        {isSearchLoading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-        ) : q ? (
-            searchResults && searchResults.length > 0 ? (
-              searchResults.map((post) => (
-                <PostCard
-                  key={post.ID} post={post} currentUserId={userId}
-                  onLike={handleLike} onClick={() => navigate(`/posts/${post.ID}`)}
-                />
-              ))
-            ) : (
-              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>見つかりませんでした</p>
-            )
-          ) : posts && posts.length > 0 ? (
-            posts.map((post) => (
+        {q ? (
+          // === 検索結果の描画 ===
+          isSearchLoading ? (
+            <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+          ) : searchResults && searchResults.length > 0 ? (
+            searchResults.map((post) => (
               <PostCard
-                key={post.ID} post={post} currentUserId={userId}
-                onLike={handleLike} onClick={() => navigate(`/posts/${post.ID}`)}
+                key={post.ID}
+                post={post}
+                currentUserId={userId}
+                onLike={handleLike}
+                onClick={() => handlePostClick(post.ID)}
               />
             ))
           ) : (
-            <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がありません</p>
-          )}
+            <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>見つかりませんでした</p>
+          )
+        ) : (
+          // === タイムライン（無限スクロール）の描画 ===
+          <>
+            {loadError && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
+            
+            {initialLoading ? (
+              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+            ) : posts.length > 0 ? (
+              <>
+                {posts.map((post) => (
+                  <PostCard
+                    key={post.ID}
+                    post={post}
+                    currentUserId={userId}
+                    onLike={handleLike}
+                    onClick={() => handlePostClick(post.ID)}
+                  />
+                ))}
+                <div ref={sentinelRef} style={{ height: '1px' }} />
+                {loadingMore && (
+                  <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>読み込み中...</p>
+                )}
+                {!hasMore && posts.length > 0 && (
+                  <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center', fontSize: '0.875rem' }}>
+                    すべての投稿を表示しました
+                  </p>
+                )}
+              </>
+            ) : (
+              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
+            )}
+          </>
+        )}
       </main>
     </div>
   );

@@ -115,12 +115,22 @@ const DELETE_MESSAGE_MUTATION = `
 `;
 
 const LIST_MESSAGES_QUERY = `
-  query ListMessages($roomID: ID!) {
-    messages(roomID: $roomID) {
-      ${MESSAGE_FIELDS}
+  query ListMessages($roomID: ID!, $limit: Int, $before: ID, $after: ID, $afterTime: String) {
+    messages(roomID: $roomID, limit: $limit, before: $before, after: $after, afterTime: $afterTime) {
+      items {
+        ${MESSAGE_FIELDS}
+      }
+      hasMoreBefore
+      hasMoreAfter
     }
   }
 `;
+
+export type MessagePage = {
+  items: Message[];
+  hasMoreBefore: boolean;
+  hasMoreAfter: boolean;
+};
 
 const GET_ROOM_QUERY = `
   query GetRoom($id: ID!) {
@@ -131,9 +141,12 @@ const GET_ROOM_QUERY = `
 `;
 
 const MY_DM_ROOMS_QUERY = `
-  query MyDMRooms {
-    myDMRooms {
-      ${ROOM_FIELDS}
+  query MyDMRooms($limit: Int, $offset: Int) {
+    myDMRooms(limit: $limit, offset: $offset) {
+      items {
+        ${ROOM_FIELDS}
+      }
+      total
     }
   }
 `;
@@ -174,12 +187,25 @@ export const sendMessage = async (roomID: string, content: string, mediaInputs?:
   );
 };
 
-export const listMessages = async (roomID: string) => {
-  return await request<{ messages: Message[] }>(
+export type ListMessagesOptions = {
+  before?: string;
+  after?: string;
+  afterTime?: string;
+};
+
+export const listMessages = async (roomID: string, limit = 50, options?: ListMessagesOptions): Promise<MessagePage> => {
+  const data = await request<{ messages: MessagePage }>(
     LIST_MESSAGES_QUERY,
-    { roomID },
+    {
+      roomID,
+      limit,
+      ...(options?.before ? { before: options.before } : {}),
+      ...(options?.after ? { after: options.after } : {}),
+      ...(options?.afterTime ? { afterTime: options.afterTime } : {}),
+    },
     getUserToken(),
   );
+  return data.messages;
 };
 
 export const getRoom = async (id: string) => {
@@ -208,13 +234,14 @@ export const deleteMessage = async (roomID: string, id: string) => {
   );
 };
 
-export const listMyDMRooms = async () => {
+export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Room[]; total: number }> => {
   const token = getUserToken();
-  return await request<{ myDMRooms: Room[] }>(
+  const data = await request<{ myDMRooms: { items: Room[]; total: number } }>(
     MY_DM_ROOMS_QUERY,
-    undefined,
+    { limit, offset },
     token,
-  ).then((data) => data.myDMRooms);
+  );
+  return data.myDMRooms;
 };
 
 export const getPresignedMediaUploadUrl = async (contentType: string) => {
