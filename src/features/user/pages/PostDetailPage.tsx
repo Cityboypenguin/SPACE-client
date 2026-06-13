@@ -5,7 +5,6 @@ import { storageUrl } from '../../../lib/storage';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
-// ⭕️ 追加: 大元投稿の表示用
 import { PostCard } from '../components/organisms/PostCard';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { LikeButton } from '../components/molecules/LikeButton';

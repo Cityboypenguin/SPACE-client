@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
 import { PostCard } from '../components/organisms/PostCard';
@@ -9,6 +9,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import {
   getTopLevelPosts,
   createPost,
+  searchPosts,
   createFavorite,
   deleteFavorite,
   getPresignedMediaUploadUrl,
@@ -23,9 +24,19 @@ export const PostListPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
-
-  const { data: posts, error, isLoading, mutate } = useSWR<Post[]>('user-posts', getTopLevelPosts);
-
+  const [searchParams, setSearchParams] = useSearchParams();
+  const q = searchParams.get('q') || '';
+  const [inputValue, setInputValue] = useState(q);
+  const { data: posts, mutate: mutatePosts } = useSWR<Post[]>(
+    !q ? 'user-posts' : null, 
+    getTopLevelPosts, 
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
+  );
+  const { data: searchResults, isLoading: isSearchLoading, mutate: mutateSearch } = useSWR<Post[]>(
+    q ? ['search-posts', q] : null,
+    () => searchPosts(q), 
+    { revalidateOnFocus: false, revalidateOnReconnect: false }
+  );
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [posting, setPosting] = useState(false);
@@ -50,7 +61,7 @@ export const PostListPage = () => {
       setContent('');
       setSelectedFiles([]);
 
-      mutate([newPost, ...(posts || [])], { revalidate: false });
+      mutatePosts([newPost, ...(posts || [])], { revalidate: false });
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -66,7 +77,8 @@ export const PostListPage = () => {
         await createFavorite(postId);
       }
 
-      const updatedPosts = posts?.map((p) => {
+      // SWRのキャッシュ更新関数（共通化）
+      const updater = (currentData?: Post[]) => currentData?.map((p) => {
         if (p.ID !== postId) return p;
         if (isLiked) {
           return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
@@ -74,21 +86,87 @@ export const PostListPage = () => {
           return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
         }
       });
-      mutate(updatedPosts, { revalidate: false });
+
+      // 現在表示されている方のSWRキャッシュを更新する
+      if (q) {
+        mutateSearch(updater, { revalidate: false });
+      } else {
+        mutatePosts(updater, { revalidate: false });
+      }
     } catch (err) {
       console.error('いいねの更新に失敗しました', err);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) {
+      setSearchParams({}); // URLの ?q= を削除して一覧に戻る
+      return;
+    }
+    setSearchParams({ q: inputValue.trim() }); // URLを ?q=キーワード に更新
   };
 
   return (
     <div>
       <UserHeader />
       <main style={{ maxWidth: '600px', margin: '0 auto' }}>
+      <form 
+          onSubmit={handleSearch} 
+          style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}
+        >
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="キーワードで検索..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              style={{
+                width: '100%', 
+                padding: '0.6rem 2.5rem 0.6rem 1rem', // ⭕️ 右側の余白(2.5rem)を広げ、入力文字とボタンが被るのを防ぐ
+                borderRadius: '9999px',
+                border: '1px solid #cbd5e1', 
+                backgroundColor: '#f8fafc',
+                fontSize: '0.95rem', 
+                outline: 'none',
+              }}
+            />
+            {inputValue && (
+              <button
+                type="button" // 👈 エンターキーで誤送信されるのを防ぐ必須属性
+                onClick={() => {
+                  setInputValue('');   // 入力欄を空にする
+                  setSearchParams({}); // URLの ?q= を削除して一覧画面に戻す
+                }}
+                style={{
+                  position: 'absolute', 
+                  right: '0.8rem', // コンテナの右端から少し内側に固定
+                  background: 'transparent', 
+                  border: 'none', 
+                  cursor: 'pointer',
+                  fontSize: '1rem', 
+                  color: '#94a3b8',
+                  padding: '0.2rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </form>
+
         <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>みんなの投稿</h1>
+          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+            {q ? `「${q}」の検索結果` : 'みんなの投稿'}
+          </h1>
         </div>
 
-        <PostComposer
+        {/* トップレベル表示時のみ投稿フォームを出す（任意） */}
+        {!q && (
+          <PostComposer
           value={content}
           onChange={setContent}
           onSubmit={handlePost}
@@ -99,25 +177,32 @@ export const PostListPage = () => {
           userName={profile?.user.name}
           selectedFiles={selectedFiles}
           onFileSelect={setSelectedFiles}
-        />
-
-        {error && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
-
-        {isLoading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
-        ) : posts && posts.length > 0 ? (
-          posts.map((post) => (
-            <PostCard
-              key={post.ID}
-              post={post}
-              currentUserId={userId}
-              onLike={handleLike}
-              onClick={() => navigate(`/posts/${post.ID}`)}
-            />
-          ))
-        ) : (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
+          />
         )}
+
+        {isSearchLoading ? (
+          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+        ) : q ? (
+            searchResults && searchResults.length > 0 ? (
+              searchResults.map((post) => (
+                <PostCard
+                  key={post.ID} post={post} currentUserId={userId}
+                  onLike={handleLike} onClick={() => navigate(`/posts/${post.ID}`)}
+                />
+              ))
+            ) : (
+              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>見つかりませんでした</p>
+            )
+          ) : posts && posts.length > 0 ? (
+            posts.map((post) => (
+              <PostCard
+                key={post.ID} post={post} currentUserId={userId}
+                onLike={handleLike} onClick={() => navigate(`/posts/${post.ID}`)}
+              />
+            ))
+          ) : (
+            <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がありません</p>
+          )}
       </main>
     </div>
   );

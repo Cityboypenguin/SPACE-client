@@ -107,6 +107,17 @@ const GET_POSTS_BY_USER_ID_QUERY = `
   }
 `;
 
+const SEARCH_POSTS_QUERY = `
+  query SearchPosts($keyword: String!) {
+    searchPosts(keyword: $keyword) {
+      ${POST_FIELDS}
+      replies {
+        ID
+      }
+    }
+  }
+`
+
 const CREATE_POST_MUTATION = `
   mutation CreatePost($input: CreatePostInput!) {
   createPost(input: $input) {
@@ -204,6 +215,15 @@ export const updatePost = async (
     getUserToken(),
   );
   return data.updatePost;
+};
+
+export const searchPosts = async (keyword: string): Promise<Post[]> => {
+  const data = await request<{ searchPosts: Post[] }>(
+    SEARCH_POSTS_QUERY,
+    { keyword },
+    getUserToken(),
+  );
+  return data.searchPosts;
 };
 
 export const deletePost = async (id: string): Promise<void> => {
