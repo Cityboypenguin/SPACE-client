@@ -60,7 +60,7 @@ export const AdminCommunityDetailPage = () => {
   const fetchMessages = async (roomID: string) => {
     try {
       const data = await listRoomMessages(roomID);
-      setMessages(data.messages);
+      setMessages(data.messages.items);
     } catch {
       setMessagesError('メッセージ一覧の取得に失敗しました');
     }
