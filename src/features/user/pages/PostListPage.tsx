@@ -41,15 +41,24 @@ export const PostListPage = () => {
   const [loadError, setLoadError] = useState(false);
   const loadingRef = useRef(false);
 
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'recommended' | 'favorites'>('recommended');
+  const lastScrollYRef = useRef(0);
+
   const postsRef = useRef(posts);
   const totalRef = useRef(total);
   const scrollYRef = useRef(initialCache?.scrollY ?? 0);
   useEffect(() => { postsRef.current = posts; }, [posts]);
   useEffect(() => { totalRef.current = total; }, [total]);
 
-  // スクロール位置を常時追跡（アンマウント時に window.scrollY が 0 にリセットされるため）
   useEffect(() => {
-    const onScroll = () => { scrollYRef.current = window.scrollY; };
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      setShowScrollTop(currentY > 300 && currentY < lastScrollYRef.current);
+      lastScrollYRef.current = currentY;
+      scrollYRef.current = currentY;
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -233,18 +242,31 @@ export const PostListPage = () => {
     }
   };
 
+  const displayedPosts = posts
+    .filter(p => activeTab !== 'favorites' || p.favorites.some(f => f.user.ID === userId))
+    .filter(p => !searchQuery || p.content.toLowerCase().includes(searchQuery.toLowerCase()));
+
   const hasMore = posts.length < total;
 
   return (
     <div>
       <UserSidebar />
 
-      <button className={styles.fab} onClick={() => setComposerOpen(true)} aria-label="新しい投稿を作成">
-        <span className={styles.fabIcon}>
-          <span className={styles.fabIconH} />
-          <span className={styles.fabIconV} />
-        </span>
-      </button>
+      <div className={`${styles.fabGroup} ${showScrollTop ? styles.fabGroupExpanded : ''}`}>
+        <button
+          className={`${styles.scrollTopFab} ${showScrollTop ? styles.scrollTopFabVisible : ''}`}
+          onClick={handleScrollToTop}
+          aria-label="上に戻る"
+        >
+          ↑
+        </button>
+        <button className={styles.fab} onClick={() => setComposerOpen(true)} aria-label="新しい投稿を作成">
+          <span className={styles.fabIcon}>
+            <span className={styles.fabIconH} />
+            <span className={styles.fabIconV} />
+          </span>
+        </button>
+      </div>
 
       {composerOpen && (
         <div className={styles.composerOverlay} onClick={() => setComposerOpen(false)}>
@@ -282,17 +304,36 @@ export const PostListPage = () => {
           userName={profile?.user.name}
         />
       )}
-      <main className={styles.main}>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>みんなの投稿</h1>
-          <button className={styles.scrollTopButton} onClick={handleScrollToTop} title="上に戻る">↑</button>
-        </div>
 
+      <main className={styles.main}>
         {newPostsCount > 0 && (
-          <button className={styles.newPostsBanner} onClick={handleRefresh}>
-            新着{newPostsCount}件を表示
-          </button>
+          <div className={styles.notificationBanner} onClick={handleRefresh}>
+            <button
+              className={styles.notificationDismiss}
+              onClick={e => { e.stopPropagation(); setNewPostsCount(0); }}
+              aria-label="閉じる"
+            >
+              ✕
+            </button>
+            <span>新しい投稿が{newPostsCount}件あります</span>
+          </div>
         )}
+
+        <div className={styles.searchBar}>
+          <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+          </svg>
+          <input
+            className={styles.searchInput}
+            type="text"
+            placeholder="search"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className={styles.searchClear} onClick={() => setSearchQuery('')} aria-label="クリア">✕</button>
+          )}
+        </div>
 
         <PostComposer
           value={content}
@@ -307,13 +348,28 @@ export const PostListPage = () => {
           onFileSelect={setSelectedFiles}
         />
 
+        <div className={styles.tabs}>
+          <button
+            className={`${styles.tab} ${activeTab === 'recommended' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('recommended')}
+          >
+            おすすめ
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'favorites' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('favorites')}
+          >
+            お気に入り
+          </button>
+        </div>
+
         {loadError && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
         {initialLoading ? (
           <p className={styles.loadingText}>読み込み中...</p>
-        ) : posts.length > 0 ? (
+        ) : (
           <>
-            {posts.map((post) => (
+            {displayedPosts.map((post) => (
               <PostCard
                 key={post.ID}
                 post={post}
@@ -323,14 +379,17 @@ export const PostListPage = () => {
                 onReply={() => setReplyingTo(post)}
               />
             ))}
-            <div ref={sentinelRef} className={styles.sentinel} />
+            {displayedPosts.length === 0 && (
+              <p className={styles.emptyText}>
+                {activeTab === 'favorites' ? 'お気に入りの投稿がありません' : '投稿がまだありません'}
+              </p>
+            )}
+            {hasMore && <div ref={sentinelRef} className={styles.sentinel} />}
             {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
             {!hasMore && posts.length > 0 && (
               <p className={styles.allLoadedText}>すべての投稿を表示しました</p>
             )}
           </>
-        ) : (
-          <p className={styles.emptyText}>投稿がまだありません</p>
         )}
       </main>
     </div>
