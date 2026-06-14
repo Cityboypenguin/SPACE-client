@@ -307,7 +307,7 @@ export const UserSettingsPage = () => {
             className={`${styles.menuItem} ${view === 'general' || view === 'password' || view === 'blocks' ? styles.menuItemActive : ''}`}
             onClick={() => setView('general')}
           >
-            一般設定
+            一般
             <span className={styles.menuArrow}>›</span>
           </button>
           <button className={styles.menuItem} disabled style={{ color: '#cbd5e1', cursor: 'default' }}>
