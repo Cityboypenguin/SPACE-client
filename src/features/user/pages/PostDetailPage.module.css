@@ -176,6 +176,12 @@
   filter: opacity(0.45);
 }
 
+.reportIcon {
+  width: 20px;
+  height: 20px;
+  filter: opacity(0.55);
+}
+
 .reportButton {
   background: none;
   border: none;

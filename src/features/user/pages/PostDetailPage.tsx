@@ -13,6 +13,7 @@ import { LikeButton } from '../../../components/molecules/LikeButton';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import commentIcon from '../../../assets/パーツ_コメント.svg';
+import reportIcon from '../../../assets/パーツ_通報.svg';
 import styles from './PostDetailPage.module.css';
 
 import {
@@ -292,7 +293,8 @@ export const PostDetailPage = () => {
                   <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
                   {!isMyPost && (
                     <button className={styles.reportButton} onClick={() => setIsReportOpen(true)}>
-                      🚩 <span className={styles.reportLabel}>通報</span>
+                      <img src={reportIcon} alt="" className={styles.reportIcon} />
+                      <span className={styles.reportLabel}>通報</span>
                     </button>
                   )}
                 </div>

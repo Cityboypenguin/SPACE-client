@@ -5,7 +5,9 @@ import { Tabs } from '../../../components/molecules/Tabs';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
+import { ReportModal } from '../components/organisms/ReportMadal';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { useToast } from '../../../context/ToastContext';
 import styles from './PostListPage.module.css';
 
 import {
@@ -14,6 +16,8 @@ import {
   getNewFeedPostsCount,
   searchPosts,
   createPost,
+  updatePost,
+  deletePost,
   createFavorite,
   deleteFavorite,
   getPresignedMediaUploadUrl,
@@ -21,6 +25,7 @@ import {
   type Post,
   type MediaInput,
 } from '../api/post';
+import { createBlocker } from '../api/block';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
@@ -33,6 +38,7 @@ export const PostListPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
+  const { addToast } = useToast();
 
   const initialCacheRef = useRef(getPostListCache());
   const initialCache = initialCacheRef.current;
@@ -45,8 +51,8 @@ export const PostListPage = () => {
   const loadingRef = useRef(false);
 
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Post[]>([]);
+  const [searchQuery, setSearchQuery] = useState(initialCache?.searchQuery ?? '');
+  const [searchResults, setSearchResults] = useState<Post[]>(initialCache?.searchResults ?? []);
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'recommended' | 'favorites'>('recommended');
   const lastScrollYRef = useRef(0);
@@ -122,8 +128,11 @@ export const PostListPage = () => {
       const result = await getFollowersTopLevelPosts(userId, LIMIT, currentOffset);
       setFollowPosts(prev => {
         if (mode === 'initial' || mode === 'refresh') return result.items;
-        const existingIds = new Set(prev.map(p => p.ID));
-        return [...prev, ...result.items.filter(p => !existingIds.has(p.ID))];
+        const fetchedMap = new Map(result.items.map(p => [p.ID, p]));
+        const prevIds = new Set(prev.map(p => p.ID));
+        const updated = prev.map(p => fetchedMap.get(p.ID) ?? p);
+        const newItems = result.items.filter(p => !prevIds.has(p.ID));
+        return [...updated, ...newItems];
       });
       setFollowTotal(result.total);
     } catch { /* noop */ } finally {
@@ -148,10 +157,24 @@ export const PostListPage = () => {
       const result = await getTopLevelPosts(LIMIT, currentOffset);
       setPosts(prev => {
         if (mode === 'initial') return result.items;
-        const existingIds = new Set(prev.map(p => p.ID));
-        const newItems = result.items.filter(p => !existingIds.has(p.ID));
-        if (mode === 'refresh') return [...newItems, ...prev];
-        return [...prev, ...newItems];
+        const fetchedMap = new Map(result.items.map(p => [p.ID, p]));
+        const prevIds = new Set(prev.map(p => p.ID));
+        const newItems = result.items.filter(p => !prevIds.has(p.ID));
+        if (mode === 'refresh') {
+          const oldestFetchedAt = result.items.length > 0
+            ? Math.min(...result.items.map(p => new Date(p.createdAt).getTime()))
+            : -Infinity;
+          const updated = prev
+            .filter(p => {
+              const t = new Date(p.createdAt).getTime();
+              // リフレッシュ窓内にあるのにサーバーから返ってこなかった = 削除済み
+              return t < oldestFetchedAt || fetchedMap.has(p.ID);
+            })
+            .map(p => fetchedMap.get(p.ID) ?? p);
+          return [...newItems, ...updated];
+        }
+        const updated = prev.map(p => fetchedMap.get(p.ID) ?? p);
+        return [...updated, ...newItems];
       });
       setTotal(result.total);
       setLoadError(false);
@@ -221,6 +244,8 @@ export const PostListPage = () => {
         total: totalRef.current,
         offset: postsRef.current.length,
         scrollY: scrollYRef.current,
+        searchQuery: searchQueryRef.current,
+        searchResults: searchResultsRef.current,
       });
     };
   }, []);
@@ -247,12 +272,19 @@ export const PostListPage = () => {
     activeTab === 'favorites' && followPosts.length < followTotal,
   );
 
+  const searchQueryRef = useRef(searchQuery);
+  const searchResultsRef = useRef(searchResults);
+  useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
+  useEffect(() => { searchResultsRef.current = searchResults; }, [searchResults]);
+
   const handlePostClick = (postId: string) => {
     savePostListCache({
       posts: postsRef.current,
       total: totalRef.current,
       offset: postsRef.current.length,
       scrollY: scrollYRef.current,
+      searchQuery: searchQueryRef.current,
+      searchResults: searchResultsRef.current,
     });
     navigate(`/posts/${postId}`);
   };
@@ -321,9 +353,20 @@ export const PostListPage = () => {
   const [composerOpen, setComposerOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
 
+  const [reportingPostId, setReportingPostId] = useState<string | null>(null);
+  const [reportingPostContent, setReportingPostContent] = useState('');
+
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editFiles, setEditFiles] = useState<File[]>([]);
+  const [editDeletedMediaIDs, setEditDeletedMediaIDs] = useState<string[]>([]);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState('');
+
   const updatePostInAllLists = useCallback((postId: string, updater: (p: Post) => Post) => {
     setPosts(prev => prev.map(p => p.ID === postId ? updater(p) : p));
     setFollowPosts(prev => prev.map(p => p.ID === postId ? updater(p) : p));
+    setSearchResults(prev => prev.map(p => p.ID === postId ? updater(p) : p));
   }, []);
 
   const handleReplySubmit = async (content: string, files: File[]) => {
@@ -340,6 +383,70 @@ export const PostListPage = () => {
     }
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
     updatePostInAllLists(replyingTo.ID, p => ({ ...p, replyCount: p.replyCount + 1 }));
+  };
+
+  const handleBlock = async (blockedUserId: string) => {
+    try {
+      await createBlocker(blockedUserId);
+      addToast('ユーザーをブロックしました', 'success');
+    } catch {
+      addToast('ブロックに失敗しました', 'error');
+    }
+  };
+
+  const handleReport = (postId: string, postContent: string) => {
+    setReportingPostId(postId);
+    setReportingPostContent(postContent);
+  };
+
+  const handleEditOpen = (post: Post) => {
+    setEditingPost(post);
+    setEditContent(post.content);
+    setEditFiles([]);
+    setEditDeletedMediaIDs([]);
+    setEditError('');
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editingPost || editSubmitting) return;
+    const remainingExisting = editingPost.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) ?? [];
+    const hasAnyMedia = remainingExisting.length > 0 || editFiles.length > 0;
+    if (!editContent.trim() && !hasAnyMedia) return;
+
+    setEditSubmitting(true);
+    setEditError('');
+    try {
+      let mediaInputs: MediaInput[] | undefined;
+      if (editFiles.length > 0) {
+        mediaInputs = await Promise.all(
+          editFiles.map(async (file) => {
+            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+          }),
+        );
+      }
+      const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs);
+      updatePostInAllLists(editingPost.ID, () => updated);
+      setEditingPost(null);
+    } catch (err) {
+      setEditError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (postId: string) => {
+    if (!window.confirm('本当にこの投稿を削除しますか？')) return;
+    try {
+      await deletePost(postId);
+      setPosts(prev => prev.filter(p => p.ID !== postId));
+      setFollowPosts(prev => prev.filter(p => p.ID !== postId));
+      setSearchResults(prev => prev.filter(p => p.ID !== postId));
+      addToast('投稿を削除しました', 'success');
+    } catch {
+      addToast('削除に失敗しました', 'error');
+    }
   };
 
   const handleLike = async (postId: string, isLiked: boolean) => {
@@ -413,6 +520,7 @@ export const PostListPage = () => {
               selectedFiles={modalFiles}
               onFileSelect={setModalFiles}
               onCancel={handleModalCancel}
+              maxLength={500}
               isEmbedded
               rows={3}
             />
@@ -428,6 +536,16 @@ export const PostListPage = () => {
           userId={userId}
           avatarUrl={profile?.avatarUrl}
           userName={profile?.user.name}
+        />
+      )}
+
+      {reportingPostId && (
+        <ReportModal
+          isOpen={true}
+          onClose={() => { setReportingPostId(null); setReportingPostContent(''); }}
+          targetType="POST"
+          targetID={reportingPostId}
+          postContent={reportingPostContent}
         />
       )}
 
@@ -481,17 +599,20 @@ export const PostListPage = () => {
           accountId={profile?.user.accountID}
           selectedFiles={selectedFiles}
           onFileSelect={setSelectedFiles}
+          maxLength={500}
         />
 
-        <Tabs
-          tabs={[
-            { key: 'recommended', label: 'おすすめ' },
-            { key: 'favorites', label: 'お気に入り' },
-          ]}
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          justify="end"
-        />
+        {!isSearching && (
+          <Tabs
+            tabs={[
+              { key: 'recommended', label: 'おすすめ' },
+              { key: 'favorites', label: 'お気に入り' },
+            ]}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            justify="end"
+          />
+        )}
 
         {loadError && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
@@ -499,16 +620,46 @@ export const PostListPage = () => {
           <p className={styles.loadingText}>読み込み中...</p>
         ) : (
           <>
-            {displayedPosts.map((post) => (
-              <PostCard
-                key={post.ID}
-                post={post}
-                currentUserId={userId}
-                onLike={handleLike}
-                onClick={() => handlePostClick(post.ID)}
-                onReply={() => setReplyingTo(post)}
-              />
-            ))}
+            {displayedPosts.map((post) =>
+              editingPost?.ID === post.ID ? (
+                <PostComposer
+                  key={post.ID}
+                  value={editContent}
+                  onChange={setEditContent}
+                  onSubmit={handleEditSubmit}
+                  submitting={editSubmitting}
+                  error={editError}
+                  userId={userId}
+                  avatarUrl={profile?.avatarUrl}
+                  userName={profile?.user.name}
+                  accountId={profile?.user.accountID}
+                  selectedFiles={editFiles}
+                  onFileSelect={setEditFiles}
+                  existingMedia={editingPost.media}
+                  deletedMediaIDs={editDeletedMediaIDs}
+                  onDeleteExistingMedia={(mediaId) => setEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                  onCancel={() => setEditingPost(null)}
+                  submitLabel="保存する"
+                  submittingLabel="保存中..."
+                  placeholder="投稿を編集..."
+                  maxLength={500}
+                  rows={3}
+                />
+              ) : (
+                <PostCard
+                  key={post.ID}
+                  post={post}
+                  currentUserId={userId}
+                  onLike={handleLike}
+                  onClick={() => handlePostClick(post.ID)}
+                  onReply={() => setReplyingTo(post)}
+                  onBlock={handleBlock}
+                  onReport={(postId) => handleReport(postId, post.content)}
+                  onEdit={handleEditOpen}
+                  onDelete={handleDelete}
+                />
+              )
+            )}
             {displayedPosts.length === 0 && (
               <p className={styles.emptyText}>
                 {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'フォロー中のユーザーの投稿がありません' : '投稿がまだありません'}
