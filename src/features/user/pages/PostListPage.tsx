@@ -8,6 +8,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 
 import {
   getTopLevelPosts,
+  getFollowersTopLevelPosts, // ⭕️ 追加
   createPost,
   searchPosts,
   createFavorite,
@@ -24,15 +25,34 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 const LIMIT = 20;
 
+// ⭕️ タブ用のスタイル
+const TAB_STYLE = (active: boolean): React.CSSProperties => ({
+  flex: 1,
+  padding: '0.75rem 0',
+  background: 'none',
+  border: 'none',
+  borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
+  cursor: 'pointer',
+  fontWeight: active ? 700 : 400,
+  color: active ? '#3b82f6' : '#64748b',
+  fontSize: '0.95rem',
+  transition: 'color 0.15s, border-color 0.15s',
+});
+
+type Tab = 'all' | 'following';
+
 export const PostListPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
 
-  // === 検索機能のState（HEAD） ===
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get('q') || '';
   const [inputValue, setInputValue] = useState(q);
+
+  // ⭕️ タブのState管理
+  const [currentTab, setCurrentTab] = useState<Tab>('all');
+  const prevTabRef = useRef<Tab>(currentTab);
 
   const { data: searchResults, isLoading: isSearchLoading, mutate: mutateSearch } = useSWR<Post[]>(
     q ? ['search-posts', q] : null,
@@ -40,7 +60,6 @@ export const PostListPage = () => {
     { revalidateOnFocus: false, revalidateOnReconnect: false }
   );
 
-  // === 無限スクロールとタイムラインのState（Develop） ===
   const initialCacheRef = useRef(getPostListCache());
   const initialCache = initialCacheRef.current;
 
@@ -58,7 +77,6 @@ export const PostListPage = () => {
   useEffect(() => { postsRef.current = posts; }, [posts]);
   useEffect(() => { totalRef.current = total; }, [total]);
 
-  // スクロール位置を常時追跡（アンマウント時に window.scrollY が 0 にリセットされるため）
   useEffect(() => {
     const onScroll = () => { scrollYRef.current = window.scrollY; };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -70,13 +88,18 @@ export const PostListPage = () => {
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
 
-  const loadPosts = useCallback(async (currentOffset: number, isInitial: boolean) => {
+  // ⭕️ 引数に targetTab を追加してAPIを分岐
+  const loadPosts = useCallback(async (targetTab: Tab, currentOffset: number, isInitial: boolean) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
     if (isInitial) setInitialLoading(true);
     else setLoadingMore(true);
     try {
-      const result = await getTopLevelPosts(LIMIT, currentOffset);
+      // ⭕️ タブによってAPIを切り替える
+      const result = targetTab === 'all'
+        ? await getTopLevelPosts(LIMIT, currentOffset)
+        : await getFollowersTopLevelPosts(userId!, LIMIT, currentOffset);
+
       setPosts(prev => isInitial ? result.items : [...prev, ...result.items]);
       setTotal(result.total);
       setLoadError(false);
@@ -87,14 +110,26 @@ export const PostListPage = () => {
       if (isInitial) setInitialLoading(false);
       else setLoadingMore(false);
     }
-  }, []);
+  }, [userId]);
 
+  // 初回ロード
   useEffect(() => {
     if (initialCache) return;
-    loadPosts(0, true);
-  }, [loadPosts, initialCache]);
+    loadPosts(currentTab, 0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadPosts]);
 
-  // スクロール位置の復元（rAF でブラウザの描画後に実行）
+  // ⭕️ タブ切り替え時のデータ再取得ロジック
+  useEffect(() => {
+    if (prevTabRef.current !== currentTab) {
+      setPosts([]);
+      setTotal(0);
+      loadPosts(currentTab, 0, true);
+      prevTabRef.current = currentTab;
+    }
+  }, [currentTab, loadPosts]);
+
+  // スクロール位置の復元
   useEffect(() => {
     if (!initialCache) return;
     const scrollY = initialCache.scrollY;
@@ -119,10 +154,12 @@ export const PostListPage = () => {
   const sentinelRef = useInfiniteScroll(
     useCallback(() => {
       setPosts(prev => {
-        if (!loadingRef.current && prev.length < total) loadPosts(prev.length, false);
+        if (!loadingRef.current && prev.length < total) {
+          loadPosts(currentTab, prev.length, false); // ⭕️ 現在のタブを渡す
+        }
         return prev;
       });
-    }, [total, loadPosts]),
+    }, [total, loadPosts, currentTab]),
     loadingMore,
   );
 
@@ -155,9 +192,11 @@ export const PostListPage = () => {
       setContent('');
       setSelectedFiles([]);
 
-      // 投稿はタイムライン（!q）でのみ行われるため、手動キャッシュ側に直接追加する
-      setPosts(prev => [newPost, ...prev]);
-      setTotal(prev => prev + 1);
+      // 投稿は「すべての投稿」タブの時のみ追加表示する
+      if (currentTab === 'all') {
+        setPosts(prev => [newPost, ...prev]);
+        setTotal(prev => prev + 1);
+      }
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -174,7 +213,6 @@ export const PostListPage = () => {
       }
 
       if (q) {
-        // 検索中：SWRのキャッシュを更新
         const updater = (currentData?: Post[]) => currentData?.map((p) => {
           if (p.ID !== postId) return p;
           if (isLiked) return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
@@ -182,7 +220,6 @@ export const PostListPage = () => {
         });
         mutateSearch(updater, { revalidate: false });
       } else {
-        // タイムライン中：手動Stateを更新
         setPosts(prev => prev.map((p) => {
           if (p.ID !== postId) return p;
           if (isLiked) return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
@@ -213,6 +250,7 @@ export const PostListPage = () => {
           onSubmit={handleSearch} 
           style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}
         >
+          {/* 検索フォーム部分は変更なし */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <input
               type="text"
@@ -256,13 +294,34 @@ export const PostListPage = () => {
           </div>
         </form>
 
-        <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
-            {q ? `「${q}」の検索結果` : 'みんなの投稿'}
-          </h1>
-        </div>
+        {/* ⭕️ 検索していない時だけタブを表示 */}
+        {!q && (
+          <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
+            <button 
+              style={TAB_STYLE(currentTab === 'all')} 
+              onClick={() => setCurrentTab('all')}
+            >
+              みんなの投稿
+            </button>
+            {userId && (
+              <button 
+                style={TAB_STYLE(currentTab === 'following')} 
+                onClick={() => setCurrentTab('following')}
+              >
+                フォロー中
+              </button>
+            )}
+          </div>
+        )}
 
-        {/* タイムライン表示時のみ投稿フォームを出す */}
+        {q && (
+          <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+              「{q}」の検索結果
+            </h1>
+          </div>
+        )}
+
         {!q && (
           <PostComposer
             value={content}

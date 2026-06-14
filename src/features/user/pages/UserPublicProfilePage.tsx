@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserHeader } from '../components/organisms/UserHeader';
@@ -9,11 +9,26 @@ import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
 import { ReportModal } from '../components/organisms/ReportMadal';
-import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
+import { getPostsByUserID, getFavoritePostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import styles from './UserPublicProfilePage.module.css';
+
+type Tab = 'myposts' | 'favorites';
+
+const TAB_STYLE = (active: boolean): React.CSSProperties => ({
+  flex: 1,
+  padding: '0.75rem 0',
+  background: 'none',
+  border: 'none',
+  borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
+  cursor: 'pointer',
+  fontWeight: active ? 700 : 400,
+  color: active ? '#3b82f6' : '#64748b',
+  fontSize: '0.95rem',
+  transition: 'color 0.15s, border-color 0.15s',
+});
 
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,54 +49,74 @@ export const UserPublicProfilePage = () => {
   const isFavorited = favoriteUsers?.some((u) => u.ID === id) ?? false;
   const isBlocked = blockedUsers?.some((u) => u.ID === id) ?? false;
 
-  const initialCacheRef = useRef(id ? getUserPostListCache(id) : null);
-  const initialCache = initialCacheRef.current;
+  // ⭕️ タブ状態の管理
+  const [currentTab, setCurrentTab] = useState<Tab>('myposts');
+  const prevTabRef = useRef<Tab>(currentTab);
 
-  const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
-  const [postsTotal, setPostsTotal] = useState(initialCache?.total ?? 0);
-  const [postsLoading, setPostsLoading] = useState(!initialCache);
+  // ⭕️ キャッシュのクリーニング関数（対象ユーザーのIDを基準にする）
+  const getCleanPosts = useCallback((tabToCheck: Tab, currentPosts: Post[]) => {
+    if (tabToCheck === 'favorites' && id) {
+      return currentPosts.filter(p => p.favorites.some(f => f.user.ID === id));
+    }
+    return currentPosts;
+  }, [id]);
+
+  const initialCacheRaw = id ? getUserPostListCache(id, currentTab) : null;
+  const initialPosts = initialCacheRaw ? getCleanPosts(currentTab, initialCacheRaw.posts) : [];
+
+  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [postsTotal, setPostsTotal] = useState(initialCacheRaw?.total ?? 0);
+  const [postsLoading, setPostsLoading] = useState(!initialCacheRaw);
   const [postsLoadingMore, setPostsLoadingMore] = useState(false);
   const [postsErr, setPostsErr] = useState(false);
   const postsLoadingRef = useRef(false);
 
   const postsRef = useRef(posts);
   const totalRef = useRef(postsTotal);
-  const scrollYRef = useRef(initialCache?.scrollY ?? 0);
+
+  // ⭕️ ウィンドウではなく、リスト要素のスクロール位置を管理するRef
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollYRef = useRef(initialCacheRaw?.scrollY ?? 0);
+
   useEffect(() => { postsRef.current = posts; }, [posts]);
   useEffect(() => { totalRef.current = postsTotal; }, [postsTotal]);
 
+  // マウント時の「リスト内」スクロール復元
   useEffect(() => {
-    const onScroll = () => { scrollYRef.current = window.scrollY; };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    if (!initialCacheRaw) return;
+    const timer = setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = initialCacheRaw.scrollY;
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [initialCacheRaw]);
 
-  useEffect(() => {
-    if (!initialCache) return;
-    const raf = requestAnimationFrame(() => window.scrollTo(0, initialCache.scrollY));
-    return () => cancelAnimationFrame(raf);
-  }, [initialCache]);
-
+  // アンマウント（画面遷移）時のキャッシュ保存
   useEffect(() => {
     return () => {
       if (id) {
         saveUserPostListCache(id, {
-          posts: postsRef.current,
+          posts: getCleanPosts(prevTabRef.current, postsRef.current),
           total: totalRef.current,
           offset: postsRef.current.length,
           scrollY: scrollYRef.current,
-        });
+        }, prevTabRef.current);
       }
     };
-  }, [id]);
+  }, [id, getCleanPosts]);
 
-  const loadPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean) => {
+  const loadPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean, targetTab: Tab) => {
     if (postsLoadingRef.current) return;
     postsLoadingRef.current = true;
     if (isInitial) setPostsLoading(true);
     else setPostsLoadingMore(true);
     try {
-      const page = await getPostsByUserID(userID, 20, currentOffset);
+      // ⭕️ タブに応じてAPIを分岐
+      const page = targetTab === 'myposts'
+        ? await getPostsByUserID(userID, 20, currentOffset)
+        : await getFavoritePostsByUserID(userID, 20, currentOffset);
+        
       setPosts((prev) => isInitial ? page.items : [...prev, ...page.items]);
       setPostsTotal(page.total);
       setPostsErr(false);
@@ -94,24 +129,64 @@ export const UserPublicProfilePage = () => {
     }
   }, []);
 
+  // 初回ロード
   useEffect(() => {
-    if (initialCache) return;
-    if (id) loadPosts(id, 0, true);
-  }, [id, loadPosts, initialCache]);
+    if (initialCacheRaw) return;
+    if (id) loadPosts(id, 0, true, currentTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, loadPosts]);
+
+  // ⭕️ タブ切り替え時の処理（手動キャッシュ制御）
+  useEffect(() => {
+    if (!id) return;
+
+    if (prevTabRef.current !== currentTab) {
+      saveUserPostListCache(id, {
+        posts: getCleanPosts(prevTabRef.current, postsRef.current),
+        total: totalRef.current,
+        offset: postsRef.current.length,
+        scrollY: scrollYRef.current,
+      }, prevTabRef.current);
+
+      const newCache = getUserPostListCache(id, currentTab);
+
+      if (newCache) {
+        const cleanedPosts = getCleanPosts(currentTab, newCache.posts);
+        setPosts(cleanedPosts);
+        setPostsTotal(newCache.total);
+        setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = newCache.scrollY;
+          }
+        }, 50);
+      } else {
+        setPosts([]);
+        setPostsTotal(0);
+        scrollYRef.current = 0;
+        if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+        loadPosts(id, 0, true, currentTab);
+      }
+
+      prevTabRef.current = currentTab;
+    }
+  }, [currentTab, id, loadPosts, getCleanPosts]);
 
   const postsSentinelRef = useInfiniteScroll(
     useCallback(() => {
       setPosts((prev) => {
-        if (!postsLoadingRef.current && prev.length < postsTotal && id) loadPosts(id, prev.length, false);
+        if (!postsLoadingRef.current && prev.length < postsTotal && id) {
+          loadPosts(id, prev.length, false, currentTab);
+        }
         return prev;
       });
-    }, [postsTotal, id, loadPosts]),
+    }, [postsTotal, id, loadPosts, currentTab]),
     postsLoadingMore,
   );
 
   const [actionLoading, setActionLoading] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
+  // ⭕️ いいね機能（ログインユーザー基準で判定・操作）
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) {
       await deleteFavorite(postId);
@@ -172,11 +247,11 @@ export const UserPublicProfilePage = () => {
   const handlePostClick = (postId: string) => {
     if (id) {
       saveUserPostListCache(id, {
-        posts: postsRef.current,
+        posts: getCleanPosts(currentTab, postsRef.current),
         total: totalRef.current,
         offset: postsRef.current.length,
         scrollY: scrollYRef.current,
-      });
+      }, currentTab);
     }
     navigate(`/posts/${postId}`);
   };
@@ -255,19 +330,46 @@ export const UserPublicProfilePage = () => {
               <dd>{profile.bio || '未設定'}</dd>
             </dl>
             <div style={{ marginTop: '2rem' }}>
-              <h3 style={{ fontSize: '1.2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                投稿一覧
-              </h3>
-              <ScrollablePostsList
-                posts={posts}
-                loading={postsLoading}
-                loadingMore={postsLoadingMore}
-                error={postsErr}
-                currentUserId={currentUserId}
-                sentinelRef={postsSentinelRef}
-                onLike={handleLike}
-                onPostClick={handlePostClick}
-              />
+              
+              {/* ⭕️ タブUIの追加 */}
+              <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: '0.5rem' }}>
+                <button 
+                  style={TAB_STYLE(currentTab === 'myposts')} 
+                  onClick={() => setCurrentTab('myposts')}
+                >
+                  投稿
+                </button>
+                <button 
+                  style={TAB_STYLE(currentTab === 'favorites')} 
+                  onClick={() => setCurrentTab('favorites')}
+                >
+                  いいねした投稿
+                </button>
+              </div>
+
+              {/* ⭕️ 独立したスクロールコンテナ */}
+              <div 
+                ref={scrollContainerRef}
+                onScroll={(e) => { scrollYRef.current = e.currentTarget.scrollTop; }}
+                style={{ 
+                  height: 'calc(100vh - 250px)', 
+                  minHeight: '300px',
+                  overflowY: 'auto', 
+                  overflowX: 'hidden'
+                }}
+              >
+                <ScrollablePostsList
+                  posts={posts}
+                  loading={postsLoading}
+                  loadingMore={postsLoadingMore}
+                  error={postsErr}
+                  currentUserId={currentUserId} // 自分自身を渡す
+                  sentinelRef={postsSentinelRef}
+                  onLike={handleLike}
+                  onPostClick={handlePostClick}
+                />
+              </div>
+
             </div>
           </div>
         )}

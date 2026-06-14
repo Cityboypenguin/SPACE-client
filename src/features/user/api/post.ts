@@ -73,6 +73,20 @@ const TOP_LEVEL_POSTS_QUERY = `
   }
 `;
 
+const GET_FOLLOWERS_TOP_LEVEL_POSTS_QUERY = `
+  query followersTopLevelPosts($userID: ID!, $limit: Int, $offset: Int) {
+    followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
+      }
+      total
+    }
+  }
+`;
+
 const GET_POST_BY_ID_QUERY = `
   query GetPostByID($id: ID!) {
     getPostByID(id: $id) {
@@ -102,6 +116,20 @@ const GET_POST_BY_ID_QUERY = `
 const GET_POSTS_BY_USER_ID_QUERY = `
   query GetPostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {
     getPostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
+      }
+      total
+    }
+  }
+`;
+
+const GET_FAVORITE_POSTS_BY_USER_ID_QUERY = `
+  query GetFavoritePostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {
+    getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
       items {
         ${POST_FIELDS}
         replies {
@@ -183,6 +211,15 @@ export const getTopLevelPosts = async (limit = 20, offset = 0): Promise<PostPage
   return data.topLevelPosts;
 };
 
+export const getFollowersTopLevelPosts = async (userId: string, limit = 20, offset = 0): Promise<PostPage> => {
+  const data = await request<{ followersTopLevelPosts: PostPage }>(
+    GET_FOLLOWERS_TOP_LEVEL_POSTS_QUERY,
+    { userID: userId, limit, offset },
+    getUserToken(),
+  );
+  return data.followersTopLevelPosts;
+};
+
 export const getPostByID = async (id: string): Promise<Post | null> => {
   const data = await request<{ getPostByID: Post | null }>(
     GET_POST_BY_ID_QUERY,
@@ -228,6 +265,24 @@ export const updatePost = async (
   return data.updatePost;
 };
 
+export const getPostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
+  const data = await request<{ getPostsByUserID: { items: Post[]; total: number } }>(
+    GET_POSTS_BY_USER_ID_QUERY,
+    { user_id: userId, limit, offset },
+    getUserToken(),
+  );
+  return data.getPostsByUserID;
+};
+
+export const getFavoritePostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
+  const data = await request<{ getFavoritePostsByUserID: { items: Post[]; total: number } }>(
+    GET_FAVORITE_POSTS_BY_USER_ID_QUERY,
+    { user_id: userId, limit, offset },
+    getUserToken(),
+  );
+  return data.getFavoritePostsByUserID;
+};
+
 export const searchPosts = async (keyword: string): Promise<Post[]> => {
   const data = await request<{ searchPosts: Post[] }>(
     SEARCH_POSTS_QUERY,
@@ -251,15 +306,6 @@ export const createFavorite = async (postId: string): Promise<void> => {
     { input: { post_id: postId } },
     getUserToken(),
   );
-};
-
-export const getPostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
-  const data = await request<{ getPostsByUserID: { items: Post[]; total: number } }>(
-    GET_POSTS_BY_USER_ID_QUERY,
-    { user_id: userId, limit, offset },
-    getUserToken(),
-  );
-  return data.getPostsByUserID;
 };
 
 export const deleteFavorite = async (postId: string): Promise<void> => {

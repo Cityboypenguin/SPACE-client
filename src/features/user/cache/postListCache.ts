@@ -32,21 +32,37 @@ export const updatePostInCache = (postId: string, updater: (post: Post) => Post)
 
 export const clearPostListCache = () => { cache = null; };
 
-export const getUserPostListCache = (userId: string): PostListCacheData | null => {
-  const data = userPostCaches.get(userId);
+const getCacheKey = (userId: string, scope: string = '') => scope ? `${userId}_${scope}` : userId;
+
+export const getUserPostListCache = (userId: string, scope: string = ''): PostListCacheData | null => {
+  const key = getCacheKey(userId, scope);
+  const data = userPostCaches.get(key);
   if (!data) return null;
-  if (isExpired(data)) { userPostCaches.delete(userId); return null; }
+  if (isExpired(data)) { userPostCaches.delete(key); return null; }
   return data;
 };
 
-export const saveUserPostListCache = (userId: string, data: Omit<PostListCacheData, 'cachedAt'>) => {
-  userPostCaches.set(userId, { ...data, cachedAt: Date.now() });
+export const saveUserPostListCache = (
+  userId: string, 
+  data: Omit<PostListCacheData, 'cachedAt'>,
+  scope: string = ''
+) => {
+  const key = getCacheKey(userId, scope);
+  userPostCaches.set(key, { ...data, cachedAt: Date.now() });
 };
 
 export const updatePostInUserPostListCache = (userId: string, postId: string, updater: (post: Post) => Post) => {
-  const data = userPostCaches.get(userId);
-  if (!data) return;
-  userPostCaches.set(userId, { ...data, posts: data.posts.map(p => p.ID === postId ? updater(p) : p) });
+  // Mapの全キーと値を取得してループ
+  for (const [key, data] of userPostCaches.entries()) {
+    // ⭕️ 前方一致の確認：キーが "userId" または "userId_xxx" で始まる場合のみ処理
+    if (key === userId || key.startsWith(`${userId}_`)) {
+      userPostCaches.set(key, { 
+        ...data, 
+        posts: data.posts.map(p => p.ID === postId ? updater(p) : p) 
+      });
+    }
+  }
 };
 
 export const clearAllUserPostListCaches = () => { userPostCaches.clear(); };
+
