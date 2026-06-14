@@ -179,7 +179,7 @@ const DELETE_MESSAGE_MUTATION = `
   }
 `;
 
-export const listRoomMessages = async (roomID: string, limit = 100) => {
+export const listRoomMessages = async (roomID: string, limit = 200) => {
   return await request<{ messages: { items: Message[] } }>(
     LIST_ROOM_MESSAGES_QUERY,
     { roomID, limit },
