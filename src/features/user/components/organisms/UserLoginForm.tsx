@@ -17,7 +17,7 @@ export const UserLoginForm = () => {
     try {
       const data = await loginUser(email, password);
       login(data.loginUser.token, data.loginUser.refreshToken, data.loginUser.user.ID);
-      navigate('/mypage');
+      navigate('/home');
     } catch (e) {
       setError(toUserMessage(e, 'メールアドレスまたはパスワードが正しくありません'));
     }

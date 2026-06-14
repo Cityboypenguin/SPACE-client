@@ -122,6 +122,10 @@
   color: #ef4444;
 }
 
+.replyComposer {
+  margin-top: 1.25rem;
+}
+
 .editForm {
   margin-bottom: 0.75rem;
   background: #f8fafc;

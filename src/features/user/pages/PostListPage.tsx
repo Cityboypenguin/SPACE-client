@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { Tabs } from '../../../components/molecules/Tabs';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
@@ -9,7 +10,9 @@ import styles from './PostListPage.module.css';
 
 import {
   getTopLevelPosts,
+  getFollowersTopLevelPosts,
   getNewFeedPostsCount,
+  searchPosts,
   createPost,
   createFavorite,
   deleteFavorite,
@@ -43,8 +46,20 @@ export const PostListPage = () => {
 
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Post[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'recommended' | 'favorites'>('recommended');
   const lastScrollYRef = useRef(0);
+
+  const [followPosts, setFollowPosts] = useState<Post[]>([]);
+  const [followTotal, setFollowTotal] = useState(0);
+  const [followInitialLoading, setFollowInitialLoading] = useState(false);
+  const [followLoadingMore, setFollowLoadingMore] = useState(false);
+  const followLoadingRef = useRef(false);
+  const followPostsRef = useRef<Post[]>([]);
+  const followTotalRef = useRef(0);
+  useEffect(() => { followPostsRef.current = followPosts; }, [followPosts]);
+  useEffect(() => { followTotalRef.current = followTotal; }, [followTotal]);
 
   const postsRef = useRef(posts);
   const totalRef = useRef(total);
@@ -55,12 +70,36 @@ export const PostListPage = () => {
   useEffect(() => {
     const onScroll = () => {
       const currentY = window.scrollY;
-      setShowScrollTop(currentY > 300 && currentY < lastScrollYRef.current);
+      const scrollingUp = currentY < lastScrollYRef.current;
+
+      if (currentY < 50) {
+        setShowScrollTop(true);
+      } else if (currentY > 300) {
+        setShowScrollTop(scrollingUp);
+      }
+      // 50〜300px は状態を変えない（バウンス時のちらつき防止）
+
       lastScrollYRef.current = currentY;
       scrollYRef.current = currentY;
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const handleSearch = useCallback(async (keyword: string) => {
+    if (!keyword.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const results = await searchPosts(keyword.trim());
+      setSearchResults(results);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
   }, []);
 
   const [newPostsCount, setNewPostsCount] = useState(0);
@@ -69,8 +108,36 @@ export const PostListPage = () => {
 
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [modalContent, setModalContent] = useState('');
+  const [modalFiles, setModalFiles] = useState<File[]>([]);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
+
+  const loadFollowPosts = useCallback(async (currentOffset: number, mode: 'initial' | 'refresh' | 'more') => {
+    if (!userId || followLoadingRef.current) return;
+    followLoadingRef.current = true;
+    if (mode === 'initial' || mode === 'refresh') setFollowInitialLoading(true);
+    else setFollowLoadingMore(true);
+    try {
+      const result = await getFollowersTopLevelPosts(userId, LIMIT, currentOffset);
+      setFollowPosts(prev => {
+        if (mode === 'initial' || mode === 'refresh') return result.items;
+        const existingIds = new Set(prev.map(p => p.ID));
+        return [...prev, ...result.items.filter(p => !existingIds.has(p.ID))];
+      });
+      setFollowTotal(result.total);
+    } catch { /* noop */ } finally {
+      followLoadingRef.current = false;
+      if (mode === 'initial' || mode === 'refresh') setFollowInitialLoading(false);
+      else setFollowLoadingMore(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (activeTab === 'favorites' && followPostsRef.current.length === 0 && !followLoadingRef.current) {
+      loadFollowPosts(0, 'initial');
+    }
+  }, [activeTab, loadFollowPosts]);
 
   const loadPosts = useCallback(async (currentOffset: number, mode: 'initial' | 'refresh' | 'more') => {
     if (loadingRef.current) return;
@@ -97,14 +164,15 @@ export const PostListPage = () => {
     }
   }, []);
 
-  // バナーからの更新（常にフェッチ）
-  const handleRefresh = useCallback(() => {
-    lastRefreshedAtRef.current = Date.now();
-    setNewPostsCount(0);
-    feedLoadedAtRef.current = new Date();
-    window.scrollTo(0, 0);
-    loadPosts(0, 'refresh');
-  }, [loadPosts]);
+  // バナーからの更新（常にフェッチ）※一時コメントアウト中
+  // const handleRefresh = useCallback(() => {
+  //   lastRefreshedAtRef.current = Date.now();
+  //   setNewPostsCount(0);
+  //   feedLoadedAtRef.current = new Date();
+  //   window.scrollTo(0, 0);
+  //   loadPosts(0, 'refresh');
+  //   loadFollowPosts(0, 'refresh');
+  // }, [loadPosts, loadFollowPosts]);
 
   // 上に戻るボタン（クールダウン中はスクロールのみ）
   const handleScrollToTop = useCallback(() => {
@@ -114,8 +182,9 @@ export const PostListPage = () => {
       setNewPostsCount(0);
       feedLoadedAtRef.current = new Date();
       loadPosts(0, 'refresh');
+      loadFollowPosts(0, 'refresh');
     }
-  }, [loadPosts]);
+  }, [loadPosts, loadFollowPosts]);
 
   // 5分ごとに新着件数をポーリング
   useEffect(() => {
@@ -128,7 +197,7 @@ export const PostListPage = () => {
         // ポーリング失敗は無視
       }
     };
-    const id = setInterval(poll, 5 * 60 * 1000);
+    const id = setInterval(poll, 2 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -156,14 +225,26 @@ export const PostListPage = () => {
     };
   }, []);
 
-  const sentinelRef = useInfiniteScroll(
+  const isSearching = searchQuery.trim() !== '';
+
+  const recommendedSentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setPosts(prev => {
-        if (!loadingRef.current && prev.length < total) loadPosts(prev.length, 'more');
-        return prev;
-      });
-    }, [total, loadPosts]),
+      if (!loadingRef.current && postsRef.current.length < totalRef.current) {
+        loadPosts(postsRef.current.length, 'more');
+      }
+    }, [loadPosts]),
     loadingMore,
+    activeTab === 'recommended' && !isSearching && posts.length < total,
+  );
+
+  const followSentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      if (!followLoadingRef.current && followPostsRef.current.length < followTotalRef.current) {
+        loadFollowPosts(followPostsRef.current.length, 'more');
+      }
+    }, [loadFollowPosts]),
+    followLoadingMore,
+    activeTab === 'favorites' && followPosts.length < followTotal,
   );
 
   const handlePostClick = (postId: string) => {
@@ -196,6 +277,33 @@ export const PostListPage = () => {
       setSelectedFiles([]);
       setPosts(prev => [newPost, ...prev]);
       setTotal(prev => prev + 1);
+    } catch (err) {
+      setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleModalPost = async () => {
+    if ((!modalContent.trim() && modalFiles.length === 0) || posting) return;
+    setPosting(true);
+    setPostError('');
+    try {
+      let mediaInputs: MediaInput[] | undefined;
+      if (modalFiles.length > 0) {
+        mediaInputs = await Promise.all(
+          modalFiles.map(async (file) => {
+            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+          }),
+        );
+      }
+      const newPost = await createPost(modalContent.trim(), undefined, mediaInputs);
+      setModalContent('');
+      setModalFiles([]);
+      setPosts(prev => [newPost, ...prev]);
+      setTotal(prev => prev + 1);
       setComposerOpen(false);
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
@@ -204,8 +312,19 @@ export const PostListPage = () => {
     }
   };
 
+  const handleModalCancel = () => {
+    setModalContent('');
+    setModalFiles([]);
+    setComposerOpen(false);
+  };
+
   const [composerOpen, setComposerOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
+
+  const updatePostInAllLists = useCallback((postId: string, updater: (p: Post) => Post) => {
+    setPosts(prev => prev.map(p => p.ID === postId ? updater(p) : p));
+    setFollowPosts(prev => prev.map(p => p.ID === postId ? updater(p) : p));
+  }, []);
 
   const handleReplySubmit = async (content: string, files: File[]) => {
     if (!replyingTo) return;
@@ -220,7 +339,7 @@ export const PostListPage = () => {
       );
     }
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
-    setPosts(prev => prev.map(p => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p));
+    updatePostInAllLists(replyingTo.ID, p => ({ ...p, replyCount: p.replyCount + 1 }));
   };
 
   const handleLike = async (postId: string, isLiked: boolean) => {
@@ -230,23 +349,30 @@ export const PostListPage = () => {
       } else {
         await createFavorite(postId);
       }
-      setPosts(prev => prev.map((p) => {
-        if (p.ID !== postId) return p;
+      updatePostInAllLists(postId, p => {
         if (isLiked) {
           return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
         }
         return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
-      }));
+      });
     } catch (err) {
       console.error('いいねの更新に失敗しました', err);
     }
   };
 
-  const displayedPosts = posts
-    .filter(p => activeTab !== 'favorites' || p.favorites.some(f => f.user.ID === userId))
-    .filter(p => !searchQuery || p.content.toLowerCase().includes(searchQuery.toLowerCase()));
+  const displayedPosts = isSearching
+    ? searchResults
+    : activeTab === 'favorites'
+      ? followPosts
+      : posts;
 
-  const hasMore = posts.length < total;
+  const isTabLoading = activeTab === 'favorites' ? followInitialLoading : initialLoading;
+  const isTabLoadingMore = activeTab === 'favorites' ? followLoadingMore : loadingMore;
+  const hasMore = !isSearching && (
+    activeTab === 'favorites'
+      ? followPosts.length < followTotal
+      : posts.length < total
+  );
 
   return (
     <div>
@@ -276,17 +402,17 @@ export const PostListPage = () => {
               <button className={styles.composerModalClose} onClick={() => setComposerOpen(false)}>✕</button>
             </div>
             <PostComposer
-              value={content}
-              onChange={setContent}
-              onSubmit={handlePost}
+              value={modalContent}
+              onChange={setModalContent}
+              onSubmit={handleModalPost}
               submitting={posting}
               error={postError}
               userId={userId}
               avatarUrl={profile?.avatarUrl}
               userName={profile?.user.name}
-              selectedFiles={selectedFiles}
-              onFileSelect={setSelectedFiles}
-              onCancel={() => setComposerOpen(false)}
+              selectedFiles={modalFiles}
+              onFileSelect={setModalFiles}
+              onCancel={handleModalCancel}
               isEmbedded
               rows={3}
             />
@@ -307,7 +433,7 @@ export const PostListPage = () => {
 
       <main className={styles.main}>
         {newPostsCount > 0 && (
-          <div className={styles.notificationBanner} onClick={handleRefresh}>
+          <div className={styles.notificationBanner} /* onClick={handleRefresh} */>
             <button
               className={styles.notificationDismiss}
               onClick={e => { e.stopPropagation(); setNewPostsCount(0); }}
@@ -329,9 +455,14 @@ export const PostListPage = () => {
             placeholder="search"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleSearch(searchQuery); }}
           />
           {searchQuery && (
-            <button className={styles.searchClear} onClick={() => setSearchQuery('')} aria-label="クリア">✕</button>
+            <button
+              className={styles.searchClear}
+              onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+              aria-label="クリア"
+            >✕</button>
           )}
         </div>
 
@@ -341,31 +472,30 @@ export const PostListPage = () => {
           onSubmit={handlePost}
           submitting={posting}
           error={postError}
+          placeholder="新規投稿"
+          submitLabel="投稿"
+          rows={1}
           userId={userId}
           avatarUrl={profile?.avatarUrl}
           userName={profile?.user.name}
+          accountId={profile?.user.accountID}
           selectedFiles={selectedFiles}
           onFileSelect={setSelectedFiles}
         />
 
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${activeTab === 'recommended' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('recommended')}
-          >
-            おすすめ
-          </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'favorites' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('favorites')}
-          >
-            お気に入り
-          </button>
-        </div>
+        <Tabs
+          tabs={[
+            { key: 'recommended', label: 'おすすめ' },
+            { key: 'favorites', label: 'お気に入り' },
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          justify="end"
+        />
 
         {loadError && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
-        {initialLoading ? (
+        {(isTabLoading || searchLoading) ? (
           <p className={styles.loadingText}>読み込み中...</p>
         ) : (
           <>
@@ -381,12 +511,13 @@ export const PostListPage = () => {
             ))}
             {displayedPosts.length === 0 && (
               <p className={styles.emptyText}>
-                {activeTab === 'favorites' ? 'お気に入りの投稿がありません' : '投稿がまだありません'}
+                {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'フォロー中のユーザーの投稿がありません' : '投稿がまだありません'}
               </p>
             )}
-            {hasMore && <div ref={sentinelRef} className={styles.sentinel} />}
-            {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
-            {!hasMore && posts.length > 0 && (
+            <div ref={recommendedSentinelRef} className={styles.sentinel} />
+            <div ref={followSentinelRef} className={styles.sentinel} />
+            {isTabLoadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
+            {!isSearching && !hasMore && displayedPosts.length > 0 && (
               <p className={styles.allLoadedText}>すべての投稿を表示しました</p>
             )}
           </>

@@ -264,3 +264,46 @@ export const getNewFeedPostsCount = async (since: Date): Promise<number> => {
   );
   return data.newFeedPostsCount;
 };
+
+const SEARCH_POSTS_QUERY = `
+  query SearchPosts($keyword: String!) {
+    searchPosts(keyword: $keyword) {
+      ${POST_FIELDS}
+      replies {
+        ID
+      }
+    }
+  }
+`;
+
+export const searchPosts = async (keyword: string): Promise<Post[]> => {
+  const data = await request<{ searchPosts: Post[] }>(
+    SEARCH_POSTS_QUERY,
+    { keyword },
+    getUserToken(),
+  );
+  return data.searchPosts;
+};
+
+const FOLLOWERS_TOP_LEVEL_POSTS_QUERY = `
+  query FollowersTopLevelPosts($userID: ID!, $limit: Int, $offset: Int) {
+    followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
+      }
+      total
+    }
+  }
+`;
+
+export const getFollowersTopLevelPosts = async (userID: string, limit = 20, offset = 0): Promise<PostPage> => {
+  const data = await request<{ followersTopLevelPosts: PostPage }>(
+    FOLLOWERS_TOP_LEVEL_POSTS_QUERY,
+    { userID, limit, offset },
+    getUserToken(),
+  );
+  return data.followersTopLevelPosts;
+};

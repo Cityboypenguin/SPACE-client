@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
@@ -30,6 +30,7 @@ type Props = {
   userId?: string | null;
   avatarUrl?: string | null;
   userName?: string;
+  accountId?: string;
   selectedFiles?: File[];
   onFileSelect?: (files: File[]) => void;
   existingMedia?: MinimalMedia[];
@@ -54,6 +55,7 @@ export const PostComposer = ({
   userId,
   avatarUrl,
   userName = '',
+  accountId,
   selectedFiles = [],
   onFileSelect,
   existingMedia = [],
@@ -64,10 +66,18 @@ export const PostComposer = ({
   isEmbedded = false,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const visibleExistingMedia = existingMedia.filter(m => !deletedMediaIDs.includes(m.ID));
   const totalMediaCount = visibleExistingMedia.length + selectedFiles.length;
   const { addToast } = useToast();
   const large = rows >= 3;
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -111,7 +121,14 @@ export const PostComposer = ({
         >✍️</div>
       )}
       <div className={styles.inner}>
+        {!isEmbedded && userName && (
+          <div className={styles.nameRow}>
+            <span className={styles.displayName}>{userName}</span>
+            {accountId && <span className={styles.accountId}>@{accountId}</span>}
+          </div>
+        )}
         <textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -151,44 +168,38 @@ export const PostComposer = ({
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={`${styles.footer} ${large ? styles.footerLarge : styles.footerSmall}`}>
-          <div className={styles.leftActions}>
-            {onFileSelect && totalMediaCount === 0 ? (
-              <>
-                <button
-                  type="button"
-                  className={styles.cameraButton}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={submitting}
-                  title={`写真を追加 (最大${MAX_IMAGES}枚)`}
-                >
-                  <img src={cameraIcon} alt="写真を追加" className={styles.cameraIcon} />
-                </button>
-                <input ref={fileInputRef} type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={handleFileChange} style={{ display: 'none' }} />
-              </>
-            ) : onFileSelect ? (
-              <input ref={fileInputRef} type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={handleFileChange} style={{ display: 'none' }} />
-            ) : null}
-          </div>
-          <div className={styles.rightActions}>
-            {onCancel && (
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={submitting}
-                className={`${styles.cancelButton} ${large ? styles.cancelButtonLarge : styles.cancelButtonSmall}`}
-              >
-                {cancelLabel}
-              </button>
-            )}
+          {onFileSelect && (
+            <input ref={fileInputRef} type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={handleFileChange} style={{ display: 'none' }} />
+          )}
+          {onCancel && (
             <button
-              onClick={onSubmit}
-              disabled={!canSubmit}
-              className={`${styles.submitButton} ${large ? styles.submitButtonLarge : styles.submitButtonSmall}`}
-              style={{ background: canSubmit ? '#FF7430' : '#F89150', cursor: canSubmit ? 'pointer' : 'default' }}
+              type="button"
+              onClick={onCancel}
+              disabled={submitting}
+              className={`${styles.cancelButton} ${large ? styles.cancelButtonLarge : styles.cancelButtonSmall}`}
             >
-              {submitting ? submittingLabel : submitLabel}
+              {cancelLabel}
             </button>
-          </div>
+          )}
+          {onFileSelect && totalMediaCount === 0 && (
+            <button
+              type="button"
+              className={styles.cameraButton}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={submitting}
+              title={`写真を追加 (最大${MAX_IMAGES}枚)`}
+            >
+              <img src={cameraIcon} alt="写真を追加" className={styles.cameraIcon} />
+            </button>
+          )}
+          <button
+            onClick={onSubmit}
+            disabled={!canSubmit}
+            className={`${styles.submitButton} ${large ? styles.submitButtonLarge : styles.submitButtonSmall}`}
+            style={{ background: canSubmit ? '#FF7430' : '#F89150', cursor: canSubmit ? 'pointer' : 'default' }}
+          >
+            {submitting ? submittingLabel : submitLabel}
+          </button>
         </div>
       </div>
     </div>

@@ -301,23 +301,25 @@ export const PostDetailPage = () => {
 
             {/* 🛡 ⭕️ 返信入力フォーム（メインが削除されていない場合のみ） */}
             {!isDeleted && (
-              <PostComposer
-                value={replyContent}
-                onChange={setReplyContent}
-                onSubmit={handleReply}
-                submitting={replying}
-                error={replyError}
-                placeholder="返信する..."
-                rows={2}
-                submitLabel="返信する"
-                submittingLabel="送信中..."
-                iconSize={36}
-                userId={userId}
-                avatarUrl={profile?.avatarUrl}
-                userName={profile?.user.name}
-                selectedFiles={replyFiles}
-                onFileSelect={setReplyFiles}
-              />
+              <div className={styles.replyComposer}>
+                <PostComposer
+                  value={replyContent}
+                  onChange={setReplyContent}
+                  onSubmit={handleReply}
+                  submitting={replying}
+                  error={replyError}
+                  placeholder="返信する..."
+                  rows={2}
+                  submitLabel="返信する"
+                  submittingLabel="送信中..."
+                  iconSize={36}
+                  userId={userId}
+                  avatarUrl={profile?.avatarUrl}
+                  userName={profile?.user.name}
+                  selectedFiles={replyFiles}
+                  onFileSelect={setReplyFiles}
+                />
+              </div>
             )}
 
             {/* 🛡 ⭕️ 返信一覧（削除済みのリプライを除外して表示） */}

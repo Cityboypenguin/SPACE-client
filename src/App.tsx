@@ -221,7 +221,7 @@ function App() {
                 }
               />
               <Route
-                path="/posts"
+                path="/home"
                 element={
                   <UserProtectedRoute>
                     <PostListPage />
