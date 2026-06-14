@@ -78,31 +78,7 @@
   flex-shrink: 0;
 }
 
-/* ============ Tabs ============ */
-.tabs {
-  display: flex;
-  border-bottom: 1px solid #e2e8f0;
-  margin-top: 0.25rem;
-}
-
-.tab {
-  flex: 1;
-  padding: 0.75rem;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: #64748b;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.tabActive {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
-  font-weight: 600;
-}
+/* ============ Tabs ============ (共通: src/components/molecules/Tabs.tsx) ============ */
 
 /* ============ Status Messages ============ */
 .loadError {
@@ -173,6 +149,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  outline: none;
+}
+
+.fab:focus,
+.fab:focus-visible {
+  outline: none;
 }
 
 .fabIcon {

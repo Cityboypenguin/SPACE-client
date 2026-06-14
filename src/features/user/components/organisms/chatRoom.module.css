@@ -162,6 +162,13 @@
   transition: background 0.15s, color 0.15s;
 }
 
+.actionBtnEdit {
+  padding: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .actionBtn:hover {
   background: rgba(0, 0, 0, 0.08);
   color: #555;

@@ -17,7 +17,7 @@ import settingsIcon from '../../../../assets/パーツ_設定.svg';
 import searchIcon from '../../../../assets/パーツ_検索.svg';
 
 const NAV_ITEMS = [
-  { icon: homeIcon, label: 'ホーム', path: '/mypage', iconSize: 26 },
+  { icon: homeIcon, label: 'ホーム', path: '/home', iconSize: 26 },
   { icon: dmIcon, label: 'DM', path: '/dm', iconSize: 32 },
   { icon: communityIcon, label: 'コミュニティ', path: '/community', iconSize: 32 },
   { icon: notificationIcon, label: '通知', path: '/notifications', iconSize: 24 },
@@ -39,7 +39,7 @@ export const UserSidebar = () => {
 
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.logo} onClick={() => navigate('/mypage')}>
+      <div className={styles.logo} onClick={() => navigate('/home')}>
         <span className={styles.logoIconWrap}>
           <img src={appIcon} alt="Senshu-Universe" className={styles.logoMark} />
         </span>
@@ -49,9 +49,7 @@ export const UserSidebar = () => {
       <nav className={styles.nav}>
         {NAV_ITEMS.map(({ icon, label, path, iconSize }) => {
           const isActive =
-            path === '/mypage'
-              ? location.pathname === path
-              : location.pathname === path || location.pathname.startsWith(path + '/');
+            location.pathname === path || location.pathname.startsWith(path + '/');
           return (
             <button
               key={path}
