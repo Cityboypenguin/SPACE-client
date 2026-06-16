@@ -22,6 +22,7 @@ import favorite from '../../../assets/パーツ_いいね.svg';
 import community from '../../../assets/パーツ_コミュニティマーク.svg';
 import reply from '../../../assets/パーツ_コメント.svg';
 import notification from '../../../assets/パーツ_通知.svg';
+import person from '../../../assets/パーツ_お気に入り.svg';
 
 type Tab = 'notifications' | 'announcements';
 
@@ -55,6 +56,12 @@ function BellIcon() {
   );
 }
 
+function PersonIcon() {
+  return (
+    <img src={person} alt="Follow" width="20" height="20" />
+  );
+}
+
 const TYPE_ICON: Record<string, ReactNode> = {
   favorite: <HeartIcon />,
   reply: <ReplyIcon />,
@@ -62,6 +69,7 @@ const TYPE_ICON: Record<string, ReactNode> = {
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
   announcement: <BellIcon />,
+  follow: <PersonIcon />,
 };
 
 export const NotificationListPage = () => {
