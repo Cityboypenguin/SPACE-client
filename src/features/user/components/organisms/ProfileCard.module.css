@@ -1,0 +1,50 @@
+.card {
+  padding: 1.25rem 1rem 1rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.nameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: #1e293b;
+}
+
+.account {
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
+.bio {
+  margin-bottom: 0.25rem;
+}
+
+.bioLabel {
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.bioText {
+  color: #1e293b;
+  font-size: 1rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.actions {
+  margin-top: 1rem;
+}

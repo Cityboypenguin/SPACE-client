@@ -113,6 +113,20 @@ const GET_POSTS_BY_USER_ID_QUERY = `
   }
 `;
 
+const GET_FAVORITE_POSTS_BY_USER_ID_QUERY = `
+  query GetFavoritePostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {
+    getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
+      }
+      total
+    }
+  }
+`;
+
 const CREATE_POST_MUTATION = `
   mutation CreatePost($input: CreatePostInput!) {
   createPost(input: $input) {
@@ -240,6 +254,15 @@ export const getPostsByUserID = async (userId: string, limit = 20, offset = 0): 
     getUserToken(),
   );
   return data.getPostsByUserID;
+};
+
+export const getFavoritePostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
+  const data = await request<{ getFavoritePostsByUserID: { items: Post[]; total: number } }>(
+    GET_FAVORITE_POSTS_BY_USER_ID_QUERY,
+    { user_id: userId, limit, offset },
+    getUserToken(),
+  );
+  return data.getFavoritePostsByUserID;
 };
 
 export const deleteFavorite = async (postId: string): Promise<void> => {

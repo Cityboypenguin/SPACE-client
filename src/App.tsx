@@ -58,6 +58,9 @@ const CommunityMembersPage = lazy(() =>
 const UserProfileEditPage = lazy(() =>
   import('./features/user/pages/UserProfileEditPage').then((m) => ({ default: m.UserProfileEditPage })),
 );
+const UserInfoEditPage = lazy(() =>
+  import('./features/user/pages/UserInfoEditPage').then((m) => ({ default: m.UserInfoEditPage })),
+);
 const PostListPage = lazy(() =>
   import('./features/user/pages/PostListPage').then((m) => ({ default: m.PostListPage })),
 );
@@ -121,6 +124,14 @@ function App() {
                 element={
                   <UserProtectedRoute>
                     <UserProfileEditPage />
+                  </UserProtectedRoute>
+                }
+              />
+              <Route
+                path="/mypage/user-info-edit"
+                element={
+                  <UserProtectedRoute>
+                    <UserInfoEditPage />
                   </UserProtectedRoute>
                 }
               />

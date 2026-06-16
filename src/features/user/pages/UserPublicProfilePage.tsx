@@ -2,9 +2,9 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ProfileCard } from '../components/organisms/ProfileCard';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/AuthContext';
-import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
@@ -224,40 +224,29 @@ export const UserPublicProfilePage = () => {
         {loading && <p>読み込み中...</p>}
         {profile && (
           <div>
-            <div className={styles.profileHeader}>
-              <UserAvatar userId={profile.user.ID} name={profile.user.name} avatarUrl={profile.avatarUrl} size={80} />
-              <div>
-                <h2 className={styles.displayName}>{profile.user.name}</h2>
-                <p className={styles.username}>@{profile.user.accountID}</p>
-              </div>
-            </div>
-
-            {!isMe && (
-              <div style={{ display: 'flex', gap: '10px', marginTop: '16px', marginBottom: '16px' }}>
-                {!isBlocked && (
+            <ProfileCard
+              profile={profile}
+              actions={!isMe ? (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {!isBlocked && (
+                    <button
+                      onClick={handleFavoriteToggle}
+                      disabled={actionLoading}
+                      style={{ padding: '8px 16px', cursor: 'pointer' }}
+                    >
+                      {isFavorited ? '★ お気に入り解除' : '☆ お気に入り登録'}
+                    </button>
+                  )}
                   <button
-                    onClick={handleFavoriteToggle}
+                    onClick={handleBlockToggle}
                     disabled={actionLoading}
-                    style={{ padding: '8px 16px', cursor: 'pointer' }}
+                    style={{ padding: '8px 16px', color: 'red', cursor: 'pointer' }}
                   >
-                    {isFavorited ? '★ お気に入り解除' : '☆ お気に入り登録'}
+                    {isBlocked ? 'ブロック解除' : 'ブロックする'}
                   </button>
-                )}
-
-                <button
-                  onClick={handleBlockToggle}
-                  disabled={actionLoading}
-                  style={{ padding: '8px 16px', color: 'red', cursor: 'pointer' }}
-                >
-                  {isBlocked ? 'ブロック解除' : 'ブロックする'}
-                </button>
-              </div>
-            )}
-
-            <dl className={styles.profileList}>
-              <dt className={styles.profileLabel}>自己紹介</dt>
-              <dd>{profile.bio || '未設定'}</dd>
-            </dl>
+                </div>
+              ) : undefined}
+            />
             <div style={{ marginTop: '2rem' }}>
               <h3 style={{ fontSize: '1.2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                 投稿一覧

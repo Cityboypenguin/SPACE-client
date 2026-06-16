@@ -1,5 +1,6 @@
 .tabs {
   display: flex;
+  justify-content: center;
   margin-top: 0.25rem;
 }
 
@@ -8,16 +9,22 @@
 }
 
 .tab {
-  padding: 0.75rem 1.5rem;
+  flex: 1;
+  padding: 0.9rem 1.5rem;
   background: none;
   border: none;
   border-bottom: 2px solid #e2e8f0;
   border-radius: 0;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: #94a3b8;
   font-weight: 500;
   transition: color 0.15s, border-color 0.15s;
+  outline: none;
+}
+
+.tab:focus,
+.tab:focus-visible {
   outline: none;
 }
 
