@@ -25,6 +25,7 @@ type Props = {
 export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevDisabledRef = useRef(disabled);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -33,6 +34,14 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
       textareaRef.current.style.height = 'auto';
     }
   }, [value]);
+
+  // 送信完了後 (disabled: true → false) にテキストエリアへフォーカスを戻す
+  useEffect(() => {
+    if (prevDisabledRef.current === true && disabled === false) {
+      textareaRef.current?.focus();
+    }
+    prevDisabledRef.current = disabled;
+  }, [disabled]);
 
   useEffect(() => {
     const urls = selectedFiles.map((file) =>
@@ -58,6 +67,8 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     const remaining = MAX_FILES - selectedFiles.length;
     if (remaining <= 0) return;
     onFileSelect([...selectedFiles, ...incoming.slice(0, remaining)]);
+    // ファイル選択後にテキストエリアへフォーカスを戻してEnterキーで送信できるようにする
+    textareaRef.current?.focus();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
