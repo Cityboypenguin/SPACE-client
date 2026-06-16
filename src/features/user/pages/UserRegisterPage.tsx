@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { OtpInputSection } from '../components/molecules/OtpInputSection';
 import styles from './UserRegisterPage.module.css';
 
 const OTP_COOLDOWN_SECONDS = 60;
@@ -311,39 +312,16 @@ export const UserRegisterPage = () => {
         {/* ── Step 3: 認証コード入力 ── */}
         {step === 3 && (
           <div>
-            <p className={styles.hint}>
-              <strong>{email}</strong> に送信した6桁の認証コードを入力してください（有効期限10分）
-            </p>
-            <div className={styles.fieldGroup}>
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={otp}
-                onChange={(e) => {
-                  setOtp(e.target.value.replace(/\D/g, ''));
-                  setOtpError('');
-                }}
-                placeholder="認証コード（6桁）"
-                className={`${styles.input} ${styles.inputOtp}`}
-              />
-              {otpError && <p className={styles.fieldError}>{otpError}</p>}
-            </div>
-            <div className={styles.resendRow}>
-              <button
-                type="button"
-                className={styles.resendBtn}
-                onClick={handleSendOTP}
-                disabled={sendingOtp || otpCooldown > 0}
-              >
-                {sendingOtp
-                  ? '送信中...'
-                  : otpCooldown > 0
-                  ? `${otpCooldown}秒後に再送信可能`
-                  : '認証コードを再送信'}
-              </button>
-              {otpSendError && <p className={styles.fieldError}>{otpSendError}</p>}
-            </div>
+            <OtpInputSection
+              email={email}
+              otp={otp}
+              onOtpChange={(value) => { setOtp(value); setOtpError(''); }}
+              otpError={otpError}
+              onResend={handleSendOTP}
+              resending={sendingOtp}
+              cooldown={otpCooldown}
+              sendError={otpSendError}
+            />
             <div className={styles.actionRow}>
               <button type="button" className={styles.btnOutline} onClick={() => setStep(2)}>
                 <ChevronLeft /> 戻る

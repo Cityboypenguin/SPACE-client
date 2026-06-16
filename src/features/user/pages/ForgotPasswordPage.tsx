@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { requestPasswordReset, verifyPasswordResetOTP, resetPassword } from '../api/auth';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { OtpInputSection } from '../components/molecules/OtpInputSection';
+import styles from './ForgotPasswordPage.module.css';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'done';
 
@@ -12,52 +15,60 @@ export const ForgotPasswordPage = () => {
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [errorModal, setErrorModal] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleEmailSubmit = async (e: { preventDefault(): void }) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       await requestPasswordReset(email);
       setStep('otp');
     } catch (err) {
-      setError(toUserMessage(err, 'エラーが発生しました。時間をおいてから再度お試しください。'));
+      setErrorModal(toUserMessage(err, 'エラーが発生しました。時間をおいてから再度お試しください。'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOtpSubmit = async (e: { preventDefault(): void }) => {
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      await requestPasswordReset(email);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       const data = await verifyPasswordResetOTP(email, otp);
       setResetToken(data.verifyPasswordResetOTP);
       setStep('newPassword');
     } catch (err) {
-      setError(toUserMessage(err, '認証コードの確認に失敗しました。'));
+      setErrorModal(toUserMessage(err, '認証コードが違います。'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePasswordSubmit = async (e: { preventDefault(): void }) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setError('パスワードが一致しません。');
+      setErrorModal('パスワードが一致しません。');
       return;
     }
-    setError('');
     setLoading(true);
     try {
       await resetPassword(resetToken, newPassword);
       setStep('done');
     } catch (err) {
-      setError(toUserMessage(err, 'パスワードの更新に失敗しました。最初からやり直してください。'));
+      setErrorModal(toUserMessage(err, 'パスワードの更新に失敗しました。最初からやり直してください。'));
     } finally {
       setLoading(false);
     }
@@ -65,93 +76,117 @@ export const ForgotPasswordPage = () => {
 
   if (step === 'done') {
     return (
-      <div>
-        <h2>パスワードを再設定しました</h2>
-        <p>新しいパスワードでログインしてください。</p>
-        <button type="button" onClick={() => navigate('/login')}>ログインページへ</button>
+      <div className={styles.page}>
+        <div className={styles.body}>
+          <p style={{ fontSize: '1rem', color: '#1e293b', marginBottom: '1.5rem' }}>
+            パスワードを再設定しました。新しいパスワードでログインしてください。
+          </p>
+          <button type="button" className={styles.btnPrimary} onClick={() => navigate('/login')}>
+            ログインページへ
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      {step === 'email' && (
-        <form onSubmit={handleEmailSubmit}>
-          <h2>パスワードを忘れた方へ</h2>
-          <p style={{ fontSize: '0.9rem', color: '#475569' }}>
-            登録済みのメールアドレスを入力してください。認証コードをお送りします。
-          </p>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="メールアドレス"
-            required
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? '送信中...' : '認証コードを送信'}
-          </button>
-          <p>
-            <Link to="/login">ログインに戻る</Link>
-          </p>
-        </form>
-      )}
+    <div className={styles.page}>
+      {/* Header */}
+      <div className={styles.header}>
+        <button
+          type="button"
+          className={styles.backBtn}
+          onClick={() => {
+            if (step === 'email') navigate('/login');
+            else if (step === 'otp') { setStep('email'); setOtp(''); }
+            else if (step === 'newPassword') setStep('otp');
+          }}
+        >
+          <ChevronLeft />
+        </button>
+        {step === 'email' && <h2 className={styles.pageTitle}>パスワードを再設定する</h2>}
+        {step === 'newPassword' && <h2 className={styles.pageTitle}>新規パスワード</h2>}
+      </div>
 
-      {step === 'otp' && (
-        <form onSubmit={handleOtpSubmit}>
-          <h2>認証コードを入力</h2>
-          <p style={{ fontSize: '0.9rem', color: '#475569' }}>
-            {email} に送信された6桁の認証コードを入力してください。
-          </p>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <input
-            type="text"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            placeholder="認証コード（6桁）"
-            maxLength={6}
-            inputMode="numeric"
-            pattern="[0-9]{6}"
-            required
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? '確認中...' : '認証コードを確認'}
-          </button>
-          <p>
-            <button
-              type="button"
-              style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', padding: 0, fontSize: 'inherit' }}
-              onClick={() => { setStep('email'); setOtp(''); setError(''); }}
-            >
-              メールアドレスを再入力する
+      <div className={styles.body}>
+        {/* Email step */}
+        {step === 'email' && (
+          <form onSubmit={handleEmailSubmit}>
+            <div className={styles.card}>
+              <label className={styles.fieldLabel}>専修大学メールアドレス</label>
+              <input
+                type="email"
+                className={styles.input}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="学籍番号@senshu-u.jp"
+                required
+              />
+            </div>
+            <button type="submit" className={styles.btnPrimary} disabled={loading}>
+              {loading ? '送信中...' : '認証コードを送信する'}
             </button>
-          </p>
-        </form>
-      )}
+          </form>
+        )}
 
-      {step === 'newPassword' && (
-        <form onSubmit={handlePasswordSubmit}>
-          <h2>新しいパスワードを設定</h2>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="新しいパスワード"
-            required
-          />
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="新しいパスワード（確認）"
-            required
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? '更新中...' : 'パスワードを更新'}
-          </button>
-        </form>
+        {/* OTP step */}
+        {step === 'otp' && (
+          <form onSubmit={handleOtpSubmit}>
+            <OtpInputSection
+              email={email}
+              otp={otp}
+              onOtpChange={setOtp}
+              onResend={() => void handleResend()}
+              resending={loading}
+              warningText="ブラウザの戻るボタンは使わないでください"
+            />
+            <button type="submit" className={styles.btnPrimary} disabled={loading}>
+              {loading ? '確認中...' : '次へ'}
+            </button>
+          </form>
+        )}
+
+        {/* New password step */}
+        {step === 'newPassword' && (
+          <form onSubmit={handlePasswordSubmit}>
+            <div className={styles.card}>
+              <label className={styles.fieldLabel}>新規パスワード</label>
+              <input
+                type="password"
+                className={styles.input}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Value"
+                required
+              />
+              <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0.75rem 0' }} />
+              <label className={styles.fieldLabel}>パスワードを再入力</label>
+              <input
+                type="password"
+                className={styles.input}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Value"
+                required
+              />
+            </div>
+            <button type="submit" className={styles.btnPrimary} disabled={loading}>
+              {loading ? '登録中...' : '登録する'}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {/* Error modal */}
+      {errorModal && (
+        <div className={styles.modalOverlay} onClick={() => setErrorModal('')}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <p className={styles.modalText}>{errorModal}</p>
+            <button type="button" className={styles.modalClose} onClick={() => setErrorModal('')}>
+              閉じる
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
