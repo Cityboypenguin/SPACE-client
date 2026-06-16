@@ -85,6 +85,9 @@ const NotificationDetailPage = lazy(() =>
 const AnnouncementDetailPage = lazy(() =>
   import('./features/user/pages/AnnouncementDetailPage').then((m) => ({ default: m.AnnouncementDetailPage })),
 );
+const ForgotPasswordPage = lazy(() =>
+  import('./features/user/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+);
 function App() {
   return (
     <ToastProvider>
@@ -102,6 +105,7 @@ function App() {
               <Route path="/" element={<UserLoginForm />} />
               <Route path="/login" element={<UserLoginForm />} />
               <Route path="/register" element={<UserRegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/inquiry" element={<InquiryPage />} />
               <Route
                 path="/mypage"

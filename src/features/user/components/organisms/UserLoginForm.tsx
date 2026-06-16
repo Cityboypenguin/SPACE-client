@@ -61,7 +61,10 @@ export const UserLoginForm = () => {
           </button>
           <Link to="/inquiry" className={styles.link}>パスワードを忘れた場合</Link>
           <Link to="/inquiry" className={styles.link}>お問い合わせはこちら</Link>
-        </form>
+          <p>
+        <Link to="/forgot-password">パスワードをお忘れの方はこちら</Link>
+      </p>
+    </form>
       </div>
     </div>
   );
