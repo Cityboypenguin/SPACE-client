@@ -4,9 +4,20 @@
 
 .header {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.headerLeft {
+  display: flex;
   align-items: center;
   gap: 1.25rem;
-  margin-bottom: 1.25rem;
+}
+
+.headerRight {
+  flex-shrink: 0;
 }
 
 .nameBlock {

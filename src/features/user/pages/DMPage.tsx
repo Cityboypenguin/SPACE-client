@@ -109,7 +109,7 @@ export const DMPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/dm')}><ChevronLeft /></button>
+        <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
         {(() => {
           const partner = room?.user.find((u) => u.ID !== currentUserID);
           return partner?.avatarUrl ? (

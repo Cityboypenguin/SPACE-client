@@ -17,7 +17,7 @@ import settingsIcon from '../../../../assets/パーツ_設定.svg';
 import searchIcon from '../../../../assets/パーツ_検索.svg';
 
 const NAV_ITEMS = [
-  { icon: homeIcon, label: 'ホーム', path: '/home', iconSize: 26 },
+  { icon: homeIcon, label: 'ホーム', path: '/home', iconSize: 30 },
   { icon: dmIcon, label: 'DM', path: '/dm', iconSize: 32 },
   { icon: communityIcon, label: 'コミュニティ', path: '/community', iconSize: 32 },
   { icon: notificationIcon, label: '通知', path: '/notifications', iconSize: 24 },

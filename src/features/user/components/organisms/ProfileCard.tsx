@@ -6,21 +6,25 @@ import styles from './ProfileCard.module.css';
 type Props = {
   profile: Profile;
   actions?: ReactNode;
+  rightActions?: ReactNode;
 };
 
-export const ProfileCard = ({ profile, actions }: Props) => (
+export const ProfileCard = ({ profile, actions, rightActions }: Props) => (
   <div className={styles.card}>
     <div className={styles.header}>
-      <UserAvatar
-        userId={profile.user.ID}
-        name={profile.user.name}
-        avatarUrl={profile.avatarUrl}
-        size={120}
-      />
-      <div className={styles.nameBlock}>
-        <div className={styles.name}>{profile.user.name}</div>
-        <div className={styles.account}>@{profile.user.accountID}</div>
+      <div className={styles.headerLeft}>
+        <UserAvatar
+          userId={profile.user.ID}
+          name={profile.user.name}
+          avatarUrl={profile.avatarUrl}
+          size={120}
+        />
+        <div className={styles.nameBlock}>
+          <div className={styles.name}>{profile.user.name}</div>
+          <div className={styles.account}>@{profile.user.accountID}</div>
+        </div>
       </div>
+      {rightActions && <div className={styles.headerRight}>{rightActions}</div>}
     </div>
 
     {profile.bio && (
