@@ -53,6 +53,7 @@ export const PostListPage = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialCache?.searchQuery ?? '');
   const [searchResults, setSearchResults] = useState<Post[]>(initialCache?.searchResults ?? []);
+  const [searchDisplayedCount, setSearchDisplayedCount] = useState(LIMIT);
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'recommended' | 'favorites'>('recommended');
   const lastScrollYRef = useRef(0);
@@ -95,9 +96,11 @@ export const PostListPage = () => {
   const handleSearch = useCallback(async (keyword: string) => {
     if (!keyword.trim()) {
       setSearchResults([]);
+      setSearchDisplayedCount(LIMIT);
       return;
     }
     setSearchLoading(true);
+    setSearchDisplayedCount(LIMIT);
     try {
       const results = await searchPosts(keyword.trim());
       setSearchResults(results);
@@ -270,6 +273,14 @@ export const PostListPage = () => {
     }, [loadFollowPosts]),
     followLoadingMore,
     activeTab === 'favorites' && followPosts.length < followTotal,
+  );
+
+  const searchSentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setSearchDisplayedCount(prev => prev + LIMIT);
+    }, []),
+    false,
+    isSearching && searchDisplayedCount < searchResults.length,
   );
 
   const searchQueryRef = useRef(searchQuery);
@@ -468,7 +479,7 @@ export const PostListPage = () => {
   };
 
   const displayedPosts = isSearching
-    ? searchResults
+    ? searchResults.slice(0, searchDisplayedCount)
     : activeTab === 'favorites'
       ? followPosts
       : posts;
@@ -667,6 +678,7 @@ export const PostListPage = () => {
             )}
             <div ref={recommendedSentinelRef} className={styles.sentinel} />
             <div ref={followSentinelRef} className={styles.sentinel} />
+            <div ref={searchSentinelRef} className={styles.sentinel} />
             {isTabLoadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
             {!isSearching && !hasMore && displayedPosts.length > 0 && (
               <p className={styles.allLoadedText}>すべての投稿を表示しました</p>

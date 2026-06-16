@@ -58,6 +58,7 @@ const SEARCH_USERS_QUERY = `
         email
         role
         status
+        avatarUrl
       }
       total
     }
