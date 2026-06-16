@@ -1,0 +1,189 @@
+.main {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.pageHeader {
+  padding: 1rem 1rem 0;
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.headerBtn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.headerBtn:focus,
+.headerBtn:focus-visible {
+  outline: none;
+}
+
+.headerBtnOutline {
+  border: 1px solid #94a3b8;
+  background: #fff;
+  color: #475569;
+}
+
+.headerBtnOutline:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.headerBtnOutlineDanger {
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #ef4444;
+}
+
+.headerBtnOutlineDanger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.headerBtnDanger {
+  border: none;
+  background: #ef4444;
+  color: #fff;
+}
+
+.headerBtnDanger:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
+}
+
+
+/* ── Flat list ── */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Flat item ── */
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+  background: #fff;
+  transition: background 0.1s;
+}
+
+.item:hover {
+  background: #f8fafc;
+}
+
+.itemUnread {
+  background: #eff6ff;
+}
+
+.itemUnread:hover {
+  background: #dbeafe;
+}
+
+.itemSelected {
+  background: #dbeafe;
+}
+
+/* ── Checkbox (select mode) ── */
+.checkbox {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+  margin-top: 0.15rem;
+}
+
+/* ── Type icon ── */
+.typeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.senshuIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* ── Item content ── */
+.itemContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemActor {
+  margin: 0 0 0.15rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.itemMessage {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.itemDate {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+/* ── States ── */
+.empty {
+  color: #94a3b8;
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.loading {
+  color: #94a3b8;
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #ef4444;
+  padding: 1rem;
+  font-size: 0.9rem;
+}

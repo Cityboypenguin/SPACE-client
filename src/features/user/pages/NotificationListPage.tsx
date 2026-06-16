@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -14,30 +14,55 @@ import {
 } from '../api/notification';
 import { listAnnouncements } from '../api/announcement';
 import { toUserMessage } from '../../../lib/errorMessages';
+import senshuIcon from '../../../assets/Senshu-Universe.svg';
+import { Tabs } from '../../../components/molecules/Tabs';
+import styles from './NotificationListPage.module.css';
+import  mail  from '../../../assets/パーツ_メール.svg';
+import favorite from '../../../assets/パーツ_いいね.svg';
+import community from '../../../assets/パーツ_コミュニティマーク.svg';
+import reply from '../../../assets/パーツ_コメント.svg';
+import notification from '../../../assets/パーツ_通知.svg';
 
 type Tab = 'notifications' | 'announcements';
 
-const TYPE_LABEL: Record<string, string> = {
-  favorite: 'いいね',
-  reply: '返信',
-  dm: 'DM',
-  community_kick: 'コミュニティからの退出',
-  community_role: 'コミュニティ権限変更',
-  announcement: 'お知らせ',
-};
+function HeartIcon() {
+  return (
+    <img src={favorite} alt="Favorite" width="20" height="20" />
+  );
+}
 
-const TAB_STYLE = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  padding: '0.75rem 0',
-  background: 'none',
-  border: 'none',
-  borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
-  cursor: 'pointer',
-  fontWeight: active ? 700 : 400,
-  color: active ? '#3b82f6' : '#64748b',
-  fontSize: '0.95rem',
-  transition: 'color 0.15s, border-color 0.15s',
-});
+function ChatIcon() {
+  return (
+    <img src={mail} alt="Mail" width="20" height="20" />
+  );
+}
+
+function ReplyIcon() {
+  return (
+    <img src={reply} alt="Reply" width="20" height="20" />
+  );
+}
+
+function GroupIcon() {
+  return (
+    <img src={community} alt="Community" width="20" height="20" />
+  );
+}
+
+function BellIcon() {
+  return (
+    <img src={notification} alt="Notification" width="20" height="20" />
+  );
+}
+
+const TYPE_ICON: Record<string, ReactNode> = {
+  favorite: <HeartIcon />,
+  reply: <ReplyIcon />,
+  dm: <ChatIcon />,
+  community_kick: <GroupIcon />,
+  community_role: <GroupIcon />,
+  announcement: <BellIcon />,
+};
 
 export const NotificationListPage = () => {
   const navigate = useNavigate();
@@ -76,6 +101,16 @@ export const NotificationListPage = () => {
     lastSseAtRef.current = lastSseAt;
     if (tab === 'notifications') void mutateNotifications();
   }, [lastSseAt, tab, mutateNotifications]);
+
+  const notifList: Notification[] = notifData?.items ?? [];
+  const notifTotal = notifData?.total ?? 0;
+  const notifTotalPages = Math.ceil(notifTotal / pageSize);
+  const announceList = announceData?.items ?? [];
+  const announceTotal = announceData?.total ?? 0;
+  const announceTotalPages = Math.ceil(announceTotal / pageSize);
+  const hasUnread = notifList.some((n) => !n.isRead);
+  const hasRead = notifList.some((n) => n.isRead);
+  const allSelected = notifList.length > 0 && selectedIds.size === notifList.length;
 
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
@@ -118,9 +153,7 @@ export const NotificationListPage = () => {
     setNotifError('');
     try {
       await deleteNotifications(Array.from(selectedIds));
-      const deletedUnreadCount = notifList.filter(
-        (n) => selectedIds.has(n.ID) && !n.isRead,
-      ).length;
+      const deletedUnreadCount = notifList.filter((n) => selectedIds.has(n.ID) && !n.isRead).length;
       mutateNotifications(
         (prev) => prev ? { ...prev, items: prev.items.filter((n) => !selectedIds.has(n.ID)) } : prev,
         { revalidate: false },
@@ -144,141 +177,62 @@ export const NotificationListPage = () => {
     });
   };
 
-  const toggleSelectAll = () => {
-    if (selectedIds.size === notifList.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(notifList.map((n) => n.ID)));
-    }
-  };
-
   const exitSelectMode = () => {
     setSelectMode(false);
     setSelectedIds(new Set());
   };
 
-  const notifList: Notification[] = notifData?.items ?? [];
-  const notifTotal = notifData?.total ?? 0;
-  const notifTotalPages = Math.ceil(notifTotal / pageSize);
-  const announceList = announceData?.items ?? [];
-  const announceTotal = announceData?.total ?? 0;
-  const announceTotalPages = Math.ceil(announceTotal / pageSize);
-  const hasUnread = notifList.some((n) => !n.isRead);
-  const hasRead = notifList.some((n) => n.isRead);
-  const allSelected = notifList.length > 0 && selectedIds.size === notifList.length;
-
   return (
     <div>
       <UserSidebar />
-      <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div
-          style={{
-            padding: '1rem 1rem 0',
-            borderBottom: '1px solid #e2e8f0',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
-              通知
-            </h1>
+      <main className={styles.main}>
+        <div className={styles.pageHeader}>
+          <div className={styles.headerTop}>
+            <h1 className={styles.pageTitle}>通知一覧</h1>
 
             {tab === 'notifications' && notifList.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div className={styles.headerActions}>
                 {selectMode ? (
                   <>
                     <button
-                      onClick={toggleSelectAll}
-                      style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: 8,
-                        border: '1px solid #94a3b8',
-                        background: '#fff',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        color: '#475569',
-                        fontWeight: 500,
+                      className={`${styles.headerBtn} ${styles.headerBtnOutline}`}
+                      onClick={() => {
+                        if (selectedIds.size === notifList.length) setSelectedIds(new Set());
+                        else setSelectedIds(new Set(notifList.map((n) => n.ID)));
                       }}
                     >
                       {allSelected ? '全解除' : '全選択'}
                     </button>
                     <button
+                      className={`${styles.headerBtn} ${styles.headerBtnDanger}`}
                       onClick={handleDeleteSelected}
                       disabled={deleting || selectedIds.size === 0}
-                      style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: 8,
-                        border: 'none',
-                        background: selectedIds.size === 0 || deleting ? '#fca5a5' : '#ef4444',
-                        cursor: selectedIds.size === 0 || deleting ? 'not-allowed' : 'pointer',
-                        fontSize: '0.8rem',
-                        color: '#fff',
-                        fontWeight: 600,
-                      }}
                     >
                       {deleting ? '削除中...' : `削除${selectedIds.size > 0 ? `(${selectedIds.size})` : ''}`}
                     </button>
-                    <button
-                      onClick={exitSelectMode}
-                      style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: 8,
-                        border: '1px solid #94a3b8',
-                        background: '#fff',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        color: '#475569',
-                        fontWeight: 500,
-                      }}
-                    >
+                    <button className={`${styles.headerBtn} ${styles.headerBtnOutline}`} onClick={exitSelectMode}>
                       キャンセル
                     </button>
                   </>
                 ) : (
                   <>
                     <button
+                      className={`${styles.headerBtn} ${styles.headerBtnOutline}`}
                       onClick={handleMarkAllRead}
                       disabled={markingAll || !hasUnread}
-                      style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: 8,
-                        border: '1px solid #94a3b8',
-                        background: '#fff',
-                        cursor: markingAll || !hasUnread ? 'not-allowed' : 'pointer',
-                        fontSize: '0.8rem',
-                        color: markingAll || !hasUnread ? '#cbd5e1' : '#475569',
-                        fontWeight: 500,
-                      }}
                     >
                       {markingAll ? '処理中...' : '全て既読'}
                     </button>
                     <button
+                      className={`${styles.headerBtn} ${styles.headerBtnOutlineDanger}`}
                       onClick={handleDeleteRead}
                       disabled={deleting || !hasRead}
-                      style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: 8,
-                        border: '1px solid #fca5a5',
-                        background: '#fff',
-                        cursor: deleting || !hasRead ? 'not-allowed' : 'pointer',
-                        fontSize: '0.8rem',
-                        color: deleting || !hasRead ? '#fca5a5' : '#ef4444',
-                        fontWeight: 500,
-                      }}
                     >
                       既読を全削除
                     </button>
                     <button
+                      className={`${styles.headerBtn} ${styles.headerBtnOutline}`}
                       onClick={() => setSelectMode(true)}
-                      style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: 8,
-                        border: '1px solid #94a3b8',
-                        background: '#fff',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        color: '#475569',
-                        fontWeight: 500,
-                      }}
                     >
                       選択
                     </button>
@@ -287,106 +241,68 @@ export const NotificationListPage = () => {
               </div>
             )}
           </div>
+
+          <Tabs
+            tabs={[
+              { key: 'notifications', label: '通知' },
+              { key: 'announcements', label: 'お知らせ' },
+            ]}
+            activeTab={tab}
+            onChange={(key) => {
+              setTab(key);
+              if (key === 'notifications') {
+                setNotifPage(0);
+                setSelectMode(false);
+                setSelectedIds(new Set());
+              } else {
+                setAnnouncePage(0);
+              }
+            }}
+          />
         </div>
 
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
-          <button style={TAB_STYLE(tab === 'notifications')} onClick={() => { setTab('notifications'); setNotifPage(0); setSelectMode(false); setSelectedIds(new Set()); }}>
-            通知
-          </button>
-          <button style={TAB_STYLE(tab === 'announcements')} onClick={() => { setTab('announcements'); setAnnouncePage(0); }}>
-            お知らせ
-          </button>
-        </div>
-
+        {/* ── 通知タブ ── */}
         {tab === 'notifications' && (
           <>
-            {notifError && <p style={{ color: 'red', padding: '1rem' }}>{notifError}</p>}
+            {notifError && <p className={styles.error}>{notifError}</p>}
             {notifLoading ? (
-              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+              <p className={styles.loading}>読み込み中...</p>
             ) : notifList.length === 0 ? (
-              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>通知はありません</p>
+              <p className={styles.empty}>通知はありません</p>
             ) : (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <ul className={styles.list}>
                 {notifList.map((n) => (
-
                   <li
                     key={n.ID}
+                    className={`${styles.item}${!n.isRead ? ` ${styles.itemUnread}` : ''}${selectMode && selectedIds.has(n.ID) ? ` ${styles.itemSelected}` : ''}`}
                     onClick={() => {
-                      if (selectMode) {
-                        toggleSelect(n.ID);
-                        return;
+                      if (selectMode) { toggleSelect(n.ID); return; }
+                      if (!n.isRead) {
+                        markNotificationAsRead(n.ID).catch(() => {});
+                        decrementUnread();
+                        mutateNotifications(
+                          (prev) => prev ? { ...prev, items: prev.items.map((item) => item.ID === n.ID ? { ...item, isRead: true } : item) } : prev,
+                          { revalidate: false },
+                        );
                       }
-                      if (n.type === 'announcement' && n.targetID) {
-                        if (!n.isRead) {
-                          markNotificationAsRead(n.ID).catch(() => {});
-                          decrementUnread();
-                        }
-                        navigate(`/announcements/${n.targetID}`);
-                      } else {
-                        navigate(`/notifications/${n.ID}`);
-                      }
-                    }}
-                    style={{
-                      padding: '1rem',
-                      borderBottom: '1px solid #f1f5f9',
-                      cursor: 'pointer',
-                      background: selectMode && selectedIds.has(n.ID)
-                        ? '#dbeafe'
-                        : n.isRead ? '#fff' : '#eff6ff',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '0.75rem',
+                      navigate(`/notifications/${n.ID}`);
                     }}
                   >
-                    {selectMode ? (
+                    {selectMode && (
                       <input
                         type="checkbox"
+                        className={styles.checkbox}
                         checked={selectedIds.has(n.ID)}
                         onChange={() => toggleSelect(n.ID)}
                         onClick={(e) => e.stopPropagation()}
-                        style={{ marginTop: '0.3rem', flexShrink: 0, width: 16, height: 16, cursor: 'pointer' }}
                       />
-                    ) : (
-                      <>
-                        {!n.isRead && (
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              background: '#3b82f6',
-                              flexShrink: 0,
-                              marginTop: '0.4rem',
-                            }}
-                          />
-                        )}
-                        {n.isRead && <span style={{ width: 8, flexShrink: 0 }} />}
-                      </>
                     )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            padding: '0.1rem 0.5rem',
-                            borderRadius: 12,
-                            background: '#e2e8f0',
-                            color: '#475569',
-                            fontWeight: 500,
-                          }}
-                        >
-                          {TYPE_LABEL[n.type] ?? n.type}
-                        </span>
-                        {n.actor && (
-                          <span style={{ fontSize: '0.875rem', color: '#334155', fontWeight: 500 }}>
-                            {n.actor.name}
-                          </span>
-                        )}
-                      </div>
-                      <p style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b' }}>{n.message}</p>
-                      <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
-                        {new Date(n.createdAt).toLocaleString('ja-JP')}
-                      </p>
+                    <span className={styles.typeIcon}>
+                      {TYPE_ICON[n.type] ?? <BellIcon />}
+                    </span>
+                    <div className={styles.itemContent}>
+                      {n.actor && <p className={styles.itemActor}>{n.actor.name}</p>}
+                      <p className={styles.itemMessage}>{n.message}</p>
                     </div>
                   </li>
                 ))}
@@ -402,45 +318,28 @@ export const NotificationListPage = () => {
           </>
         )}
 
+        {/* ── お知らせタブ ── */}
         {tab === 'announcements' && (
           <>
             {announceLoading ? (
-              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+              <p className={styles.loading}>読み込み中...</p>
             ) : announceList.length === 0 ? (
-              <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>お知らせはありません</p>
+              <p className={styles.empty}>お知らせはありません</p>
             ) : (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <ul className={styles.list}>
                 {announceList.map((a) => (
                   <li
                     key={a.ID}
+                    className={styles.item}
                     onClick={() => navigate(`/announcements/${a.ID}`)}
-                    style={{
-                      padding: '1rem',
-                      borderBottom: '1px solid #f1f5f9',
-                      cursor: 'pointer',
-                      background: '#fff',
-                    }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '0.1rem 0.5rem',
-                          borderRadius: 12,
-                          background: '#fef3c7',
-                          color: '#92400e',
-                          fontWeight: 500,
-                        }}
-                      >
-                        運営からのお知らせ
-                      </span>
+                    <span className={styles.typeIcon}>
+                      <img src={senshuIcon} alt="" className={styles.senshuIcon} />
+                    </span>
+                    <div className={styles.itemContent}>
+                      <p className={styles.itemMessage}>{a.title}</p>
+                      <p className={styles.itemDate}>{new Date(a.createdAt).toLocaleDateString('ja-JP')}</p>
                     </div>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>
-                      {a.title}
-                    </p>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
-                      {new Date(a.createdAt).toLocaleString('ja-JP')}
-                    </p>
                   </li>
                 ))}
               </ul>
@@ -458,3 +357,4 @@ export const NotificationListPage = () => {
     </div>
   );
 };
+

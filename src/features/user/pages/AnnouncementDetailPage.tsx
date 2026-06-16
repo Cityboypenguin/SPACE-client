@@ -1,6 +1,7 @@
 import useSWR from 'swr';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { getAnnouncement } from '../api/announcement';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -76,7 +77,25 @@ export const AnnouncementDetailPage = () => {
               }}
               className="announcement-body"
             >
-              <ReactMarkdown>{announcement.body}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a({ href, children }) {
+                    return (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#3b82f6', textDecoration: 'underline' }}
+                      >
+                        {children}
+                      </a>
+                    );
+                  },
+                }}
+              >
+                {announcement.body}
+              </ReactMarkdown>
             </div>
           </div>
         )}
