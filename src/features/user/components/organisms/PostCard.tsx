@@ -8,6 +8,7 @@ import commentIcon from '../../../../assets/パーツ_コメント.svg';
 import blockIcon from '../../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../../assets/パーツ_通報.svg';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
+import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import styles from './PostCard.module.css';
 
 type Props = {
@@ -106,6 +107,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
                       className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                       onClick={() => { setMenuOpen(false); onDelete?.(post.ID); }}
                     >
+                      <img src={deleteIcon} alt="" className={styles.dropdownIconDelete} />
                       削除
                     </button>
                   </>

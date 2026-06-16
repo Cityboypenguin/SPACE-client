@@ -161,6 +161,7 @@
   font-size: 0.85rem;
   color: #475569;
   line-height: 1.6;
+  white-space: pre-wrap;
   align-self: center;
   text-align: left;
   word-break: break-all;

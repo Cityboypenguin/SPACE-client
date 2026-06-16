@@ -94,7 +94,7 @@ export const DMListPage = () => {
           <p className={styles.errorText}>DMルームの読み込みに失敗しました。</p>
         )}
 
-        <h2 className={styles.sectionTitle}>最近のトーク</h2>
+        <h2 className={styles.sectionTitle}>DM</h2>
 
         {dmInitialLoading ? (
           <p className={styles.empty}>読み込み中...</p>

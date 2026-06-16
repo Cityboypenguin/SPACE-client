@@ -71,7 +71,8 @@
 }
 
 .dropdownItem {
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px 1fr;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
@@ -88,7 +89,15 @@
 .dropdownIcon {
   width: 16px;
   height: 16px;
-  flex-shrink: 0;
+  justify-self: center;
+  object-fit: fill;
+}
+
+.dropdownIconDelete {
+  width: 24px;
+  height: 24px;
+  justify-self: center;
+  object-fit: fill;
 }
 
 .dropdownItem:hover {

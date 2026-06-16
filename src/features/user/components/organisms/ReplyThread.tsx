@@ -19,15 +19,17 @@ type Props = {
 
 export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }: Props) => {
   const navigate = useNavigate();
+  const replies = (post.replies ?? []).filter(r => r.user != null);
 
   return (
-    <div>
-      <div className={styles.item} onClick={() => navigate(`/posts/${post.ID}`)}>
+    <div className={styles.replyWrapper}>
+      <div className={`${styles.item}${depth > 0 ? ` ${styles.childItem}` : ''}${replies.length > 0 ? ` ${styles.itemWithReplies}` : ''}`} onClick={() => navigate(`/posts/${post.ID}`)}>
+
         <div className={styles.avatarCol}>
           <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={36} />
-          {post.replies.length > 0 && <div className={styles.threadLine} />}
+          {replies.length > 0 && <div className={styles.threadLine} />}
         </div>
-        <div className={styles.body} style={{ paddingBottom: post.replies.length > 0 ? '0.5rem' : 0 }}>
+        <div className={styles.body} style={{ paddingBottom: replies.length > 0 ? '0.5rem' : 0 }}>
           <UserMeta
             name={post.user.name}
             accountID={post.user.accountID}
@@ -53,12 +55,9 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
         </div>
       </div>
 
-      {post.replies.length > 0 && (
-        <div
-          className={styles.replies}
-          style={{ marginLeft: depth === 0 ? '2.75rem' : '2rem' }}
-        >
-          {post.replies.map((reply) => (
+      {replies.length > 0 && (
+        <div className={styles.replies}>
+          {replies.map((reply) => (
             <ReplyThread
               key={reply.ID}
               post={reply}
