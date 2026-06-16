@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/organisms/ToastContainer';
 import { OfflineBanner } from './components/organisms/OfflineBanner';
-import { Footer } from './components/organisms/Footer';
 import { NotFoundPage } from './components/pages/NotFoundPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
 import { MaintenanceGuardLayout } from './components/MaintenanceGuardLayout';
@@ -278,7 +277,6 @@ function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
-          <Footer />
         </Suspense>
       </NotificationProvider>
     </ToastProvider >

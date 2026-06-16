@@ -30,6 +30,8 @@ import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { Footer } from '../../../components/organisms/Footer';
+
 
 const LIMIT = 20;
 const REFRESH_COOLDOWN_MS = 60 * 1000;
@@ -686,6 +688,7 @@ export const PostListPage = () => {
           </>
         )}
       </main>
+      <Footer />
     </div>
   );
 };
