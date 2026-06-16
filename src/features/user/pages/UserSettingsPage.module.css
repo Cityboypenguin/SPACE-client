@@ -288,6 +288,120 @@
   max-width: 560px;
 }
 
+/* お問い合わせ */
+.inquiryForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 480px;
+}
+
+.inquiryCategoryTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.radioInput {
+  appearance: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.radioInput:checked {
+  border-color: #7c6fcd;
+}
+
+.radioInput:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #7c6fcd;
+}
+
+.radioLabel {
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.textarea {
+  padding: 0.65rem 0.875rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background: #fff;
+  outline: none;
+  resize: vertical;
+  min-height: 130px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  border-color: #f97316;
+}
+
+.textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* お問い合わせ送信完了 */
+.inquirySuccessBox {
+  max-width: 420px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.inquirySuccessText {
+  font-size: 0.95rem;
+  color: #1e293b;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.inquiryBackBtn {
+  border: 1.5px solid #374151;
+  background: #fff;
+  border-radius: 20px;
+  padding: 0.45rem 2rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #374151;
+  align-self: center;
+}
+
 /* 利用規約 */
 .termsWrap {
   max-width: 640px;

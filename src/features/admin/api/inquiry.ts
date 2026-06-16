@@ -7,6 +7,7 @@ type Inquiry = {
   id: string;
   name: string;
   email: string;
+  category: string;
   subject: string;
   content: string;
   status: string;
@@ -23,6 +24,7 @@ const SEARCH_INQUIRIES_QUERY = `
         id
         name
         email
+        category
         subject
         content
         status
@@ -40,6 +42,7 @@ const GET_INQUIRY_QUERY = `
       id
       name
       email
+      category
       subject
       content
       status

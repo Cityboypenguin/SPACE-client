@@ -8,7 +8,7 @@ import { storageUrl } from '../../../lib/storage';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import searchIconSvg from '../../../assets/パーツ_検索.svg';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import styles from './DMListPage.module.css';
 
 const LIMIT = 20;
@@ -79,16 +79,11 @@ export const DMListPage = () => {
     <div>
       <UserSidebar />
       <main className={styles.main}>
-        <div className={styles.searchWrap}>
-          <img src={searchIconSvg} alt="" className={styles.searchIcon} />
-          <input
-            className={styles.searchInput}
-            type="text"
-            placeholder="Search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
+        <IconSearchBar
+          value={query}
+          onChange={setQuery}
+          placeholder="Search"
+        />
 
         {dmError && (
           <p className={styles.errorText}>DMルームの読み込みに失敗しました。</p>

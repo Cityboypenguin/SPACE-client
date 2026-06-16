@@ -6,7 +6,7 @@ import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { listMyCommunities, type Community } from '../api/community';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import searchIconSvg from '../../../assets/パーツ_検索.svg';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import styles from './CommunityListPage.module.css';
 
 const LIMIT = 20;
@@ -72,21 +72,13 @@ export const CommunityListPage = () => {
           <button className={styles.btnSecondary} onClick={() => navigate('/community/browse')}>
             コミュニティを探す
           </button>
-          <button className={styles.btnPrimary} onClick={() => navigate('/community/create')}>
-            + 作成
-          </button>
         </div>
 
-        <div className={styles.searchWrap}>
-          <img src={searchIconSvg} alt="" className={styles.searchIcon} />
-          <input
-            className={styles.searchInput}
-            type="text"
-            placeholder="Search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
+        <IconSearchBar
+          value={query}
+          onChange={setQuery}
+          placeholder="Search"
+        />
 
         {loadError && (
           <p className={styles.errorText}>コミュニティの読み込みに失敗しました。</p>

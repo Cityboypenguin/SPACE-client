@@ -4,10 +4,20 @@ import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getInquiry, updateInquiryStatus } from '../api/inquiry';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
+const CATEGORY_LABEL: Record<string, string> = {
+  DM: 'DMに関して',
+  POST: '投稿機能に関して',
+  COMMUNITY: 'コミュニティに関して',
+  PASSWORD: 'パスワード変更',
+  LOGIN: 'ログインに関して',
+  OTHER: 'その他のお問い合わせ',
+};
+
 type Inquiry = {
   id: string;
   name: string;
   email: string;
+  category: string;
   subject: string;
   content: string;
   status: string;
@@ -92,6 +102,7 @@ export const AdminInquiryDetailPage: React.FC = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
               <tbody>
                 {[
+                  { label: 'お問合せ種別', value: CATEGORY_LABEL[inquiry.category] ?? inquiry.category },
                   { label: '件名', value: inquiry.subject },
                   { label: '氏名', value: inquiry.name },
                   { label: 'メールアドレス', value: inquiry.email },

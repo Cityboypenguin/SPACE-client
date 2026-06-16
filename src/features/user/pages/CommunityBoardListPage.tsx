@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { SearchBar } from '../components/molecules/SearchBar';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
 import { useAuth } from '../context/AuthContext';
@@ -134,16 +134,26 @@ export const CommunityBoardListPage = () => {
           >
             <ChevronLeft /> 戻る
           </button>
-          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>コミュニティを探す</h1>
+          <h1 style={{ margin: 0, fontSize: '1.5rem', flex: 1 }}>コミュニティを探す</h1>
+          <button
+            onClick={() => navigate('/community/create')}
+            style={{
+              background: '#f97316', color: '#fff', border: 'none',
+              borderRadius: 8, padding: '0.5rem 1rem',
+              fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+            }}
+          >
+            + 作成
+          </button>
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>
-          <SearchBar
+          <IconSearchBar
             value={query}
             onChange={setQuery}
             onSubmit={handleSearch}
             placeholder="コミュニティ名で検索"
-            submitting={searching}
+            disabled={searching}
           />
         </div>
 

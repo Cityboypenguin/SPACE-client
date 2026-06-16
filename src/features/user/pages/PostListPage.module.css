@@ -130,6 +130,10 @@
   transition: width 0.2s ease-out;
 }
 
+.fabGroup:hover {
+  width: 106px;
+}
+
 .fabGroupExpanded {
   width: 106px;
   transition: width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -182,7 +186,7 @@
   border-radius: 2px;
 }
 
-/* ↑ ボタン: 常に左端に固定、展開時のみ表示 */
+/* ↑ ボタン: 常に左端に固定、展開時に表示 */
 .scrollTopFab {
   position: absolute;
   left: 6px;
@@ -203,6 +207,11 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
+}
+
+.fabGroup:hover .scrollTopFab {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .scrollTopFabVisible {
