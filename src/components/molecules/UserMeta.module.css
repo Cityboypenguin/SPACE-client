@@ -1,0 +1,43 @@
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.rowSmall {
+  margin-bottom: 0.2rem;
+}
+
+.rowNormal {
+  margin-bottom: 0.25rem;
+}
+
+.name {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.nameSmall {
+  font-size: 0.9rem;
+}
+
+.nameNormal {
+  font-size: 0.95rem;
+}
+
+.meta {
+  color: #94a3b8;
+}
+
+.metaSmall {
+  font-size: 0.82rem;
+}
+
+.metaNormal {
+  font-size: 0.85rem;
+}
+
+.timestamp {
+  color: #94a3b8;
+  margin-left: auto;
+}

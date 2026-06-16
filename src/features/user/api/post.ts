@@ -113,6 +113,20 @@ const GET_POSTS_BY_USER_ID_QUERY = `
   }
 `;
 
+const GET_FAVORITE_POSTS_BY_USER_ID_QUERY = `
+  query GetFavoritePostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {
+    getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
+      }
+      total
+    }
+  }
+`;
+
 const CREATE_POST_MUTATION = `
   mutation CreatePost($input: CreatePostInput!) {
   createPost(input: $input) {
@@ -242,10 +256,77 @@ export const getPostsByUserID = async (userId: string, limit = 20, offset = 0): 
   return data.getPostsByUserID;
 };
 
+export const getFavoritePostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
+  const data = await request<{ getFavoritePostsByUserID: { items: Post[]; total: number } }>(
+    GET_FAVORITE_POSTS_BY_USER_ID_QUERY,
+    { user_id: userId, limit, offset },
+    getUserToken(),
+  );
+  return data.getFavoritePostsByUserID;
+};
+
 export const deleteFavorite = async (postId: string): Promise<void> => {
   await request<{ deleteFavorite: boolean }>(
     DELETE_FAVORITE_MUTATION,
     { input: { post_id: postId } },
     getUserToken(),
   );
+};
+
+const NEW_FEED_POSTS_COUNT_QUERY = `
+  query NewFeedPostsCount($since: String!) {
+    newFeedPostsCount(since: $since)
+  }
+`;
+
+export const getNewFeedPostsCount = async (since: Date): Promise<number> => {
+  const data = await request<{ newFeedPostsCount: number }>(
+    NEW_FEED_POSTS_COUNT_QUERY,
+    { since: since.toISOString() },
+    getUserToken(),
+  );
+  return data.newFeedPostsCount;
+};
+
+const SEARCH_POSTS_QUERY = `
+  query SearchPosts($keyword: String!) {
+    searchPosts(keyword: $keyword) {
+      ${POST_FIELDS}
+      replies {
+        ID
+      }
+    }
+  }
+`;
+
+export const searchPosts = async (keyword: string): Promise<Post[]> => {
+  const data = await request<{ searchPosts: Post[] }>(
+    SEARCH_POSTS_QUERY,
+    { keyword },
+    getUserToken(),
+  );
+  return data.searchPosts;
+};
+
+const FOLLOWERS_TOP_LEVEL_POSTS_QUERY = `
+  query FollowersTopLevelPosts($userID: ID!, $limit: Int, $offset: Int) {
+    followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
+      }
+      total
+    }
+  }
+`;
+
+export const getFollowersTopLevelPosts = async (userID: string, limit = 20, offset = 0): Promise<PostPage> => {
+  const data = await request<{ followersTopLevelPosts: PostPage }>(
+    FOLLOWERS_TOP_LEVEL_POSTS_QUERY,
+    { userID, limit, offset },
+    getUserToken(),
+  );
+  return data.followersTopLevelPosts;
 };

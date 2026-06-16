@@ -16,10 +16,9 @@ export const SearchBar = ({ value, onChange, onSubmit, placeholder = '名前で�
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      required
       className={styles.input}
     />
-    <button type="submit" disabled={submitting || disabled || !value.trim()} className={styles.button}>
+    <button type="submit" disabled={submitting || disabled} className={styles.button}>
       {submitting ? '検索中...' : '検索'}
     </button>
   </form>

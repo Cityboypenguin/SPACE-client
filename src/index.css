@@ -29,6 +29,10 @@ body {
   min-height: 100vh;
 }
 
+body.has-sidebar {
+  padding-left: 56px;
+}
+
 #root {
   width: 100%;
 }

@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import styles from '../organisms/chatRoom.module.css';
+import sendIcon from '../../../../assets/パーツ_送信.svg';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -24,6 +25,7 @@ type Props = {
 export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevDisabledRef = useRef(disabled);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -32,6 +34,14 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
       textareaRef.current.style.height = 'auto';
     }
   }, [value]);
+
+  // 送信完了後 (disabled: true → false) にテキストエリアへフォーカスを戻す
+  useEffect(() => {
+    if (prevDisabledRef.current === true && disabled === false) {
+      textareaRef.current?.focus();
+    }
+    prevDisabledRef.current = disabled;
+  }, [disabled]);
 
   useEffect(() => {
     const urls = selectedFiles.map((file) =>
@@ -57,6 +67,8 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     const remaining = MAX_FILES - selectedFiles.length;
     if (remaining <= 0) return;
     onFileSelect([...selectedFiles, ...incoming.slice(0, remaining)]);
+    // ファイル選択後にテキストエリアへフォーカスを戻してEnterキーで送信できるようにする
+    textareaRef.current?.focus();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,11 +104,6 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
 
   const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
 
-  const getButtonText = () => {
-    if (isBlocked) return '送信不可';
-    if (disabled) return '送信中...';
-    return '送信';
-  };
 
   return (
     <div
@@ -249,9 +256,26 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
         <button
           type="submit"
           disabled={!canSubmit}
-          style={{ cursor: !canSubmit ? 'default' : 'pointer' }}
+          title={isBlocked ? '送信不可' : disabled ? '送信中...' : '送信'}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '0 4px',
+            cursor: canSubmit ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
-          {getButtonText()}
+          <img
+            src={sendIcon}
+            alt="送信"
+            style={{
+              width: 28,
+              height: 28,
+              filter: canSubmit ? 'none' : 'opacity(0.3)',
+              transition: 'filter 0.15s',
+            }}
+          />
         </button>
       </form>
     </div>

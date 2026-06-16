@@ -1,18 +1,25 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
-import { useProfile } from '../hooks/useProfile';
-import { useAuth } from '../context/AuthContext';
-import { UserAvatar } from '../../../components/atoms/UserAvatar';
-import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
-import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
+import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ProfileCard } from '../components/organisms/ProfileCard';
 import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
 import { ReportModal } from '../components/organisms/ReportMadal';
+import { useProfile } from '../hooks/useProfile';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
+import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
+import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
+import { getOrCreateDMRoom } from '../api/message';
 import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
+import blockIcon from '../../../assets/パーツ_ブロック.svg';
+import reportIcon from '../../../assets/パーツ_通報.svg';
+import favoriteIcon from '../../../assets/パーツ_お気に入り.svg';
+import dmIcon from '../../../assets/パーツ_メール.svg';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserPublicProfilePage.module.css';
 
 export const UserPublicProfilePage = () => {
@@ -20,8 +27,22 @@ export const UserPublicProfilePage = () => {
   const navigate = useNavigate();
   const { profile, loading, error } = useProfile(id);
   const { userId: currentUserId } = useAuth();
+  const { addToast } = useToast();
   const isMe = currentUserId === id;
 
+  // ── three-dot menu ────────────────────────────────────────────────────────
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  // ── favorite / block ──────────────────────────────────────────────────────
   const { data: favoriteUsers, mutate: mutateFavorites } = useSWR(
     currentUserId && !isMe ? ['favorite-users', currentUserId] : null,
     ([, uid]: [string, string]) => getFavoriteUsersByUserID(uid),
@@ -34,6 +55,11 @@ export const UserPublicProfilePage = () => {
   const isFavorited = favoriteUsers?.some((u) => u.ID === id) ?? false;
   const isBlocked = blockedUsers?.some((u) => u.ID === id) ?? false;
 
+  const [actionLoading, setActionLoading] = useState(false);
+  const [dmLoading, setDmLoading] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+
+  // ── posts ─────────────────────────────────────────────────────────────────
   const initialCacheRef = useRef(id ? getUserPostListCache(id) : null);
   const initialCache = initialCacheRef.current;
 
@@ -41,7 +67,6 @@ export const UserPublicProfilePage = () => {
   const [postsTotal, setPostsTotal] = useState(initialCache?.total ?? 0);
   const [postsLoading, setPostsLoading] = useState(!initialCache);
   const [postsLoadingMore, setPostsLoadingMore] = useState(false);
-  const [postsErr, setPostsErr] = useState(false);
   const postsLoadingRef = useRef(false);
 
   const postsRef = useRef(posts);
@@ -56,10 +81,9 @@ export const UserPublicProfilePage = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!initialCache) return;
-    const raf = requestAnimationFrame(() => window.scrollTo(0, initialCache.scrollY));
-    return () => cancelAnimationFrame(raf);
+    window.scrollTo(0, initialCache.scrollY);
   }, [initialCache]);
 
   useEffect(() => {
@@ -82,12 +106,13 @@ export const UserPublicProfilePage = () => {
     else setPostsLoadingMore(true);
     try {
       const page = await getPostsByUserID(userID, 20, currentOffset);
-      setPosts((prev) => isInitial ? page.items : [...prev, ...page.items]);
+      setPosts((prev) => {
+        if (isInitial) return page.items;
+        const existingIds = new Set(prev.map(p => p.ID));
+        return [...prev, ...page.items.filter(p => !existingIds.has(p.ID))];
+      });
       setPostsTotal(page.total);
-      setPostsErr(false);
-    } catch {
-      setPostsErr(true);
-    } finally {
+    } catch { /* noop */ } finally {
       postsLoadingRef.current = false;
       if (isInitial) setPostsLoading(false);
       else setPostsLoadingMore(false);
@@ -109,64 +134,16 @@ export const UserPublicProfilePage = () => {
     postsLoadingMore,
   );
 
-  const [actionLoading, setActionLoading] = useState(false);
-  const [isReportOpen, setIsReportOpen] = useState(false);
-
+  // ── handlers ──────────────────────────────────────────────────────────────
   const handleLike = async (postId: string, isLiked: boolean) => {
-    if (isLiked) {
-      await deleteFavorite(postId);
-    } else {
-      await createFavorite(postId);
-    }
+    if (isLiked) await deleteFavorite(postId);
+    else await createFavorite(postId);
     setPosts((prev) => prev.map((p) => {
       if (p.ID !== postId) return p;
-      if (isLiked) {
-        return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) };
-      } else {
-        return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
-      }
+      return isLiked
+        ? { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) }
+        : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
     }));
-  };
-
-  const handleFavoriteToggle = async () => {
-    if (!id) return;
-    setActionLoading(true);
-    try {
-      if (isFavorited) {
-        await deleteFavoriteUser(id);
-        mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
-      } else {
-        await createFavoriteUser(id);
-        void mutateFavorites();
-      }
-    } catch (err) {
-      alert(toUserMessage(err, 'お気に入りの操作に失敗しました。時間をおいてから再度お試しください。'));
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleBlockToggle = async () => {
-    if (!id) return;
-    if (!isBlocked && !window.confirm('本当にこのユーザーをブロックしますか？')) return;
-
-    setActionLoading(true);
-    try {
-      if (isBlocked) {
-        await deleteBlocker(id);
-        mutateBlocked((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
-      } else {
-        await createBlocker(id);
-        void mutateBlocked();
-        if (isFavorited) {
-          mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
-        }
-      }
-    } catch (err) {
-      alert(toUserMessage(err, 'ブロックの操作に失敗しました。時間をおいてから再度お試しください。'));
-    } finally {
-      setActionLoading(false);
-    }
   };
 
   const handlePostClick = (postId: string) => {
@@ -181,97 +158,154 @@ export const UserPublicProfilePage = () => {
     navigate(`/posts/${postId}`);
   };
 
+  const handleFavoriteToggle = async () => {
+    if (!id) return;
+    setActionLoading(true);
+    try {
+      if (isFavorited) {
+        await deleteFavoriteUser(id);
+        mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
+      } else {
+        await createFavoriteUser(id);
+        void mutateFavorites();
+      }
+    } catch (err) {
+      addToast(toUserMessage(err, 'お気に入りの操作に失敗しました。'), 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBlockToggle = async () => {
+    if (!id) return;
+    if (!isBlocked && !window.confirm('本当にこのユーザーをブロックしますか？')) return;
+    setMenuOpen(false);
+    setActionLoading(true);
+    try {
+      if (isBlocked) {
+        await deleteBlocker(id);
+        mutateBlocked((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
+      } else {
+        await createBlocker(id);
+        void mutateBlocked();
+        if (isFavorited) {
+          mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
+        }
+      }
+    } catch (err) {
+      addToast(toUserMessage(err, 'ブロックの操作に失敗しました。'), 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDM = async () => {
+    if (!id) return;
+    setDmLoading(true);
+    try {
+      const { getOrCreateDMRoom: room } = await getOrCreateDMRoom(id);
+      navigate(`/dm/${room.ID}`);
+    } catch (err) {
+      addToast(toUserMessage(err, 'DMの開始に失敗しました。'), 'error');
+    } finally {
+      setDmLoading(false);
+    }
+  };
+
   const handleReportUser = () => {
-    if (!profile || !id) return;
+    setMenuOpen(false);
     setIsReportOpen(true);
   };
 
+  // ── right-side action buttons (passed to ProfileCard) ────────────────────
+  const rightActions = profile && !isMe ? (
+    <div className={styles.profileActions}>
+      {!isBlocked && (
+        <button
+          className={`${styles.profileActionButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}
+          onClick={handleFavoriteToggle}
+          disabled={actionLoading}
+        >
+          <img
+            src={favoriteIcon}
+            alt=""
+            className={`${styles.profileActionIcon}${isFavorited ? ` ${styles.profileActionIconFavorited}` : ''}`}
+          />
+          {isFavorited ? 'お気に入り解除' : 'お気に入り'}
+        </button>
+      )}
+      <button
+        className={styles.profileActionButton}
+        onClick={handleDM}
+        disabled={dmLoading}
+      >
+        <img src={dmIcon} alt="" className={styles.profileActionIcon} />
+        DMを開始
+      </button>
+    </div>
+  ) : undefined;
+
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main className={styles.main}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <button onClick={() => navigate(-1)}>← 戻る</button>
-
-          {profile && (
-            <button
-              onClick={handleReportUser}
-              style={{
-                padding: '0.4rem 1rem',
-                background: '#fef2f2',
-                color: '#ef4444',
-                border: '1px solid #fca5a5',
-                borderRadius: '20px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#fee2e2')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = '#fef2f2')}
-            >
-              ⚠️ このユーザーを通報
-            </button>
+        <div className={styles.topBar}>
+          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+            <ChevronLeft />
+          </button>
+          {profile && !isMe && (
+            <div className={styles.menuWrap} ref={menuRef}>
+              <button
+                className={styles.menuButton}
+                onClick={() => setMenuOpen(v => !v)}
+                aria-label="メニュー"
+              >
+                ···
+              </button>
+              {menuOpen && (
+                <div className={styles.dropdown}>
+                  <button
+                    className={styles.dropdownItem}
+                    onClick={handleBlockToggle}
+                    disabled={actionLoading}
+                  >
+                    <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                    {isBlocked ? 'ブロック解除' : 'ブロック'}
+                  </button>
+                  <button
+                    className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                    onClick={handleReportUser}
+                  >
+                    <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                    通報
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        <h1>ユーザー詳細</h1>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {loading && <p>読み込み中...</p>}
+        {error && <p style={{ color: 'red', padding: '0 1rem' }}>{error}</p>}
+        {loading && <p style={{ color: '#94a3b8', padding: '1rem' }}>読み込み中...</p>}
+
         {profile && (
-          <div>
-            <div className={styles.profileHeader}>
-              <UserAvatar userId={profile.user.ID} name={profile.user.name} avatarUrl={profile.avatarUrl} size={80} />
-              <div>
-                <h2 className={styles.displayName}>{profile.user.name}</h2>
-                <p className={styles.username}>@{profile.user.accountID}</p>
-              </div>
-            </div>
-
-            {!isMe && (
-              <div style={{ display: 'flex', gap: '10px', marginTop: '16px', marginBottom: '16px' }}>
-                {!isBlocked && (
-                  <button
-                    onClick={handleFavoriteToggle}
-                    disabled={actionLoading}
-                    style={{ padding: '8px 16px', cursor: 'pointer' }}
-                  >
-                    {isFavorited ? '★ お気に入り解除' : '☆ お気に入り登録'}
-                  </button>
-                )}
-
-                <button
-                  onClick={handleBlockToggle}
-                  disabled={actionLoading}
-                  style={{ padding: '8px 16px', color: 'red', cursor: 'pointer' }}
-                >
-                  {isBlocked ? 'ブロック解除' : 'ブロックする'}
-                </button>
-              </div>
-            )}
-
-            <dl className={styles.profileList}>
-              <dt className={styles.profileLabel}>自己紹介</dt>
-              <dd>{profile.bio || '未設定'}</dd>
-            </dl>
-            <div style={{ marginTop: '2rem' }}>
-              <h3 style={{ fontSize: '1.2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                投稿一覧
-              </h3>
-              <ScrollablePostsList
-                posts={posts}
-                loading={postsLoading}
-                loadingMore={postsLoadingMore}
-                error={postsErr}
-                currentUserId={currentUserId}
-                sentinelRef={postsSentinelRef}
-                onLike={handleLike}
-                onPostClick={handlePostClick}
-              />
-            </div>
-          </div>
+          <>
+            <ProfileCard profile={profile} rightActions={rightActions} />
+            <hr className={styles.divider} />
+            <ScrollablePostsList
+              posts={posts}
+              loading={postsLoading}
+              loadingMore={postsLoadingMore}
+              error={false}
+              currentUserId={currentUserId}
+              sentinelRef={postsSentinelRef}
+              onLike={handleLike}
+              onPostClick={handlePostClick}
+            />
+          </>
         )}
       </main>
+
       {id && (
         <ReportModal
           isOpen={isReportOpen}

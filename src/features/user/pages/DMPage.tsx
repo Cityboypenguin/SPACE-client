@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
@@ -10,8 +10,11 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
-import { saveRecentDM } from '../utils/recentDM';
+import { saveRecentDM } from '../../../lib/recentDM';
 import styles from '../components/organisms/chatRoom.module.css';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { Avatar } from '../../../components/atoms/Avatar';
+import { storageUrl } from '../../../lib/storage';
 
 export const DMPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -103,10 +106,22 @@ export const DMPage = () => {
 
   return (
     <div className={styles.container}>
-      <UserHeader />
+      <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/dm')}>← 戻る</button>
+        <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
+        {(() => {
+          const partner = room?.user.find((u) => u.ID !== currentUserID);
+          return partner?.avatarUrl ? (
+            <img
+              src={storageUrl(partner.avatarUrl) ?? undefined}
+              alt={partner.name}
+              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+            />
+          ) : (
+            <Avatar name={partnerName} size={36} />
+          );
+        })()}
         <strong className={styles.roomTitle}>{partnerName}</strong>
         <span
           className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}

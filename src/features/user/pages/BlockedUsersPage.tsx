@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { UserListItem } from '../components/molecules/UserListItem';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useToast } from '../../../context/ToastContext';
 import { useRef } from 'react';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 const LIMIT = 20;
 
@@ -62,9 +63,9 @@ export const BlockedUsersPage = () => {
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
-        <button onClick={() => navigate('/mypage')} style={{ marginBottom: '1rem' }}>← マイページに戻る</button>
+        <button onClick={() => navigate('/mypage')} style={{ marginBottom: '1rem' }}><ChevronLeft /> マイページに戻る</button>
         <h1>ブロック一覧</h1>
 
         {initialLoading ? (

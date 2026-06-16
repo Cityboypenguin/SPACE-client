@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/organisms/ToastContainer';
 import { OfflineBanner } from './components/organisms/OfflineBanner';
-import { Footer } from './components/organisms/Footer';
 import { NotFoundPage } from './components/pages/NotFoundPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
 import { MaintenanceGuardLayout } from './components/MaintenanceGuardLayout';
@@ -49,8 +48,17 @@ const CommunityCreatePage = lazy(() =>
 const CommunityRoomPage = lazy(() =>
   import('./features/user/pages/CommunityRoomPage').then((m) => ({ default: m.CommunityRoomPage })),
 );
+const CommunityEditPage = lazy(() =>
+  import('./features/user/pages/CommunityEditPage').then((m) => ({ default: m.CommunityEditPage })),
+);
+const CommunityMembersPage = lazy(() =>
+  import('./features/user/pages/CommunityMembersPage').then((m) => ({ default: m.CommunityMembersPage })),
+);
 const UserProfileEditPage = lazy(() =>
   import('./features/user/pages/UserProfileEditPage').then((m) => ({ default: m.UserProfileEditPage })),
+);
+const UserInfoEditPage = lazy(() =>
+  import('./features/user/pages/UserInfoEditPage').then((m) => ({ default: m.UserInfoEditPage })),
 );
 const PostListPage = lazy(() =>
   import('./features/user/pages/PostListPage').then((m) => ({ default: m.PostListPage })),
@@ -76,6 +84,9 @@ const NotificationDetailPage = lazy(() =>
 const AnnouncementDetailPage = lazy(() =>
   import('./features/user/pages/AnnouncementDetailPage').then((m) => ({ default: m.AnnouncementDetailPage })),
 );
+const ForgotPasswordPage = lazy(() =>
+  import('./features/user/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+);
 function App() {
   return (
     <ToastProvider>
@@ -93,6 +104,7 @@ function App() {
               <Route path="/" element={<UserLoginForm />} />
               <Route path="/login" element={<UserLoginForm />} />
               <Route path="/register" element={<UserRegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/inquiry" element={<InquiryPage />} />
               <Route
                 path="/mypage"
@@ -115,6 +127,14 @@ function App() {
                 element={
                   <UserProtectedRoute>
                     <UserProfileEditPage />
+                  </UserProtectedRoute>
+                }
+              />
+              <Route
+                path="/mypage/user-info-edit"
+                element={
+                  <UserProtectedRoute>
+                    <UserInfoEditPage />
                   </UserProtectedRoute>
                 }
               />
@@ -199,7 +219,23 @@ function App() {
                 }
               />
               <Route
-                path="/posts"
+                path="/community/edit/:communityID"
+                element={
+                  <UserProtectedRoute>
+                    <CommunityEditPage />
+                  </UserProtectedRoute>
+                }
+              />
+              <Route
+                path="/community/members/:communityID"
+                element={
+                  <UserProtectedRoute>
+                    <CommunityMembersPage />
+                  </UserProtectedRoute>
+                }
+              />
+              <Route
+                path="/home"
                 element={
                   <UserProtectedRoute>
                     <PostListPage />
@@ -241,7 +277,6 @@ function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
-          <Footer />
         </Suspense>
       </NotificationProvider>
     </ToastProvider >

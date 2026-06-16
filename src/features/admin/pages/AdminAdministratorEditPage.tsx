@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
   getAdministratorByID,
   updateAdministrator,
@@ -67,7 +68,7 @@ export const AdminAdministratorEditPage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate('/admin/administrators')}>← 一覧に戻る</button>
+        <button onClick={() => navigate('/admin/administrators')}><ChevronLeft /> 一覧に戻る</button>
         <h1>管理者アカウントの編集</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}

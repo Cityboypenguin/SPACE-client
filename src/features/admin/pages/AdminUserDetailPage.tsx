@@ -4,6 +4,7 @@ import { getUserByID, deleteUser, freezeUser, unfreezeUser, type User } from '..
 import { adminGetBlockers, adminGetFavoriteUsers } from '../api/relation';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { UserListItem } from '../../../components/molecules/UserListItem';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 const STATUS_FROZEN = 'frozen';
 
@@ -93,7 +94,7 @@ export const AdminUserDetailPage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate(-1)}>← 戻る</button>
+        <button onClick={() => navigate(-1)}><ChevronLeft /> 戻る</button>
         <h1>ユーザー詳細</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}

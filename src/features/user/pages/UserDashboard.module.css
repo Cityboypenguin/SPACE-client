@@ -1,135 +1,58 @@
 .main {
-  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-.profileHeader {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+.pageHeader {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.avatarPlaceholder {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.displayName {
+.pageTitle {
   margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-.username {
-  margin: 0;
-  color: #666;
+.flashMessage {
+  color: #16a34a;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  background: #f0fdf4;
+  border-bottom: 1px solid #bbf7d0;
 }
 
-.profileList {
-  line-height: 2;
-}
-
-.profileLabel {
-  font-weight: bold;
-}
-
-.accountMeta {
-  color: #666;
-  margin-top: 1.5rem;
-}
-
-.main {
-  padding: 2rem;
-}
-
-.profileHeader {
+.actionButtons {
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
 }
 
-.avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.avatarPlaceholder {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #ccc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.displayName {
-  margin: 0;
-}
-
-.username {
-  margin: 0;
-  color: #666;
-}
-
-.profileList {
-  line-height: 2;
-}
-
-.profileLabel {
-  font-weight: bold;
-}
-
-.accountMeta {
-  color: #666;
-  margin-top: 1.5rem;
-}
-
-/* リンクを囲むコンテナ */
-.linkContainer {
-  display: flex;
-  flex-direction: row;
-  /* 基本は横並び */
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-/* 各リンクのデザイン */
-.linkItem {
+.actionButton {
   flex: 1;
-  /* 横幅を均等に分割する */
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  text-decoration: none;
-  color: black;
   text-align: center;
+  padding: 0.45rem 0.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #1e293b;
+  font-size: 0.8rem;
   white-space: nowrap;
+  transition: background 0.15s;
 }
 
-/* 画面幅が600px以下（スマートフォンなど）になった時の処理 */
-@media (max-width: 600px) {
-  .linkContainer {
-    flex-direction: column;
-    /* 縦並びに変更 */
-  }
+.actionButton:hover {
+  background: #f1f5f9;
+}
+
+.loadingText {
+  color: #94a3b8;
+  padding: 2rem;
+  text-align: center;
+}
+
+.emptyText {
+  color: #94a3b8;
+  padding: 2rem;
+  text-align: center;
 }

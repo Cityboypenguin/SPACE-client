@@ -1,0 +1,411 @@
+.page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.leftPanel {
+  width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  overflow-y: auto;
+}
+
+.panelTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  padding: 0 1.25rem;
+  margin: 0 0 1rem;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #374151;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.menuItem:hover {
+  background-color: #f8fafc;
+  border-color: transparent;
+}
+
+.menuItem:focus,
+.menuItem:focus-visible {
+  outline: none;
+}
+
+.menuItemActive {
+  background-color: #fff7ed;
+  color: #f97316;
+  font-weight: 600;
+  border-right: 3px solid #f97316;
+}
+
+.menuArrow {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.menuItemActive .menuArrow {
+  color: #f97316;
+}
+
+/* 右パネル */
+.rightPanel {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* 一般 */
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1.25rem;
+}
+
+.subMenuList {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.subMenuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #374151;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.subMenuItem:last-child {
+  border-bottom: none;
+}
+
+.subMenuItem:hover {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.subMenuItem:focus,
+.subMenuItem:focus-visible {
+  outline: none;
+}
+
+.subMenuArrow {
+  color: #94a3b8;
+}
+
+/* アクションボタン群 */
+.actionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 360px;
+}
+
+.actionBtn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.actionBtn:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.actionBtn:focus,
+.actionBtn:focus-visible {
+  outline: none;
+}
+
+.logoutBtn {
+  border-color: #cbd5e1;
+  color: #374151;
+}
+
+.deleteBtn {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.deleteBtn:hover {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+/* パスワード変更 */
+.backTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1.75rem;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.backBtn:hover {
+  color: #1e293b;
+  border-color: transparent;
+}
+
+.backBtn:focus,
+.backBtn:focus-visible {
+  outline: none;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 420px;
+}
+
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.input {
+  padding: 0.65rem 0.875rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: #f97316;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  margin-top: 0.25rem;
+}
+
+.submitBtn:hover {
+  background: #ea6c0a;
+  border-color: transparent;
+}
+
+.submitBtn:disabled {
+  background: #fdba74;
+  cursor: not-allowed;
+}
+
+.submitBtn:focus,
+.submitBtn:focus-visible {
+  outline: none;
+}
+
+.errorMsg {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.successMsg {
+  color: #22c55e;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* ブロックリスト */
+.blockList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 560px;
+}
+
+/* お問い合わせ */
+.inquiryForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 480px;
+}
+
+.inquiryCategoryTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.radioInput {
+  appearance: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.radioInput:checked {
+  border-color: #7c6fcd;
+}
+
+.radioInput:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #7c6fcd;
+}
+
+.radioLabel {
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.textarea {
+  padding: 0.65rem 0.875rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background: #fff;
+  outline: none;
+  resize: vertical;
+  min-height: 130px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  border-color: #f97316;
+}
+
+.textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* お問い合わせ送信完了 */
+.inquirySuccessBox {
+  max-width: 420px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.inquirySuccessText {
+  font-size: 0.95rem;
+  color: #1e293b;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.inquiryBackBtn {
+  border: 1.5px solid #374151;
+  background: #fff;
+  border-radius: 20px;
+  padding: 0.45rem 2rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #374151;
+  align-self: center;
+}
+
+/* 利用規約 */
+.termsWrap {
+  max-width: 640px;
+  line-height: 1.8;
+  font-size: 0.9rem;
+  color: #334155;
+}

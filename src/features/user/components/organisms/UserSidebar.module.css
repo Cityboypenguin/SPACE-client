@@ -1,0 +1,193 @@
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 56px;
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.25s ease;
+}
+
+.sidebar:hover {
+  width: 220px;
+}
+
+/* ロゴ */
+.logo {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-height: 56px;
+}
+
+.logoIconWrap {
+  width: 56px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logoMark {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.logoText {
+  height: 100px;
+  width: auto;
+  object-fit: contain;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar:hover .logoText {
+  opacity: 1;
+}
+
+/* ナビゲーション */
+.nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0.5rem 0;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  padding: 0.75rem 0;
+  padding-left: 12px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.navItem:hover {
+  background-color: #f1f5f9;
+  border-color: transparent;
+}
+
+.navItem:focus,
+.navItem:focus-visible {
+  outline: none;
+}
+
+.active {
+  background-color: #fff7ed;
+  color: #f97316;
+}
+
+/* アイコン */
+.iconWrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+/* バッジ */
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0 3px;
+}
+
+/* ラベル */
+.label {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+  color: #374151;
+}
+
+.active .label {
+  color: #f97316;
+}
+
+.sidebar:hover .label {
+  opacity: 1;
+}
+
+/* ボトム（ユーザー） */
+.bottom {
+  flex-shrink: 0;
+  border-top: 1px solid #e2e8f0;
+  padding: 0.5rem 0;
+}
+
+.userItem {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  padding: 0.75rem 0;
+  padding-left: 12px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.userItem:hover {
+  background-color: #f1f5f9;
+  border-color: transparent;
+}
+
+.userItem:focus,
+.userItem:focus-visible {
+  outline: none;
+}
+
+.avatarPlaceholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}

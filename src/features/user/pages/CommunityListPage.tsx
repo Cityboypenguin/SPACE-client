@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
+import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { listMyCommunities, type Community } from '../api/community';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
-import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import styles from './CommunityListPage.module.css';
 
 const LIMIT = 20;
 
 export const CommunityListPage = () => {
+  const [query, setQuery] = useState('');
   const navigate = useNavigate();
 
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -57,70 +59,74 @@ export const CommunityListPage = () => {
     setCommunities(prev => prev.map(c => c.roomID === roomID ? { ...c, unreadCount } : c));
   });
 
-  const hasMore = communities.length < total;
+  const filteredCommunities = communities.filter((c) => {
+    if (!query) return true;
+    return c.name.toLowerCase().includes(query.toLowerCase());
+  });
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main className={styles.main}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>コミュニティ</h1>
-          <div className={styles.headerActions}>
-            <button className={styles.btnSecondary} onClick={() => navigate('/community/browse')}>
-              コミュニティを探す
-            </button>
-            <button className={styles.btnPrimary} onClick={() => navigate('/community/create')}>
-              + 作成
-            </button>
-          </div>
+        <div className={styles.topActions}>
+          <button className={styles.btnSecondary} onClick={() => navigate('/community/browse')}>
+            コミュニティを探す
+          </button>
         </div>
 
-        {loadError && <p style={{ color: 'red' }}>コミュニティの読み込みに失敗しました</p>}
+        <IconSearchBar
+          value={query}
+          onChange={setQuery}
+          placeholder="Search"
+        />
+
+        {loadError && (
+          <p className={styles.errorText}>コミュニティの読み込みに失敗しました。</p>
+        )}
+
+        <h2 className={styles.sectionTitle}>参加中のコミュニティ</h2>
 
         {initialLoading ? (
-          <p style={{ color: '#94a3b8' }}>読み込み中...</p>
-        ) : communities.length === 0 ? (
+          <p className={styles.empty}>読み込み中...</p>
+        ) : filteredCommunities.length === 0 ? (
           <div className={styles.empty}>
-            <p>参加しているコミュニティがありません</p>
-            <button className={styles.btnPrimaryRound} onClick={() => navigate('/community/browse')}>
-              コミュニティを探す
-            </button>
+            <p>{query ? '該当するコミュニティが見つかりませんでした' : '参加しているコミュニティがありません'}</p>
+            {!query && (
+              <button className={styles.btnPrimaryRound} onClick={() => navigate('/community/browse')}>
+                コミュニティを探す
+              </button>
+            )}
           </div>
         ) : (
-          <>
-            <ul className={styles.list}>
-              {communities.map((c) => {
-                const hasUnread = (c.unreadCount ?? 0) > 0;
-                return (
-                  <li
-                    key={c.ID}
-                    onClick={() => navigate(`/community/chat/${c.roomID}`, { state: { communityID: c.ID } })}
-                    className={`${styles.item} ${hasUnread ? styles.itemUnread : ''}`}
-                  >
-                    <CommunityAvatar name={c.name} src={c.avatarURL} />
-                    <div className={styles.itemBody}>
-                      <div className={`${styles.itemName} ${hasUnread ? styles.itemNameUnread : ''}`}>{c.name}</div>
-                      <div className={styles.itemDescription}>{c.description}</div>
-                    </div>
-                    {hasUnread ? (
-                      <UnreadCountBadge count={c.unreadCount} />
-                    ) : (
-                      <span className={styles.chevron}>›</span>
+          <ul className={styles.list}>
+            {filteredCommunities.map((c) => {
+              const hasUnread = (c.unreadCount ?? 0) > 0;
+              return (
+                <li
+                  key={c.ID}
+                  onClick={() => navigate(`/community/chat/${c.roomID}`, { state: { communityID: c.ID } })}
+                  className={`${styles.item} ${hasUnread ? styles.itemUnread : ''}`}
+                >
+                  <div className={styles.avatarWrap}>
+                    <CommunityAvatar name={c.name} src={c.avatarURL} size={44} />
+                  </div>
+                  <div className={styles.itemBody}>
+                    <span className={styles.itemName}>{c.name}</span>
+                  </div>
+                  <div className={styles.itemRight}>
+                    {c.lastMessage && (
+                      <p className={styles.itemDescription}>{c.lastMessage}</p>
                     )}
-                  </li>
-                );
-              })}
-            </ul>
+                    <UnreadCountBadge count={c.unreadCount ?? 0} />
+                  </div>
+                </li>
+              );
+            })}
             <div ref={sentinelRef} style={{ height: '1px' }} />
             {loadingMore && (
-              <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>読み込み中...</p>
+              <p className={styles.empty}>読み込み中...</p>
             )}
-            {!hasMore && communities.length > 0 && communities.length >= LIMIT && (
-              <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.75rem' }}>
-                すべてのコミュニティを表示しました
-              </p>
-            )}
-          </>
+          </ul>
         )}
       </main>
     </div>

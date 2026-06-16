@@ -1,22 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
-import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
+import { UserSidebar } from '../components/organisms/UserSidebar';
+import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
-import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, getCommunityMembers, type Community } from '../api/community';
-import { CommunityMembersModal } from '../components/organisms/CommunityMemberModal';
+import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
+import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
 import { ReportModal } from '../components/organisms/ReportMadal';
+import { toUserMessage } from '../../../lib/errorMessages';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import styles from '../components/organisms/chatRoom.module.css';
-import { toUserMessage } from '../../../lib/errorMessages';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -36,7 +37,6 @@ export const CommunityRoomPage = () => {
 
   const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
 
-  // 双方向スクロールページング
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
@@ -48,7 +48,6 @@ export const CommunityRoomPage = () => {
     await loadOlderMessages();
   };
 
-  // 上センチネル: 古いメッセージを取得
   useEffect(() => {
     const sentinel = topSentinelRef.current;
     const container = messageListRef.current;
@@ -62,7 +61,6 @@ export const CommunityRoomPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMoreBefore, loadOlderMessages]);
 
-  // 下センチネル: 新しいメッセージを取得（歴史閲覧中のみ active）
   useEffect(() => {
     const sentinel = bottomSentinelRef.current;
     const container = messageListRef.current;
@@ -75,12 +73,34 @@ export const CommunityRoomPage = () => {
     return () => observer.disconnect();
   }, [hasMoreAfter, loadNewerMessages]);
 
-  const [showSettings, setShowSettings] = useState(false);
-  const [showMembers, setShowMembers] = useState(false);
-  const [leaving, setLeaving] = useState(false);
+  const detailStorageKey = roomId ? `showDetail-${roomId}` : null;
+
+  const [showDetail, setShowDetail] = useState(() => {
+    const navType = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type;
+    if (navType === 'reload') {
+      if (detailStorageKey) sessionStorage.removeItem(detailStorageKey);
+      return false;
+    }
+    const fromState = (location.state as { showDetail?: boolean } | null)?.showDetail === true;
+    const fromStorage = detailStorageKey ? sessionStorage.getItem(detailStorageKey) === 'true' : false;
+    return fromState || fromStorage;
+  });
+  const [leaveError, setLeaveError] = useState('');
+
+  useEffect(() => {
+    if (!detailStorageKey) return;
+    if (showDetail) {
+      sessionStorage.setItem(detailStorageKey, 'true');
+    } else {
+      sessionStorage.removeItem(detailStorageKey);
+    }
+  }, [showDetail, detailStorageKey]);
+
+  const openDetail = () => { setShowDetail(true); void mutateCommunities(); };
+  const closeDetail = () => setShowDetail(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
-  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', () => listMyCommunities());
+  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', () => listMyCommunities(), { revalidateOnFocus: false });
 
   const community = useMemo((): Community | null => {
     if (!communities || !roomId) return null;
@@ -94,31 +114,21 @@ export const CommunityRoomPage = () => {
   const { data: role } = useSWR(
     communityID ? ['community-role', communityID] : null,
     ([, cid]: [string, string]) => getMyRoleInCommunity(cid),
+    { revalidateOnFocus: false },
   );
   const isOwner = role === 'owner';
-
-  const { data: members } = useSWR(
-    communityID ? ['community-members', communityID] : null,
-    ([, cid]: [string, string]) => getCommunityMembers(cid),
-  );
-  const memberCount = members?.length ?? null;
 
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
     if (!window.confirm('このコミュニティを退出しますか？')) return;
-    setLeaving(true);
+    setLeaveError('');
     try {
       await leaveCommunity(roomId, currentUserID);
       void mutateCommunities();
       navigate('/community', { replace: true });
-    } catch {
-      setLeaving(false);
+    } catch (err) {
+      setLeaveError(toUserMessage(err, '退出に失敗しました。'));
     }
-  };
-
-  const handleReportCommunity = () => {
-    if (!community) return;
-    setIsReportOpen(true);
   };
 
   useEffect(() => {
@@ -131,84 +141,16 @@ export const CommunityRoomPage = () => {
 
   return (
     <div className={styles.container}>
-      <UserHeader />
+      <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/community')}>← 戻る</button>
-        <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
-        {memberCount !== null && (
-          <button
-            onClick={() => setShowMembers(true)}
-            style={{
-              marginLeft: '0.6rem',
-              fontSize: '0.72rem',
-              fontWeight: 600,
-              color: '#38bdf8',
-              background: 'rgba(56, 189, 248, 0.15)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              padding: '2px 8px',
-              borderRadius: 12,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            {memberCount} 人のメンバー
-          </button>
-        )}
-        {isOwner && (
-          <button
-            onClick={() => setShowSettings(true)}
-            style={{
-              marginLeft: '0.5rem',
-              padding: '3px 10px',
-              fontSize: '0.8rem',
-              borderRadius: 6,
-              border: '1px solid #a78bfa',
-              background: '#fff',
-              color: '#7c3aed',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            ⚙ 設定
-          </button>
-        )}
-        {community && (
-          <button
-            onClick={handleReportCommunity}
-            style={{
-              marginLeft: 'auto',
-              padding: '3px 10px',
-              fontSize: '0.8rem',
-              borderRadius: 6,
-              border: '1px solid #fca5a5',
-              background: '#fff',
-              color: '#dc2626',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            🚩 通報
-          </button>
-        )}
+        <button className={styles.backButton} onClick={() => navigate('/community')}><ChevronLeft /></button>
         <button
-          onClick={handleLeave}
-          disabled={leaving}
-          style={{
-            marginLeft: '0.5rem',
-            padding: '3px 10px',
-            fontSize: '0.8rem',
-            borderRadius: 6,
-            border: '1px solid #fca5a5',
-            background: '#fff',
-            color: '#ef4444',
-            cursor: leaving ? 'not-allowed' : 'pointer',
-            fontWeight: 600,
-            opacity: leaving ? 0.6 : 1,
-          }}
+          onClick={() => openDetail()}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, flex: 1, overflow: 'hidden' }}
         >
-          退出
+          <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
+          <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         </button>
         <span
           className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}
@@ -278,27 +220,14 @@ export const CommunityRoomPage = () => {
         disabled={sending}
       />
 
-      {showSettings && community && (
-        <CommunitySettingsModal
+      {showDetail && community && (
+        <CommunityDetailPanel
           community={community}
-          onClose={() => setShowSettings(false)}
-          onUpdated={(updated) => {
-            mutateCommunities(
-              (prev) => prev
-                ? {
-                    ...prev,
-                    items: prev.items.map((c) => c.ID === updated.ID ? { ...c, ...updated } : c),
-                  }
-                : prev,
-              { revalidate: true },
-            );
-          }}
-        />
-      )}
-      {showMembers && community && (
-        <CommunityMembersModal
-          community={community}
-          onClose={() => setShowMembers(false)}
+          isOwner={isOwner}
+          leaveError={leaveError}
+          onClose={() => { closeDetail(); setLeaveError(''); }}
+          onLeave={handleLeave}
+          onReport={() => { closeDetail(); setLeaveError(''); setIsReportOpen(true); }}
         />
       )}
       {community && (

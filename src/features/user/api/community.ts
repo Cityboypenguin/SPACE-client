@@ -10,6 +10,7 @@ export type Community = {
   memberCount: number;
   isMember: boolean;
   unreadCount: number;
+  lastMessage?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -37,6 +38,7 @@ const MY_COMMUNITIES_QUERY = `
         memberCount
         isMember
         unreadCount
+        lastMessage
         createdAt
         updatedAt
       }
@@ -147,6 +149,12 @@ const DEMOTE_FROM_OWNER_MUTATION = `
   }
 `;
 
+const UPDATE_COMMUNITY_MEMBERS_MUTATION = `
+  mutation UpdateCommunityMembers($communityID: ID!, $updates: [CommunityMemberUpdateInput!]!) {
+    updateCommunityMembers(communityID: $communityID, updates: $updates)
+  }
+`;
+
 const RANDOM_COMMUNITIES_QUERY = `
   query RandomCommunities($limit: Int!) {
     randomCommunities(limit: $limit) {
@@ -171,6 +179,13 @@ const PRESIGNED_COMMUNITY_ICON_UPLOAD_URL_QUERY = `
     }
   }
 `;
+
+export type CommunityMemberAction = 'PROMOTE' | 'DEMOTE' | 'KICK';
+
+export type CommunityMemberUpdateInput = {
+  userID: string;
+  action: CommunityMemberAction;
+};
 
 export type CommunityPage = {
   items: Community[];
@@ -270,6 +285,17 @@ export const demoteFromCommunityOwner = async (communityID: string, userID: stri
   await request<{ demoteFromCommunityOwner: boolean }>(
     DEMOTE_FROM_OWNER_MUTATION,
     { communityID, userID },
+    getUserToken(),
+  );
+};
+
+export const updateCommunityMembers = async (
+  communityID: string,
+  updates: CommunityMemberUpdateInput[],
+): Promise<void> => {
+  await request<{ updateCommunityMembers: boolean }>(
+    UPDATE_COMMUNITY_MEMBERS_MUTATION,
+    { communityID, updates },
     getUserToken(),
   );
 };
