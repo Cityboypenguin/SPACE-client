@@ -4,7 +4,7 @@ import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useAuth } from '../context/AuthContext';
-import { updateMyProfile } from '../api/profile';
+import { updateMyProfile, deleteMyAccount } from '../api/profile';
 import { getCurrentTerms } from '../api/terms';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -199,6 +199,9 @@ const GeneralView = ({
   const { mutate: globalMutate } = useSWRConfig();
   const [cacheCleared, setCacheCleared] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleClearCache = async () => {
     if (!window.confirm('キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？')) return;
@@ -214,8 +217,17 @@ const GeneralView = ({
     navigate('/login');
   };
 
-  const handleDeleteAccount = () => {
-    window.alert('アカウント削除は現在準備中です。');
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteMyAccount();
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'アカウントの削除に失敗しました');
+      setDeleting(false);
+    }
   };
 
   return (
@@ -240,10 +252,61 @@ const GeneralView = ({
         <button type="button" className={`${styles.actionBtn} ${styles.logoutBtn}`} onClick={() => setShowLogoutConfirm(true)}>
           ログアウト
         </button>
-        <button type="button" className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={handleDeleteAccount}>
+        <button type="button" className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={() => setShowDeleteConfirm(true)}>
           アカウント削除
         </button>
       </div>
+
+      {showDeleteConfirm && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 12, padding: '2rem',
+              width: '90%', maxWidth: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              textAlign: 'center',
+            }}
+          >
+            <p style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: 600, color: '#1e293b' }}>
+              アカウントを削除しますか？
+            </p>
+            <p style={{ margin: '0 0 1.5rem', fontSize: '0.85rem', color: '#64748b' }}>
+              この操作は取り消せません。投稿・メッセージなどすべてのデータが削除されます。
+            </p>
+            {deleteError && <p style={{ margin: '0 0 1rem', color: '#ef4444', fontSize: '0.85rem' }}>{deleteError}</p>}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteError(''); }}
+                disabled={deleting}
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: 8,
+                  border: '1px solid #cbd5e1', background: '#fff',
+                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => void handleDeleteAccount()}
+                disabled={deleting}
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: 8,
+                  border: 'none', background: '#ef4444',
+                  cursor: deleting ? 'default' : 'pointer', fontWeight: 500, color: '#fff',
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                {deleting ? '削除中...' : '削除する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showLogoutConfirm && (
         <div

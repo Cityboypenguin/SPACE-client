@@ -32,6 +32,7 @@ type UpdateProfileResponse = { updateProfile: Profile };
 type PresignedUploadUrlResponse = { presignedAvatarUploadUrl: { uploadUrl: string; objectKey: string } };
 type SetAvatarResponse = { setAvatar: Profile };
 type DeleteAvatarResponse = { deleteAvatar: Profile };
+type DeleteMyAccountResponse = { deleteMyAccount: boolean };
 
 const ME_QUERY = `
   query Me {
@@ -110,6 +111,12 @@ const DELETE_AVATAR_MUTATION = `
       createdAt
       updatedAt
     }
+  }
+`;
+
+const DELETE_MY_ACCOUNT_MUTATION = `
+  mutation DeleteMyAccount {
+    deleteMyAccount
   }
 `;
 
@@ -211,4 +218,11 @@ export const deleteAvatar = async () => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
   return await request<DeleteAvatarResponse>(DELETE_AVATAR_MUTATION, undefined, token);
+};
+
+export const deleteMyAccount = async (): Promise<boolean> => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  const data = await request<DeleteMyAccountResponse>(DELETE_MY_ACCOUNT_MUTATION, undefined, token);
+  return data.deleteMyAccount;
 };
