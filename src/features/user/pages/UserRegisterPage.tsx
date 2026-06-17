@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser, loginUser, sendEmailOTP, USER_TOKEN_KEY } from '../api/auth';
+import { registerUser, loginUser, sendEmailOTP, verifyEmailOTP, USER_TOKEN_KEY } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
+import { toUserMessage } from '../../../lib/errorMessages';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
@@ -76,6 +77,7 @@ export const UserRegisterPage = () => {
   // OTP (step 3)
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // Account info (step 4)
   const [name, setName] = useState('');
@@ -156,13 +158,21 @@ export const UserRegisterPage = () => {
     }
   };
 
-  const handleStep3Next = () => {
+  const handleStep3Next = async () => {
     if (otp.length !== 6) {
       setOtpError('6桁の認証コードを入力してください');
       return;
     }
+    setVerifyingOtp(true);
     setOtpError('');
-    setStep(4);
+    try {
+      await verifyEmailOTP(email, otp);
+      setStep(4);
+    } catch (err) {
+      setOtpError(toUserMessage(err, '認証コードが正しくありません。'));
+    } finally {
+      setVerifyingOtp(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -331,9 +341,9 @@ export const UserRegisterPage = () => {
                 className={styles.btnPrimary}
                 style={{ marginTop: 0, flex: 1 }}
                 onClick={handleStep3Next}
-                disabled={otp.length !== 6}
+                disabled={verifyingOtp || otp.length !== 6}
               >
-                次へ
+                {verifyingOtp ? '確認中...' : '次へ'}
               </button>
             </div>
           </div>
