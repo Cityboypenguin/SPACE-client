@@ -39,6 +39,7 @@ type Props = {
   onCancel?: () => void;
   cancelLabel?: string;
   isEmbedded?: boolean;
+  maxLength?: number;
 };
 
 export const PostComposer = ({
@@ -64,6 +65,7 @@ export const PostComposer = ({
   onCancel,
   cancelLabel = 'キャンセル',
   isEmbedded = false,
+  maxLength,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -102,7 +104,8 @@ export const PostComposer = ({
   };
 
   const hasAnyContent = value.trim() !== '' || totalMediaCount > 0;
-  const canSubmit = !submitting && hasAnyContent;
+  const overLimit = maxLength !== undefined && value.length > maxLength;
+  const canSubmit = !submitting && hasAnyContent && !overLimit;
 
   return (
     <div className={`${styles.wrapper} ${isEmbedded ? styles.wrapperEmbedded : styles.wrapperNormal}`}>
@@ -135,6 +138,11 @@ export const PostComposer = ({
           rows={rows}
           className={`${styles.textarea} ${large ? styles.textareaLarge : styles.textareaSmall}`}
         />
+        {maxLength !== undefined && (
+          <div className={`${styles.charCount} ${overLimit ? styles.charCountOver : ''}`}>
+            {value.length} / {maxLength}
+          </div>
+        )}
 
         {totalMediaCount > 0 && (
           <div className={styles.mediaPreviews}>

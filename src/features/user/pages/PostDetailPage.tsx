@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -13,6 +13,10 @@ import { LikeButton } from '../../../components/molecules/LikeButton';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import commentIcon from '../../../assets/パーツ_コメント.svg';
+import reportIcon from '../../../assets/パーツ_通報.svg';
+import blockIcon from '../../../assets/パーツ_ブロック.svg';
+import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
+import deleteIcon from '../../../assets/パーツ_削除.svg';
 import styles from './PostDetailPage.module.css';
 
 import {
@@ -29,6 +33,7 @@ import {
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+import { createBlocker } from '../api/block';
 import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache, updatePostInUserPostListCache } from '../cache/postListCache';
 
 
@@ -55,6 +60,29 @@ export const PostDetailPage = () => {
   const [editContent, setEditContent] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
+  const handleBlock = async (blockedUserId: string) => {
+    if (!window.confirm('このユーザーをブロックしますか？')) return;
+    try {
+      await createBlocker(blockedUserId);
+      navigate(-1);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const isMyPost = post?.user.ID === userId;
   // ⭕️ 追加: メイン投稿が削除されているかどうかのフラグ
@@ -227,19 +255,59 @@ export const PostDetailPage = () => {
                     </div>
                   </div>
 
-                  {isMyPost && !isEditing && (
-                    <div className={styles.postActions}>
+                  {!isEditing && (
+                    <div className={styles.menuWrap} ref={menuRef}>
                       <button
-                        className={styles.editButton}
-                        onClick={() => {
-                          setIsEditing(true);
-                          setEditContent(post.content);
-                          setEditSelectedFiles([]);
-                          setEditDeletedMediaIDs([]);
-                          setUpdateError('');
-                        }}
-                      >編集</button>
-                      <button className={styles.deleteButton} onClick={handleDelete}>削除</button>
+                        className={styles.menuButton}
+                        onClick={() => setMenuOpen(v => !v)}
+                        aria-label="メニュー"
+                      >···</button>
+                      {menuOpen && (
+                        <div className={styles.dropdown}>
+                          {isMyPost ? (
+                            <>
+                              <button
+                                className={styles.dropdownItem}
+                                onClick={() => {
+                                  setMenuOpen(false);
+                                  setIsEditing(true);
+                                  setEditContent(post.content);
+                                  setEditSelectedFiles([]);
+                                  setEditDeletedMediaIDs([]);
+                                  setUpdateError('');
+                                }}
+                              >
+                                <img src={editIcon} alt="" className={styles.dropdownIcon} />
+                                編集
+                              </button>
+                              <button
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                onClick={() => { setMenuOpen(false); handleDelete(); }}
+                              >
+                                <img src={deleteIcon} alt="" className={styles.dropdownIconDelete} />
+                                削除
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className={styles.dropdownItem}
+                                onClick={() => { setMenuOpen(false); handleBlock(post.user.ID); }}
+                              >
+                                <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                                ブロック
+                              </button>
+                              <button
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                onClick={() => { setMenuOpen(false); setIsReportOpen(true); }}
+                              >
+                                <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                                通報
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -290,11 +358,6 @@ export const PostDetailPage = () => {
                     <strong>{post.replyCount}</strong> 件の返信
                   </span>
                   <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
-                  {!isMyPost && (
-                    <button className={styles.reportButton} onClick={() => setIsReportOpen(true)}>
-                      🚩 <span className={styles.reportLabel}>通報</span>
-                    </button>
-                  )}
                 </div>
               </div>
             )}

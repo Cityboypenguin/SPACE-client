@@ -122,6 +122,18 @@
   justify-content: center;
 }
 
+.charCount {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: right;
+  margin-top: 0.2rem;
+}
+
+.charCountOver {
+  color: #ef4444;
+  font-weight: 600;
+}
+
 .error {
   color: red;
   font-size: 0.85rem;
@@ -133,14 +145,17 @@
   justify-content: flex-end;
   align-items: center;
   gap: 0.5rem;
+  border-top: 1px solid #e2e8f0;
 }
 
 .footerLarge {
   margin-top: 0.5rem;
+  padding-top: 0.5rem;
 }
 
 .footerSmall {
   margin-top: 0.4rem;
+  padding-top: 0.4rem;
 }
 
 .cameraButton {
@@ -167,6 +182,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.1s;
+  margin-right: auto;
 }
 
 .cancelButtonLarge {

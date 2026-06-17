@@ -176,24 +176,75 @@
   filter: opacity(0.45);
 }
 
-.reportButton {
-  background: none;
-  border: none;
-  color: #64748b;
-  font-size: 1.1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  transition: background 0.2s;
+.menuWrap {
+  position: relative;
+  flex-shrink: 0;
 }
 
-.reportButton:hover {
+.menuButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 1rem;
+  padding: 0 0.25rem;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  outline: none;
+}
+
+.menuButton:focus,
+.menuButton:focus-visible {
+  outline: none;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 140px;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.dropdownItem {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.9rem;
+  color: #1e293b;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dropdownItem:hover {
   background: #f1f5f9;
 }
 
-.reportLabel {
-  font-size: 0.9rem;
+.dropdownIcon {
+  width: 16px;
+  height: 16px;
+  justify-self: center;
+  object-fit: fill;
+}
+
+.dropdownIconDelete {
+  width: 16px;
+  height: 16px;
+  justify-self: center;
+  object-fit: fill;
+}
+
+.dropdownItemDanger {
+  color: #ef4444;
 }

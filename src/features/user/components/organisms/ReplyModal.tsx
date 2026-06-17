@@ -94,6 +94,7 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
             userName={userName}
             selectedFiles={files}
             onFileSelect={setFiles}
+            maxLength={500}
             isEmbedded
           />
         </div>

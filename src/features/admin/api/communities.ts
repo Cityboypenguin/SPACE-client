@@ -149,24 +149,26 @@ export const getCommunityMembers = async (communityID: string) => {
 };
 
 const LIST_ROOM_MESSAGES_QUERY = `
-  query ListMessages($roomID: ID!) {
-    messages(roomID: $roomID) {
-      ID
-      roomID
-      user {
+  query ListMessages($roomID: ID!, $limit: Int) {
+    messages(roomID: $roomID, limit: $limit) {
+      items {
         ID
-        name
-        accountID
-        avatarUrl
+        roomID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        content
+        media {
+          ID
+          url
+          contentType
+        }
+        createdAt
+        updatedAt
       }
-      content
-      media {
-        ID
-        url
-        contentType
-      }
-      createdAt
-      updatedAt
     }
   }
 `;
@@ -205,10 +207,10 @@ const DELETE_MESSAGE_MUTATION = `
   }
 `;
 
-export const listRoomMessages = async (roomID: string) => {
-  return await request<{ messages: Message[] }>(
+export const listRoomMessages = async (roomID: string, limit = 200) => {
+  return await request<{ messages: { items: Message[] } }>(
     LIST_ROOM_MESSAGES_QUERY,
-    { roomID },
+    { roomID, limit },
     getAdminToken(),
   );
 };

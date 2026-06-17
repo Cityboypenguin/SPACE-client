@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="_レイヤー_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 350.39 319.49">
+<svg id="_レイヤー_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 389.42 314.42">
   <!-- Generator: Adobe Illustrator 30.5.1, SVG Export Plug-In . SVG Version: 2.1.4 Build 3)  -->
   <defs>
     <style>
@@ -9,7 +9,7 @@
 
       .st1 {
         stroke-miterlimit: 10;
-        stroke-width: 9px;
+        stroke-width: 20px;
       }
 
       .st1, .st2 {
@@ -18,13 +18,13 @@
 
       .st2 {
         stroke-miterlimit: 10;
-        stroke-width: 8px;
+        stroke-width: 20px;
       }
     </style>
   </defs>
-  <polygon class="st0" points="4.82 173.06 174.59 4.82 343.81 174.82 4.82 173.06"/>
-  <rect class="st1" x="-30.23" y="88.58" width="240.1" height="2.49" rx="1.08" ry="1.08" transform="translate(-37.21 89.82) rotate(-45)"/>
-  <rect class="st1" x="259.32" y="-30.23" width="2.49" height="240.1" rx="1.08" ry="1.08" transform="translate(12.8 210.56) rotate(-45)"/>
-  <path class="st2" d="M60.51,160.12v139.4c0,8.82,7.15,15.97,15.97,15.97h197.18c8.82,0,15.97-7.15,15.97-15.97v-139.4"/>
-  <path class="st2" d="M160.55,190.62h28c15.63,0,28.33,12.69,28.33,28.33v96.54h-83.14v-98.05c0-14.8,12.01-26.81,26.81-26.81h0Z"/>
+  <polygon class="st0" points="0 193.28 195.02 0 389.42 195.3 0 193.28"/>
+  <rect class="st1" x="3.54" y="97.8" width="218.63" height="2.27" rx=".99" ry=".99" transform="translate(-36.9 108.78) rotate(-45)"/>
+  <path class="st1" d="M345.62,176.23h0c-.44.44-1.16.44-1.61,0L191.03,23.25c-.44-.44-.44-1.16,0-1.61h0c.44-.44,1.16-.44,1.61,0l152.99,152.99c.44.44.44,1.16,0,1.61Z"/>
+  <path class="st2" d="M86.17,162.94v126.94c0,8.03,6.51,14.54,14.54,14.54h179.55c8.03,0,14.54-6.51,14.54-14.54v-126.94"/>
+  <path class="st2" d="M183.65,190.72h12.36c17.96,0,32.54,14.58,32.54,32.54v81.16h-75.7v-82.89c0-17,13.8-30.8,30.8-30.8h0Z"/>
 </svg>

@@ -79,6 +79,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     const es = new EventSource(`${SSE_URL}?token=${encodeURIComponent(token)}`);
 
+    es.onerror = (e) => {
+      console.warn('[SSE] connection error', e, 'readyState:', es.readyState);
+    };
+
     es.addEventListener('sync', (e: MessageEvent) => {
       try {
         const payload = JSON.parse(e.data as string) as { unreadCount: number };
@@ -99,6 +103,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     // 初回接続は [token] useEffect 側がすでに呼んでいるためスキップし、再接続時のみ確認する
     let isFirstConnect = true;
     es.addEventListener('connected', () => {
+      console.log('[SSE] connected');
       if (isFirstConnect) {
         isFirstConnect = false;
         return;
@@ -108,9 +113,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     es.addEventListener('terms_updated', refreshConsent);
 
     es.addEventListener('notification', (e: MessageEvent) => {
+      console.log('[SSE] notification raw data:', e.data);
       try {
         const payload = JSON.parse(e.data as string) as SSENotificationPayload & { replayed?: boolean };
+        console.log('[SSE] notification parsed:', payload);
         if (payload.replayed) {
+          console.log('[SSE] skipping replayed notification');
           return;
         }
         setUnreadCount((c) => c + 1);
@@ -119,9 +127,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           payload.type === 'announcement' && payload.targetID
             ? `/announcements/${payload.targetID}`
             : `/notifications/${payload.id}`;
+        console.log('[SSE] calling addToast:', payload.message, link);
         addToastRef.current(payload.message, 'info', 4000, link);
-      } catch {
-        // ignore malformed event
+      } catch (err) {
+        console.error('[SSE] failed to parse notification:', err, e.data);
       }
     });
 

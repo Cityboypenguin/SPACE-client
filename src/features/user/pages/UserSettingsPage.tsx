@@ -4,7 +4,7 @@ import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useAuth } from '../context/AuthContext';
-import { updateMyProfile } from '../api/profile';
+import { updateMyProfile, deleteMyAccount } from '../api/profile';
 import { getCurrentTerms } from '../api/terms';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -15,10 +15,136 @@ import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postLis
 import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSettingsPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { createInquiry, type InquiryCategory } from '../api/inquiry';
 
-type View = 'general' | 'password' | 'blocks' | 'terms' | null;
+type View = 'general' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
 
 const LIMIT = 20;
+
+const INQUIRY_CATEGORIES: { value: InquiryCategory; label: string }[] = [
+  { value: 'DM', label: 'DMに関して' },
+  { value: 'POST', label: '投稿機能に関して' },
+  { value: 'COMMUNITY', label: 'コミュニティに関して' },
+  { value: 'PASSWORD', label: 'パスワード変更' },
+  { value: 'LOGIN', label: 'ログインに関して' },
+  { value: 'OTHER', label: 'その他のお問い合わせ' },
+];
+
+const InquiryView = ({ onBack }: { onBack: () => void }) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [category, setCategory] = useState<InquiryCategory>('DM');
+  const [subject, setSubject] = useState('');
+  const [content, setContent] = useState('');
+  const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await createInquiry(name, email, category, subject, content);
+      setSubmitted(true);
+    } catch {
+      setError('送信に失敗しました。しばらく時間をおいてから再度お試しください。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <>
+        <h2 className={styles.backTitle}>
+          <button className={styles.backBtn} onClick={onBack}><ChevronLeft /></button>
+          お問い合わせ
+        </h2>
+        <div className={styles.inquirySuccessBox}>
+          <p className={styles.inquirySuccessText}>
+            送信が完了しました。<br />
+            お問い合わせいただきありがとうございます。
+          </p>
+          <button className={styles.inquiryBackBtn} onClick={onBack}>戻る</button>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <h2 className={styles.backTitle}>
+        <button className={styles.backBtn} onClick={onBack}><ChevronLeft /></button>
+        お問い合わせ
+      </h2>
+      <form className={styles.inquiryForm} onSubmit={handleSubmit}>
+        <label className={styles.fieldLabel}>
+          氏名
+          <input
+            type="text"
+            className={styles.input}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Value"
+            required
+          />
+        </label>
+        <label className={styles.fieldLabel}>
+          メールアドレス
+          <input
+            type="email"
+            className={styles.input}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Value"
+            required
+          />
+        </label>
+        <div>
+          <p className={styles.inquiryCategoryTitle}>どのようなお問合せですか？</p>
+          <div className={styles.radioGroup}>
+            {INQUIRY_CATEGORIES.map((cat) => (
+              <label key={cat.value} className={styles.radioItem}>
+                <input
+                  className={styles.radioInput}
+                  type="radio"
+                  name="category"
+                  value={cat.value}
+                  checked={category === cat.value}
+                  onChange={() => setCategory(cat.value)}
+                />
+                <span className={styles.radioLabel}>{cat.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <input
+          type="text"
+          className={styles.input}
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder="お問い合わせ内容を入力してください"
+          required
+        />
+        <label className={styles.fieldLabel}>
+          お問い合せ内容
+          <textarea
+            className={styles.textarea}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="詳細を入力してください"
+            required
+          />
+        </label>
+        {error && <p className={styles.errorMsg}>{error}</p>}
+        <button type="submit" className={styles.submitBtn} disabled={loading}>
+          {loading ? '送信中...' : '送信'}
+        </button>
+      </form>
+    </>
+  );
+};
 
 const PasswordView = ({ onBack }: { onBack: () => void }) => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -199,6 +325,9 @@ const GeneralView = ({
   const { mutate: globalMutate } = useSWRConfig();
   const [cacheCleared, setCacheCleared] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleClearCache = async () => {
     if (!window.confirm('キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？')) return;
@@ -214,8 +343,17 @@ const GeneralView = ({
     navigate('/login');
   };
 
-  const handleDeleteAccount = () => {
-    window.alert('アカウント削除は現在準備中です。');
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteMyAccount();
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'アカウントの削除に失敗しました');
+      setDeleting(false);
+    }
   };
 
   return (
@@ -240,10 +378,61 @@ const GeneralView = ({
         <button type="button" className={`${styles.actionBtn} ${styles.logoutBtn}`} onClick={() => setShowLogoutConfirm(true)}>
           ログアウト
         </button>
-        <button type="button" className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={handleDeleteAccount}>
+        <button type="button" className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={() => setShowDeleteConfirm(true)}>
           アカウント削除
         </button>
       </div>
+
+      {showDeleteConfirm && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 12, padding: '2rem',
+              width: '90%', maxWidth: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              textAlign: 'center',
+            }}
+          >
+            <p style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: 600, color: '#1e293b' }}>
+              アカウントを削除しますか？
+            </p>
+            <p style={{ margin: '0 0 1.5rem', fontSize: '0.85rem', color: '#64748b' }}>
+              この操作は取り消せません。投稿・メッセージなどすべてのデータが削除されます。
+            </p>
+            {deleteError && <p style={{ margin: '0 0 1rem', color: '#ef4444', fontSize: '0.85rem' }}>{deleteError}</p>}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteError(''); }}
+                disabled={deleting}
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: 8,
+                  border: '1px solid #cbd5e1', background: '#fff',
+                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => void handleDeleteAccount()}
+                disabled={deleting}
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: 8,
+                  border: 'none', background: '#ef4444',
+                  cursor: deleting ? 'default' : 'pointer', fontWeight: 500, color: '#fff',
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                {deleting ? '削除中...' : '削除する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showLogoutConfirm && (
         <div
@@ -293,7 +482,6 @@ const GeneralView = ({
 };
 
 export const UserSettingsPage = () => {
-  const navigate = useNavigate();
   const [view, setView] = useState<View>(null);
 
   return (
@@ -325,7 +513,10 @@ export const UserSettingsPage = () => {
             運営からのアンケート
             <span className={styles.menuArrow}>›</span>
           </button>
-          <button className={styles.menuItem} onClick={() => navigate('/inquiry')}>
+          <button
+            className={`${styles.menuItem} ${view === 'inquiry' ? styles.menuItemActive : ''}`}
+            onClick={() => setView('inquiry')}
+          >
             お問い合わせ
             <span className={styles.menuArrow}>›</span>
           </button>
@@ -342,6 +533,7 @@ export const UserSettingsPage = () => {
           {view === 'password' && <PasswordView onBack={() => setView('general')} />}
           {view === 'blocks' && <BlocksView onBack={() => setView('general')} />}
           {view === 'terms' && <TermsView />}
+          {view === 'inquiry' && <InquiryView onBack={() => setView(null)} />}
         </main>
       </div>
     </div>

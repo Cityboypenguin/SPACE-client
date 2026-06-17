@@ -1,0 +1,100 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 4rem;
+  padding-left: 1rem;
+}
+
+.logo {
+  max-width: 1000px;
+  width: 100%;
+}
+
+.right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 7rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  color: #1e293b;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #94a3b8;
+}
+
+.input::placeholder {
+  color: #94a3b8;
+}
+
+.btnPrimary {
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: none;
+  background: #F97316;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+}
+
+.btnPrimary:hover {
+  background: #EA6C0A;
+}
+
+.btnPrimary:focus,
+.btnPrimary:focus-visible {
+  outline: none;
+}
+
+.link {
+  text-align: center;
+  color: #475569;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: block;
+  padding: 0.2rem 0;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin: 0;
+  text-align: center;
+}

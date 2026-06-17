@@ -1,3 +1,7 @@
+.replyWrapper {
+  position: relative;
+}
+
 .item {
   display: flex;
   gap: 0.75rem;
@@ -11,10 +15,19 @@
   background: #f8faff;
 }
 
+/* 子がいる場合は padding-bottom を消してスレッドラインを途切れなく繋げる */
+.itemWithReplies {
+  padding-bottom: 0;
+}
+
 .avatarCol {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 36px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .threadLine {
@@ -22,6 +35,7 @@
   flex: 1;
   background: #e2e8f0;
   margin-top: 4px;
+  min-height: 12px;
 }
 
 .body {
@@ -65,8 +79,58 @@
   filter: opacity(0.35);
 }
 
+/*
+  margin-left: calc(1rem + 19px) = 35px
+  ガイド線は各 replyWrapper の ::before で描画（border-left は使わない）
+  - replyWrapper left edge = 35px from root
+  - ガイド線 left: -2px → x=33〜35px、中心 x=34px = 親 threadLine 中心と一致
+*/
 .replies {
+  margin-left: calc(1rem + 19px);
+}
+
+/* 最後以外の子: 自分の高さ全体にガイド線を引く */
+.replies > .replyWrapper::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: #e2e8f0;
+  pointer-events: none;
+}
+
+/* 最後の子: avatar 中心 (padding-top 12px + half-avatar 18px) でガイド線を止める */
+.replies > .replyWrapper:last-child::before {
+  height: calc(0.75rem + 10px);
+}
+
+/*
+  子 item (depth > 0) に curved L-コネクタを ::before で描画
+  - background: inherit でガイド線の直線部分を覆い、角を丸くする
+  - z-index: 0 にしてアバター (avatarCol z-index: 1) が前面に出るようにする
+  - left: -2px → ガイド線 (x=33px from root) から始まる
+  - width: calc(1rem + 20px) = 36px → 右端が x=69px = 子 avatar 中心
+  - height: calc(0.75rem + 18px) = 30px → item 上端から子 avatar 中心まで
+*/
+.childItem {
+  position: relative;
+}
+
+.childItem::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 0;
+  width: calc(1rem + 20px);
+  height: calc(0.75rem + 18px);
+  background: inherit;
   border-left: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+  border-bottom-left-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .separator {

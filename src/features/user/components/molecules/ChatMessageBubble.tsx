@@ -173,7 +173,7 @@ export const ChatMessageBubble = ({
         {(isMine || canDelete) && !isEditing && (
           <div className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight}`}>
             {isMine && (
-              <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={onStartEdit} title="編集"><img src={editIcon} alt="編集" style={{ width: 25, height: 25 }} /></button>
+              <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={onStartEdit} title="編集"><img src={editIcon} alt="編集" style={{ width: 14, height: 14 }} /></button>
             )}
             {canDelete && (
               <button className={styles.actionBtn} onClick={onDelete} title="削除">✕</button>

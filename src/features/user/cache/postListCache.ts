@@ -6,6 +6,8 @@ type PostListCacheData = {
   offset: number;
   scrollY: number;
   cachedAt: number;
+  searchQuery?: string;
+  searchResults?: Post[];
 };
 
 const CACHE_TTL_MS = 15 * 60 * 1000;

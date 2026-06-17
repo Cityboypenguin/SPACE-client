@@ -56,6 +56,10 @@ const SERVER_ERROR_MAP: Array<[string, string]> = [
   // --- 通信エラー ---
   ['Network response was not ok', 'サーバーとの通信でエラーが発生しました。しばらく時間をおいてから再度お試しください。'],
 
+  // --- パスワードリセットエラー ---
+  ['invalid or expired verification code', '認証コードが正しくないか、有効期限が切れています。'],
+  ['invalid or expired reset token', 'リセットトークンが無効または期限切れです。最初からやり直してください。'],
+
   // --- 認証エラー（最後に照合）---
   ['forbidden', 'この操作を行う権限がありません。'],
   ['unauthorized', 'ログインが必要です。再度ログインしてください。'],

@@ -150,7 +150,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
               </span>
             </div>
           )}
-          <p style={{ margin: '0 0 1rem', color: '#475569', lineHeight: 1.6, wordBreak: 'break-all' }}>
+          <p style={{ margin: '0 0 1rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
             {renderTextWithLinks(community.description)}
           </p>
           {error && <p style={{ color: 'red', margin: '0 0 0.5rem', fontSize: '0.85rem' }}>{error}</p>}

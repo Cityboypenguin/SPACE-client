@@ -19,7 +19,7 @@ export const NotFoundPage = () => {
         title="ページが見つかりませんでした"
         description="お探しのページは存在しないか、移動または削除された可能性があります。"
         actions={[
-          { label: 'ホームに戻る', onClick: () => navigate('/mypage'), variant: 'primary' },
+          { label: 'ホームに戻る', onClick: () => navigate('/home'), variant: 'primary' },
           { label: '前のページに戻る', onClick: () => navigate(-1), variant: 'secondary' },
         ]}
       />

@@ -20,7 +20,7 @@ export const DMPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
-  const { room, messages, wsConnected, error, addMessage, initialLastReadAt, partnerLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+  const { room, messages, error, addMessage, initialLastReadAt, partnerLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const isBlocked = room?.isMessagingDisabled ?? false;
   const {
     content, setContent,
@@ -109,7 +109,7 @@ export const DMPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/dm')}><ChevronLeft /></button>
+        <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
         {(() => {
           const partner = room?.user.find((u) => u.ID !== currentUserID);
           return partner?.avatarUrl ? (
@@ -123,10 +123,10 @@ export const DMPage = () => {
           );
         })()}
         <strong className={styles.roomTitle}>{partnerName}</strong>
-        <span
+        {/* <span
           className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}
           title={wsConnected ? '接続中' : '切断'}
-        />
+        /> */}
       </div>
 
       <div className={styles.messageListWrapper}>
