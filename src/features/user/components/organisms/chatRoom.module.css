@@ -160,6 +160,10 @@
   display: flex;
 }
 
+.messageActionsVisible {
+  display: flex;
+}
+
 .actionBtn {
   background: none;
   border: none;
@@ -182,6 +186,40 @@
 .actionBtn:hover {
   background: rgba(0, 0, 0, 0.08);
   color: #555;
+}
+
+.actionIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/*
+ * タッチデバイス向けの調整。画面幅ではなくポインタ種別で判定することで、
+ * PCでウィンドウを小さくした場合は引き続きホバー操作のまま使えるようにする。
+ * 表示/非表示自体は ChatMessageBubble の長押し(タッチ)操作で .messageActionsVisible を
+ * 切り替えることで制御し、ここではタップしやすいよう領域だけを拡大する。
+ */
+@media (pointer: coarse) {
+  .messageActions {
+    gap: 4px;
+  }
+
+  .actionBtn {
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.1rem;
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .actionBtnEdit {
+    padding: 8px;
+  }
+
+  .actionIcon {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .editWrapper {

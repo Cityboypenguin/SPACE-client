@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message, type Media } from '../../api/message';
@@ -156,6 +156,39 @@ export const ChatMessageBubble = ({
 
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
+  const canShowActions = (isMine || canDelete) && !isEditing && !hasMedia;
+
+  const [showActions, setShowActions] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLongPressTimer = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchStart = () => {
+    if (!canShowActions) return;
+    clearLongPressTimer();
+    longPressTimer.current = setTimeout(() => setShowActions(true), 500);
+  };
+
+  useEffect(() => {
+    if (!showActions) return;
+    const handleOutside = (e: Event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowActions(false);
+      }
+    };
+    document.addEventListener('touchstart', handleOutside);
+    document.addEventListener('mousedown', handleOutside);
+    return () => {
+      document.removeEventListener('touchstart', handleOutside);
+      document.removeEventListener('mousedown', handleOutside);
+    };
+  }, [showActions]);
 
   const bubbleContent = (
     <div className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}>
@@ -169,14 +202,32 @@ export const ChatMessageBubble = ({
         </span>
       )}
 
-      <div style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', gap: 3, alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-        {(isMine || canDelete) && !isEditing && (
-          <div className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight}`}>
+      <div
+        ref={wrapperRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={clearLongPressTimer}
+        onTouchMove={clearLongPressTimer}
+        onTouchCancel={clearLongPressTimer}
+        onContextMenu={(e) => { if (canShowActions) e.preventDefault(); }}
+        style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', gap: 3, alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '80%' }}
+      >
+        {canShowActions && (
+          <div
+            className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight} ${showActions ? styles.messageActionsVisible : ''}`}
+          >
             {isMine && (
-              <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={onStartEdit} title="編集"><img src={editIcon} alt="編集" style={{ width: 14, height: 14 }} /></button>
+              <button
+                className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
+                onClick={() => { setShowActions(false); onStartEdit(); }}
+                title="編集"
+              ><img src={editIcon} alt="編集" className={styles.actionIcon} /></button>
             )}
             {canDelete && (
-              <button className={styles.actionBtn} onClick={onDelete} title="削除">✕</button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => { setShowActions(false); onDelete(); }}
+                title="削除"
+              >✕</button>
             )}
           </div>
         )}

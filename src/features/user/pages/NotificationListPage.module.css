@@ -167,6 +167,24 @@
   color: #94a3b8;
 }
 
+/* ── グループ件数バッジ ── */
+.countBadge {
+  flex-shrink: 0;
+  align-self: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 /* ── States ── */
 .empty {
   color: #94a3b8;

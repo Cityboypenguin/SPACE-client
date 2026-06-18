@@ -26,6 +26,37 @@ import person from '../../../assets/パーツ_お気に入り.svg';
 
 type Tab = 'notifications' | 'announcements';
 
+type NotifGroup = {
+  key: string;
+  type: string;
+  items: Notification[];
+  latest: Notification;
+};
+
+// dm（個人ごと）はまとめて1行に表示する。他の種類は1件ずつのグループ（実質グループ化しない）。
+const GROUPED_TYPES = new Set(['dm']);
+
+const groupKeyFor = (n: Notification): string => {
+  if (GROUPED_TYPES.has(n.type) && n.actor) return `${n.type}-${n.actor.ID}`;
+  return `single-${n.ID}`;
+};
+
+const groupNotifications = (list: Notification[]): NotifGroup[] => {
+  const map = new Map<string, NotifGroup>();
+  const order: string[] = [];
+  for (const n of list) {
+    const key = groupKeyFor(n);
+    const existing = map.get(key);
+    if (existing) {
+      existing.items.push(n);
+    } else {
+      map.set(key, { key, type: n.type, items: [n], latest: n });
+      order.push(key);
+    }
+  }
+  return order.map((key) => map.get(key)!);
+};
+
 function HeartIcon() {
   return (
     <img src={favorite} alt="Favorite" width="20" height="20" />
@@ -111,6 +142,7 @@ export const NotificationListPage = () => {
   }, [lastSseAt, tab, mutateNotifications]);
 
   const notifList: Notification[] = notifData?.items ?? [];
+  const notifGroups = groupNotifications(notifList);
   const notifTotal = notifData?.total ?? 0;
   const notifTotalPages = Math.ceil(notifTotal / pageSize);
   const announceList = announceData?.items ?? [];
@@ -176,13 +208,31 @@ export const NotificationListPage = () => {
     }
   };
 
-  const toggleSelect = (id: string) => {
+  const toggleGroupSelect = (group: NotifGroup) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const allSelected = group.items.every((n) => next.has(n.ID));
+      group.items.forEach((n) => (allSelected ? next.delete(n.ID) : next.add(n.ID)));
       return next;
     });
+  };
+
+  const openGroup = (group: NotifGroup) => {
+    const unread = group.items.filter((n) => !n.isRead);
+    if (unread.length > 0) {
+      const ids = new Set(unread.map((n) => n.ID));
+      Promise.all(unread.map((n) => markNotificationAsRead(n.ID))).catch(() => {});
+      mutateNotifications(
+        (prev) => prev ? { ...prev, items: prev.items.map((item) => ids.has(item.ID) ? { ...item, isRead: true } : item) } : prev,
+        { revalidate: false },
+      );
+      unread.forEach(() => decrementUnread());
+    }
+    if (group.type === 'dm' && group.latest.targetType === 'room' && group.latest.targetID) {
+      navigate(`/dm/${group.latest.targetID}`);
+      return;
+    }
+    navigate(`/notifications/${group.latest.ID}`);
   };
 
   const exitSelectMode = () => {
@@ -279,41 +329,47 @@ export const NotificationListPage = () => {
               <p className={styles.empty}>通知はありません</p>
             ) : (
               <ul className={styles.list}>
-                {notifList.map((n) => (
-                  <li
-                    key={n.ID}
-                    className={`${styles.item}${!n.isRead ? ` ${styles.itemUnread}` : ''}${selectMode && selectedIds.has(n.ID) ? ` ${styles.itemSelected}` : ''}`}
-                    onClick={() => {
-                      if (selectMode) { toggleSelect(n.ID); return; }
-                      if (!n.isRead) {
-                        markNotificationAsRead(n.ID).catch(() => {});
-                        decrementUnread();
-                        mutateNotifications(
-                          (prev) => prev ? { ...prev, items: prev.items.map((item) => item.ID === n.ID ? { ...item, isRead: true } : item) } : prev,
-                          { revalidate: false },
-                        );
-                      }
-                      navigate(`/notifications/${n.ID}`);
-                    }}
-                  >
-                    {selectMode && (
-                      <input
-                        type="checkbox"
-                        className={styles.checkbox}
-                        checked={selectedIds.has(n.ID)}
-                        onChange={() => toggleSelect(n.ID)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    )}
-                    <span className={styles.typeIcon}>
-                      {TYPE_ICON[n.type] ?? <BellIcon />}
-                    </span>
-                    <div className={styles.itemContent}>
-                      {n.actor && <p className={styles.itemActor}>{n.actor.name}</p>}
-                      <p className={styles.itemMessage}>{n.message}</p>
-                    </div>
-                  </li>
-                ))}
+                {notifGroups.map((group) => {
+                  const isGroupUnread = group.items.some((n) => !n.isRead);
+                  const isGroupSelected = group.items.every((n) => selectedIds.has(n.ID));
+                  const isDmGroup = group.type === 'dm' && !!group.latest.actor;
+                  return (
+                    <li
+                      key={group.key}
+                      className={`${styles.item}${isGroupUnread ? ` ${styles.itemUnread}` : ''}${selectMode && isGroupSelected ? ` ${styles.itemSelected}` : ''}`}
+                      onClick={() => {
+                        if (selectMode) { toggleGroupSelect(group); return; }
+                        openGroup(group);
+                      }}
+                    >
+                      {selectMode && (
+                        <input
+                          type="checkbox"
+                          className={styles.checkbox}
+                          checked={isGroupSelected}
+                          onChange={() => toggleGroupSelect(group)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
+                      <span className={styles.typeIcon}>
+                        {TYPE_ICON[group.type] ?? <BellIcon />}
+                      </span>
+                      <div className={styles.itemContent}>
+                        {isDmGroup ? (
+                          <p className={styles.itemMessage}>{group.latest.actor!.name}からメッセージが届きました</p>
+                        ) : (
+                          <>
+                            {group.latest.actor && <p className={styles.itemActor}>{group.latest.actor.name}</p>}
+                            <p className={styles.itemMessage}>{group.latest.message}</p>
+                          </>
+                        )}
+                      </div>
+                      {group.items.length > 1 && (
+                        <span className={styles.countBadge}>{group.items.length > 99 ? '99+' : group.items.length}</span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
             <Pagination

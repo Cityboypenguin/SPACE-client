@@ -96,8 +96,8 @@ export const NotificationDetailPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <button className={styles.backBtn} onClick={() => navigate('/notifications')}>
-            <ChevronLeft /> 通知一覧に戻る
+          <button type="button" className={styles.backBtn} onClick={() => navigate(-1)}>
+            <ChevronLeft />
           </button>
           {notification && (
             <button className={styles.deleteBtn} onClick={handleDelete} disabled={deleting}>

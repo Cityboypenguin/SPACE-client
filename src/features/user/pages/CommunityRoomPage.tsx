@@ -19,6 +19,16 @@ import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import styles from '../components/organisms/chatRoom.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
+// performance.getEntriesByType('navigation') はタブの実際のロード種別を返し、
+// SPA内のクライアントサイド遷移では変化しない。そのため「リロード時のみ
+// モーダルを閉じる」判定は、このタブで実際にリロードが起きた直後の
+// 最初のマウント1回だけに限定する必要がある（モジュールスコープなので
+// 実際のページリロードでのみリセットされ、SPA内の再マウントでは保持される）。
+let hardReloadPending = (() => {
+  const entry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+  return entry?.type === 'reload';
+})();
+
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -76,14 +86,17 @@ export const CommunityRoomPage = () => {
   const detailStorageKey = roomId ? `showDetail-${roomId}` : null;
 
   const [showDetail, setShowDetail] = useState(() => {
-    const navType = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type;
-    if (navType === 'reload') {
+    // returnPath からの明示的な指定は、リロード判定より常に優先する
+    const fromState = (location.state as { showDetail?: boolean } | null)?.showDetail === true;
+    if (fromState) return true;
+
+    if (hardReloadPending) {
+      hardReloadPending = false;
       if (detailStorageKey) sessionStorage.removeItem(detailStorageKey);
       return false;
     }
-    const fromState = (location.state as { showDetail?: boolean } | null)?.showDetail === true;
     const fromStorage = detailStorageKey ? sessionStorage.getItem(detailStorageKey) === 'true' : false;
-    return fromState || fromStorage;
+    return fromStorage;
   });
   const [leaveError, setLeaveError] = useState('');
 

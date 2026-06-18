@@ -243,10 +243,12 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             e.target.style.height = `${e.target.scrollHeight}px`;
           }}
           onKeyDown={(e) => {
-            const isMobile = window.matchMedia('(max-width: 768px)').matches;
-            // スマホはソフトウェアキーボードでShift+Enterを押せないため、
-            // Enterは改行として扱い、送信は送信ボタンのみで行う
-            if (isMobile) return;
+            // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
+            // Enterは改行として扱い、送信は送信ボタンのみで行う。
+            // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
+            // 通常通りEnterで送信できるようにする。
+            const isTouch = window.matchMedia('(pointer: coarse)').matches;
+            if (isTouch) return;
             if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               if (canSubmit) onSubmit({ preventDefault: () => { } });
@@ -255,7 +257,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           placeholder={
             isBlocked
               ? 'メッセージを送信できません'
-              : window.matchMedia('(max-width: 768px)').matches
+              : window.matchMedia('(pointer: coarse)').matches
               ? 'メッセージを入力...'
               : 'メッセージを入力... (Shift+Enterで改行)'
           }
