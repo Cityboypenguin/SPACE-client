@@ -5,11 +5,12 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useNotification } from '../context/NotificationContext';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
-  listMyNotifications,
+  getNotification,
   markNotificationAsRead,
   deleteNotifications,
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
+import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import styles from './NotificationDetailPage.module.css';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -47,19 +48,17 @@ export const NotificationDetailPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
-  const { data, isLoading, mutate } = useSWR(
-    ['my-notifications-detail', id],
-    () => listMyNotifications(50, 0),
+  const { data: notification, isLoading, mutate } = useSWR(
+    id ? ['my-notification-detail', id] : null,
+    () => getNotification(id!),
   );
-
-  const notification = data?.items.find((n) => n.ID === id) ?? null;
 
   useEffect(() => {
     if (!notification || notification.isRead) return;
     markNotificationAsRead(notification.ID)
       .then(() => {
         mutate(
-          (prev) => prev ? { ...prev, items: prev.items.map((n) => n.ID === notification.ID ? { ...n, isRead: true } : n) } : prev,
+          (prev) => prev ? { ...prev, isRead: true } : prev,
           { revalidate: false },
         );
         decrementUnread();
@@ -96,8 +95,8 @@ export const NotificationDetailPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <button className={styles.backBtn} onClick={() => navigate('/notifications')}>
-            <ChevronLeft /> 通知一覧に戻る
+          <button type="button" className={styles.backBtn} onClick={() => navigate(-1)}>
+            <ChevronLeft />
           </button>
           {notification && (
             <button className={styles.deleteBtn} onClick={handleDelete} disabled={deleting}>
@@ -144,6 +143,20 @@ export const NotificationDetailPage = () => {
             )}
 
             <p className={styles.message}>{notification.message}</p>
+
+            {notification.targetPost && !notification.targetPost.deletedAt && (
+              <div className={styles.targetPostPreview}>
+                <p className={styles.targetPostAuthor}>{notification.targetPost.user.name}</p>
+                {notification.targetPost.content && (
+                  <p className={styles.targetPostContent}>{notification.targetPost.content}</p>
+                )}
+                {notification.targetPost.media.length > 0 && (
+                  <div className={styles.targetPostMedia}>
+                    <PostMediaGrid media={notification.targetPost.media} />
+                  </div>
+                )}
+              </div>
+            )}
 
             {notification.targetType && notification.targetID && TARGET_PATH[notification.targetType] && (
               <button className={styles.actionBtn} onClick={handleTargetLink}>

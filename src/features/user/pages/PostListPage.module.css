@@ -130,6 +130,13 @@
   transition: width 0.2s ease-out;
 }
 
+@media (max-width: 768px) {
+  .fabGroup {
+    bottom: calc(56px + env(safe-area-inset-bottom) + 1rem);
+    right: 1rem;
+  }
+}
+
 .fabGroup:hover {
   width: 106px;
 }
@@ -235,6 +242,12 @@
   justify-content: center;
   padding: 15rem 1rem 1rem;
   overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .composerOverlay {
+    padding: 4rem 1rem calc(56px + env(safe-area-inset-bottom) + 1rem);
+  }
 }
 
 .composerModal {
