@@ -52,16 +52,23 @@ export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; la
           ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap }
           : { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap };
 
+  const gridPos4 = [
+    { gridColumn: '1', gridRow: '1' },
+    { gridColumn: '2', gridRow: '1' },
+    { gridColumn: '1', gridRow: '2' },
+    { gridColumn: '2', gridRow: '2' },
+  ];
+
   const imgStyle = (i: number): React.CSSProperties => ({
     width: '100%',
-    height: count === 1 ? 'auto' : imgHeight,
-    maxHeight: count === 1 ? (large ? 400 : 300) : imgHeight,
+    height: count === 1 ? 'auto' : count === 3 && i === 0 ? imgHeight * 2 + gap : imgHeight,
+    maxHeight: count === 1 ? (large ? 400 : 300) : count === 3 && i === 0 ? imgHeight * 2 + gap : imgHeight,
     objectFit: 'cover',
     borderRadius: count === 1 ? 10 : i === 0 && count === 3 ? '10px 0 0 10px' : imgBorderRadius,
     cursor: 'zoom-in',
     display: 'block',
-    gridColumn: count === 3 && i === 0 ? '1 / 2' : undefined,
-    gridRow: count === 3 && i === 0 ? '1 / 3' : undefined,
+    gridColumn: count === 3 && i === 0 ? '1 / 2' : count === 4 ? gridPos4[i].gridColumn : undefined,
+    gridRow: count === 3 && i === 0 ? '1 / 3' : count === 4 ? gridPos4[i].gridRow : undefined,
   });
 
   return (
