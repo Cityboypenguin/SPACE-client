@@ -100,6 +100,7 @@ export const InquiryPage = () => {
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="件名を入力してください"
+              required={category === 'OTHER'}
             />
           </div>
 
