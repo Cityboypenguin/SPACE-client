@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { Toast } from '../../context/ToastContext';
 
 const TYPE_STYLES: Record<
@@ -10,6 +11,23 @@ const TYPE_STYLES: Record<
   success: { bg: '#1e293b', color: '#86efac', borderColor: '#22c55e', icon: '✓' },
 };
 
+const contentStyle = (clickable: boolean, color: string): React.CSSProperties => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  flex: 1,
+  padding: '0.75rem 0 0.75rem 1rem',
+  background: 'none',
+  border: 'none',
+  color,
+  fontSize: '0.875rem',
+  fontWeight: 500,
+  textAlign: 'left',
+  textDecoration: 'none',
+  cursor: clickable ? 'pointer' : 'default',
+  userSelect: 'none',
+});
+
 type Props = {
   toast: Toast;
   onDismiss: (id: string) => void;
@@ -17,6 +35,13 @@ type Props = {
 
 export const ToastItem = ({ toast, onDismiss }: Props) => {
   const s = TYPE_STYLES[toast.type];
+
+  const icon = (
+    <span aria-hidden="true" style={{ fontWeight: 700, flexShrink: 0 }}>
+      {s.icon}
+    </span>
+  );
+
   return (
     <div
       role="alert"
@@ -24,8 +49,6 @@ export const ToastItem = ({ toast, onDismiss }: Props) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '0.75rem',
-        padding: '0.75rem 1rem',
         borderRadius: 10,
         background: s.bg,
         color: s.color,
@@ -33,17 +56,28 @@ export const ToastItem = ({ toast, onDismiss }: Props) => {
         boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
         minWidth: 280,
         maxWidth: 400,
-        fontSize: '0.875rem',
-        fontWeight: 500,
         animation: 'slideIn 0.2s ease',
+        overflow: 'hidden',
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span aria-hidden="true" style={{ fontWeight: 700 }}>
-          {s.icon}
-        </span>
-        {toast.message}
-      </span>
+      {toast.navigateTo ? (
+        <Link
+          to={toast.navigateTo}
+          onClick={() => onDismiss(toast.id)}
+          style={contentStyle(true, s.color)}
+        >
+          {icon}
+          {toast.message}
+        </Link>
+      ) : (
+        <button
+          onClick={() => onDismiss(toast.id)}
+          style={contentStyle(false, s.color)}
+        >
+          {icon}
+          {toast.message}
+        </button>
+      )}
       <button
         onClick={() => onDismiss(toast.id)}
         aria-label="閉じる"
@@ -51,9 +85,9 @@ export const ToastItem = ({ toast, onDismiss }: Props) => {
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          color: 'inherit',
+          color: s.color,
           fontSize: '1rem',
-          padding: 0,
+          padding: '0.75rem 1rem',
           opacity: 0.6,
           flexShrink: 0,
           lineHeight: 1,

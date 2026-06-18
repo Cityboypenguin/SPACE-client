@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getCommunityMembers, type Community } from '../../api/community';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
+import { storageUrl } from '../../../../lib/storage';
 
 const RoleBadge = ({ role }: { role: string }) => {
   const isOwner = role === 'owner';
@@ -71,10 +73,17 @@ export const CommunityMembersModal = ({ community, onClose }: Props) => {
                     padding: '0.6rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0',
                   }}
                 >
-                  <UserAvatar userId={m.user.ID} name={m.user.name} avatarUrl={m.user.avatarUrl} size={36} />
+                  <UserAvatar 
+                    userId={m.user.ID} 
+                    name={m.user.name} 
+                    avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) : undefined}
+                    size={36} 
+                  />
                   
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, color: '#1e293b' }}>{m.user.name}</div>
+                    <UserNameLink userId={m.user.ID}>
+                      <div style={{ fontWeight: 500, color: '#1e293b' }}>{m.user.name}</div>
+                    </UserNameLink>
                     <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>@{m.user.accountID}</div>
                   </div>
                   

@@ -1,49 +1,49 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { storageUrl } from '../../../lib/storage';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { toUserMessage } from '../../../lib/errorMessages';
+import { UserSidebar } from '../components/organisms/UserSidebar';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
-  getMyProfile,
   getProfileByUserID,
   updateProfile,
   getPresignedAvatarUploadUrl,
   uploadAvatarToStorage,
   setAvatar,
+  deleteAvatar,
 } from '../api/profile';
+import styles from './UserProfileEditPage.module.css';
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export const UserProfileEditPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userId } = useAuth();
+  const { addToast } = useToast();
+
+  const { data: profileData } = useSWR(
+    userId ? ['profile', userId] : null,
+    ([, id]: [string, string]) => getProfileByUserID(id).then((d) => d.getProfileByUserID),
+  );
 
   const [bio, setBio] = useState('');
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const meRes = await getMyProfile();
-        const myUserID = meRes.me.ID;
-
-        const profileRes = await getProfileByUserID(myUserID);
-        const profile = profileRes.getProfileByUserID;
-        if (profile) {
-          setBio(profile.bio || '');
-          setCurrentAvatarUrl(profile.avatarUrl);
-        }
-      } catch (err) {
-        setError('プロフィールの取得に失敗しました');
-        console.error(err);
-      }
-    };
-    void init();
-  }, []);
+    if (!profileData) return;
+    setBio(profileData.bio || '');
+    setCurrentAvatarUrl(profileData.avatarUrl);
+  }, [profileData]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,7 +63,7 @@ export const UserProfileEditPage = () => {
     setPreviewUrl(URL.createObjectURL(file));
   };
 
-  const handleSubmit = async (e: { preventDefault(): void }) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setIsUploading(true);
@@ -76,12 +76,27 @@ export const UserProfileEditPage = () => {
       }
 
       await updateProfile({ bio });
-      navigate('/mypage', { state: { message: 'プロフィールを更新しました！' } });
+      addToast('プロフィールを更新しました', 'success');
+      navigate('/mypage');
     } catch (err) {
-      setError('更新に失敗しました。');
-      console.error(err);
+      setError(toUserMessage(err, 'プロフィールの更新に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    setError('');
+    setIsDeletingAvatar(true);
+    try {
+      await deleteAvatar();
+      setCurrentAvatarUrl(null);
+      setPreviewUrl(null);
+      setSelectedFile(null);
+    } catch (err) {
+      setError(toUserMessage(err, 'アイコンの削除に失敗しました。'));
+    } finally {
+      setIsDeletingAvatar(false);
     }
   };
 
@@ -89,40 +104,50 @@ export const UserProfileEditPage = () => {
 
   return (
     <div>
-      <UserHeader />
-      <main style={{ padding: '2rem' }}>
-        <h1>プロフィール編集</h1>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 400 }}>
+      <UserSidebar />
+      <main className={styles.main}>
+        <div className={styles.header}>
+          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+            <ChevronLeft />
+          </button>
+          <h1 className={styles.title}>プロフィール編集</h1>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <div className={styles.avatarSection}>
             <div
+              className={styles.avatarCircle}
               onClick={() => fileInputRef.current?.click()}
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: '50%',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                background: '#e2e8f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px dashed #94a3b8',
-              }}
             >
               {displayAvatarUrl ? (
-                <img src={storageUrl(displayAvatarUrl) ?? undefined} alt="アバター" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img
+                  src={storageUrl(displayAvatarUrl) ?? undefined}
+                  alt="アバター"
+                  className={styles.avatarImg}
+                />
               ) : (
-                <span style={{ fontSize: '2rem', color: '#94a3b8' }}>＋</span>
+                <span className={styles.avatarPlaceholder}>＋</span>
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              style={{ fontSize: '0.875rem', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-            >
-              画像を変更
-            </button>
+            <div className={styles.avatarActions}>
+              <button
+                type="button"
+                className={`${styles.avatarBtn} ${styles.avatarBtnChange}`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                画像を変更
+              </button>
+              {displayAvatarUrl && (
+                <button
+                  type="button"
+                  className={`${styles.avatarBtn} ${styles.avatarBtnDelete}`}
+                  onClick={handleDeleteAvatar}
+                  disabled={isDeletingAvatar}
+                >
+                  {isDeletingAvatar ? '削除中...' : 'アイコンを削除'}
+                </button>
+              )}
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -132,22 +157,25 @@ export const UserProfileEditPage = () => {
             />
           </div>
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            自己紹介:
+          <div className={styles.bioSection}>
+            <label className={styles.fieldLabel} htmlFor="bio">自己紹介</label>
             <textarea
-              name="bio"
+              id="bio"
+              className={styles.textarea}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
+              placeholder="自己紹介を入力してください"
             />
-          </label>
+          </div>
 
-          <button type="submit" disabled={isUploading}>
-            {isUploading ? '更新中...' : '更新'}
-          </button>
+          {error && <p className={styles.errorMsg}>{error}</p>}
+
+          <div className={styles.submitWrap}>
+            <button type="submit" className={styles.submitBtn} disabled={isUploading}>
+              {isUploading ? '更新中...' : '更新する'}
+            </button>
+          </div>
         </form>
-
-        {error && <p style={{ color: 'red', marginTop: '0.5rem' }}>{error}</p>}
-        <Link to="/mypage" style={{ marginTop: '1rem', display: 'inline-block' }}>マイページに戻る</Link>
       </main>
     </div>
   );

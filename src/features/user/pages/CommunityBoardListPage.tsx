@@ -1,123 +1,161 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
+import useSWR from 'swr';
+import { UserSidebar } from '../components/organisms/UserSidebar';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
 import { useAuth } from '../context/AuthContext';
+import { toUserMessage } from '../../../lib/errorMessages';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { ReportModal } from '../components/organisms/ReportMadal';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
+  const [reportTarget, setReportTarget] = useState<Community | null>(null);
   const [query, setQuery] = useState('');
+  const [activeKeyword, setActiveKeyword] = useState('');
   const [results, setResults] = useState<Community[]>([]);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [, setSearchOffset] = useState(0);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [joinedIDs, setJoinedIDs] = useState<Set<string>>(new Set());
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
-  const [randomResults, setRandomResults] = useState<Community[]>([]);
-  const [loadingRandom, setLoadingRandom] = useState(false);
+  const loadingRef = useRef(false);
 
-  // マウント時におすすめコミュニティを取得
-  useEffect(() => {
-    let active = true;
-    setLoadingRandom(true);
+  const { data: myCommunities, mutate: mutateMyCommunities } = useSWR('my-communities', () => listMyCommunities());
+  const { data: randomCommunities, isLoading: loadingRandom } = useSWR(
+    'random-communities',
+    () => getRandomCommunities(10),
+  );
 
-    const initializeData = async () => {
-      try {
-        // 1. 自分が参加しているコミュニティの最新リストを取得
-        // エラーの指摘通り、関数名を「myCommunities」に変更します
-        const joinedList = await listMyCommunities(); 
-        
-        // 🌟 型の安全性を確保するため、<string> を明示します
-        const myIDs = new Set<string>(joinedList.map((c: Community) => c.ID));
-        
-        if (!active) return;
-        // 参加済み状態を最新に更新
-        setJoinedIDs(myIDs);
+  const joinedIDs = useMemo(
+    () => new Set(myCommunities?.items.map((c) => c.ID) ?? []),
+    [myCommunities],
+  );
 
-        // 2. おすすめコミュニティを取得
-        const randomList = await getRandomCommunities(10);
-        
-        if (!active) return;
-        // 最新の参加済みIDを使って、画面を開いた時点のデータをフィルター除外
-        const initialFiltered = randomList.filter((c) => !myIDs.has(c.ID));
-        setRandomResults(initialFiltered);
+  const randomResults = useMemo(
+    () => randomCommunities ?? [],
+    [randomCommunities],
+  );
 
-      } catch (err) {
-        console.error('データの初期化に失敗しました:', err);
-      } finally {
-        if (active) setLoadingRandom(false);
-      }
-    };
-
-    initializeData();
-
-    return () => { active = false; };
+  const loadSearchResults = useCallback(async (keyword: string, currentOffset: number, isFirst: boolean) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    if (!isFirst) setLoadingMore(true);
+    try {
+      const page = await searchCommunities(keyword, 20, currentOffset);
+      setResults((prev) => isFirst ? page.items : [...prev, ...page.items]);
+      setSearchTotal(page.total);
+      setSearchOffset(currentOffset + page.items.length);
+    } catch (err) {
+      if (isFirst) setError(toUserMessage(err, 'コミュニティの検索に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      loadingRef.current = false;
+      if (!isFirst) setLoadingMore(false);
+    }
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!query.trim()) {
+      setSearched(false);
+      setResults([]);
+      setSearchTotal(0);
+      setSearchOffset(0);
+      setActiveKeyword('');
+      return;
+    }
     setSearching(true);
     setSearched(false);
+    setResults([]);
+    setSearchTotal(0);
+    setSearchOffset(0);
+    setActiveKeyword(query);
     try {
-      const data = await searchCommunities(query);
-      setResults(data);
+      await loadSearchResults(query, 0, true);
       setSearched(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '検索に失敗しました');
     } finally {
       setSearching(false);
     }
   };
 
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setSearchOffset((prev) => {
+        if (!loadingRef.current && prev < searchTotal) loadSearchResults(activeKeyword, prev, false);
+        return prev;
+      });
+    }, [searchTotal, activeKeyword, loadSearchResults]),
+    loadingMore,
+    searched,
+  );
+
+  const handleReportCommunity = useCallback(async (community: Community) => {
+    setReportTarget(community);
+  }, []);
+
   const handleJoin = useCallback(async (community: Community) => {
     try {
       await joinCommunity(community.roomID);
-      setJoinedIDs((prev) => new Set([...prev, community.ID]));
+      const joinedCommunity = {
+        ...community,
+        isMember: true,
+        memberCount: (community.memberCount ?? 0) + 1,
+      };
+      setResults((prev) => prev.map((c) => c.ID === community.ID ? joinedCommunity : c));
+      await mutateMyCommunities((current) => {
+        if (!current) return current;
+        if (current.items.some((c) => c.ID === community.ID)) return current;
+        return {
+          ...current,
+          items: [joinedCommunity, ...current.items],
+          total: current.total + 1,
+        };
+      }, { revalidate: true });
     } catch (err) {
       console.error('コミュニティへの参加に失敗しました:', err);
+      throw err;
     }
-  }, []);
+  }, [mutateMyCommunities]);
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ padding: '2rem', maxWidth: '700px', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
           <button
             onClick={() => navigate('/community')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#646cff', fontWeight: 600, padding: 0 }}
           >
-            ← 戻る
+            <ChevronLeft /> 戻る
           </button>
-          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>コミュニティを探す</h1>
-        </div>
-
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="コミュニティ名で検索"
-            style={{ flex: 1, padding: '0.6rem 0.9rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
-          />
+          <h1 style={{ margin: 0, fontSize: '1.5rem', flex: 1 }}>コミュニティを探す</h1>
           <button
-            type="submit"
-            disabled={searching || !query.trim()}
+            onClick={() => navigate('/community/create')}
             style={{
-              padding: '0.6rem 1.2rem',
-              borderRadius: '8px',
-              background: searching || !query.trim() ? '#94a3b8' : '#646cff',
-              color: '#fff',
-              border: 'none',
-              cursor: searching || !query.trim() ? 'not-allowed' : 'pointer',
-              fontWeight: 600,
+              background: '#f97316', color: '#fff', border: 'none',
+              borderRadius: 8, padding: '0.5rem 1rem',
+              fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
             }}
           >
-            {searching ? '検索中...' : '検索'}
+            + 作成
           </button>
-        </form>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <IconSearchBar
+            value={query}
+            onChange={setQuery}
+            onSubmit={handleSearch}
+            placeholder="コミュニティ名で検索"
+            disabled={searching}
+          />
+        </div>
 
         {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
 
@@ -135,8 +173,9 @@ export const CommunityBoardListPage = () => {
                     key={c.ID}
                     community={c}
                     currentUserID={currentUserID}
-                    joined={joinedIDs.has(c.ID)}
+                    joined={c.isMember || joinedIDs.has(c.ID)}
                     onJoin={handleJoin}
+                    onReport={handleReportCommunity}
                   />
                 ))}
               </div>
@@ -159,14 +198,28 @@ export const CommunityBoardListPage = () => {
                   key={c.ID}
                   community={c}
                   currentUserID={currentUserID}
-                  joined={joinedIDs.has(c.ID)}
+                  joined={c.isMember || joinedIDs.has(c.ID)}
                   onJoin={handleJoin}
+                  onReport={handleReportCommunity}
                 />
               ))}
             </div>
+            <div ref={sentinelRef} style={{ height: '1px' }} />
+            {loadingMore && (
+              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '0.5rem' }}>読み込み中...</p>
+            )}
           </div>
         )}
       </main>
+
+      {reportTarget && (
+        <ReportModal
+          isOpen={true}
+          onClose={() => setReportTarget(null)}
+          targetType="COMMUNITY"
+          targetID={reportTarget.ID}
+        />
+      )}
     </div>
   );
 };

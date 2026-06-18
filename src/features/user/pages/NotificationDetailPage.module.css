@@ -1,0 +1,184 @@
+.main {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #3b82f6;
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.deleteBtn {
+  padding: 0.3rem 0.8rem;
+  border-radius: 8px;
+  border: 1.5px solid #ef4444;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #ef4444;
+  font-weight: 600;
+  transition: background 0.1s;
+}
+
+.deleteBtn:hover {
+  background: #fef2f2;
+}
+
+.deleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.typeBadge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  background: #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.actorRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.actorAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.actorAvatarFallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #475569;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.actorName {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.actorAccountID {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.message {
+  font-size: 1rem;
+  color: #1e293b;
+  line-height: 1.6;
+  margin: 0 0 1.5rem;
+}
+
+.targetPostPreview {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1.5rem;
+  background: #f8fafc;
+}
+
+.targetPostAuthor {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.targetPostContent {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.targetPostMedia {
+  margin-top: 0.5rem;
+}
+
+.actionBtn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  background: #F97316;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: background 0.15s;
+}
+
+.actionBtn:hover {
+  background: #EA6C0A;
+}
+
+.actionBtn:focus,
+.actionBtn:focus-visible {
+  outline: none;
+}
+
+.empty {
+  color: #94a3b8;
+  text-align: center;
+  padding: 2rem;
+}
+
+.error {
+  color: #ef4444;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}

@@ -12,7 +12,11 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
-      '/space-avatars': {
+      '/events': {
+        target: 'http://host.docker.internal:8080',
+        changeOrigin: true,
+      },
+      '/space-storage': {
         target: 'http://host.docker.internal:9000',
         changeOrigin: true,
       },

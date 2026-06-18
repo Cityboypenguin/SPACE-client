@@ -2,6 +2,14 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: calc(100vh - 56px - env(safe-area-inset-bottom));
+    height: calc(100dvh - 56px - env(safe-area-inset-bottom));
+  }
 }
 
 .roomHeader {
@@ -10,10 +18,19 @@
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid #ccc;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 .roomTitle {
   font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .backButton {
@@ -39,6 +56,7 @@
 .messageList {
   flex: 1;
   overflow-y: auto;
+  overflow-anchor: none;
   padding: 1rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -104,6 +122,8 @@
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid #ccc;
+  flex-shrink: 0;
+  background: #fff;
 }
 
 .inputField {
@@ -140,6 +160,10 @@
   display: flex;
 }
 
+.messageActionsVisible {
+  display: flex;
+}
+
 .actionBtn {
   background: none;
   border: none;
@@ -152,9 +176,50 @@
   transition: background 0.15s, color 0.15s;
 }
 
+.actionBtnEdit {
+  padding: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .actionBtn:hover {
   background: rgba(0, 0, 0, 0.08);
   color: #555;
+}
+
+.actionIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/*
+ * タッチデバイス向けの調整。画面幅ではなくポインタ種別で判定することで、
+ * PCでウィンドウを小さくした場合は引き続きホバー操作のまま使えるようにする。
+ * 表示/非表示自体は ChatMessageBubble の長押し(タッチ)操作で .messageActionsVisible を
+ * 切り替えることで制御し、ここではタップしやすいよう領域だけを拡大する。
+ */
+@media (pointer: coarse) {
+  .messageActions {
+    gap: 4px;
+  }
+
+  .actionBtn {
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.1rem;
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .actionBtnEdit {
+    padding: 8px;
+  }
+
+  .actionIcon {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .editWrapper {
@@ -171,6 +236,9 @@
   outline: none;
   min-width: 180px;
   max-width: 400px;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.4;
 }
 
 .editActions {
@@ -197,4 +265,54 @@
   background: white;
   color: #666;
   cursor: pointer;
+}
+
+.unreadSeparator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #ef4444;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.unreadSeparator::before,
+.unreadSeparator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #ef4444;
+}
+
+.readReceipt {
+  font-size: 0.65rem;
+  color: #646cff;
+  margin-top: 1px;
+  text-align: right;
+}
+
+.messageListWrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.scrollToLatest {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: #646cff;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }

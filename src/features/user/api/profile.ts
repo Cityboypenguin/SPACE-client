@@ -1,6 +1,6 @@
 import { request } from '../../../lib/graphql';
 import { storageUrl } from '../../../lib/storage';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type UserProfile = {
   ID: string;
@@ -24,12 +24,15 @@ export type Profile = {
 };
 
 type MeResponse = { me: UserProfile };
-type SearchUsersResponse = { searchUsers: UserProfile[] };
+type SearchUsersPage = { items: UserProfile[]; total: number };
+type SearchUsersResponse = { searchUsers: SearchUsersPage };
 type UpdateUserResponse = { updateUser: UserProfile };
 type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
 type UpdateProfileResponse = { updateProfile: Profile };
 type PresignedUploadUrlResponse = { presignedAvatarUploadUrl: { uploadUrl: string; objectKey: string } };
 type SetAvatarResponse = { setAvatar: Profile };
+type DeleteAvatarResponse = { deleteAvatar: Profile };
+type DeleteMyAccountResponse = { deleteMyAccount: boolean };
 
 const ME_QUERY = `
   query Me {
@@ -47,14 +50,18 @@ const ME_QUERY = `
 `;
 
 const SEARCH_USERS_QUERY = `
-  query SearchUsers($name: String!) {
-    searchUsers(name: $name) {
-      ID
-      accountID
-      name
-      email
-      role
-      status
+  query SearchUsers($keyword: String!, $limit: Int, $offset: Int) {
+    searchUsers(keyword: $keyword, limit: $limit, offset: $offset) {
+      items {
+        ID
+        accountID
+        name
+        email
+        role
+        status
+        avatarUrl
+      }
+      total
     }
   }
 `;
@@ -95,6 +102,24 @@ const SET_AVATAR_MUTATION = `
   }
 `;
 
+const DELETE_AVATAR_MUTATION = `
+  mutation DeleteAvatar {
+    deleteAvatar {
+      username
+      bio
+      avatarUrl
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const DELETE_MY_ACCOUNT_MUTATION = `
+  mutation DeleteMyAccount {
+    deleteMyAccount
+  }
+`;
+
 const GET_PROFILE_BY_USER_ID_QUERY = `
   query GetProfileByUserID($userID: ID!) {
     getProfileByUserID(userID: $userID) {
@@ -127,8 +152,6 @@ const UPDATE_PROFILE_MUTATION = `
   }
 `;
 
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
-
 export const getMyProfile = async () => {
   const token = getUserToken();
   if (!token) {
@@ -142,12 +165,14 @@ export const updateMyProfile = async (input: {
   name?: string;
   email?: string;
   password?: string;
+  currentPassword?: string;
 }) => {
   return await request<UpdateUserResponse>(UPDATE_USER_MUTATION, { input }, getUserToken());
 };
 
-export const searchUsers = async (name: string) => {
-  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { name }, getUserToken());
+export const searchUsers = async (keyword: string, limit = 20, offset = 0): Promise<SearchUsersPage> => {
+  const data = await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword, limit, offset }, getUserToken());
+  return data.searchUsers;
 };
 
 export const getProfileByUserID = async (userID: string) => {
@@ -188,4 +213,17 @@ export const setAvatar = async (objectKey: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
   return await request<SetAvatarResponse>(SET_AVATAR_MUTATION, { objectKey }, token);
+};
+
+export const deleteAvatar = async () => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await request<DeleteAvatarResponse>(DELETE_AVATAR_MUTATION, undefined, token);
+};
+
+export const deleteMyAccount = async (): Promise<boolean> => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  const data = await request<DeleteMyAccountResponse>(DELETE_MY_ACCOUNT_MUTATION, undefined, token);
+  return data.deleteMyAccount;
 };

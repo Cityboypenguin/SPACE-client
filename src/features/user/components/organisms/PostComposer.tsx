@@ -1,10 +1,20 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
+import { storageUrl } from '../../../../lib/storage';
+import { useToast } from '../../../../context/ToastContext';
+import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
+import styles from './PostComposer.module.css';
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_IMAGES = 4;
+
+type MinimalMedia = {
+  ID: string;
+  url: string;
+  contentType: string;
+};
 
 type Props = {
   value: string;
@@ -20,8 +30,16 @@ type Props = {
   userId?: string | null;
   avatarUrl?: string | null;
   userName?: string;
+  accountId?: string;
   selectedFiles?: File[];
   onFileSelect?: (files: File[]) => void;
+  existingMedia?: MinimalMedia[];
+  deletedMediaIDs?: string[];
+  onDeleteExistingMedia?: (id: string) => void;
+  onCancel?: () => void;
+  cancelLabel?: string;
+  isEmbedded?: boolean;
+  maxLength?: number;
 };
 
 export const PostComposer = ({
@@ -38,28 +56,46 @@ export const PostComposer = ({
   userId,
   avatarUrl,
   userName = '',
+  accountId,
   selectedFiles = [],
   onFileSelect,
+  existingMedia = [],
+  deletedMediaIDs = [],
+  onDeleteExistingMedia,
+  onCancel,
+  cancelLabel = 'キャンセル',
+  isEmbedded = false,
+  maxLength,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const visibleExistingMedia = existingMedia.filter(m => !deletedMediaIDs.includes(m.ID));
+  const totalMediaCount = visibleExistingMedia.length + selectedFiles.length;
+  const { addToast } = useToast();
+  const large = rows >= 3;
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const incoming = Array.from(e.target.files ?? []);
-    if (!incoming.length) return;
-    const invalid = incoming.find((f) => !ACCEPTED_IMAGE_TYPES.includes(f.type));
-    if (invalid) {
-      alert('JPEG・PNG・GIF・WebP のみ添付できます。');
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      addToast('対応していないファイル形式です。JPEG, PNG, GIF, WEBPのみアップロードできます。', 'error');
       e.target.value = '';
       return;
     }
-    const oversize = incoming.find((f) => f.size > MAX_FILE_SIZE);
-    if (oversize) {
-      alert('ファイルサイズは 10MB 以下にしてください。');
+    if (file.size > MAX_FILE_SIZE) {
+      addToast('ファイルサイズが大きすぎます。10MB以下の画像をアップロードしてください。', 'error');
       e.target.value = '';
       return;
     }
-    if (selectedFiles.length >= MAX_IMAGES) return;
-    onFileSelect?.([...selectedFiles, incoming[0]]);
+    if (totalMediaCount >= MAX_IMAGES) return;
+    onFileSelect?.([...selectedFiles, file]);
     e.target.value = '';
   };
 
@@ -67,10 +103,12 @@ export const PostComposer = ({
     onFileSelect?.(selectedFiles.filter((_, i) => i !== index));
   };
 
-  const canSubmit = !submitting && (value.trim() !== '' || selectedFiles.length > 0);
+  const hasAnyContent = value.trim() !== '' || totalMediaCount > 0;
+  const overLimit = maxLength !== undefined && value.length > maxLength;
+  const canSubmit = !submitting && hasAnyContent && !overLimit;
 
   return (
-    <div style={{ padding: '1rem', borderBottom: '2px solid #e2e8f0', display: 'flex', gap: '0.75rem' }}>
+    <div className={`${styles.wrapper} ${isEmbedded ? styles.wrapperEmbedded : styles.wrapperNormal}`}>
       {userId && userName ? (
         <UserAvatar userId={userId} name={userName} avatarUrl={avatarUrl} size={iconSize} />
       ) : userName ? (
@@ -85,106 +123,88 @@ export const PostComposer = ({
           }}
         >✍️</div>
       )}
-      <div style={{ flex: 1 }}>
+      <div className={styles.inner}>
+        {!isEmbedded && userName && (
+          <div className={styles.nameRow}>
+            <span className={styles.displayName}>{userName}</span>
+            {accountId && <span className={styles.accountId}>@{accountId}</span>}
+          </div>
+        )}
         <textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          style={{
-            width: '100%', border: 'none', borderBottom: '1px solid #e2e8f0',
-            outline: 'none', resize: 'none',
-            fontSize: rows >= 3 ? '1.05rem' : '0.95rem',
-            color: '#1e293b', background: 'transparent',
-            padding: '0.25rem 0', boxSizing: 'border-box',
-          }}
+          className={`${styles.textarea} ${large ? styles.textareaLarge : styles.textareaSmall}`}
         />
+        {maxLength !== undefined && (
+          <div className={`${styles.charCount} ${overLimit ? styles.charCountOver : ''}`}>
+            {value.length} / {maxLength}
+          </div>
+        )}
 
-        {selectedFiles.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '6px 0' }}>
+        {totalMediaCount > 0 && (
+          <div className={styles.mediaPreviews}>
+            {visibleExistingMedia.map((m) => {
+              const isImage = m.contentType.startsWith('image/');
+              return (
+                <div key={m.ID} className={styles.mediaThumb}>
+                  {isImage ? (
+                    <img src={storageUrl(m.url)} alt="既存メディア" className={styles.mediaThumbImg} />
+                  ) : (
+                    <div className={styles.mediaThumbFile}>FILE</div>
+                  )}
+                  {onDeleteExistingMedia && (
+                    <button type="button" className={styles.removeButton} onClick={() => onDeleteExistingMedia(m.ID)}>✕</button>
+                  )}
+                </div>
+              );
+            })}
             {selectedFiles.map((file, i) => (
-              <div key={i} style={{ position: 'relative' }}>
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={file.name}
-                  style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, display: 'block' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeFile(i)}
-                  style={{
-                    position: 'absolute', top: -4, right: -4,
-                    width: 18, height: 18, borderRadius: '50%',
-                    background: '#374151', border: 'none',
-                    color: '#fff', fontSize: '0.65rem',
-                    cursor: 'pointer', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    padding: 0, lineHeight: 1,
-                  }}
-                >✕</button>
+              <div key={`new-${i}`} className={styles.mediaThumb}>
+                <img src={URL.createObjectURL(file)} alt={file.name} className={styles.mediaThumbImg} />
+                <button type="button" className={styles.removeButton} onClick={() => removeFile(i)}>✕</button>
               </div>
             ))}
-            {selectedFiles.length < MAX_IMAGES && onFileSelect && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  width: 64, height: 64, borderRadius: 8,
-                  border: '2px dashed #d1d5db', background: '#f9fafb',
-                  color: '#9ca3af', fontSize: '1.5rem',
-                  cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                }}
-              >+</button>
+            {totalMediaCount < MAX_IMAGES && onFileSelect && (
+              <button type="button" className={styles.addMoreButton} onClick={() => fileInputRef.current?.click()}>+</button>
             )}
           </div>
         )}
 
-        {error && <p style={{ color: 'red', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>{error}</p>}
+        {error && <p className={styles.error}>{error}</p>}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: rows >= 3 ? '0.5rem' : '0.4rem' }}>
-          {onFileSelect && selectedFiles.length === 0 ? (
-            <>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={submitting}
-                title={`写真を追加 (最大${MAX_IMAGES}枚)`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b7280', padding: '0 4px' }}
-              >
-                🖼️
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_IMAGE_TYPES.join(',')}
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-              />
-            </>
-          ) : onFileSelect ? (
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPTED_IMAGE_TYPES.join(',')}
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
-          ) : (
-            <div />
+        <div className={`${styles.footer} ${large ? styles.footerLarge : styles.footerSmall}`}>
+          {onFileSelect && (
+            <input ref={fileInputRef} type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={handleFileChange} style={{ display: 'none' }} />
+          )}
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={submitting}
+              className={`${styles.cancelButton} ${large ? styles.cancelButtonLarge : styles.cancelButtonSmall}`}
+            >
+              {cancelLabel}
+            </button>
+          )}
+          {onFileSelect && totalMediaCount === 0 && (
+            <button
+              type="button"
+              className={styles.cameraButton}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={submitting}
+              title={`写真を追加 (最大${MAX_IMAGES}枚)`}
+            >
+              <img src={cameraIcon} alt="写真を追加" className={styles.cameraIcon} />
+            </button>
           )}
           <button
             onClick={onSubmit}
             disabled={!canSubmit}
-            style={{
-              padding: rows >= 3 ? '0.45rem 1.2rem' : '0.4rem 1rem',
-              borderRadius: '20px',
-              background: canSubmit ? '#646cff' : '#c7d2fe',
-              color: '#fff', border: 'none', fontWeight: 700,
-              fontSize: rows >= 3 ? '0.9rem' : '0.85rem',
-              cursor: canSubmit ? 'pointer' : 'default',
-              transition: 'background 0.1s',
-            }}
+            className={`${styles.submitButton} ${large ? styles.submitButtonLarge : styles.submitButtonSmall}`}
+            style={{ background: canSubmit ? '#FF7430' : '#F89150', cursor: canSubmit ? 'pointer' : 'default' }}
           >
             {submitting ? submittingLabel : submitLabel}
           </button>

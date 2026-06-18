@@ -29,6 +29,8 @@ export type Community = {
   updatedAt: string;
 };
 
+export type CommunityPage = { items: Community[]; total: number };
+
 export type RoomUser = {
   ID: string;
   accountID: string;
@@ -48,14 +50,17 @@ export type Room = {
 };
 
 const COMMUNITIES_QUERY = `
-  query {
-    communities {
-      ID
-      roomID
-      name
-      description
-      createdAt
-      updatedAt
+  query Communities($limit: Int, $offset: Int) {
+    communities(limit: $limit, offset: $offset) {
+      items {
+        ID
+        roomID
+        name
+        description
+        createdAt
+        updatedAt
+      }
+      total
     }
   }
 `;
@@ -108,8 +113,8 @@ const GET_COMMUNITY_MEMBERS_QUERY = `
   }
 `;
 
-export const getCommunities = async () => {
-  return await request<{ communities: Community[] }>(COMMUNITIES_QUERY, undefined, getAdminToken());
+export const getCommunities = async (limit = 20, offset = 0) => {
+  return await request<{ communities: CommunityPage }>(COMMUNITIES_QUERY, { limit, offset }, getAdminToken());
 };
 
 export const updateCommunity = async (
@@ -144,27 +149,57 @@ export const getCommunityMembers = async (communityID: string) => {
 };
 
 const LIST_ROOM_MESSAGES_QUERY = `
-  query ListMessages($roomID: ID!) {
-    messages(roomID: $roomID) {
-      ID
-      roomID
-      user {
+  query ListMessages($roomID: ID!, $limit: Int) {
+    messages(roomID: $roomID, limit: $limit) {
+      items {
         ID
-        name
-        accountID
-        avatarUrl
+        roomID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        content
+        media {
+          ID
+          url
+          contentType
+        }
+        createdAt
+        updatedAt
       }
-      content
-      media {
-        ID
-        url
-        contentType
-      }
-      createdAt
-      updatedAt
     }
   }
 `;
+
+const PROMOTE_TO_OWNER_MUTATION = `
+  mutation PromoteToCommunityOwner($communityID: ID!, $userID: ID!) {
+    promoteToCommunityOwner(communityID: $communityID, userID: $userID)
+  }
+`;
+
+const DEMOTE_FROM_OWNER_MUTATION = `
+  mutation DemoteFromCommunityOwner($communityID: ID!, $userID: ID!) {
+    demoteFromCommunityOwner(communityID: $communityID, userID: $userID)
+  }
+`;
+
+export const promoteToCommunityOwner = async (communityID: string, userID: string) => {
+  return await request<{ promoteToCommunityOwner: boolean }>(
+    PROMOTE_TO_OWNER_MUTATION,
+    { communityID, userID },
+    getAdminToken(),
+  );
+};
+
+export const demoteFromCommunityOwner = async (communityID: string, userID: string) => {
+  return await request<{ demoteFromCommunityOwner: boolean }>(
+    DEMOTE_FROM_OWNER_MUTATION,
+    { communityID, userID },
+    getAdminToken(),
+  );
+};
 
 const DELETE_MESSAGE_MUTATION = `
   mutation DeleteMessage($roomID: ID!, $id: ID!) {
@@ -172,10 +207,10 @@ const DELETE_MESSAGE_MUTATION = `
   }
 `;
 
-export const listRoomMessages = async (roomID: string) => {
-  return await request<{ messages: Message[] }>(
+export const listRoomMessages = async (roomID: string, limit = 200) => {
+  return await request<{ messages: { items: Message[] } }>(
     LIST_ROOM_MESSAGES_QUERY,
-    { roomID },
+    { roomID, limit },
     getAdminToken(),
   );
 };

@@ -1,12 +1,34 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message, type Media } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { storageUrl } from '../../../../lib/storage';
 import styles from '../organisms/chatRoom.module.css';
 
+const URL_REGEX = /(https?:\/\/[^\s　《》「」（）、。！？]+)/g;
+
+const renderWithLinks = (text: string) => {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) =>
+    URL_REGEX.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: 'inherit', textDecoration: 'underline', wordBreak: 'break-all' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
+};
+
 const getFileIcon = (contentType: string): string => {
-  if (contentType === 'application/pdf') return '📄';
   if (contentType.includes('word')) return '📝';
   if (contentType.includes('excel') || contentType.includes('spreadsheet')) return '📊';
   if (contentType.includes('zip') || contentType.includes('compressed')) return '🗜️';
@@ -121,18 +143,60 @@ type Props = {
   onCancelEdit: () => void;
   onEditContentChange: (val: string) => void;
   onDelete: () => void;
+  isReadByPartner?: boolean;
 };
 
 export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
-  onEditContentChange, onDelete,
+  onEditContentChange, onDelete, isReadByPartner,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
+  const canShowActions = (isMine || canDelete) && !isEditing && !hasMedia;
+
+  const [showActions, setShowActions] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!isEditing || !editTextareaRef.current) return;
+    const el = editTextareaRef.current;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [isEditing]);
+
+  const clearLongPressTimer = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchStart = () => {
+    if (!canShowActions) return;
+    clearLongPressTimer();
+    longPressTimer.current = setTimeout(() => setShowActions(true), 500);
+  };
+
+  useEffect(() => {
+    if (!showActions) return;
+    const handleOutside = (e: Event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowActions(false);
+      }
+    };
+    document.addEventListener('touchstart', handleOutside);
+    document.addEventListener('mousedown', handleOutside);
+    return () => {
+      document.removeEventListener('touchstart', handleOutside);
+      document.removeEventListener('mousedown', handleOutside);
+    };
+  }, [showActions]);
 
   const bubbleContent = (
     <div className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}>
@@ -146,26 +210,56 @@ export const ChatMessageBubble = ({
         </span>
       )}
 
-      <div style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', gap: 3, alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-        {(isMine || canDelete) && !isEditing && (
-          <div className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight}`}>
+      <div
+        ref={wrapperRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={clearLongPressTimer}
+        onTouchMove={clearLongPressTimer}
+        onTouchCancel={clearLongPressTimer}
+        onContextMenu={(e) => { if (canShowActions) e.preventDefault(); }}
+        style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', gap: 3, alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '80%' }}
+      >
+        {canShowActions && (
+          <div
+            className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight} ${showActions ? styles.messageActionsVisible : ''}`}
+          >
             {isMine && (
-              <button className={styles.actionBtn} onClick={onStartEdit} title="編集">✎</button>
+              <button
+                className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
+                onClick={() => { setShowActions(false); onStartEdit(); }}
+                title="編集"
+              ><img src={editIcon} alt="編集" className={styles.actionIcon} /></button>
             )}
             {canDelete && (
-              <button className={styles.actionBtn} onClick={onDelete} title="削除">✕</button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => { setShowActions(false); onDelete(); }}
+                title="削除"
+              >✕</button>
             )}
           </div>
         )}
         {isEditing ? (
           <div className={styles.editWrapper}>
-            <input
+            <textarea
+              ref={editTextareaRef}
               className={styles.editInput}
               value={editContent}
-              onChange={(e) => onEditContentChange(e.target.value)}
+              rows={1}
+              onChange={(e) => {
+                onEditContentChange(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onSaveEdit();
-                if (e.key === 'Escape') onCancelEdit();
+                if (e.key === 'Escape') { onCancelEdit(); return; }
+                // タッチ操作の端末はEnterを改行として扱い、保存は保存ボタンのみで行う。
+                const isTouch = window.matchMedia('(pointer: coarse)').matches;
+                if (isTouch) return;
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  onSaveEdit();
+                }
               }}
               autoFocus
             />
@@ -178,7 +272,7 @@ export const ChatMessageBubble = ({
           <>
             {hasText && (
               <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                {msg.content}
+                {renderWithLinks(msg.content)}
               </div>
             )}
             {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
@@ -189,6 +283,9 @@ export const ChatMessageBubble = ({
       <span className={styles.timestamp}>
         {new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
       </span>
+      {isMine && isReadByPartner && (
+        <span className={styles.readReceipt}>既読</span>
+      )}
     </div>
   );
 

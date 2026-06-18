@@ -1,140 +1,97 @@
-import { useEffect, useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { storageUrl } from '../../../lib/storage';
-import { UserHeader } from '../components/organisms/UserHeader';
+import useSWR from 'swr';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
+import { PostCard } from '../components/organisms/PostCard';
+import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReplyModal } from '../components/organisms/ReplyModal';
+import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
-import { LikeButton } from '../components/molecules/LikeButton';
+import { UserNameLink } from '../../../components/atoms/UserNameLink';
+import { LikeButton } from '../../../components/molecules/LikeButton';
+import { toUserMessage } from '../../../lib/errorMessages';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import commentIcon from '../../../assets/パーツ_コメント.svg';
+import reportIcon from '../../../assets/パーツ_通報.svg';
+import blockIcon from '../../../assets/パーツ_ブロック.svg';
+import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
+import deleteIcon from '../../../assets/パーツ_削除.svg';
+import styles from './PostDetailPage.module.css';
+
 import {
   getPostByID,
   createPost,
+  updatePost,
+  deletePost,
   createFavorite,
   deleteFavorite,
   getPresignedMediaUploadUrl,
   uploadFileToStorage,
   type Post,
-  type Media,
   type MediaInput,
 } from '../api/post';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
-  <div
-    onClick={(e) => { e.stopPropagation(); onClose(); }}
-    style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 9999, cursor: 'zoom-out',
-    }}
-  >
-    <button
-      onClick={(e) => { e.stopPropagation(); onClose(); }}
-      style={{
-        position: 'absolute', top: 16, right: 20,
-        background: 'none', border: 'none', color: '#fff',
-        fontSize: '2rem', cursor: 'pointer', lineHeight: 1,
-      }}
-    >✕</button>
-    <img
-      src={url} alt="拡大表示"
-      onClick={(e) => e.stopPropagation()}
-      style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }}
-    />
-  </div>
-);
+import { createBlocker } from '../api/block';
+import { useToast } from '../../../context/ToastContext';
+import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache, updatePostInUserPostListCache } from '../cache/postListCache';
 
-const PostMediaDetail = ({ media }: { media: Media[] }) => {
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-  const images = media.filter((m) => m.contentType.startsWith('image/'));
-  const files = media.filter((m) => !m.contentType.startsWith('image/'));
-  const count = images.length;
-
-  const gridStyle: React.CSSProperties =
-    count <= 1
-      ? { display: 'block' }
-      : count === 2
-        ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }
-        : count === 3
-          ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 3 }
-          : { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 3 };
-
-  return (
-    <>
-      {images.length > 0 && (
-        <div style={{ ...gridStyle, marginBottom: 8, maxWidth: 420 }}>
-          {images.map((m, i) => {
-            const url = storageUrl(m.url);
-            return (
-              <img
-                key={m.ID}
-                src={url}
-                alt="添付画像"
-                onClick={() => setLightboxUrl(url)}
-                style={{
-                  width: '100%',
-                  height: count === 1 ? 'auto' : 160,
-                  maxHeight: count === 1 ? 400 : 160,
-                  objectFit: 'cover',
-                  borderRadius: count === 1 ? 10 : (i === 0 && count === 3 ? '10px 0 0 10px' : 8),
-                  cursor: 'zoom-in', display: 'block',
-                  gridColumn: count === 3 && i === 0 ? '1 / 2' : undefined,
-                  gridRow: count === 3 && i === 0 ? '1 / 3' : undefined,
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-      {files.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-          {files.map((m) => (
-            <a
-              key={m.ID}
-              href={storageUrl(m.url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 12px', background: '#f3f4f6',
-                border: '1px solid #e5e7eb', borderRadius: 8,
-                fontSize: '0.85rem', color: '#374151', textDecoration: 'none',
-              }}
-            >
-              📎 {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
-            </a>
-          ))}
-        </div>
-      )}
-      {lightboxUrl && <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
-    </>
-  );
-};
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { addToast } = useToast();
+
+  const { data: post, isLoading, error, mutate } = useSWR<Post | null>(
+    id ? ['post', id] : null,
+    ([, postId]: [string, string]) => getPostByID(postId),
+  );
+
   const [replyContent, setReplyContent] = useState('');
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState('');
-
-  const loadPost = (postId: string) => {
-    setLoading(true);
-    getPostByID(postId)
-      .then(setPost)
-      .catch(() => setError('投稿の読み込みに失敗しました'))
-      .finally(() => setLoading(false));
-  };
+  const [isEditing, setIsEditing] = useState(false);
+  const [editSelectedFiles, setEditSelectedFiles] = useState<File[]>([]);
+  const [editDeletedMediaIDs, setEditDeletedMediaIDs] = useState<string[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Post | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (id) loadPost(id);
-  }, [id]);
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
+  const handleBlock = async (blockedUserId: string) => {
+    if (!window.confirm('このユーザーをブロックしますか？')) return;
+    try {
+      await createBlocker(blockedUserId);
+      addToast('ユーザーをブロックしました', 'success');
+      navigate(-1);
+    } catch (err) {
+      console.error(err);
+      addToast('ブロックに失敗しました', 'error');
+    }
+  };
+
+  const isMyPost = post?.user.ID === userId;
+  // ⭕️ 追加: メイン投稿が削除されているかどうかのフラグ
+  const isDeleted = post?.deletedAt != null;
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) {
@@ -142,7 +99,35 @@ export const PostDetailPage = () => {
     } else {
       await createFavorite(postId);
     }
-    if (id) loadPost(id);
+    if (postId === id) {
+      const updater = (p: Post): Post => isLiked
+        ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
+        : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+      updatePostInCache(postId, updater);
+      if (userId) updatePostInUserPostListCache(userId, postId, updater);
+    }
+    void mutate();
+  };
+
+  const handleReplyToPost = async (content: string, files: File[]) => {
+    if (!replyingTo) return;
+    let mediaInputs: MediaInput[] | undefined;
+    if (files.length > 0) {
+      mediaInputs = await Promise.all(
+        files.map(async (file) => {
+          const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+          await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+          return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+        }),
+      );
+    }
+    await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    if (id) {
+      const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
+      updatePostInCache(id, updater);
+      if (userId) updatePostInUserPostListCache(userId, id, updater);
+    }
+    void mutate();
   };
 
   const handleReply = async () => {
@@ -163,85 +148,287 @@ export const PostDetailPage = () => {
       await createPost(replyContent.trim(), id, mediaInputs);
       setReplyContent('');
       setReplyFiles([]);
-      loadPost(id);
-    } catch {
-      setReplyError('返信に失敗しました');
+      if (id) {
+        const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
+        updatePostInCache(id, updater);
+        if (userId) updatePostInUserPostListCache(userId, id, updater);
+      }
+      void mutate();
+    } catch (err) {
+      setReplyError(toUserMessage(err, '返信の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
       setReplying(false);
     }
   };
 
+  const handleUpdate = async () => {
+    const remainingExistingMedia = post?.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) || [];
+    const hasAnyMedia = remainingExistingMedia.length > 0 || editSelectedFiles.length > 0;
+    if (!id || (!editContent.trim() && !hasAnyMedia) || isUpdating) return;
+    const isContentChanged = editContent !== post?.content;
+    const hasNewMedia = editSelectedFiles.length > 0;
+    const hasDeletedMedia = editDeletedMediaIDs.length > 0;
+    if (!isContentChanged && !hasNewMedia && !hasDeletedMedia) {
+      setIsEditing(false);
+      return;
+    }
+
+    setIsUpdating(true);
+    setUpdateError('');
+    try {
+      let mediaInputs: MediaInput[] | undefined;
+      if (editSelectedFiles.length > 0) {
+        mediaInputs = await Promise.all(
+          editSelectedFiles.map(async (file) => {
+            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
+            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
+            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
+          })
+        );
+      }
+
+      const deletedIDs = [...editDeletedMediaIDs];
+      await updatePost(id, editContent.trim(), mediaInputs, deletedIDs);
+
+      setIsEditing(false);
+      setEditSelectedFiles([]);
+      setEditDeletedMediaIDs([]);
+      mutate().then(updatedPost => {
+        if (updatedPost && id) {
+          const filtered = {
+            ...updatedPost,
+            media: updatedPost.media?.filter(m => !deletedIDs.includes(m.ID)) ?? [],
+          };
+          updatePostInCache(id, () => filtered);
+        }
+      });
+    } catch (err) {
+      setUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !window.confirm('本当にこの投稿を削除しますか？')) return;
+    try {
+      await deletePost(id);
+      removePostFromCache(id);
+      if (userId) removePostFromUserPostListCache(userId, id);
+      navigate(-1);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div>
-      <UserHeader />
-      <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0' }}>
-          <button
-            onClick={() => navigate('/posts')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.1rem', padding: '0.25rem 0.5rem', borderRadius: '50%' }}
-          >←</button>
-          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿</h1>
+      <UserSidebar />
+      <main className={styles.main}>
+        <div className={styles.pageHeader}>
+          <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
+          <h1 className={styles.pageTitle}>投稿</h1>
         </div>
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
+        {error && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
-        {loading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+        {isLoading ? (
+          <p className={styles.loadingText}>読み込み中...</p>
         ) : !post ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
+          <p className={styles.loadingText}>投稿が見つかりません</p>
         ) : (
           <>
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
-                <div>
-                  <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
-                  <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+            {post.rootPost && (
+              <div className={styles.rootPostContainer}>
+                {post.rootPost.deletedAt != null ? (
+                  <div className={styles.deletedPost}>この投稿は削除されました</div>
+                ) : (
+                  <PostCard
+                    post={post.rootPost}
+                    currentUserId={userId}
+                    onLike={handleLike}
+                    onClick={() => navigate(`/posts/${post.rootPost!.ID}`)}
+                  />
+                )}
+                <div className={styles.threadConnector} />
+              </div>
+            )}
+
+            {isDeleted ? (
+              <div className={styles.deletedMain}>この投稿は削除されました</div>
+            ) : (
+              <div className={styles.postBody}>
+                <div className={styles.postBodyHeader}>
+                  <div className={styles.userInfo}>
+                    <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
+                    <div>
+                      <UserNameLink userId={post.user.ID}>
+                        <div className={styles.userName}>{post.user.name}</div>
+                      </UserNameLink>
+                      <div className={styles.userAccount}>@{post.user.accountID}</div>
+                    </div>
+                  </div>
+
+                  {!isEditing && (
+                    <div className={styles.menuWrap} ref={menuRef}>
+                      <button
+                        className={styles.menuButton}
+                        onClick={() => setMenuOpen(v => !v)}
+                        aria-label="メニュー"
+                      >···</button>
+                      {menuOpen && (
+                        <div className={styles.dropdown}>
+                          {isMyPost ? (
+                            <>
+                              <button
+                                className={styles.dropdownItem}
+                                onClick={() => {
+                                  setMenuOpen(false);
+                                  setIsEditing(true);
+                                  setEditContent(post.content);
+                                  setEditSelectedFiles([]);
+                                  setEditDeletedMediaIDs([]);
+                                  setUpdateError('');
+                                }}
+                              >
+                                <img src={editIcon} alt="" className={styles.dropdownIcon} />
+                                編集
+                              </button>
+                              <button
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                onClick={() => { setMenuOpen(false); handleDelete(); }}
+                              >
+                                <img src={deleteIcon} alt="" className={styles.dropdownIconDelete} />
+                                削除
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className={styles.dropdownItem}
+                                onClick={() => { setMenuOpen(false); handleBlock(post.user.ID); }}
+                              >
+                                <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                                ブロック
+                              </button>
+                              <button
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                onClick={() => { setMenuOpen(false); setIsReportOpen(true); }}
+                              >
+                                <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                                通報
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {isEditing ? (
+                  <div className={styles.editForm}>
+                    {updateError && <p className={styles.editError}>{updateError}</p>}
+                    <PostComposer
+                      value={editContent}
+                      onChange={setEditContent}
+                      onSubmit={handleUpdate}
+                      submitting={isUpdating}
+                      userId={userId}
+                      avatarUrl={profile?.avatarUrl}
+                      userName={profile?.user.name}
+                      selectedFiles={editSelectedFiles}
+                      onFileSelect={setEditSelectedFiles}
+                      existingMedia={post.media}
+                      deletedMediaIDs={editDeletedMediaIDs}
+                      onDeleteExistingMedia={(mediaId) => setEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                      submitLabel="保存する"
+                      submittingLabel="保存中..."
+                      placeholder="投稿を編集..."
+                      onCancel={() => {
+                        setIsEditing(false);
+                        setEditContent(post.content);
+                        setEditSelectedFiles([]);
+                        setEditDeletedMediaIDs([]);
+                      }}
+                      isEmbedded
+                    />
+                  </div>
+                ) : (
+                  post.content && <p className={styles.postContent}>{post.content}</p>
+                )}
+
+                {!isEditing && post.media && post.media.length > 0 && (
+                  <PostMediaGrid media={post.media} large />
+                )}
+
+                <div className={styles.timestamp}>
+                  {new Date(post.createdAt).toLocaleString('ja-JP')}
+                </div>
+
+                <div className={styles.postStats}>
+                  <span className={styles.replyCount}>
+                    <img src={commentIcon} alt="返信" className={styles.commentIcon} />
+                    <strong>{post.replyCount}</strong> 件の返信
+                  </span>
+                  <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
                 </div>
               </div>
-              {post.content && (
-                <p style={{ margin: '0 0 0.75rem', color: '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                  {post.content}
-                </p>
-              )}
-              {post.media && post.media.length > 0 && (
-                <PostMediaDetail media={post.media} />
-              )}
-              <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-                {new Date(post.createdAt).toLocaleString('ja-JP')}
-              </div>
-              <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
-                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                  💬 <strong>{post.replies.length}</strong> 件の返信
-                </span>
-                <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
-              </div>
-            </div>
+            )}
 
-            <PostComposer
-              value={replyContent}
-              onChange={setReplyContent}
-              onSubmit={handleReply}
-              submitting={replying}
-              error={replyError}
-              placeholder="返信する..."
-              rows={2}
-              submitLabel="返信する"
-              submittingLabel="送信中..."
-              iconSize={36}
-              userId={userId}
-              avatarUrl={profile?.avatarUrl}
-              userName={profile?.user.name}
-              selectedFiles={replyFiles}
-              onFileSelect={setReplyFiles}
-            />
+            {/* 🛡 ⭕️ 返信入力フォーム（メインが削除されていない場合のみ） */}
+            {!isDeleted && (
+              <div className={styles.replyComposer}>
+                <PostComposer
+                  value={replyContent}
+                  onChange={setReplyContent}
+                  onSubmit={handleReply}
+                  submitting={replying}
+                  error={replyError}
+                  placeholder="返信する..."
+                  rows={2}
+                  submitLabel="返信する"
+                  submittingLabel="送信中..."
+                  iconSize={36}
+                  userId={userId}
+                  avatarUrl={profile?.avatarUrl}
+                  userName={profile?.user.name}
+                  selectedFiles={replyFiles}
+                  onFileSelect={setReplyFiles}
+                />
+              </div>
+            )}
 
-            {post.replies.length > 0 && (
+            {/* 🛡 ⭕️ 返信一覧（削除済みのリプライを除外して表示） */}
+            {post.replies && post.replies.length > 0 && (
               <div>
-                {post.replies.map((reply) => (
-                  <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
-                ))}
+                {post.replies
+                  .filter(reply => reply.deletedAt == null) // ここで削除済みを除外
+                  .map((reply) => (
+                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} onReply={setReplyingTo} />
+                  ))}
               </div>
+            )}
+
+            {replyingTo && (
+              <ReplyModal
+                post={replyingTo}
+                onClose={() => setReplyingTo(null)}
+                onSubmit={handleReplyToPost}
+                userId={userId}
+                avatarUrl={profile?.avatarUrl}
+                userName={profile?.user.name}
+              />
+            )}
+
+            {id && (
+              <ReportModal
+                isOpen={isReportOpen}
+                onClose={() => setIsReportOpen(false)}
+                targetType="POST"
+                targetID={id}
+                postContent={post.content}
+              />
             )}
           </>
         )}

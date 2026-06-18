@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, adminUpdateUser, type User } from '../api/users';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const AdminUserEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,16 +29,22 @@ export const AdminUserEditPage = () => {
       .catch(() => setError('ユーザー情報の取得に失敗しました'));
   }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     if (!id || !user) return;
+
+    if (!accountID.trim()) { setError('ユーザーIDは必須です'); return; }
+    if (!name.trim()) { setError('名前は必須です'); return; }
+    if (!email.trim()) { setError('メールアドレスは必須です'); return; }
+
     try {
-      const input: { accountID?: string; name?: string; email?: string; password?: string } = {};
-      if (accountID !== user.accountID) input.accountID = accountID;
-      if (name !== user.name) input.name = name;
-      if (email !== user.email) input.email = email;
+      const input: { accountID: string; name: string; email: string; password?: string } = {
+        accountID,
+        name,
+        email,
+      };
       if (password) input.password = password;
 
       const data = await adminUpdateUser(id, input);
@@ -55,7 +62,7 @@ export const AdminUserEditPage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate(`/admin/users/${id}`)}>← 詳細に戻る</button>
+        <button onClick={() => navigate(`/admin/users/${id}`)}><ChevronLeft /> 詳細に戻る</button>
         <h1>ユーザー情報の編集</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}

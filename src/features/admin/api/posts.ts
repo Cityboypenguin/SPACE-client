@@ -5,8 +5,23 @@ const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
 export type PostUser = {
   ID: string;
-  accountID: string;
   name: string;
+  accountID: string;
+  avatarUrl?: string | null;
+};
+
+export type PostFavorite = {
+  ID: string;
+  user: {
+    ID: string;
+  };
+};
+
+export type Media = {
+  ID: string;
+  url: string;
+  contentType: string;
+  createdAt: string;
 };
 
 export type Post = {
@@ -14,36 +29,80 @@ export type Post = {
   content: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
+  replyCount: number;
   user: PostUser;
+  favorites: PostFavorite[];
+  rootPost?: Post | null;
+  parent?: Post | null;
+  replies: Post[];
+  media: Media[];
 };
 
-const POSTS_QUERY = `
-  query {
-    posts {
+const POST_FIELDS = `
+  ID
+  content
+  createdAt
+  updatedAt
+  deletedAt
+  replyCount
+  user {
+    ID
+    name
+    accountID
+    avatarUrl
+  }
+  favorites {
+    ID
+    user {
       ID
-      content
-      createdAt
-      updatedAt
-      user {
-        ID
-        accountID
-        name
+    }
+  }
+  media {
+    ID
+    url
+    contentType
+    createdAt
+  }
+`;
+
+export type PostPage = { items: Post[]; total: number };
+
+const POSTS_QUERY = `
+  query GetAdminPosts($limit: Int, $offset: Int) {
+    posts(limit: $limit, offset: $offset) {
+      items {
+        ${POST_FIELDS}
+        replies {
+          ID
+        }
       }
+      total
     }
   }
 `;
 
-const SEARCH_POSTS_QUERY = `
-  query SearchPosts($content: String!) {
-    searchPosts(content: $content) {
-      ID
-      content
-      createdAt
-      updatedAt
-      user {
-        ID
-        accountID
-        name
+const GET_POST_BY_ID_QUERY = `
+  query GetPostByIDIncludeDeleted($id: ID!) {
+    getPostByIDIncludeDeleted(id: $id) {
+      ${POST_FIELDS}
+      rootPost {
+        ${POST_FIELDS}
+      }
+      replies {
+        ${POST_FIELDS}
+        replies {
+          ${POST_FIELDS}
+          replies {
+            ${POST_FIELDS}
+            replies {
+              ${POST_FIELDS}
+              replies {
+                ID
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -55,14 +114,20 @@ const ADMIN_DELETE_POST_MUTATION = `
   }
 `;
 
-export const getPosts = async () => {
-  return await request<{ posts: Post[] }>(POSTS_QUERY, undefined, getAdminToken());
+export const getPosts = async (limit = 20, offset = 0): Promise<PostPage> => {
+  const data = await request<{ posts: PostPage }>(POSTS_QUERY, { limit, offset }, getAdminToken());
+  return data.posts;
 };
 
-export const searchPosts = async (content: string) => {
-  return await request<{ searchPosts: Post[] }>(SEARCH_POSTS_QUERY, { content }, getAdminToken());
+export const getPostByID = async (id: string): Promise<Post | null> => {
+  const data = await request<{ getPostByIDIncludeDeleted: Post | null }>(
+    GET_POST_BY_ID_QUERY,
+    { id },
+    getAdminToken(),
+  );
+  return data.getPostByIDIncludeDeleted;
 };
 
-export const adminDeletePost = async (id: string) => {
-  return await request<{ adminDeletePost: boolean }>(ADMIN_DELETE_POST_MUTATION, { id }, getAdminToken());
+export const adminDeletePost = async (id: string): Promise<void> => {
+  await request<{ adminDeletePost: boolean }>(ADMIN_DELETE_POST_MUTATION, { id }, getAdminToken());
 };

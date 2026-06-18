@@ -1,5 +1,5 @@
 import { request } from '../../../lib/graphql';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type Community = {
   ID: string;
@@ -7,6 +7,10 @@ export type Community = {
   name: string;
   description: string;
   avatarURL: string;
+  memberCount: number;
+  isMember: boolean;
+  unreadCount: number;
+  lastMessage?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -17,34 +21,47 @@ export type CommunityMember = {
     accountID: string;
     name: string;
     email: string;
+    avatarUrl?: string | null;
   };
   role: string;
 };
 
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
-
 const MY_COMMUNITIES_QUERY = `
-  query MyCommunities {
-    myCommunities {
-      ID
-      roomID
-      name
-      description
-      avatarURL
-      createdAt
+  query MyCommunities($limit: Int, $offset: Int) {
+    myCommunities(limit: $limit, offset: $offset) {
+      items {
+        ID
+        roomID
+        name
+        description
+        avatarURL
+        memberCount
+        isMember
+        unreadCount
+        lastMessage
+        createdAt
+        updatedAt
+      }
+      total
     }
   }
 `;
 
 const SEARCH_COMMUNITIES_QUERY = `
-  query SearchCommunities($name: String!) {
-    searchCommunities(name: $name) {
-      ID
-      roomID
-      name
-      description
-      avatarURL
-      createdAt
+  query SearchCommunities($name: String!, $limit: Int, $offset: Int) {
+    searchCommunities(name: $name, limit: $limit, offset: $offset) {
+      items {
+        ID
+        roomID
+        name
+        description
+        avatarURL
+        memberCount
+        isMember
+        createdAt
+        updatedAt
+      }
+      total
     }
   }
 `;
@@ -57,7 +74,10 @@ const CREATE_COMMUNITY_MUTATION = `
       name
       description
       avatarURL
+      memberCount
+      isMember
       createdAt
+      updatedAt
     }
   }
 `;
@@ -88,6 +108,7 @@ const GET_COMMUNITY_MEMBERS_QUERY = `
         accountID
         name
         email
+        avatarUrl
       }
       role
     }
@@ -102,6 +123,8 @@ const UPDATE_COMMUNITY_MUTATION = `
       name
       description
       avatarURL
+      memberCount
+      isMember
       createdAt
       updatedAt
     }
@@ -126,6 +149,12 @@ const DEMOTE_FROM_OWNER_MUTATION = `
   }
 `;
 
+const UPDATE_COMMUNITY_MEMBERS_MUTATION = `
+  mutation UpdateCommunityMembers($communityID: ID!, $updates: [CommunityMemberUpdateInput!]!) {
+    updateCommunityMembers(communityID: $communityID, updates: $updates)
+  }
+`;
+
 const RANDOM_COMMUNITIES_QUERY = `
   query RandomCommunities($limit: Int!) {
     randomCommunities(limit: $limit) {
@@ -134,7 +163,10 @@ const RANDOM_COMMUNITIES_QUERY = `
       name
       description
       avatarURL
+      memberCount
+      isMember
       createdAt
+      updatedAt
     }
   }
 `;
@@ -148,19 +180,31 @@ const PRESIGNED_COMMUNITY_ICON_UPLOAD_URL_QUERY = `
   }
 `;
 
-export const listMyCommunities = async (): Promise<Community[]> => {
-  const data = await request<{ myCommunities: Community[] }>(
+export type CommunityMemberAction = 'PROMOTE' | 'DEMOTE' | 'KICK';
+
+export type CommunityMemberUpdateInput = {
+  userID: string;
+  action: CommunityMemberAction;
+};
+
+export type CommunityPage = {
+  items: Community[];
+  total: number;
+};
+
+export const listMyCommunities = async (limit = 20, offset = 0): Promise<CommunityPage> => {
+  const data = await request<{ myCommunities: CommunityPage }>(
     MY_COMMUNITIES_QUERY,
-    undefined,
+    { limit, offset },
     getUserToken(),
   );
   return data.myCommunities;
 };
 
-export const searchCommunities = async (name: string): Promise<Community[]> => {
-  const data = await request<{ searchCommunities: Community[] }>(
+export const searchCommunities = async (name: string, limit = 20, offset = 0): Promise<CommunityPage> => {
+  const data = await request<{ searchCommunities: CommunityPage }>(
     SEARCH_COMMUNITIES_QUERY,
-    { name },
+    { name, limit, offset },
     getUserToken(),
   );
   return data.searchCommunities;
@@ -241,6 +285,17 @@ export const demoteFromCommunityOwner = async (communityID: string, userID: stri
   await request<{ demoteFromCommunityOwner: boolean }>(
     DEMOTE_FROM_OWNER_MUTATION,
     { communityID, userID },
+    getUserToken(),
+  );
+};
+
+export const updateCommunityMembers = async (
+  communityID: string,
+  updates: CommunityMemberUpdateInput[],
+): Promise<void> => {
+  await request<{ updateCommunityMembers: boolean }>(
+    UPDATE_COMMUNITY_MEMBERS_MUTATION,
+    { communityID, updates },
     getUserToken(),
   );
 };

@@ -1,143 +1,145 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserHeader } from '../components/organisms/UserHeader';
-import { searchUsers, type UserProfile } from '../api/profile';
-import { getOrCreateDMRoom, listMyDMRooms } from '../api/message';
+import { UserSidebar } from '../components/organisms/UserSidebar';
+import { Avatar } from '../../../components/atoms/Avatar';
+import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
+import { listMyDMRooms, type Room } from '../api/message';
+import { storageUrl } from '../../../lib/storage';
 import { useAuth } from '../context/AuthContext';
-import { type RecentDM } from '../utils/recentDM';
+import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import styles from './DMListPage.module.css';
+
+const LIMIT = 20;
 
 export const DMListPage = () => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<UserProfile[]>([]);
-  const [searched, setSearched] = useState(false);
-  const [error, setError] = useState('');
-  const [starting, setStarting] = useState<string | null>(null);
-  const [recentDMs, setRecentDMs] = useState<RecentDM[]>([]);
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
 
-  useEffect(() => {
-    let active = true;
+  const [dmRooms, setDmRooms] = useState<Room[]>([]);
+  const [dmTotal, setDmTotal] = useState(0);
+  const [dmInitialLoading, setDmInitialLoading] = useState(true);
+  const [dmLoadingMore, setDmLoadingMore] = useState(false);
+  const [dmError, setDmError] = useState(false);
+  const dmLoadingRef = useRef(false);
 
-    const loadDMRooms = async () => {
-      try {
-        const serverRooms = await listMyDMRooms();
-        if (!active) return;
-
-        const mappedRecent = serverRooms
-          .map((room) => {
-            const partner = room.user.find((u) => u.ID !== currentUserID) ?? room.user[0];
-            if (!partner) return null;
-            return {
-              roomID: room.ID,
-              partnerName: partner.name,
-              partnerAccountID: partner.accountID,
-            } as RecentDM;
-          })
-          .filter((dm): dm is RecentDM => dm !== null);
-
-        setRecentDMs(mappedRecent);
-      } catch {
-        if (active) setError('DMルームの読み込みに失敗しました');
-      }
-    };
-
-    void loadDMRooms();
-    return () => { active = false; };
-  }, [currentUserID]);
-
-  const handleSearch = async (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    setError('');
-    setResults([]);
-    setSearched(false);
+  const loadDMRooms = useCallback(async (currentOffset: number, isInitial: boolean) => {
+    if (dmLoadingRef.current) return;
+    dmLoadingRef.current = true;
+    if (isInitial) setDmInitialLoading(true);
+    else setDmLoadingMore(true);
     try {
-      const data = await searchUsers(query);
-      const filtered = currentUserID
-        ? data.searchUsers.filter((u) => u.ID !== currentUserID)
-        : data.searchUsers;
-      setResults(filtered);
-      setSearched(true);
+      const page = await listMyDMRooms(LIMIT, currentOffset);
+      setDmRooms((prev) => isInitial ? page.items : [...prev, ...page.items]);
+      setDmTotal(page.total);
+      setDmError(false);
     } catch {
-      setError('検索に失敗しました');
-    }
-  };
-
-  const handleStartDM = async (target: UserProfile) => {
-    setStarting(target.ID);
-    setError('');
-    try {
-      const data = await getOrCreateDMRoom(target.ID);
-      navigate(`/dm/${data.getOrCreateDMRoom.ID}`);
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : 'DMの開始に失敗しました');
+      setDmError(true);
     } finally {
-      setStarting(null);
+      dmLoadingRef.current = false;
+      if (isInitial) setDmInitialLoading(false);
+      else setDmLoadingMore(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDMRooms(0, true);
+  }, [loadDMRooms]);
+
+  const sentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      setDmRooms((prev) => {
+        if (!dmLoadingRef.current && prev.length < dmTotal) loadDMRooms(prev.length, false);
+        return prev;
+      });
+    }, [dmTotal, loadDMRooms]),
+    dmLoadingMore,
+  );
+
+  useUnreadSubscription(({ roomID, unreadCount }) => {
+    setDmRooms((prev) =>
+      prev.map((room) => room.ID === roomID ? { ...room, unreadCount } : room),
+    );
+  });
+
+  const filteredRooms = dmRooms.filter((room) => {
+    if (!query) return true;
+    const partner = room.user.find((u) => u.ID !== currentUserID) ?? room.user[0];
+    if (!partner) return false;
+    const q = query.toLowerCase();
+    return (
+      partner.name.toLowerCase().includes(q) ||
+      partner.accountID.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main className={styles.main}>
-        <h1>ダイレクトメッセージ</h1>
+        <IconSearchBar
+          value={query}
+          onChange={setQuery}
+          placeholder="Search"
+        />
 
-        <section>
-          <h2 className={styles.sectionTitle}>新しいDMを開始</h2>
-          <form onSubmit={handleSearch} className={styles.searchForm}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="名前で検索"
-              required
-              className={styles.searchInput}
-            />
-            <button type="submit">検索</button>
-          </form>
+        {dmError && (
+          <p className={styles.errorText}>DMルームの読み込みに失敗しました。</p>
+        )}
 
-          {error && <p style={{ color: 'red', marginTop: '0.5rem' }}>{error}</p>}
-          {searched && results.length === 0 && (
-            <p style={{ marginTop: '0.5rem' }}>該当するユーザーが見つかりませんでした</p>
-          )}
+        <h2 className={styles.sectionTitle}>DM</h2>
 
-          {results.length > 0 && (
-            <ul className={styles.resultList}>
-              {results.map((user) => (
-                <li key={user.ID} className={styles.resultItem}>
-                  <span>
-                    <strong>{user.name}</strong>（{user.accountID}）
-                  </span>
-                  <button
-                    onClick={() => handleStartDM(user)}
-                    disabled={starting === user.ID}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {starting === user.ID ? '開始中...' : 'DMを開始'}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {recentDMs.length > 0 && (
-          <section className={styles.dmSection}>
-            <h2 className={styles.sectionTitle}>最近のDM</h2>
-            <ul className={styles.dmList}>
-              {recentDMs.map((dm) => (
+        {dmInitialLoading ? (
+          <p className={styles.empty}>読み込み中...</p>
+        ) : filteredRooms.length === 0 ? (
+          <p className={styles.empty}>
+            {query ? '該当するトークが見つかりませんでした' : 'DMがまだありません'}
+          </p>
+        ) : (
+          <ul className={styles.dmList}>
+            {filteredRooms.map((room) => {
+              const partner = room.user.find((u) => u.ID !== currentUserID) ?? room.user[0];
+              if (!partner) return null;
+              const hasUnread = (room.unreadCount ?? 0) > 0;
+              return (
                 <li
-                  key={dm.roomID}
-                  onClick={() => navigate(`/dm/${dm.roomID}`)}
-                  className={styles.dmItem}
+                  key={room.ID}
+                  onClick={() => navigate(`/dm/${room.ID}`)}
+                  className={`${styles.dmItem} ${hasUnread ? styles.dmItemUnread : ''}`}
                 >
-                  <strong>{dm.partnerName}</strong>
-                  <span className={styles.dmPartnerSub}>@{dm.partnerAccountID}</span>
+                  <div className={styles.avatarWrap}>
+                    {partner.avatarUrl ? (
+                      <img
+                        src={storageUrl(partner.avatarUrl) ?? undefined}
+                        alt={partner.name}
+                        className={styles.avatarImg}
+                      />
+                    ) : (
+                      <Avatar name={partner.name} size={44} />
+                    )}
+                  </div>
+                  <div className={styles.dmItemBody}>
+                    <div className={styles.dmItemTop}>
+                      <span className={styles.partnerName}>{partner.name}</span>
+                      <span className={styles.partnerAccount}>@{partner.accountID}</span>
+                    </div>
+                  </div>
+                  <div className={styles.dmItemRight}>
+                    {room.lastMessage && (
+                      <p className={styles.lastMessage}>{room.lastMessage}</p>
+                    )}
+                    <UnreadCountBadge count={room.unreadCount ?? 0} />
+                  </div>
                 </li>
-              ))}
-            </ul>
-          </section>
+              );
+            })}
+            <div ref={sentinelRef} style={{ height: '1px' }} />
+            {dmLoadingMore && (
+              <p className={styles.empty}>読み込み中...</p>
+            )}
+          </ul>
         )}
       </main>
     </div>

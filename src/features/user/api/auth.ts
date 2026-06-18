@@ -4,6 +4,8 @@ export const USER_TOKEN_KEY = 'space_user_token';
 export const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
 export const USER_ID_KEY = 'space_user_id';
 
+export const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
+
 type User = {
   ID: string;
   accountID: string;
@@ -52,6 +54,18 @@ const LOGOUT_USER_MUTATION = `
   }
 `;
 
+const SEND_EMAIL_OTP_MUTATION = `
+  mutation SendEmailOTP($email: String!) {
+    sendEmailOTP(email: $email)
+  }
+`;
+
+const VERIFY_EMAIL_OTP_MUTATION = `
+  mutation VerifyEmailOTP($email: String!, $otp: String!) {
+    verifyEmailOTP(email: $email, otp: $otp)
+  }
+`;
+
 const CREATE_USER_MUTATION = `
   mutation CreateUser($input: CreateUserInput!) {
     createUser(input: $input) {
@@ -73,6 +87,44 @@ export const logoutUser = async (token: string) => {
   return await request<LogoutUserResponse>(LOGOUT_USER_MUTATION, { token });
 };
 
-export const registerUser = async (accountID: string, name: string, email: string, password: string) => {
-  return await request<RegisterUserResponse>(CREATE_USER_MUTATION, { input: { accountID, name, email, password } });
+export const sendEmailOTP = async (email: string) => {
+  return await request<{ sendEmailOTP: boolean }>(SEND_EMAIL_OTP_MUTATION, { email });
+};
+
+export const verifyEmailOTP = async (email: string, otp: string) => {
+  return await request<{ verifyEmailOTP: boolean }>(VERIFY_EMAIL_OTP_MUTATION, { email, otp });
+};
+
+export const registerUser = async (accountID: string, name: string, email: string, password: string, otp: string) => {
+  return await request<RegisterUserResponse>(CREATE_USER_MUTATION, { input: { accountID, name, email, password, otp } });
+};
+
+const REQUEST_PASSWORD_RESET_MUTATION = `
+  mutation RequestPasswordReset($email: String!) {
+    requestPasswordReset(email: $email)
+  }
+`;
+
+const VERIFY_PASSWORD_RESET_OTP_MUTATION = `
+  mutation VerifyPasswordResetOTP($email: String!, $otp: String!) {
+    verifyPasswordResetOTP(email: $email, otp: $otp)
+  }
+`;
+
+const RESET_PASSWORD_MUTATION = `
+  mutation ResetPassword($resetToken: String!, $newPassword: String!) {
+    resetPassword(resetToken: $resetToken, newPassword: $newPassword)
+  }
+`;
+
+export const requestPasswordReset = async (email: string) => {
+  return await request<{ requestPasswordReset: boolean }>(REQUEST_PASSWORD_RESET_MUTATION, { email });
+};
+
+export const verifyPasswordResetOTP = async (email: string, otp: string) => {
+  return await request<{ verifyPasswordResetOTP: string }>(VERIFY_PASSWORD_RESET_OTP_MUTATION, { email, otp });
+};
+
+export const resetPassword = async (resetToken: string, newPassword: string) => {
+  return await request<{ resetPassword: boolean }>(RESET_PASSWORD_MUTATION, { resetToken, newPassword });
 };

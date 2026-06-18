@@ -11,7 +11,18 @@ import { AdminAdministratorListPage } from '../pages/AdminAdministratorsListPage
 import { AdminCommunityListPage } from '../pages/AdminCommunityListPage';
 import { AdminCommunityDetailPage } from '../pages/AdminCommunityDetailPage';
 import { AdminPostListPage } from '../pages/AdminPostListPage';
+import { AdminPostDetailPage } from '../pages/AdminPostDetailPage';
 import { AdminAdministratorEditPage } from '../pages/AdminAdministratorEditPage';
+import { ReportsPage } from '../pages/AdminReportListPage';
+import { AdminInquiryListPage } from '../pages/AdminInquiryListPage';
+import { AdminInquiryDetailPage } from '../pages/AdminInquiryDetailPage';
+import { AdminAnnouncementListPage } from '../pages/AdminAnnouncementListPage';
+import { AdminAnnouncementCreatePage } from '../pages/AdminAnnouncementCreatePage';
+import { AdminAnnouncementDetailPage } from '../pages/AdminAnnouncementDetailPage';
+import { AdminTermsCreatePage } from '../pages/AdminTermsCreatePage';
+import { AdminTermsListPage } from '../pages/AdminTermsListPage';
+import { AdminTermsDetailPage } from '../pages/AdminTermsDetailPage';
+import { AdminMaintenancePage } from '../pages/AdminMaintenancePage';
 
 export const AdminRoutes = () => {
   return (
@@ -95,6 +106,102 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminPostListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="posts"
+        element={
+          <AdminProtectedRoute>
+            <AdminPostListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="posts/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminPostDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="reports"
+        element={
+          <AdminProtectedRoute>
+            <ReportsPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="inquiries"
+        element={
+          <AdminProtectedRoute>
+            <AdminInquiryListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="inquiries/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminInquiryDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements/new"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementCreatePage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="announcements/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnnouncementDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="terms"
+        element={
+          <AdminProtectedRoute>
+            <AdminTermsListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="terms/new"
+        element={
+          <AdminProtectedRoute>
+            <AdminTermsCreatePage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="terms/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminTermsDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="maintenance"
+        element={
+          <AdminProtectedRoute>
+            <AdminMaintenancePage />
           </AdminProtectedRoute>
         }
       />

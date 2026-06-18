@@ -17,93 +17,126 @@ type WsMessage = {
   payload?: unknown;
 };
 
-type SubscribeOptions<T> = {
+type SubscriptionEntry = {
   query: string;
   variables: Record<string, unknown>;
-  onData: (data: T) => void;
+  onData: (data: unknown) => void;
   onError?: (error: unknown) => void;
   onConnected?: () => void;
-  onDisconnected?: () => void;
 };
 
 const RECONNECT_DELAYS = [1000, 2000, 5000, 10000];
 
-function createConnection<T>(
-  options: SubscribeOptions<T>,
-  subId: string,
-  stopped: { current: boolean },
-  attempt: { current: number },
-  scheduleReconnect: () => void,
-): WebSocket {
-  const { query, variables, onData, onError, onConnected, onDisconnected } = options;
-  const token = localStorage.getItem(USER_TOKEN_KEY);
-  const ws = new WebSocket(getWsUrl(), 'graphql-transport-ws');
+// Shared singleton connection state
+let ws: WebSocket | null = null;
+let isAcknowledged = false;
+let reconnectAttempt = 0;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+const subscriptions = new Map<string, SubscriptionEntry>();
 
-  ws.onopen = () => {
-    if (stopped.current) {
-      ws.close();
-      return;
-    }
+function sendSubscribe(subId: string, entry: SubscriptionEntry) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'subscribe',
+      id: subId,
+      payload: { query: entry.query, variables: entry.variables },
+    }));
+  }
+}
+
+function connect() {
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+    return;
+  }
+
+  const token = localStorage.getItem(USER_TOKEN_KEY);
+  // Capture the socket in a local variable so closures don't rely on the
+  // module-level `ws`, which can be reassigned by a concurrent connect().
+  const socket = new WebSocket(getWsUrl(), 'graphql-transport-ws');
+  ws = socket;
+  isAcknowledged = false;
+
+  socket.onopen = () => {
+    // Guard against stale callbacks: if a newer connection has taken over, ignore this one.
+    if (ws !== socket) return;
     const initPayload: Record<string, unknown> = {};
     if (token) {
       initPayload['Authorization'] = `Bearer ${token}`;
     }
-    ws.send(JSON.stringify({ type: 'connection_init', payload: initPayload }));
+    socket.send(JSON.stringify({ type: 'connection_init', payload: initPayload }));
   };
 
-  ws.onmessage = (event: MessageEvent) => {
-    if (stopped.current) return;
+  socket.onmessage = (event: MessageEvent) => {
+    if (ws !== socket) return;
     const msg = JSON.parse(event.data as string) as WsMessage;
 
     switch (msg.type) {
       case 'connection_ack':
-        attempt.current = 0;
-        onConnected?.();
-        ws.send(JSON.stringify({
-          type: 'subscribe',
-          id: subId,
-          payload: { query, variables },
-        }));
+        isAcknowledged = true;
+        reconnectAttempt = 0;
+        // Register all active subscriptions over the new connection
+        for (const [subId, entry] of subscriptions) {
+          entry.onConnected?.();
+          sendSubscribe(subId, entry);
+        }
         break;
 
       case 'ping':
-        ws.send(JSON.stringify({ type: 'pong' }));
+        socket.send(JSON.stringify({ type: 'pong' }));
         break;
 
       case 'next':
-        if (msg.id === subId && msg.payload) {
-          onData((msg.payload as { data: T }).data);
+        if (msg.id && msg.payload) {
+          subscriptions.get(msg.id)?.onData((msg.payload as { data: unknown }).data);
         }
         break;
 
       case 'error':
-        if (msg.id === subId) {
+        if (msg.id) {
           console.error('[GraphQL WS] subscription error:', msg.payload);
-          onError?.(msg.payload);
+          subscriptions.get(msg.id)?.onError?.(msg.payload);
         }
         break;
 
       case 'complete':
-        if (msg.id === subId) {
-          ws.close();
+        if (msg.id) {
+          subscriptions.delete(msg.id);
         }
         break;
     }
   };
 
-  ws.onerror = (event) => {
+  socket.onerror = (event) => {
     console.error('[GraphQL WS] connection error:', event);
-    onError?.(event);
   };
 
-  ws.onclose = (event) => {
-    if (stopped.current) return;
+  socket.onclose = (event) => {
+    // Only update shared state if this is still the active connection.
+    // A concurrent connect() may have already replaced `ws` with a new socket.
+    if (ws !== socket) return;
     console.warn('[GraphQL WS] connection closed', event.code, event.reason);
-    onDisconnected?.();
-    scheduleReconnect();
-  };
+    isAcknowledged = false;
+    ws = null;
 
-  return ws;
+    for (const entry of subscriptions.values()) {
+      entry.onError?.(new Error('disconnected'));
+    }
+
+    if (subscriptions.size > 0) {
+      scheduleReconnect();
+    }
+  };
+}
+
+function scheduleReconnect() {
+  if (reconnectTimer != null) return;
+  const delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
+  reconnectAttempt++;
+  console.log(`[GraphQL WS] reconnecting in ${delay}ms (attempt ${reconnectAttempt})`);
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (subscriptions.size > 0) connect();
+  }, delay);
 }
 
 export const subscribeToGraphQL = <T>(
@@ -114,48 +147,48 @@ export const subscribeToGraphQL = <T>(
   onConnected?: () => void,
 ): (() => void) => {
   const subId = Math.random().toString(36).slice(2) || 'sub';
-  const stopped = { current: false };
-  const attempt = { current: 0 };
-  let ws: WebSocket | null = null;
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const options: SubscribeOptions<T> = {
+  const entry: SubscriptionEntry = {
     query,
     variables,
-    onData,
+    onData: onData as (data: unknown) => void,
     onError,
     onConnected,
-    onDisconnected: () => onError?.(new Error('disconnected')),
   };
+  subscriptions.set(subId, entry);
 
-  const scheduleReconnect = () => {
-    if (stopped.current) return;
-    const delay = RECONNECT_DELAYS[Math.min(attempt.current, RECONNECT_DELAYS.length - 1)];
-    attempt.current++;
-    console.log(`[GraphQL WS] reconnecting in ${delay}ms (attempt ${attempt.current})`);
-    reconnectTimer = setTimeout(() => {
-      if (!stopped.current) {
-        ws = createConnection(options, subId, stopped, attempt, scheduleReconnect);
-      }
-    }, delay);
-  };
-
-  ws = createConnection(options, subId, stopped, attempt, scheduleReconnect);
+  if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+    connect();
+  } else if (isAcknowledged) {
+    // Connection already open — send subscribe immediately
+    onConnected?.();
+    sendSubscribe(subId, entry);
+  }
+  // If CONNECTING, subscription will be sent when connection_ack arrives
 
   return () => {
-    stopped.current = true;
-    if (reconnectTimer != null) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
+    subscriptions.delete(subId);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'complete', id: subId }));
     }
-    if (ws) {
-      if (ws.readyState === WebSocket.CONNECTING) {
-        ws.onopen = () => ws?.close();
-      } else if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'complete', id: subId }));
-        ws.close();
+    // Close shared connection when all subscriptions are gone
+    if (subscriptions.size === 0) {
+      if (reconnectTimer != null) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
       }
-      ws = null;
+      if (ws) {
+        // Capture socket reference before nulling `ws` so the onopen handler
+        // closes this specific socket instance, not a future one.
+        const socketToClose = ws;
+        ws = null;
+        if (socketToClose.readyState === WebSocket.CONNECTING) {
+          socketToClose.onopen = () => socketToClose.close();
+        } else if (socketToClose.readyState === WebSocket.OPEN) {
+          socketToClose.close();
+        }
+      }
+      isAcknowledged = false;
     }
   };
 };

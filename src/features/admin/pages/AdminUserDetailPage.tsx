@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, deleteUser, freezeUser, unfreezeUser, type User } from '../api/users';
+import { adminGetBlockers, adminGetFavoriteUsers } from '../api/relation';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { UserListItem } from '../../../components/molecules/UserListItem';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 const STATUS_FROZEN = 'frozen';
 
@@ -13,11 +16,39 @@ export const AdminUserDetailPage = () => {
   const [error, setError] = useState('');
   const [freezeError, setFreezeError] = useState('');
 
+  const [favorites, setFavorites] = useState<User[]>([]);
+  const [blockers, setBlockers] = useState<User[]>([]);
+  const [relationsLoading, setRelationsLoading] = useState(true);
+
   useEffect(() => {
     if (!id) return;
     getUserByID(id)
       .then((data) => setUser(data.getUserByID))
       .catch(() => setError('ユーザー情報の取得に失敗しました'));
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    const fetchRelations = async () => {
+      setRelationsLoading(true);
+      try {
+        const [favData, blockData] = await Promise.all([
+          adminGetFavoriteUsers(id),
+          adminGetBlockers(id)
+        ]);
+        if (active) {
+          setFavorites(favData || []);
+          setBlockers(blockData || []);
+        }
+      } catch (err) {
+        console.error('交友関係の取得に失敗しました', err);
+      } finally {
+        if (active) setRelationsLoading(false);
+      }
+    };
+    fetchRelations();
+    return () => { active = false; };
   }, [id]);
 
   const handleDelete = async () => {
@@ -63,7 +94,7 @@ export const AdminUserDetailPage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate('/admin/users')}>← 一覧に戻る</button>
+        <button onClick={() => navigate(-1)}><ChevronLeft /> 戻る</button>
         <h1>ユーザー詳細</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -103,6 +134,58 @@ export const AdminUserDetailPage = () => {
           <dt>更新日時</dt>
           <dd>{user.updatedAt}</dd>
         </dl>
+
+        <div style={{ marginTop: '2rem', marginBottom: '2rem', padding: '1.5rem', background: '#f9fafb', borderRadius: '8px' }}>
+          <h2 style={{ fontSize: '1.25rem', marginTop: 0, marginBottom: '1rem' }}>交友関係 (管理者閲覧用)</h2>
+          {relationsLoading ? (
+            <p>読み込み中...</p>
+          ) : (
+            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+
+              <div style={{ flex: 1, minWidth: '300px', background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ fontSize: '1rem', marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+                  お気に入り ({favorites.length})
+                </h3>
+                {favorites.length === 0 ? (
+                  <p style={{ color: 'gray', fontSize: '0.9rem' }}>登録なし</p>
+                ) : (
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    maxHeight: '400px',
+                    overflowY: 'auto'
+                  }}>
+                    {favorites.map(fUser => (
+                      <UserListItem key={fUser.ID} user={fUser} basePath="/admin/users" />
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: '300px', background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ fontSize: '1rem', marginTop: 0, color: '#ef4444', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+                  ブロック ({blockers.length})
+                </h3>
+                {blockers.length === 0 ? (
+                  <p style={{ color: 'gray', fontSize: '0.9rem' }}>ブロックなし</p>
+                ) : (
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    maxHeight: '400px',
+                    overflowY: 'auto'
+                  }}>
+                    {blockers.map(bUser => (
+                      <UserListItem key={bUser.ID} user={bUser} basePath="/admin/users" />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         <hr />
 

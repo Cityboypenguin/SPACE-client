@@ -1,6 +1,6 @@
 import { request } from '../../../lib/graphql';
 import { storageUrl } from '../../../lib/storage';
-import { USER_TOKEN_KEY } from './auth';
+import { getUserToken } from './auth';
 
 export type MessageUser = {
   ID: string;
@@ -37,9 +37,14 @@ export type Room = {
   name: string;
   type: string;
   user: MessageUser[];
+  isMessagingDisabled: boolean;
+  lastReadAt?: string | null;
+  unreadCount: number;
+  partnerLastReadAt?: string | null;
+  lastMessage?: string | null;
 };
 
-const MESSAGE_FIELDS = `
+export const MESSAGE_FIELDS = `
   ID
   roomID
   user {
@@ -58,20 +63,33 @@ const MESSAGE_FIELDS = `
   updatedAt
 `;
 
-const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
+const ROOM_FIELDS = `
+  ID
+  name
+  type
+  user {
+    ID
+    name
+    accountID
+    avatarUrl
+  }
+  isMessagingDisabled
+  lastReadAt
+  unreadCount
+  partnerLastReadAt
+  content
+`;
+
+const MARK_ROOM_AS_READ_MUTATION = `
+  mutation MarkRoomAsRead($roomID: ID!) {
+    markRoomAsRead(roomID: $roomID)
+  }
+`;
 
 const GET_OR_CREATE_DM_ROOM_MUTATION = `
   mutation GetOrCreateDMRoom($targetUserID: ID!) {
     getOrCreateDMRoom(targetUserID: $targetUserID) {
-      ID
-      name
-      type
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
+      ${ROOM_FIELDS}
     }
   }
 `;
@@ -99,41 +117,38 @@ const DELETE_MESSAGE_MUTATION = `
 `;
 
 const LIST_MESSAGES_QUERY = `
-  query ListMessages($roomID: ID!) {
-    messages(roomID: $roomID) {
-      ${MESSAGE_FIELDS}
+  query ListMessages($roomID: ID!, $limit: Int, $before: ID, $after: ID, $afterTime: String) {
+    messages(roomID: $roomID, limit: $limit, before: $before, after: $after, afterTime: $afterTime) {
+      items {
+        ${MESSAGE_FIELDS}
+      }
+      hasMoreBefore
+      hasMoreAfter
     }
   }
 `;
 
+export type MessagePage = {
+  items: Message[];
+  hasMoreBefore: boolean;
+  hasMoreAfter: boolean;
+};
+
 const GET_ROOM_QUERY = `
   query GetRoom($id: ID!) {
     room(id: $id) {
-      ID
-      name
-      type
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
+      ${ROOM_FIELDS}
     }
   }
 `;
 
 const MY_DM_ROOMS_QUERY = `
-  query MyDMRooms {
-    myDMRooms {
-      ID
-      name
-      type
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
+  query MyDMRooms($limit: Int, $offset: Int) {
+    myDMRooms(limit: $limit, offset: $offset) {
+      items {
+        ${ROOM_FIELDS}
       }
+      total
     }
   }
 `;
@@ -146,6 +161,15 @@ const PRESIGNED_MEDIA_UPLOAD_URL_QUERY = `
     }
   }
 `;
+
+export const markRoomAsRead = async (roomID: string) => {
+  const token = getUserToken();
+  return await request<{ markRoomAsRead: boolean }>(
+    MARK_ROOM_AS_READ_MUTATION,
+    { roomID },
+    token,
+  );
+};
 
 export const getOrCreateDMRoom = async (targetUserID: string) => {
   const token = getUserToken();
@@ -165,12 +189,25 @@ export const sendMessage = async (roomID: string, content: string, mediaInputs?:
   );
 };
 
-export const listMessages = async (roomID: string) => {
-  return await request<{ messages: Message[] }>(
+export type ListMessagesOptions = {
+  before?: string;
+  after?: string;
+  afterTime?: string;
+};
+
+export const listMessages = async (roomID: string, limit = 50, options?: ListMessagesOptions): Promise<MessagePage> => {
+  const data = await request<{ messages: MessagePage }>(
     LIST_MESSAGES_QUERY,
-    { roomID },
+    {
+      roomID,
+      limit,
+      ...(options?.before ? { before: options.before } : {}),
+      ...(options?.after ? { after: options.after } : {}),
+      ...(options?.afterTime ? { afterTime: options.afterTime } : {}),
+    },
     getUserToken(),
   );
+  return data.messages;
 };
 
 export const getRoom = async (id: string) => {
@@ -199,13 +236,15 @@ export const deleteMessage = async (roomID: string, id: string) => {
   );
 };
 
-export const listMyDMRooms = async () => {
+export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Room[]; total: number }> => {
   const token = getUserToken();
-  return await request<{ myDMRooms: Room[] }>(
+  const data = await request<{ myDMRooms: { items: (Omit<Room, 'lastMessage'> & { content?: string | null })[]; total: number } }>(
     MY_DM_ROOMS_QUERY,
-    undefined,
+    { limit, offset },
     token,
-  ).then((data) => data.myDMRooms);
+  );
+  const items = data.myDMRooms.items.map(({ content, ...rest }) => ({ ...rest, lastMessage: content ?? null }));
+  return { items, total: data.myDMRooms.total };
 };
 
 export const getPresignedMediaUploadUrl = async (contentType: string) => {

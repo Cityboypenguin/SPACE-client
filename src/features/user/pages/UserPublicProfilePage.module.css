@@ -1,47 +1,176 @@
 .main {
-  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-.profileHeader {
+.topBar {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
 }
 
-.avatar {
-  width: 80px;
-  height: 80px;
+.backBtn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: #374151;
+  display: flex;
+  align-items: center;
   border-radius: 50%;
-  object-fit: cover;
+  transition: background 0.15s;
 }
 
-.avatarPlaceholder {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #ccc;
+.backBtn:hover {
+  background: #f1f5f9;
+}
+
+.backBtn:focus,
+.backBtn:focus-visible {
+  outline: none;
+}
+
+/* 三点リーダーメニュー */
+.menuWrap {
+  position: relative;
+}
+
+.menuButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  color: #64748b;
+  letter-spacing: 2px;
+  transition: background 0.1s;
+}
+
+.menuButton:hover {
+  background: #f1f5f9;
+}
+
+.menuButton:focus,
+.menuButton:focus-visible {
+  outline: none;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 140px;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.dropdownItem {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.9rem;
+  color: #1e293b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.dropdownItem:hover {
+  background: #f1f5f9;
+}
+
+.dropdownItem:focus,
+.dropdownItem:focus-visible {
+  outline: none;
+}
+
+.dropdownItemDanger {
+  color: #ef4444;
+}
+
+.dropdownIcon {
+  width: 16px;
+  height: 16px;
+  justify-self: center;
+  object-fit: fill;
+}
+
+/* プロフィール右側のアクションボタン */
+.profileActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profileActionButton {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  padding: 0.5rem 0.9rem;
+  min-width: 9.5rem;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #1e293b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.profileActionButton:hover {
+  background: #f1f5f9;
+}
+
+.profileActionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.profileActionButton:focus,
+.profileActionButton:focus-visible {
+  outline: none;
+}
+
+.profileActionButtonFavorited {
+  background: #F97316;
+  border-color: #F97316;
   color: #fff;
-  flex-shrink: 0;
 }
 
-.displayName {
-  margin: 0;
+.profileActionButtonFavorited:hover {
+  background: #EA6C0A;
 }
 
-.username {
-  margin: 0;
-  color: #666;
+.profileActionIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  object-fit: fill;
 }
 
-.profileList {
-  line-height: 2;
+.profileActionIconFavorited {
+  filter: brightness(0) saturate(100%) invert(85%) sepia(90%) saturate(500%) hue-rotate(5deg) brightness(108%);
 }
 
-.profileLabel {
-  font-weight: bold;
+.divider {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 0.5rem 0 0;
 }
