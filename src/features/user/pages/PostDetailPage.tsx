@@ -35,6 +35,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
+import { useToast } from '../../../context/ToastContext';
 import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache, updatePostInUserPostListCache } from '../cache/postListCache';
 
 
@@ -43,6 +44,7 @@ export const PostDetailPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
+  const { addToast } = useToast();
 
   const { data: post, isLoading, error, mutate } = useSWR<Post | null>(
     id ? ['post', id] : null,
@@ -79,9 +81,11 @@ export const PostDetailPage = () => {
     if (!window.confirm('このユーザーをブロックしますか？')) return;
     try {
       await createBlocker(blockedUserId);
+      addToast('ユーザーをブロックしました', 'success');
       navigate(-1);
     } catch (err) {
       console.error(err);
+      addToast('ブロックに失敗しました', 'error');
     }
   };
 
