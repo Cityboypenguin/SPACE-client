@@ -92,13 +92,16 @@ export const InquiryPage = () => {
             </div>
           </div>
 
-          <input
-            className={styles.input}
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="件名を入力してください"
-          />
+          <div className={styles.field}>
+            <span className={styles.label}>その他のお問い合わせを選択された方は記入をお願いします</span>
+            <input
+              className={styles.input}
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="件名を入力してください"
+            />
+          </div>
 
           <div className={styles.field}>
             <span className={styles.label}>お問い合せ内容</span>
