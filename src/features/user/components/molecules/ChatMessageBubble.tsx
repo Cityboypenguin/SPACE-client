@@ -161,6 +161,14 @@ export const ChatMessageBubble = ({
   const [showActions, setShowActions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!isEditing || !editTextareaRef.current) return;
+    const el = editTextareaRef.current;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [isEditing]);
 
   const clearLongPressTimer = () => {
     if (longPressTimer.current) {
@@ -233,13 +241,25 @@ export const ChatMessageBubble = ({
         )}
         {isEditing ? (
           <div className={styles.editWrapper}>
-            <input
+            <textarea
+              ref={editTextareaRef}
               className={styles.editInput}
               value={editContent}
-              onChange={(e) => onEditContentChange(e.target.value)}
+              rows={1}
+              onChange={(e) => {
+                onEditContentChange(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onSaveEdit();
-                if (e.key === 'Escape') onCancelEdit();
+                if (e.key === 'Escape') { onCancelEdit(); return; }
+                // タッチ操作の端末はEnterを改行として扱い、保存は保存ボタンのみで行う。
+                const isTouch = window.matchMedia('(pointer: coarse)').matches;
+                if (isTouch) return;
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  onSaveEdit();
+                }
               }}
               autoFocus
             />
