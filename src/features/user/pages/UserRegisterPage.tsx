@@ -8,6 +8,7 @@ import { TermsContent } from '../components/molecules/TermsContent';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
 import styles from './UserRegisterPage.module.css';
+import { useToast } from '../../../context/ToastContext';
 
 const OTP_COOLDOWN_SECONDS = 60;
 
@@ -96,6 +97,7 @@ const StepIndicator = ({ current }: { current: Step }) => {
 export const UserRegisterPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { addToast } = useToast();
 
   // リロード対策: 直前の進行状況を一度だけ読み込む（パスワードは保存しない）
   const [initialProgress] = useState(() => loadRegisterProgress());
@@ -226,6 +228,9 @@ export const UserRegisterPage = () => {
     setOtpSendError('');
     try {
       await sendEmailOTP(email);
+      if (otpSent) {
+        addToast('認証コードを再送信しました', 'success');
+      }
       setOtpSent(true);
       startOtpCooldown();
       setStep(3);
