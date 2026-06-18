@@ -92,15 +92,13 @@ export const InquiryPage = () => {
             </div>
           </div>
 
-          {category === 'OTHER' && (
-            <input
-              className={styles.input}
-              type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="件名を入力してください"
-            />
-          )}
+          <input
+            className={styles.input}
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="件名を入力してください"
+          />
 
           <div className={styles.field}>
             <span className={styles.label}>お問い合せ内容</span>
