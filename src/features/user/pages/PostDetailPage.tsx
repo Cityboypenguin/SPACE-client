@@ -187,13 +187,20 @@ export const PostDetailPage = () => {
         );
       }
 
-      await updatePost(id, editContent.trim(), mediaInputs, editDeletedMediaIDs);
+      const deletedIDs = [...editDeletedMediaIDs];
+      await updatePost(id, editContent.trim(), mediaInputs, deletedIDs);
 
       setIsEditing(false);
       setEditSelectedFiles([]);
       setEditDeletedMediaIDs([]);
       mutate().then(updatedPost => {
-        if (updatedPost && id) updatePostInCache(id, () => updatedPost);
+        if (updatedPost && id) {
+          const filtered = {
+            ...updatedPost,
+            media: updatedPost.media?.filter(m => !deletedIDs.includes(m.ID)) ?? [],
+          };
+          updatePostInCache(id, () => filtered);
+        }
       });
     } catch (err) {
       setUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
