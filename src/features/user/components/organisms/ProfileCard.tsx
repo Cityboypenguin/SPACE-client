@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { type Profile } from '../../api/profile';
 import styles from './ProfileCard.module.css';
 
@@ -20,7 +21,9 @@ export const ProfileCard = ({ profile, actions, rightActions }: Props) => (
           size={120}
         />
         <div className={styles.nameBlock}>
-          <div className={styles.name}>{profile.user.name}</div>
+          <UserNameLink userId={profile.user.ID}>
+            <div className={styles.name}>{profile.user.name}</div>
+          </UserNameLink>
           <div className={styles.account}>@{profile.user.accountID}</div>
         </div>
       </div>

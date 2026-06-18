@@ -1,4 +1,5 @@
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import styles from './UserListItem.module.css';
 
 type User = {
@@ -20,7 +21,7 @@ export const UserListItem = ({ user, actionLabel, onAction, actionVariant = 'def
   <li className={styles.item}>
     <UserAvatar userId={user.ID} name={user.name} avatarUrl={user.avatarUrl} size={40} />
     <div className={styles.info}>
-      <span className={styles.name}>{user.name}</span>
+      <UserNameLink userId={user.ID} className={styles.name}>{user.name}</UserNameLink>
       <span className={styles.accountID}>@{user.accountID}</span>
     </div>
     <button

@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../components/atoms/RoleBadge';
 import {
   getCommunityMembers,
@@ -139,7 +140,7 @@ export const CommunityMembersPage = () => {
                     avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) ?? undefined : undefined}
                     size={36}
                   />
-                  <span className={styles.memberName}>{m.user.name}</span>
+                  <UserNameLink userId={m.user.ID} className={styles.memberName}>{m.user.name}</UserNameLink>
                   <div className={styles.itemRight}>
                     {m.role !== 'owner' && (
                       <button className={styles.kickBtn} onClick={() => handleKick(m)}>

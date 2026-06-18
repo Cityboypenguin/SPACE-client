@@ -9,6 +9,7 @@ import { ReportModal } from '../components/organisms/ReportMadal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -250,7 +251,9 @@ export const PostDetailPage = () => {
                   <div className={styles.userInfo}>
                     <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
                     <div>
-                      <div className={styles.userName}>{post.user.name}</div>
+                      <UserNameLink userId={post.user.ID}>
+                        <div className={styles.userName}>{post.user.name}</div>
+                      </UserNameLink>
                       <div className={styles.userAccount}>@{post.user.accountID}</div>
                     </div>
                   </div>

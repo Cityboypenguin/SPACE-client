@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { type Post } from '../../api/post';
 import { PostComposer } from './PostComposer';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import { formatTime } from '../../../../lib/formatTime';
@@ -58,7 +59,7 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
             )}
             <div className={styles.previewBody}>
               <div className={styles.previewMeta}>
-                <span className={styles.previewName}>{post.user.name}</span>
+                <UserNameLink userId={post.user.ID} className={styles.previewName}>{post.user.name}</UserNameLink>
                 <span className={styles.previewAccount}>@{post.user.accountID}</span>
                 <span className={styles.previewAccount}> · {formatTime(post.createdAt)}</span>
               </div>

@@ -4,6 +4,7 @@ import { storageUrl } from '../../../lib/storage';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { AdminUserAvatar } from '../../../components/atoms/AdminUserAvatar';
+import { AdminUserNameLink } from '../../../components/atoms/AdminUserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
@@ -201,7 +202,9 @@ export const AdminPostDetailPage = () => {
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <AdminUserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
                   <div>
-                    <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
+                    <AdminUserNameLink userId={post.user.ID}>
+                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
+                    </AdminUserNameLink>
                     <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
                   </div>
                 </div>

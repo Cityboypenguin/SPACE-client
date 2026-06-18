@@ -83,7 +83,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
       <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
       <div className={styles.body}>
         <div className={styles.header}>
-          <UserMeta name={post.user.name} accountID={post.user.accountID} timestamp={formatTimestamp(post.createdAt)} />
+          <UserMeta userId={post.user.ID} name={post.user.name} accountID={post.user.accountID} timestamp={formatTimestamp(post.createdAt)} />
           <div className={styles.menuWrap} ref={menuRef}>
             <button
               className={styles.menuButton}

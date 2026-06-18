@@ -31,6 +31,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
         </div>
         <div className={styles.body} style={{ paddingBottom: replies.length > 0 ? '0.5rem' : 0 }}>
           <UserMeta
+            userId={post.user.ID}
             name={post.user.name}
             accountID={post.user.accountID}
             timestamp={formatTime(post.createdAt)}

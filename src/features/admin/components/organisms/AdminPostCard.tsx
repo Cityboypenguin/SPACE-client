@@ -25,7 +25,7 @@ export const AdminPostCard = ({ post }: Props) => {
       <AdminUserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} />
       <div className={styles.body}>
         <div className={styles.bodyHeader}>
-          <UserMeta name={post.user.name} accountID={post.user.accountID} timestamp={formatTime(post.createdAt)} />
+          <UserMeta userId={post.user.ID} name={post.user.name} accountID={post.user.accountID} timestamp={formatTime(post.createdAt)} admin />
           {isDeleted && <span className={styles.deletedBadge}>削除済み</span>}
         </div>
         {post.content && (

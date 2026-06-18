@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
 import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
 import { storageUrl } from '../../../../lib/storage';
@@ -123,7 +124,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                   avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) ?? undefined : undefined}
                   size={32}
                 />
-                <span className={styles.memberName}>{m.user.name}</span>
+                <UserNameLink userId={m.user.ID} className={styles.memberName}>{m.user.name}</UserNameLink>
                 <RoleBadge role={m.role} />
               </li>
             ))}
