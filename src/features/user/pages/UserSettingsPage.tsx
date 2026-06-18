@@ -38,7 +38,7 @@ const PasswordView = ({ onBack }: { onBack: () => void }) => {
     setSuccess('');
     setSubmitting(true);
     try {
-      await updateMyProfile({ password: newPassword });
+      await updateMyProfile({ password: newPassword, currentPassword });
       setSuccess('パスワードを変更しました');
       setCurrentPassword('');
       setNewPassword('');

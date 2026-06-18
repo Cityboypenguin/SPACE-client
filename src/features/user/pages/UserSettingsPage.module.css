@@ -1,17 +1,43 @@
 .page {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
 .leftPanel {
-  width: 320px;
+  width: clamp(110px, 30vw, 320px);
   flex-shrink: 0;
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
   overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .page {
+    height: calc(100vh - 56px - env(safe-area-inset-bottom));
+    height: calc(100dvh - 56px - env(safe-area-inset-bottom));
+  }
+
+  .leftPanel {
+    padding: 1rem 0;
+  }
+
+  .panelTitle {
+    font-size: 1rem;
+    padding: 0 0.75rem;
+  }
+
+  .menuItem {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .rightPanel {
+    padding: 1.25rem;
+  }
 }
 
 .panelTitle {
