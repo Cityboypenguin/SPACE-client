@@ -30,15 +30,30 @@ const INQUIRY_CATEGORIES: { value: InquiryCategory; label: string }[] = [
   { value: 'OTHER', label: 'その他のお問い合わせ' },
 ];
 
+const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 const InquiryView = ({ onBack }: { onBack: () => void }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [category, setCategory] = useState<InquiryCategory>('DM');
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (value && !EMAIL_REGEX.test(value)) {
+      setEmailError('メールアドレスの形式が正しくありません');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const isEmailValid = email !== '' && EMAIL_REGEX.test(email);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,14 +108,15 @@ const InquiryView = ({ onBack }: { onBack: () => void }) => {
         <label className={styles.fieldLabel}>
           メールアドレス
           <input
-            type="email"
+            type="text"
             className={styles.input}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={handleEmailChange}
             placeholder="Value"
             required
           />
         </label>
+        {emailError && <p className={styles.errorMsg}>{emailError}</p>}
         <div>
           <p className={styles.inquiryCategoryTitle}>どのようなお問合せですか？</p>
           <div className={styles.radioGroup}>
@@ -119,14 +135,17 @@ const InquiryView = ({ onBack }: { onBack: () => void }) => {
             ))}
           </div>
         </div>
-        <input
-          type="text"
-          className={styles.input}
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="お問い合わせ内容を入力してください"
-          required
-        />
+        <label className={styles.fieldLabel}>
+          その他のお問い合わせを選択された方は記入をお願いします
+          <input
+            type="text"
+            className={styles.input}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="件名を入力してください"
+            required={category === 'OTHER'}
+          />
+        </label>
         <label className={styles.fieldLabel}>
           お問い合せ内容
           <textarea
@@ -138,7 +157,7 @@ const InquiryView = ({ onBack }: { onBack: () => void }) => {
           />
         </label>
         {error && <p className={styles.errorMsg}>{error}</p>}
-        <button type="submit" className={styles.submitBtn} disabled={loading}>
+        <button type="submit" className={styles.submitBtn} disabled={loading || !isEmailValid}>
           {loading ? '送信中...' : '送信'}
         </button>
       </form>

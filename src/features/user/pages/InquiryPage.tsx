@@ -13,9 +13,12 @@ const CATEGORIES: { value: InquiryCategory; label: string }[] = [
   { value: 'OTHER', label: 'その他のお問い合わせ' },
 ];
 
+const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 export const InquiryPage = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [category, setCategory] = useState<InquiryCategory>('DM');
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
@@ -23,6 +26,18 @@ export const InquiryPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (value && !EMAIL_REGEX.test(value)) {
+      setEmailError('メールアドレスの形式が正しくありません');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const isEmailValid = email !== '' && EMAIL_REGEX.test(email);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,12 +80,13 @@ export const InquiryPage = () => {
             <span className={styles.label}>メールアドレス</span>
             <input
               className={styles.input}
-              type="email"
+              type="text"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
               placeholder="Value"
               required
             />
+            {emailError && <p className={styles.error}>{emailError}</p>}
           </div>
 
           <div className={styles.categorySection}>
@@ -118,7 +134,7 @@ export const InquiryPage = () => {
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <button className={styles.submitBtn} type="submit" disabled={loading}>
+        <button className={styles.submitBtn} type="submit" disabled={loading || !isEmailValid}>
           {loading ? '送信中...' : '送信'}
         </button>
       </form>
