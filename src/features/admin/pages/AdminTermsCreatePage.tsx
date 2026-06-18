@@ -149,6 +149,8 @@ export const AdminTermsCreatePage: React.FC = () => {
               type="datetime-local"
               value={effectiveDate}
               onChange={(e) => setEffectiveDate(e.target.value)}
+              min="1000-01-01T00:00"
+              max="9999-12-31T23:59"
               style={{
                 width: '100%',
                 padding: '0.6rem 0.75rem',
