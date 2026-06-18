@@ -21,6 +21,16 @@
   max-width: 800px;
 }
 
+@media (max-width: 640px) {
+  .panel {
+    flex-direction: column;
+    width: 92%;
+    max-width: 420px;
+    height: 85vh;
+    min-height: 0;
+  }
+}
+
 /* 左パネル */
 .infoPane {
   width: 320px;
@@ -32,6 +42,17 @@
   align-items: center;
   position: relative;
   overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  .infoPane {
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    max-height: 45%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
 }
 
 .infoPaneHeader {
@@ -180,6 +201,13 @@
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .membersPane {
+    width: 100%;
+    min-height: 0;
+  }
 }
 
 .membersPaneHeader {

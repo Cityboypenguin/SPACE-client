@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import {
@@ -294,13 +295,15 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
-                            {m.user.name}
+                          <UserNameLink userId={m.user.ID}>
+                            <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
+                              {m.user.name}
                             </div>
-                            <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                              @{m.user.accountID}
-                            </div>
+                          </UserNameLink>
+                          <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                            @{m.user.accountID}
                           </div>
+                        </div>
                         </div>
                       <RoleBadge role={m.role} />
                       <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>

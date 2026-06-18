@@ -21,6 +21,7 @@ export const DMPage = () => {
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
   const { room, messages, error, addMessage, initialLastReadAt, partnerLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+  const partner = room?.user.find((u) => u.ID !== currentUserID);
   const isBlocked = room?.isMessagingDisabled ?? false;
   const {
     content, setContent,
@@ -76,11 +77,10 @@ export const DMPage = () => {
 
   useEffect(() => {
     if (!room || !roomId) return;
-    const partner = room.user.find((u) => u.ID !== currentUserID);
     if (partner) {
       saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerAccountID: partner.accountID });
     }
-  }, [room, roomId, currentUserID]);
+  }, [room, roomId, currentUserID, partner]);
 
   useEffect(() => {
     if (error && error.includes('not a member of this room')) {
@@ -88,7 +88,7 @@ export const DMPage = () => {
     }
   }, [error, navigate]);
 
-  const partnerName = room?.user.find((u) => u.ID !== currentUserID)?.name ?? 'DM';
+  const partnerName = partner?.name ?? 'DM';
   const partnerLastReadAtMs = partnerLastReadAt ? new Date(partnerLastReadAt).getTime() : null;
 
   const lastReadMessageId = (() => {
@@ -110,18 +110,33 @@ export const DMPage = () => {
 
       <div className={styles.roomHeader}>
         <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
-        {(() => {
-          const partner = room?.user.find((u) => u.ID !== currentUserID);
-          return partner?.avatarUrl ? (
+        {partner ? (
+          <button
+            type="button"
+            onClick={() => navigate(`/users/${partner.ID}`)}
+            aria-label={`${partner.name} のマイページへ移動`}
+            style={{
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              lineHeight: 0,
+              flexShrink: 0,
+            }}
+          >
+            {partner.avatarUrl ? (
             <img
               src={storageUrl(partner.avatarUrl) ?? undefined}
               alt={partner.name}
               style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
             />
-          ) : (
-            <Avatar name={partnerName} size={36} />
-          );
-        })()}
+            ) : (
+              <Avatar name={partnerName} size={36} />
+            )}
+          </button>
+        ) : (
+          <Avatar name={partnerName} size={36} />
+        )}
         <strong className={styles.roomTitle}>{partnerName}</strong>
         {/* <span
           className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}

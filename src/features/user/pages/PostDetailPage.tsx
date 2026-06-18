@@ -9,6 +9,7 @@ import { ReportModal } from '../components/organisms/ReportMadal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -34,6 +35,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
+import { useToast } from '../../../context/ToastContext';
 import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache, updatePostInUserPostListCache } from '../cache/postListCache';
 
 
@@ -42,6 +44,7 @@ export const PostDetailPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
+  const { addToast } = useToast();
 
   const { data: post, isLoading, error, mutate } = useSWR<Post | null>(
     id ? ['post', id] : null,
@@ -78,9 +81,11 @@ export const PostDetailPage = () => {
     if (!window.confirm('このユーザーをブロックしますか？')) return;
     try {
       await createBlocker(blockedUserId);
+      addToast('ユーザーをブロックしました', 'success');
       navigate(-1);
     } catch (err) {
       console.error(err);
+      addToast('ブロックに失敗しました', 'error');
     }
   };
 
@@ -182,13 +187,20 @@ export const PostDetailPage = () => {
         );
       }
 
-      await updatePost(id, editContent.trim(), mediaInputs, editDeletedMediaIDs);
+      const deletedIDs = [...editDeletedMediaIDs];
+      await updatePost(id, editContent.trim(), mediaInputs, deletedIDs);
 
       setIsEditing(false);
       setEditSelectedFiles([]);
       setEditDeletedMediaIDs([]);
       mutate().then(updatedPost => {
-        if (updatedPost && id) updatePostInCache(id, () => updatedPost);
+        if (updatedPost && id) {
+          const filtered = {
+            ...updatedPost,
+            media: updatedPost.media?.filter(m => !deletedIDs.includes(m.ID)) ?? [],
+          };
+          updatePostInCache(id, () => filtered);
+        }
       });
     } catch (err) {
       setUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
@@ -250,7 +262,9 @@ export const PostDetailPage = () => {
                   <div className={styles.userInfo}>
                     <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
                     <div>
-                      <div className={styles.userName}>{post.user.name}</div>
+                      <UserNameLink userId={post.user.ID}>
+                        <div className={styles.userName}>{post.user.name}</div>
+                      </UserNameLink>
                       <div className={styles.userAccount}>@{post.user.accountID}</div>
                     </div>
                   </div>

@@ -440,7 +440,11 @@ export const PostListPage = () => {
         );
       }
       const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs);
-      updatePostInAllLists(editingPost.ID, () => updated);
+      const filteredUpdated = {
+        ...updated,
+        media: updated.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) ?? [],
+      };
+      updatePostInAllLists(editingPost.ID, () => filteredUpdated);
       setEditingPost(null);
     } catch (err) {
       setEditError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));

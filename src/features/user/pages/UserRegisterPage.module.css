@@ -267,3 +267,41 @@
   cursor: not-allowed;
   text-decoration: none;
 }
+
+/* Error modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  width: 90%;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.modalText {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.modalClose {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.9rem;
+  padding: 0.5rem 2rem;
+  cursor: pointer;
+}

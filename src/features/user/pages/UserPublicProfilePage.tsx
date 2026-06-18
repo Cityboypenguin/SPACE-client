@@ -185,12 +185,14 @@ export const UserPublicProfilePage = () => {
       if (isBlocked) {
         await deleteBlocker(id);
         mutateBlocked((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
+        addToast('ブロックを解除しました', 'success');
       } else {
         await createBlocker(id);
         void mutateBlocked();
         if (isFavorited) {
           mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
         }
+        addToast('ユーザーをブロックしました', 'success');
       }
     } catch (err) {
       addToast(toUserMessage(err, 'ブロックの操作に失敗しました。'), 'error');
