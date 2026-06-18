@@ -5,15 +5,19 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Pagination } from '../components/molecules/Pagination';
 import { useNotification } from '../context/NotificationContext';
 import {
+  listMyNotificationGroups,
   listMyNotifications,
   markAllNotificationsAsRead,
+  markAllNotificationsAsReadByActor,
   markNotificationAsRead,
   deleteNotifications,
   deleteReadNotifications,
-  type Notification,
+  deleteReadNotificationsByActor,
+  type NotificationActor,
 } from '../api/notification';
 import { listAnnouncements } from '../api/announcement';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { storageUrl } from '../../../lib/storage';
 import senshuIcon from '../../../assets/Senshu-Universe.svg';
 import { Tabs } from '../../../components/molecules/Tabs';
 import styles from './NotificationListPage.module.css';
@@ -26,36 +30,7 @@ import person from '../../../assets/パーツ_お気に入り.svg';
 
 type Tab = 'notifications' | 'announcements';
 
-type NotifGroup = {
-  key: string;
-  type: string;
-  items: Notification[];
-  latest: Notification;
-};
-
-// dm（個人ごと）はまとめて1行に表示する。他の種類は1件ずつのグループ（実質グループ化しない）。
-const GROUPED_TYPES = new Set(['dm']);
-
-const groupKeyFor = (n: Notification): string => {
-  if (GROUPED_TYPES.has(n.type) && n.actor) return `${n.type}-${n.actor.ID}`;
-  return `single-${n.ID}`;
-};
-
-const groupNotifications = (list: Notification[]): NotifGroup[] => {
-  const map = new Map<string, NotifGroup>();
-  const order: string[] = [];
-  for (const n of list) {
-    const key = groupKeyFor(n);
-    const existing = map.get(key);
-    if (existing) {
-      existing.items.push(n);
-    } else {
-      map.set(key, { key, type: n.type, items: [n], latest: n });
-      order.push(key);
-    }
-  }
-  return order.map((key) => map.get(key)!);
-};
+type ViewingActor = { actor: NotificationActor; type: string };
 
 function HeartIcon() {
   return (
@@ -105,7 +80,7 @@ const TYPE_ICON: Record<string, ReactNode> = {
 
 export const NotificationListPage = () => {
   const navigate = useNavigate();
-  const { lastSseAt, resetUnread, decrementUnread } = useNotification();
+  const { lastSseAt, unreadCount, decrementUnread } = useNotification();
   const lastSseAtRef = useRef(lastSseAt);
 
   const [tab, setTab] = useState<Tab>('notifications');
@@ -115,12 +90,19 @@ export const NotificationListPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [notifPage, setNotifPage] = useState(0);
+  const [actorPage, setActorPage] = useState(0);
   const [announcePage, setAnnouncePage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
+  const [viewingActor, setViewingActor] = useState<ViewingActor | null>(null);
 
-  const { data: notifData, isLoading: notifLoading, mutate: mutateNotifications } = useSWR(
-    ['my-notifications', notifPage, pageSize],
-    () => listMyNotifications(pageSize, notifPage * pageSize),
+  const { data: groupsData, isLoading: notifLoading, mutate: mutateGroups } = useSWR(
+    ['my-notification-groups', notifPage, pageSize],
+    () => listMyNotificationGroups(pageSize, notifPage * pageSize),
+  );
+
+  const { data: actorData, mutate: mutateActorNotifs } = useSWR(
+    viewingActor ? ['my-notifications-actor', viewingActor.type, viewingActor.actor.ID, actorPage, pageSize] : null,
+    () => listMyNotifications(pageSize, actorPage * pageSize, viewingActor!.type, viewingActor!.actor.ID),
   );
 
   const { data: announceData, isLoading: announceLoading } = useSWR(
@@ -138,30 +120,37 @@ export const NotificationListPage = () => {
   useEffect(() => {
     if (lastSseAt === 0 || lastSseAt === lastSseAtRef.current) return;
     lastSseAtRef.current = lastSseAt;
-    if (tab === 'notifications') void mutateNotifications();
-  }, [lastSseAt, tab, mutateNotifications]);
+    if (tab === 'notifications') {
+      void mutateGroups();
+      if (viewingActor) void mutateActorNotifs();
+    }
+  }, [lastSseAt, tab, viewingActor, mutateGroups, mutateActorNotifs]);
 
-  const notifList: Notification[] = notifData?.items ?? [];
-  const notifGroups = groupNotifications(notifList);
-  const notifTotal = notifData?.total ?? 0;
-  const notifTotalPages = Math.ceil(notifTotal / pageSize);
+  const pagedGroups = groupsData?.items ?? [];
+  const notifTotal = groupsData?.total ?? 0;
+  const notifTotalPages = Math.max(1, Math.ceil(notifTotal / pageSize));
   const announceList = announceData?.items ?? [];
   const announceTotal = announceData?.total ?? 0;
   const announceTotalPages = Math.ceil(announceTotal / pageSize);
-  const hasUnread = notifList.some((n) => !n.isRead);
-  const hasRead = notifList.some((n) => n.isRead);
-  const allSelected = notifList.length > 0 && selectedIds.size === notifList.length;
+  const hasUnread = unreadCount > 0;
+  const hasRead = pagedGroups.some((g) => g.count > g.unreadCount);
+  const allSelected = pagedGroups.length > 0 && pagedGroups.every((g) => selectedIds.has(g.latestID));
+
+  const actorNotifs = actorData?.items ?? [];
+  const actorTotal = actorData?.total ?? 0;
+  const actorTotalPages = Math.max(1, Math.ceil(actorTotal / pageSize));
+  const actorHasUnread = actorNotifs.some((n) => !n.isRead);
+  const actorHasRead = actorNotifs.some((n) => n.isRead);
 
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
     setNotifError('');
     try {
       await markAllNotificationsAsRead();
-      mutateNotifications(
-        (prev) => prev ? { ...prev, items: prev.items.map((n) => ({ ...n, isRead: true })) } : prev,
+      mutateGroups(
+        (prev) => prev ? { ...prev, items: prev.items.map((g) => ({ ...g, unreadCount: 0 })) } : prev,
         { revalidate: false },
       );
-      resetUnread();
     } catch (err) {
       setNotifError(toUserMessage(err, '既読処理に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -175,10 +164,7 @@ export const NotificationListPage = () => {
     setNotifError('');
     try {
       await deleteReadNotifications();
-      mutateNotifications(
-        (prev) => prev ? { ...prev, items: prev.items.filter((n) => !n.isRead) } : prev,
-        { revalidate: false },
-      );
+      void mutateGroups();
     } catch (err) {
       setNotifError(toUserMessage(err, '通知の削除に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -193,12 +179,7 @@ export const NotificationListPage = () => {
     setNotifError('');
     try {
       await deleteNotifications(Array.from(selectedIds));
-      const deletedUnreadCount = notifList.filter((n) => selectedIds.has(n.ID) && !n.isRead).length;
-      mutateNotifications(
-        (prev) => prev ? { ...prev, items: prev.items.filter((n) => !selectedIds.has(n.ID)) } : prev,
-        { revalidate: false },
-      );
-      for (let i = 0; i < deletedUnreadCount; i++) decrementUnread();
+      void mutateGroups();
       setSelectedIds(new Set());
       setSelectMode(false);
     } catch (err) {
@@ -208,31 +189,63 @@ export const NotificationListPage = () => {
     }
   };
 
-  const toggleGroupSelect = (group: NotifGroup) => {
+  const toggleGroupSelect = (latestID: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      const allSelected = group.items.every((n) => next.has(n.ID));
-      group.items.forEach((n) => (allSelected ? next.delete(n.ID) : next.add(n.ID)));
+      if (next.has(latestID)) next.delete(latestID);
+      else next.add(latestID);
       return next;
     });
   };
 
-  const openGroup = (group: NotifGroup) => {
-    const unread = group.items.filter((n) => !n.isRead);
-    if (unread.length > 0) {
-      const ids = new Set(unread.map((n) => n.ID));
-      Promise.all(unread.map((n) => markNotificationAsRead(n.ID))).catch(() => {});
-      mutateNotifications(
-        (prev) => prev ? { ...prev, items: prev.items.map((item) => ids.has(item.ID) ? { ...item, isRead: true } : item) } : prev,
-        { revalidate: false },
-      );
-      unread.forEach(() => decrementUnread());
-    }
-    if (group.type === 'dm' && group.latest.targetType === 'room' && group.latest.targetID) {
-      navigate(`/dm/${group.latest.targetID}`);
+  const openGroup = (group: (typeof pagedGroups)[number]) => {
+    if (group.type === 'dm' && group.actor) {
+      setActorPage(0);
+      setViewingActor({ actor: group.actor, type: group.type });
       return;
     }
-    navigate(`/notifications/${group.latest.ID}`);
+    if (group.unreadCount > 0) {
+      markNotificationAsRead(group.latestID).catch(() => {});
+      mutateGroups(
+        (prev) => prev
+          ? { ...prev, items: prev.items.map((g) => g.latestID === group.latestID ? { ...g, unreadCount: 0 } : g) }
+          : prev,
+        { revalidate: false },
+      );
+      decrementUnread();
+    }
+    navigate(`/notifications/${group.latestID}`);
+  };
+
+  const handleMarkActorAllRead = async () => {
+    if (!viewingActor) return;
+    setMarkingAll(true);
+    setNotifError('');
+    try {
+      await markAllNotificationsAsReadByActor(viewingActor.type, viewingActor.actor.ID);
+      void mutateActorNotifs();
+      void mutateGroups();
+    } catch (err) {
+      setNotifError(toUserMessage(err, '既読処理に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
+  const handleDeleteActorRead = async () => {
+    if (!viewingActor) return;
+    if (!window.confirm('この相手の既読済み通知をすべて削除しますか？')) return;
+    setDeleting(true);
+    setNotifError('');
+    try {
+      await deleteReadNotificationsByActor(viewingActor.type, viewingActor.actor.ID);
+      void mutateActorNotifs();
+      void mutateGroups();
+    } catch (err) {
+      setNotifError(toUserMessage(err, '通知の削除に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const exitSelectMode = () => {
@@ -246,17 +259,55 @@ export const NotificationListPage = () => {
       <main className={styles.main}>
         <div className={styles.pageHeader}>
           <div className={styles.headerTop}>
-            <h1 className={styles.pageTitle}>通知一覧</h1>
+            {viewingActor ? (
+              <>
+                <button
+                  className={`${styles.headerBtn} ${styles.headerBtnOutline}`}
+                  onClick={() => setViewingActor(null)}
+                >
+                  ← 戻る
+                </button>
+                <h1 className={styles.pageTitle}>{viewingActor.actor.name}</h1>
+              </>
+            ) : (
+              <h1 className={styles.pageTitle}>通知一覧</h1>
+            )}
 
-            {tab === 'notifications' && notifList.length > 0 && (
+            {tab === 'notifications' && viewingActor && (
+              <div className={styles.headerActions}>
+                <button
+                  className={`${styles.headerBtn} ${styles.headerBtnOutline}`}
+                  onClick={handleMarkActorAllRead}
+                  disabled={markingAll || !actorHasUnread}
+                >
+                  {markingAll ? '処理中...' : '全て既読'}
+                </button>
+                <button
+                  className={`${styles.headerBtn} ${styles.headerBtnOutlineDanger}`}
+                  onClick={handleDeleteActorRead}
+                  disabled={deleting || !actorHasRead}
+                >
+                  既読を全削除
+                </button>
+              </div>
+            )}
+
+            {tab === 'notifications' && !viewingActor && pagedGroups.length > 0 && (
               <div className={styles.headerActions}>
                 {selectMode ? (
                   <>
                     <button
                       className={`${styles.headerBtn} ${styles.headerBtnOutline}`}
                       onClick={() => {
-                        if (selectedIds.size === notifList.length) setSelectedIds(new Set());
-                        else setSelectedIds(new Set(notifList.map((n) => n.ID)));
+                        setSelectedIds((prev) => {
+                          const ids = pagedGroups.map((g) => g.latestID);
+                          if (allSelected) {
+                            const next = new Set(prev);
+                            ids.forEach((id) => next.delete(id));
+                            return next;
+                          }
+                          return new Set([...prev, ...ids]);
+                        });
                       }}
                     >
                       {allSelected ? '全解除' : '全選択'}
@@ -300,45 +351,81 @@ export const NotificationListPage = () => {
             )}
           </div>
 
-          <Tabs
-            tabs={[
-              { key: 'notifications', label: '通知' },
-              { key: 'announcements', label: 'お知らせ' },
-            ]}
-            activeTab={tab}
-            onChange={(key) => {
-              setTab(key);
-              if (key === 'notifications') {
-                setNotifPage(0);
-                setSelectMode(false);
-                setSelectedIds(new Set());
-              } else {
-                setAnnouncePage(0);
-              }
-            }}
-          />
+          {!viewingActor && (
+            <Tabs
+              tabs={[
+                { key: 'notifications', label: '通知' },
+                { key: 'announcements', label: 'お知らせ' },
+              ]}
+              activeTab={tab}
+              onChange={(key) => {
+                setTab(key);
+                if (key === 'notifications') {
+                  setNotifPage(0);
+                  setSelectMode(false);
+                  setSelectedIds(new Set());
+                } else {
+                  setAnnouncePage(0);
+                }
+              }}
+            />
+          )}
         </div>
 
-        {/* ── 通知タブ ── */}
-        {tab === 'notifications' && (
+        {/* ── 通知タブ：個人別詳細 ── */}
+        {tab === 'notifications' && viewingActor && (
+          <>
+            {notifError && <p className={styles.error}>{notifError}</p>}
+            {actorNotifs.length === 0 ? (
+              <p className={styles.empty}>通知はありません</p>
+            ) : (
+              <ul className={styles.list}>
+                {actorNotifs.map((n) => (
+                  <li
+                    key={n.ID}
+                    className={`${styles.item}${!n.isRead ? ` ${styles.itemUnread}` : ''}`}
+                    onClick={() => navigate(`/notifications/${n.ID}`)}
+                  >
+                    <span className={styles.typeIcon}>
+                      {TYPE_ICON[n.type] ?? <BellIcon />}
+                    </span>
+                    <div className={styles.itemContent}>
+                      <p className={styles.itemMessage}>{n.message}</p>
+                      <p className={styles.itemDate}>{new Date(n.createdAt).toLocaleString('ja-JP')}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Pagination
+              page={actorPage}
+              totalPages={actorTotalPages}
+              pageSize={pageSize}
+              onPageChange={setActorPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
+        )}
+
+        {tab === 'notifications' && !viewingActor && (
           <>
             {notifError && <p className={styles.error}>{notifError}</p>}
             {notifLoading ? (
               <p className={styles.loading}>読み込み中...</p>
-            ) : notifList.length === 0 ? (
+            ) : pagedGroups.length === 0 ? (
               <p className={styles.empty}>通知はありません</p>
             ) : (
               <ul className={styles.list}>
-                {notifGroups.map((group) => {
-                  const isGroupUnread = group.items.some((n) => !n.isRead);
-                  const isGroupSelected = group.items.every((n) => selectedIds.has(n.ID));
-                  const isDmGroup = group.type === 'dm' && !!group.latest.actor;
+                {pagedGroups.map((group) => {
+                  const isGroupUnread = group.unreadCount > 0;
+                  const isGroupSelected = selectedIds.has(group.latestID);
+                  const isDmGroup = group.type === 'dm' && !!group.actor;
                   return (
                     <li
                       key={group.key}
                       className={`${styles.item}${isGroupUnread ? ` ${styles.itemUnread}` : ''}${selectMode && isGroupSelected ? ` ${styles.itemSelected}` : ''}`}
                       onClick={() => {
-                        if (selectMode) { toggleGroupSelect(group); return; }
+                        if (selectMode) { toggleGroupSelect(group.latestID); return; }
                         openGroup(group);
                       }}
                     >
@@ -347,7 +434,7 @@ export const NotificationListPage = () => {
                           type="checkbox"
                           className={styles.checkbox}
                           checked={isGroupSelected}
-                          onChange={() => toggleGroupSelect(group)}
+                          onChange={() => toggleGroupSelect(group.latestID)}
                           onClick={(e) => e.stopPropagation()}
                         />
                       )}
@@ -356,16 +443,37 @@ export const NotificationListPage = () => {
                       </span>
                       <div className={styles.itemContent}>
                         {isDmGroup ? (
-                          <p className={styles.itemMessage}>{group.latest.actor!.name}からメッセージが届きました</p>
+                          <>
+                            <p className={styles.itemMessage}>{group.actor!.name}: {group.message}</p>
+                            <p className={styles.itemDate}>{new Date(group.createdAt).toLocaleString('ja-JP')}</p>
+                          </>
                         ) : (
                           <>
-                            {group.latest.actor && <p className={styles.itemActor}>{group.latest.actor.name}</p>}
-                            <p className={styles.itemMessage}>{group.latest.message}</p>
+                            {group.actor && <p className={styles.itemActor}>{group.actor.name}</p>}
+                            <p className={styles.itemMessage}>{group.message}</p>
+                            {group.targetPost && !group.targetPost.deletedAt && (
+                              <div className={styles.targetPostPreview}>
+                                {group.targetPost.media.length > 0 && (
+                                  <img
+                                    src={storageUrl(group.targetPost.media[0].url)}
+                                    alt=""
+                                    className={styles.targetPostThumb}
+                                  />
+                                )}
+                                <span className={styles.targetPostText}>
+                                  {group.targetPost.content || (group.targetPost.media.length > 0 ? '[画像]' : '')}
+                                </span>
+                              </div>
+                            )}
                           </>
                         )}
                       </div>
-                      {group.items.length > 1 && (
-                        <span className={styles.countBadge}>{group.items.length > 99 ? '99+' : group.items.length}</span>
+                      {group.count > 1 ? (
+                        group.unreadCount > 0 && (
+                          <span className={styles.countBadge}>{group.unreadCount > 99 ? '99+' : group.unreadCount}</span>
+                        )
+                      ) : (
+                        isGroupUnread && <span className={styles.unreadDot} />
                       )}
                     </li>
                   );
@@ -421,4 +529,3 @@ export const NotificationListPage = () => {
     </div>
   );
 };
-

@@ -171,18 +171,58 @@
 .countBadge {
   flex-shrink: 0;
   align-self: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border-radius: 50%;
   background: #3b82f6;
   color: #fff;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+}
+
+/* ── 未読ドット（グループ化されていない通知） ── */
+.unreadDot {
+  flex-shrink: 0;
+  align-self: center;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82f6;
+}
+
+/* ── 通知内の投稿プレビュー ── */
+.targetPostPreview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+
+.targetPostThumb {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.targetPostText {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── States ── */
