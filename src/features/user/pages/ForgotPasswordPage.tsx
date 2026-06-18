@@ -8,6 +8,11 @@ import styles from './ForgotPasswordPage.module.css';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'done';
 
+const validatePassword = (value: string): string => {
+  if (value && value.length < 8) return 'パスワードは8文字以上で入力してください';
+  return '';
+};
+
 export const ForgotPasswordPage = () => {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -15,6 +20,7 @@ export const ForgotPasswordPage = () => {
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPasswordError, setNewPasswordError] = useState('');
   const [errorModal, setErrorModal] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -59,6 +65,11 @@ export const ForgotPasswordPage = () => {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) {
+      setNewPasswordError(pwErr);
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setErrorModal('パスワードが一致しません。');
       return;
@@ -155,10 +166,15 @@ export const ForgotPasswordPage = () => {
                 type="password"
                 className={styles.input}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Value"
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setNewPasswordError(validatePassword(e.target.value));
+                }}
+                placeholder="8文字以上"
+                minLength={8}
                 required
               />
+              {newPasswordError && <p className={styles.fieldError}>{newPasswordError}</p>}
               <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0.75rem 0' }} />
               <label className={styles.fieldLabel}>パスワードを再入力</label>
               <input
@@ -169,8 +185,21 @@ export const ForgotPasswordPage = () => {
                 placeholder="Value"
                 required
               />
+              {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                <p className={styles.fieldError}>パスワードが一致しません。</p>
+              )}
             </div>
-            <button type="submit" className={styles.btnPrimary} disabled={loading}>
+            <button
+              type="submit"
+              className={styles.btnPrimary}
+              disabled={
+                loading ||
+                !newPassword ||
+                !confirmPassword ||
+                !!validatePassword(newPassword) ||
+                newPassword !== confirmPassword
+              }
+            >
               {loading ? '登録中...' : '登録する'}
             </button>
           </form>

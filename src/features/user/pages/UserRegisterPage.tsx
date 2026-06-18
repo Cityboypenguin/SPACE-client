@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser, loginUser, sendEmailOTP, USER_TOKEN_KEY } from '../api/auth';
+import { registerUser, loginUser, sendEmailOTP, verifyEmailOTP, USER_TOKEN_KEY } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
+import { toUserMessage } from '../../../lib/errorMessages';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
@@ -125,6 +126,8 @@ export const UserRegisterPage = () => {
   // OTP (step 3)
   const [otp, setOtp] = useState(initialProgress.otp ?? '');
   const [otpError, setOtpError] = useState('');
+  const [otpErrorModal, setOtpErrorModal] = useState('');
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // Account info (step 4)
   const [name, setName] = useState(initialProgress.name ?? '');
@@ -141,7 +144,7 @@ export const UserRegisterPage = () => {
       .then((terms) => {
         setCurrentTerms(terms);
         // 保存されていた同意は、表示中の規約と一致する場合のみ有効とする
-        if (initialProgress.agreedTermsId && initialProgress.agreedTermsId !== terms.ID) {
+        if (initialProgress.agreedTermsId && terms && initialProgress.agreedTermsId !== terms.ID) {
           setAgreed(false);
           setScrolled(false);
         }
@@ -239,13 +242,21 @@ export const UserRegisterPage = () => {
     }
   };
 
-  const handleStep3Next = () => {
+  const handleStep3Next = async () => {
     if (otp.length !== 6) {
       setOtpError('6桁の認証コードを入力してください');
       return;
     }
     setOtpError('');
-    setStep(4);
+    setVerifyingOtp(true);
+    try {
+      await verifyEmailOTP(email, otp);
+      setStep(4);
+    } catch (err) {
+      setOtpErrorModal(toUserMessage(err, '認証コードが正しくないか、有効期限が切れています。'));
+    } finally {
+      setVerifyingOtp(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -417,9 +428,9 @@ export const UserRegisterPage = () => {
                 className={styles.btnPrimary}
                 style={{ marginTop: 0, flex: 1 }}
                 onClick={handleStep3Next}
-                disabled={otp.length !== 6}
+                disabled={otp.length !== 6 || verifyingOtp}
               >
-                次へ
+                {verifyingOtp ? '確認中...' : '次へ'}
               </button>
             </div>
           </div>
@@ -487,6 +498,17 @@ export const UserRegisterPage = () => {
           </div>
         )}
       </div>
+
+      {otpErrorModal && (
+        <div className={styles.modalOverlay} onClick={() => setOtpErrorModal('')}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <p className={styles.modalText}>{otpErrorModal}</p>
+            <button type="button" className={styles.modalClose} onClick={() => setOtpErrorModal('')}>
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

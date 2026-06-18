@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { searchUsers, type UserProfile } from '../api/profile';
+import { searchUsers, getProfileByUserID, type UserProfile } from '../api/profile';
 import {
-  searchPosts, createPost, createFavorite, deleteFavorite,
+  searchPosts, createPost, createFavorite, deleteFavorite, getPostByID,
   getPresignedMediaUploadUrl, uploadFileToStorage,
   type Post, type MediaInput,
 } from '../api/post';
@@ -60,6 +60,48 @@ export const UserSearchPage = () => {
   const location = useLocation();
   const { userId: currentUserId } = useAuth();
   const { profile } = useProfile(currentUserId);
+
+  useEffect(() => {
+    if (recentUsers.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const checks = await Promise.all(
+        recentUsers.map(async (u) => {
+          try { await getProfileByUserID(u.ID); return true; }
+          catch { return false; }
+        }),
+      );
+      if (cancelled) return;
+      const valid = recentUsers.filter((_, i) => checks[i]);
+      if (valid.length !== recentUsers.length) {
+        setRecentUsers(valid);
+        localStorage.setItem('search-recent-user', JSON.stringify(valid));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (recentPosts.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const checks = await Promise.all(
+        recentPosts.map(async (p) => {
+          try { return (await getPostByID(p.ID)) !== null; }
+          catch { return false; }
+        }),
+      );
+      if (cancelled) return;
+      const valid = recentPosts.filter((_, i) => checks[i]);
+      if (valid.length !== recentPosts.length) {
+        setRecentPosts(valid);
+        localStorage.setItem('search-recent-post', JSON.stringify(valid));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!modeMenuOpen) return;

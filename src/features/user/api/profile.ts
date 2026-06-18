@@ -165,6 +165,7 @@ export const updateMyProfile = async (input: {
   name?: string;
   email?: string;
   password?: string;
+  currentPassword?: string;
 }) => {
   return await request<UpdateUserResponse>(UPDATE_USER_MUTATION, { input }, getUserToken());
 };

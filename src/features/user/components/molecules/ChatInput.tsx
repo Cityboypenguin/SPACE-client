@@ -110,7 +110,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', flexShrink: 0 }}
     >
       {isDragging && (
         <div
@@ -133,7 +133,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
         </div>
       )}
       {selectedFiles.length > 0 && (
-        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 130, overflowY: 'auto' }}>
           {selectedFiles.map((file, i) =>
             file.type.startsWith('image/') ? (
               <div
