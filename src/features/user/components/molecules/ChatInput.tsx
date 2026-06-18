@@ -243,12 +243,22 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             e.target.style.height = `${e.target.scrollHeight}px`;
           }}
           onKeyDown={(e) => {
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            // スマホはソフトウェアキーボードでShift+Enterを押せないため、
+            // Enterは改行として扱い、送信は送信ボタンのみで行う
+            if (isMobile) return;
             if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               if (canSubmit) onSubmit({ preventDefault: () => { } });
             }
           }}
-          placeholder={isBlocked ? 'メッセージを送信できません' : 'メッセージを入力... (Shift+Enterで改行)'}
+          placeholder={
+            isBlocked
+              ? 'メッセージを送信できません'
+              : window.matchMedia('(max-width: 768px)').matches
+              ? 'メッセージを入力...'
+              : 'メッセージを入力... (Shift+Enterで改行)'
+          }
           disabled={disabled || isBlocked}
           className={styles.inputField}
           style={{ cursor: (disabled || isBlocked) ? 'default' : 'text' }}
