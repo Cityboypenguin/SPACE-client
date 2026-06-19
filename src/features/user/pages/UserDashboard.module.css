@@ -45,12 +45,19 @@
   font-size: 0.72rem;
   line-height: 1.25;
   white-space: normal;
-  word-break: keep-all;
+  word-break: break-all;
   transition: background 0.15s;
 }
 
 .actionButton:hover {
   background: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .actionButton {
+    font-size: 0.55rem;
+    padding: 0.4rem 0.15rem;
+  }
 }
 
 .loadingText {
