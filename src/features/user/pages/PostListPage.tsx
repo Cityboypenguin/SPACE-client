@@ -30,22 +30,6 @@ import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { Footer } from '../../../components/organisms/Footer';
 
-const URL_SPLIT_REGEX = /(https?:\/\/[^\s　　、。！？「」（）【】『』〔〕…‥・]+)/g;
-const URL_TEST_REGEX = /^https?:\/\//;
-
-const renderTextWithLinks = (text: string) => {
-  const parts = text.split(URL_SPLIT_REGEX);
-  return parts.map((part, i) =>
-    URL_TEST_REGEX.test(part) ? (
-      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={styles.descriptionLink}>
-        {part}
-      </a>
-    ) : (
-      part
-    ),
-  );
-};
-
 const LIMIT = 20;
 const REFRESH_COOLDOWN_MS = 60 * 1000;
 
