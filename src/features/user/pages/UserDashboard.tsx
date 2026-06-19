@@ -4,6 +4,7 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ProfileCard } from '../components/organisms/ProfileCard';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
+import { ReportModal } from '../components/organisms/ReportMadal';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/ToastContext';
@@ -22,6 +23,7 @@ import {
   type Post,
   type MediaInput,
 } from '../api/post';
+import { createBlocker } from '../api/block';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import styles from './UserDashboard.module.css';
 
@@ -76,6 +78,9 @@ export const UserDashboard = () => {
   const [editDeletedMediaIDs, setEditDeletedMediaIDs] = useState<string[]>([]);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState('');
+
+  const [reportingPostId, setReportingPostId] = useState<string | null>(null);
+  const [reportingPostContent, setReportingPostContent] = useState('');
 
   useLayoutEffect(() => {
     if (!initialCache) return;
@@ -267,6 +272,20 @@ export const UserDashboard = () => {
     }
   };
 
+  const handleBlock = async (blockedUserId: string) => {
+    try {
+      await createBlocker(blockedUserId);
+      addToast('ユーザーをブロックしました', 'success');
+    } catch {
+      addToast('ブロックに失敗しました', 'error');
+    }
+  };
+
+  const handleReport = (postId: string, postContent: string) => {
+    setReportingPostId(postId);
+    setReportingPostContent(postContent);
+  };
+
   const displayedPosts = activeTab === 'own' ? ownPosts : likedPosts;
   const isLoading = activeTab === 'own' ? ownLoading : likedLoading;
   const isLoadingMore = activeTab === 'own' ? ownLoadingMore : likedLoadingMore;
@@ -341,6 +360,8 @@ export const UserDashboard = () => {
                 currentUserId={userId}
                 onLike={handleLike}
                 onClick={() => handlePostClick(post.ID)}
+                onBlock={handleBlock}
+                onReport={(postId) => handleReport(postId, post.content)}
                 onEdit={handleEditOpen}
                 onDelete={handleDelete}
               />
@@ -352,6 +373,16 @@ export const UserDashboard = () => {
         <div ref={likedSentinelRef} />
 
         {isLoadingMore && <p className={styles.loadingText}>読み込み中...</p>}
+
+        {reportingPostId && (
+          <ReportModal
+            isOpen={true}
+            onClose={() => { setReportingPostId(null); setReportingPostContent(''); }}
+            targetType="POST"
+            targetID={reportingPostId}
+            postContent={reportingPostContent}
+          />
+        )}
       </main>
     </div>
   );
