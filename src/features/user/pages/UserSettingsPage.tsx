@@ -408,7 +408,7 @@ export const UserSettingsPage = () => {
           {view === 'password' && <PasswordView onBack={() => setView('general')} />}
           {view === 'blocks' && <BlocksView onBack={() => setView('general')} />}
           {view === 'terms' && <TermsView />}
-          {view === 'inquiry' && <InquiryForm />}
+          {view === 'inquiry' && <InquiryForm onComplete={() => setView(null)} />}
         </main>
       </div>
     </div>

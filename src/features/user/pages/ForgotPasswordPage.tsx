@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { requestPasswordReset, verifyPasswordResetOTP, resetPassword } from '../api/auth';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
+import { useToast } from '../../../context/ToastContext';
 import styles from './ForgotPasswordPage.module.css';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'done';
+
+const OTP_COOLDOWN_SECONDS = 60;
 
 const validatePassword = (value: string): string => {
   if (value && value.length < 8) return 'パスワードは8文字以上で入力してください';
@@ -23,7 +26,30 @@ export const ForgotPasswordPage = () => {
   const [newPasswordError, setNewPasswordError] = useState('');
   const [errorModal, setErrorModal] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  const startCooldown = () => {
+    setCooldown(OTP_COOLDOWN_SECONDS);
+    cooldownRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          cooldownRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +57,7 @@ export const ForgotPasswordPage = () => {
     try {
       await requestPasswordReset(email);
       setStep('otp');
+      startCooldown();
     } catch (err) {
       setErrorModal(toUserMessage(err, 'エラーが発生しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -42,6 +69,8 @@ export const ForgotPasswordPage = () => {
     setLoading(true);
     try {
       await requestPasswordReset(email);
+      addToast('認証コードを送信しました', 'success');
+      startCooldown();
     } catch {
       // silent
     } finally {
@@ -149,6 +178,7 @@ export const ForgotPasswordPage = () => {
               onOtpChange={setOtp}
               onResend={() => void handleResend()}
               resending={loading}
+              cooldown={cooldown}
               warningText="ブラウザの戻るボタンは使わないでください"
             />
             <button type="submit" className={styles.btnPrimary} disabled={loading}>
