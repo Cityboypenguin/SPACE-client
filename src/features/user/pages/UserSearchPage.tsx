@@ -32,6 +32,15 @@ function addToRecent<T extends { ID: string }>(mode: Mode, item: T): T[] {
   return next;
 }
 
+function uniqueByID<T extends { ID: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.ID)) return false;
+    seen.add(item.ID);
+    return true;
+  });
+}
+
 export const UserSearchPage = () => {
   const [mode, setMode] = useState<Mode>(() => {
     const stored = sessionStorage.getItem('search-mode');
@@ -45,7 +54,8 @@ export const UserSearchPage = () => {
 
   const [userResults, setUserResults] = useState<UserProfile[]>([]);
   const [userTotal, setUserTotal] = useState(0);
-  const [recentUsers, setRecentUsers] = useState<UserProfile[]>(() => loadRecent<UserProfile>('user'));
+  const [userLoadedCount, setUserLoadedCount] = useState(0);
+  const [recentUsers, setRecentUsers] = useState<UserProfile[]>(() => uniqueByID(loadRecent<UserProfile>('user')));
 
   const [allPostResults, setAllPostResults] = useState<Post[]>([]);
   const [postDisplayedCount, setPostDisplayedCount] = useState(LIMIT);
@@ -121,8 +131,9 @@ export const UserSearchPage = () => {
     try {
       const page = await searchUsers(keyword, LIMIT, offset);
       const filtered = currentUserId ? page.items.filter(u => u.ID !== currentUserId) : page.items;
-      setUserResults(prev => isFirst ? filtered : [...prev, ...filtered]);
+      setUserResults(prev => uniqueByID(isFirst ? filtered : [...prev, ...filtered]));
       setUserTotal(page.total);
+      setUserLoadedCount(prev => isFirst ? page.items.length : prev + page.items.length);
     } catch { /* noop */ } finally {
       loadingRef.current = false;
       if (!isFirst) setLoadingMore(false);
@@ -137,6 +148,7 @@ export const UserSearchPage = () => {
     if (mode === 'user') {
       setUserResults([]);
       setUserTotal(0);
+      setUserLoadedCount(0);
       await loadMoreUsers(query, 0, true);
     } else {
       setAllPostResults([]);
@@ -159,6 +171,7 @@ export const UserSearchPage = () => {
     setPostDisplayedCount(LIMIT);
     setActiveKeyword('');
     setUserTotal(0);
+    setUserLoadedCount(0);
   };
 
   const switchMode = (next: Mode) => {
@@ -171,17 +184,16 @@ export const UserSearchPage = () => {
     setAllPostResults([]);
     setPostDisplayedCount(LIMIT);
     setActiveKeyword('');
+    setUserTotal(0);
+    setUserLoadedCount(0);
   };
 
   const userSentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setUserResults(prev => {
-        if (!loadingRef.current && prev.length < userTotal && activeKeyword) {
-          loadMoreUsers(activeKeyword, prev.length, false);
-        }
-        return prev;
-      });
-    }, [userTotal, activeKeyword, loadMoreUsers]),
+      if (!loadingRef.current && userLoadedCount < userTotal && activeKeyword) {
+        void loadMoreUsers(activeKeyword, userLoadedCount, false);
+      }
+    }, [userLoadedCount, userTotal, activeKeyword, loadMoreUsers]),
     loadingMore,
     searched && mode === 'user',
   );
