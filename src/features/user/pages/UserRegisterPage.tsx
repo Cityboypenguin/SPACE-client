@@ -260,6 +260,7 @@ export const UserRegisterPage = () => {
       setOtpError('6桁の認証コードを入力してください');
       return;
     }
+    setVerifyingOtp(true);
     setOtpError('');
     setVerifyingOtp(true);
     try {
