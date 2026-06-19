@@ -1,9 +1,8 @@
 import { request } from '../../../lib/graphql';
 import { getUserToken } from './auth';
-import { type Media, type MediaInput, getPresignedMediaUploadUrl, uploadFileToStorage } from './message';
+import { type Media, type MediaInput } from './message';
 
 export type { Media, MediaInput };
-export { getPresignedMediaUploadUrl, uploadFileToStorage };
 
 export type PostUser = {
   ID: string;

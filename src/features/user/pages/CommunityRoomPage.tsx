@@ -9,7 +9,7 @@ import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';

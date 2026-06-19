@@ -9,6 +9,7 @@ import blockIcon from '../../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../../assets/パーツ_通報.svg';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
+import { formatTime } from '../../../../lib/formatTime';
 import styles from './PostCard.module.css';
 
 type Props = {
@@ -21,26 +22,6 @@ type Props = {
   onReport?: (postId: string) => void;
   onEdit?: (post: Post) => void;
   onDelete?: (postId: string) => void;
-};
-
-const formatTimestamp = (isoString: string): string => {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  if (diffSec < 60) return `${diffSec}秒前`;
-  if (diffMin < 60) return `${diffMin}分前`;
-  if (diffHour < 24) return `${diffHour}時間前`;
-  if (diffDay < 7) return `${diffDay}日前`;
-
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  return `${y}/${m}/${d}`;
 };
 
 export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBlock, onReport, onEdit, onDelete }: Props) => {
@@ -83,7 +64,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
       <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
       <div className={styles.body}>
         <div className={styles.header}>
-          <UserMeta userId={post.user.ID} name={post.user.name} accountID={post.user.accountID} timestamp={formatTimestamp(post.createdAt)} />
+          <UserMeta userId={post.user.ID} name={post.user.name} accountID={post.user.accountID} timestamp={formatTime(post.createdAt)} />
           <div className={styles.menuWrap} ref={menuRef}>
             <button
               className={styles.menuButton}

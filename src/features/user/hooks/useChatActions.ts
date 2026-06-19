@@ -3,11 +3,9 @@ import {
   sendMessage,
   updateMessage,
   deleteMessage,
-  getPresignedMediaUploadUrl,
-  uploadFileToStorage,
   type Message,
-  type MediaInput,
 } from '../api/message';
+import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 
 export const useChatActions = (
@@ -28,16 +26,7 @@ export const useChatActions = (
     setSending(true);
     setSendError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (selectedFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          selectedFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(selectedFiles);
       const data = await sendMessage(roomId, content.trim(), mediaInputs);
       setContent('');
       setSelectedFiles([]);

@@ -9,6 +9,13 @@ import { useToast } from '../../../context/ToastContext';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserInfoEditPage.module.css';
 
+const accountIDRe = /^[a-zA-Z0-9_-]+$/;
+
+const validateAccountID = (value: string): string => {
+  if (value && !accountIDRe.test(value)) return 'ユーザーIDは半角英数字・_・-のみ使用できます';
+  return '';
+};
+
 export const UserInfoEditPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
@@ -20,6 +27,7 @@ export const UserInfoEditPage = () => {
   );
 
   const [newAccountID, setNewAccountID] = useState('');
+  const [accountIDError, setAccountIDError] = useState('');
   const [newName, setNewName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -30,6 +38,14 @@ export const UserInfoEditPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (newAccountID.trim()) {
+      const accountIDErr = validateAccountID(newAccountID.trim());
+      if (accountIDErr) {
+        setError(accountIDErr);
+        return;
+      }
+    }
 
     const input: { accountID?: string; name?: string } = {};
     if (newAccountID.trim()) input.accountID = newAccountID.trim();
@@ -73,9 +89,13 @@ export const UserInfoEditPage = () => {
                 type="text"
                 className={styles.input}
                 value={newAccountID}
-                onChange={(e) => setNewAccountID(e.target.value)}
+                onChange={(e) => {
+                  setNewAccountID(e.target.value);
+                  setAccountIDError(validateAccountID(e.target.value));
+                }}
                 placeholder="ユーザーIDを入力してください"
               />
+              {accountIDError && <p className={styles.errorMsg}>{accountIDError}</p>}
             </div>
           </section>
 

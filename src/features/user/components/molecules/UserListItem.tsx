@@ -11,8 +11,8 @@ type User = {
 
 type Props = {
   user: User;
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
   actionVariant?: 'default' | 'danger';
   disabled?: boolean;
 };
@@ -24,12 +24,14 @@ export const UserListItem = ({ user, actionLabel, onAction, actionVariant = 'def
       <UserNameLink userId={user.ID} className={styles.name}>{user.name}</UserNameLink>
       <span className={styles.accountID}>@{user.accountID}</span>
     </div>
-    <button
-      onClick={onAction}
-      disabled={disabled}
-      className={`${styles.action} ${actionVariant === 'danger' ? styles.actionDanger : ''}`}
-    >
-      {actionLabel}
-    </button>
+    {actionLabel && onAction && (
+      <button
+        onClick={onAction}
+        disabled={disabled}
+        className={`${styles.action} ${actionVariant === 'danger' ? styles.actionDanger : ''}`}
+      >
+        {actionLabel}
+      </button>
+    )}
   </li>
 );

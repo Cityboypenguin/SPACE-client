@@ -156,7 +156,8 @@ export const ChatMessageBubble = ({
 
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
-  const canShowActions = (isMine || canDelete) && !isEditing && !hasMedia;
+  const canEdit = isMine && !hasMedia;
+  const canShowActions = (canEdit || canDelete) && !isEditing;
 
   const [showActions, setShowActions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -223,7 +224,7 @@ export const ChatMessageBubble = ({
           <div
             className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight} ${showActions ? styles.messageActionsVisible : ''}`}
           >
-            {isMine && (
+            {canEdit && (
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
                 onClick={() => { setShowActions(false); onStartEdit(); }}

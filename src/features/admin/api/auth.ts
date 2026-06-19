@@ -1,7 +1,7 @@
 import { request } from '../../../lib/graphql';
+import { ADMIN_REFRESH_TOKEN_KEY, ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
-export const ADMIN_TOKEN_KEY = 'space_admin_token';
-export const ADMIN_REFRESH_TOKEN_KEY = 'space_admin_refresh_token';
+export { ADMIN_REFRESH_TOKEN_KEY, ADMIN_TOKEN_KEY };
 
 type Administrator = {
   ID: string;

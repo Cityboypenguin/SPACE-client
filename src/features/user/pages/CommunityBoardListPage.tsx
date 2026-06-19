@@ -8,7 +8,7 @@ import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommuniti
 import { useAuth } from '../context/AuthContext';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const CommunityBoardListPage = () => {

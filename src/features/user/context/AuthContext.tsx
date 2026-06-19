@@ -2,12 +2,13 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '../api/auth';
 import { registerUnauthorizedHandler, registerTokenRefreshedHandler, registerMaintenanceHandler } from '../../../lib/graphql';
-
-const USER_TOKEN_KEY = 'space_user_token';
-const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
-const USER_ID_KEY = 'space_user_id';
-const ADMIN_TOKEN_KEY = 'space_admin_token';
-const ADMIN_REFRESH_TOKEN_KEY = 'space_admin_refresh_token';
+import {
+  ADMIN_REFRESH_TOKEN_KEY,
+  ADMIN_TOKEN_KEY,
+  USER_ID_KEY,
+  USER_REFRESH_TOKEN_KEY,
+  USER_TOKEN_KEY,
+} from '../../../lib/authStorage';
 
 type AuthContextValue = {
   token: string | null;

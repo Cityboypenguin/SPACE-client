@@ -15,9 +15,10 @@ const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 type Props = {
   onSubmitted?: () => void;
+  onComplete?: () => void;
 };
 
-export const InquiryForm = ({ onSubmitted }: Props) => {
+export const InquiryForm = ({ onSubmitted, onComplete }: Props) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -55,13 +56,18 @@ export const InquiryForm = ({ onSubmitted }: Props) => {
     }
   };
 
-  if (submitted) {
+  if (submitted && onComplete) {
     return (
-      <div className={styles.card}>
-        <p style={{ textAlign: 'center', padding: '1rem' }}>
-          送信が完了しました。<br />
-          お問い合わせいただきありがとうございます。
-        </p>
+      <div className={styles.overlay}>
+        <div className={styles.modal}>
+          <p className={styles.modalText}>
+            送信が完了しました。<br />
+            お問い合わせいただきありがとうございます。
+          </p>
+          <button className={styles.modalBackBtn} onClick={onComplete}>
+            戻る
+          </button>
+        </div>
       </div>
     );
   }
