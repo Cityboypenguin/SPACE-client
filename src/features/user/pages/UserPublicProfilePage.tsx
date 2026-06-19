@@ -5,13 +5,15 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ProfileCard } from '../components/organisms/ProfileCard';
 import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
 import { ReportModal } from '../components/organisms/ReportModal';
+import { ReplyModal } from '../components/organisms/ReplyModal';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { getOrCreateDMRoom } from '../api/message';
-import { getPostsByUserID, createFavorite, deleteFavorite, type Post } from '../api/post';
+import { getPostsByUserID, createPost, createFavorite, deleteFavorite, type Post } from '../api/post';
+import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
@@ -27,6 +29,7 @@ export const UserPublicProfilePage = () => {
   const navigate = useNavigate();
   const { profile, loading, error } = useProfile(id);
   const { userId: currentUserId } = useAuth();
+  const { profile: currentUserProfile } = useProfile(currentUserId);
   const { addToast } = useToast();
   const isMe = currentUserId === id;
 
@@ -60,6 +63,7 @@ export const UserPublicProfilePage = () => {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportingPostId, setReportingPostId] = useState<string | null>(null);
   const [reportingPostContent, setReportingPostContent] = useState('');
+  const [replyingTo, setReplyingTo] = useState<Post | null>(null);
 
   // ── posts ─────────────────────────────────────────────────────────────────
   const [initialCache] = useState(() => id ? getUserPostListCache(id) : null);
@@ -135,6 +139,26 @@ export const UserPublicProfilePage = () => {
     postsLoadingMore,
   );
 
+  // 相手の新着投稿をポーリングして先頭に反映する
+  const checkForNewPosts = useCallback(async (userID: string) => {
+    if (postsLoadingRef.current) return;
+    try {
+      const page = await getPostsByUserID(userID, 20, 0);
+      setPosts((prev) => {
+        const existingIds = new Set(prev.map((p) => p.ID));
+        const newItems = page.items.filter((p) => !existingIds.has(p.ID));
+        return newItems.length > 0 ? [...newItems, ...prev] : prev;
+      });
+      setPostsTotal((prevTotal) => Math.max(prevTotal, page.total));
+    } catch { /* noop */ }
+  }, []);
+
+  useEffect(() => {
+    if (!id) return;
+    const interval = setInterval(() => checkForNewPosts(id), 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [id, checkForNewPosts]);
+
   // ── handlers ──────────────────────────────────────────────────────────────
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) await deleteFavorite(postId);
@@ -177,6 +201,14 @@ export const UserPublicProfilePage = () => {
     }
   };
 
+  const addBlockedUserOptimistic = () => {
+    if (!profile) return;
+    mutateBlocked(
+      (prev) => [...(prev ?? []), { ID: profile.user.ID, name: profile.user.name, accountID: profile.user.accountID, avatarUrl: profile.user.avatarUrl }],
+      { revalidate: false },
+    );
+  };
+
   const handleBlockToggle = async () => {
     if (!id) return;
     if (!isBlocked && !window.confirm('本当にこのユーザーをブロックしますか？')) return;
@@ -186,10 +218,13 @@ export const UserPublicProfilePage = () => {
       if (isBlocked) {
         await deleteBlocker(id);
         mutateBlocked((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
+        void loadPosts(id, 0, true);
         addToast('ブロックを解除しました', 'success');
       } else {
         await createBlocker(id);
-        void mutateBlocked();
+        addBlockedUserOptimistic();
+        setPosts([]);
+        setPostsTotal(0);
         if (isFavorited) {
           mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
         }
@@ -223,6 +258,12 @@ export const UserPublicProfilePage = () => {
   const handlePostBlock = async (blockedUserId: string) => {
     try {
       await createBlocker(blockedUserId);
+      setPosts((prev) => prev.filter((p) => p.user.ID !== blockedUserId));
+      if (blockedUserId === id) {
+        addBlockedUserOptimistic();
+        setPostsTotal(0);
+        if (isFavorited) mutateFavorites((prev) => prev?.filter((u) => u.ID !== blockedUserId), { revalidate: false });
+      }
       addToast('ユーザーをブロックしました', 'success');
     } catch {
       addToast('ブロックに失敗しました', 'error');
@@ -232,6 +273,13 @@ export const UserPublicProfilePage = () => {
   const handlePostReport = (postId: string, postContent: string) => {
     setReportingPostId(postId);
     setReportingPostContent(postContent);
+  };
+
+  const handleReplySubmit = async (content: string, files: File[]) => {
+    if (!replyingTo) return;
+    const mediaInputs = await uploadMediaFiles(files);
+    await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    setPosts((prev) => prev.map((p) => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p));
   };
 
   // ── right-side action buttons (passed to ProfileCard) ────────────────────
@@ -318,6 +366,7 @@ export const UserPublicProfilePage = () => {
               sentinelRef={postsSentinelRef}
               onLike={handleLike}
               onPostClick={handlePostClick}
+              onReply={setReplyingTo}
               onBlock={handlePostBlock}
               onReport={(postId) => handlePostReport(postId, posts.find(p => p.ID === postId)?.content ?? '')}
             />
@@ -331,6 +380,17 @@ export const UserPublicProfilePage = () => {
           onClose={() => setIsReportOpen(false)}
           targetType="USER"
           targetID={id}
+        />
+      )}
+
+      {replyingTo && (
+        <ReplyModal
+          post={replyingTo}
+          onClose={() => setReplyingTo(null)}
+          onSubmit={handleReplySubmit}
+          userId={currentUserId}
+          avatarUrl={currentUserProfile?.avatarUrl}
+          userName={currentUserProfile?.user.name}
         />
       )}
 

@@ -3,7 +3,11 @@ import { dismissTermsConsentModalIfPresent } from '../support/terms';
 
 // 動的IDを必要としないユーザー画面が、認証済み状態で一通りクラッシュせずに
 // 表示されることを確認する。詳細な操作確認は各機能専用のspecで行う。
-const routes: { path: string; heading: string | RegExp }[] = [
+//
+// hasSidebar: false の画面（/inquiry）は未ログインでもお問い合わせできるよう
+// protectedElement の外（公開ルート）に置かれているため、UserSidebarを描画しない。
+// そのためサイドバー表示チェックの対象から外す。
+const routes: { path: string; heading: string | RegExp; hasSidebar?: boolean }[] = [
   { path: '/home', heading: 'ホーム' },
   { path: '/mypage', heading: 'マイページ' },
   { path: '/mypage/settings', heading: '設定' },
@@ -17,16 +21,18 @@ const routes: { path: string; heading: string | RegExp }[] = [
   { path: '/community/browse', heading: 'コミュニティを探す' },
   { path: '/community/create', heading: 'コミュニティを作る' },
   { path: '/notifications', heading: '通知一覧' },
-  { path: '/inquiry', heading: 'お問い合わせ' },
+  { path: '/inquiry', heading: 'お問い合わせ', hasSidebar: false },
 ];
 
-for (const { path, heading } of routes) {
+for (const { path, heading, hasSidebar = true } of routes) {
   test(`${path} が表示される`, async ({ page }) => {
     await page.goto(path);
     await dismissTermsConsentModalIfPresent(page);
     await expect(page.getByText(heading).first()).toBeVisible();
-    // サイドバーが出ている = 未ログインへリダイレクトされていない
-    await expect(page.getByText('ホーム', { exact: true })).toBeVisible();
+    if (hasSidebar) {
+      // サイドバーが出ている = 未ログインへリダイレクトされていない
+      await expect(page.getByText('ホーム', { exact: true })).toBeVisible();
+    }
   });
 }
 

@@ -11,6 +11,7 @@ type Props = {
   sentinelRef: RefObject<HTMLDivElement | null>;
   onLike: (postId: string, isLiked: boolean) => Promise<void>;
   onPostClick: (postId: string) => void;
+  onReply?: (post: Post) => void;
   onBlock?: (userId: string) => void;
   onReport?: (postId: string) => void;
   onEdit?: (post: Post) => void;
@@ -28,6 +29,7 @@ export const ScrollablePostsList = ({
   sentinelRef,
   onLike,
   onPostClick,
+  onReply,
   onBlock,
   onReport,
   onEdit,
@@ -48,6 +50,7 @@ export const ScrollablePostsList = ({
             currentUserId={currentUserId ?? null}
             onLike={onLike}
             onClick={() => onPostClick(post.ID)}
+            onReply={onReply ? () => onReply(post) : undefined}
             onBlock={onBlock}
             onReport={onReport}
             onEdit={onEdit}
