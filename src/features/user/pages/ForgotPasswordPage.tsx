@@ -20,6 +20,7 @@ export const ForgotPasswordPage = () => {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -80,13 +81,18 @@ export const ForgotPasswordPage = () => {
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (otp.length !== 6) {
+      setOtpError('6桁の認証コードを入力してください');
+      return;
+    }
     setLoading(true);
+    setOtpError('');
     try {
       const data = await verifyPasswordResetOTP(email, otp);
       setResetToken(data.verifyPasswordResetOTP);
       setStep('newPassword');
     } catch (err) {
-      setErrorModal(toUserMessage(err, '認証コードが違います。'));
+      setOtpError(toUserMessage(err, '認証コードが違います。'));
     } finally {
       setLoading(false);
     }
@@ -133,17 +139,18 @@ export const ForgotPasswordPage = () => {
     <div className={styles.page}>
       {/* Header */}
       <div className={styles.header}>
-        <button
-          type="button"
-          className={styles.backBtn}
-          onClick={() => {
-            if (step === 'email') navigate('/login');
-            else if (step === 'otp') { setStep('email'); setOtp(''); }
-            else if (step === 'newPassword') setStep('otp');
-          }}
-        >
-          <ChevronLeft />
-        </button>
+        {step !== 'newPassword' && (
+          <button
+            type="button"
+            className={styles.backBtn}
+            onClick={() => {
+              if (step === 'email') navigate('/login');
+              else if (step === 'otp') { setStep('email'); setOtp(''); }
+            }}
+          >
+            <ChevronLeft />
+          </button>
+        )}
         {step === 'email' && <h2 className={styles.pageTitle}>パスワードを再設定する</h2>}
         {step === 'newPassword' && <h2 className={styles.pageTitle}>新規パスワード</h2>}
       </div>
@@ -175,13 +182,14 @@ export const ForgotPasswordPage = () => {
             <OtpInputSection
               email={email}
               otp={otp}
-              onOtpChange={setOtp}
+              onOtpChange={(value) => { setOtp(value); setOtpError(''); }}
+              otpError={otpError}
               onResend={() => void handleResend()}
               resending={loading}
               cooldown={cooldown}
               warningText="ブラウザの戻るボタンは使わないでください"
             />
-            <button type="submit" className={styles.btnPrimary} disabled={loading}>
+            <button type="submit" className={styles.btnPrimary} disabled={loading || otp.length !== 6}>
               {loading ? '確認中...' : '次へ'}
             </button>
           </form>

@@ -241,7 +241,7 @@ export const PostDetailPage = () => {
             {post.rootPost && (
               <div className={styles.rootPostContainer}>
                 {post.rootPost.deletedAt != null ? (
-                  <div className={styles.deletedPost}>この投稿は削除されました</div>
+                  <div className={styles.deletedPost}>投稿が見つかりません</div>
                 ) : (
                   <PostCard
                     post={post.rootPost}
@@ -255,7 +255,7 @@ export const PostDetailPage = () => {
             )}
 
             {isDeleted ? (
-              <div className={styles.deletedMain}>この投稿は削除されました</div>
+              <div className={styles.deletedMain}>投稿が見つかりません</div>
             ) : (
               <div className={styles.postBody}>
                 <div className={styles.postBodyHeader}>
