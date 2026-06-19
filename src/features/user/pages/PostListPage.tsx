@@ -30,7 +30,6 @@ import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { Footer } from '../../../components/organisms/Footer';
 
-
 const LIMIT = 20;
 const REFRESH_COOLDOWN_MS = 60 * 1000;
 

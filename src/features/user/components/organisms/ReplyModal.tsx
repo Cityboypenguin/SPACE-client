@@ -7,6 +7,7 @@ import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './ReplyModal.module.css';
+import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
 
 type Props = {
   post: Post;
@@ -63,7 +64,7 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
                 <span className={styles.previewAccount}>@{post.user.accountID}</span>
                 <span className={styles.previewAccount}> · {formatTime(post.createdAt)}</span>
               </div>
-              {post.content && <p className={styles.previewContent}>{post.content}</p>}
+              {post.content && <p className={styles.previewContent}>{renderTextWithLinks({ text: post.content })}</p>}
               {post.media && post.media.length > 0 && (
                 <div className={styles.previewImages}>
                   {post.media.filter(m => m.contentType.startsWith('image/')).slice(0, 4).map((m) => (

@@ -8,6 +8,7 @@ import { type Post } from '../../api/post';
 import { countAllReplies } from '../../../../lib/postUtils';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
 import styles from './ReplyThread.module.css';
+import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
 
 type Props = {
   post: Post;
@@ -37,7 +38,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
             timestamp={formatTime(post.createdAt)}
             small
           />
-          <p className={styles.content}>{post.content}</p>
+          <p className={styles.content}>{renderTextWithLinks({ text: post.content })}</p>
           {post.media && post.media.length > 0 && (
             <div className={styles.mediaWrapper}>
               <PostMediaGrid media={post.media} />

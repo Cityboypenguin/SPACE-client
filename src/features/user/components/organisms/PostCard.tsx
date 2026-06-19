@@ -11,22 +11,7 @@ import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './PostCard.module.css';
-
-const URL_SPLIT_REGEX = /(https?:\/\/[^\s　　、。！？「」（）【】『』〔〕…‥・]+)/g;
-const URL_TEST_REGEX = /^https?:\/\//;
-
-const renderTextWithLinks = (text: string) => {
-  const parts = text.split(URL_SPLIT_REGEX);
-  return parts.map((part, i) =>
-    URL_TEST_REGEX.test(part) ? (
-      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={styles.descriptionLink}>
-        {part}
-      </a>
-    ) : (
-      part
-    ),
-  );
-};
+import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
 
 type Props = {
   post: Post;
@@ -136,7 +121,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
               ref={contentRef}
               className={`${styles.content} ${!expanded ? styles.contentClamped : ''}`}
             >
-              {renderTextWithLinks(post.content)}
+              {renderTextWithLinks({ text: post.content })}
             </p>
             {isClamped && !expanded && (
               <button className={styles.expandButton} onClick={handleExpand}>もっと見る</button>

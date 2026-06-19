@@ -8,22 +8,7 @@ import { getCommunityMembers, type Community, type CommunityMember } from '../..
 import { storageUrl } from '../../../../lib/storage';
 import personIcon from '../../../../assets/パーツ_人間.svg';
 import styles from './CommunityDetailPanel.module.css';
-
-const URL_SPLIT_REGEX = /(https?:\/\/[^\s　　、。！？「」（）【】『』〔〕…‥・]+)/g;
-const URL_TEST_REGEX = /^https?:\/\//;
-
-const renderTextWithLinks = (text: string) => {
-  const parts = text.split(URL_SPLIT_REGEX);
-  return parts.map((part, i) =>
-    URL_TEST_REGEX.test(part) ? (
-      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={styles.descriptionLink}>
-        {part}
-      </a>
-    ) : (
-      part
-    ),
-  );
-};
+import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
 
 type Props = {
   community: Community;
@@ -98,7 +83,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
           </p>
           {leaveError && <p className={styles.leaveError}>{leaveError}</p>}
           <p className={styles.descLabel}>紹介文</p>
-          <p className={styles.description}>{renderTextWithLinks(community.description)}</p>
+          <p>{renderTextWithLinks({ text: community.description, linkClassName: styles.descriptionLink })}</p>
         </div>
 
         {/* 右：メンバー一覧 */}
