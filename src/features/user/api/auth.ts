@@ -1,8 +1,7 @@
 import { request } from '../../../lib/graphql';
+import { USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY } from '../../../lib/authStorage';
 
-export const USER_TOKEN_KEY = 'space_user_token';
-export const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
-export const USER_ID_KEY = 'space_user_id';
+export { USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY };
 
 export const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 

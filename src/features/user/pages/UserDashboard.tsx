@@ -4,7 +4,7 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ProfileCard } from '../components/organisms/ProfileCard';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/ToastContext';
@@ -18,11 +18,9 @@ import {
   deletePost,
   createFavorite,
   deleteFavorite,
-  getPresignedMediaUploadUrl,
-  uploadFileToStorage,
   type Post,
-  type MediaInput,
 } from '../api/post';
+import { uploadMediaFiles } from '../api/media';
 import { createBlocker } from '../api/block';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import styles from './UserDashboard.module.css';
@@ -39,8 +37,7 @@ export const UserDashboard = () => {
   const [flashMessage, setFlashMessage] = useState('');
 
   // ── Own posts ────────────────────────────────────────────────────────────
-  const initialCacheRef = useRef(userId ? getUserPostListCache(userId) : null);
-  const initialCache = initialCacheRef.current;
+  const [initialCache] = useState(() => userId ? getUserPostListCache(userId) : null);
 
   const [ownPosts, setOwnPosts] = useState<Post[]>(initialCache?.posts ?? []);
   const [ownTotal, setOwnTotal] = useState(initialCache?.total ?? 0);
@@ -185,17 +182,21 @@ export const UserDashboard = () => {
 
   // ── Like handler ──────────────────────────────────────────────────────────
   const handleLike = async (postId: string, isLiked: boolean) => {
-    if (isLiked) await deleteFavorite(postId);
-    else await createFavorite(postId);
-    const updater = (prev: Post[]) =>
-      prev.map(p => {
-        if (p.ID !== postId) return p;
-        return isLiked
-          ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
-          : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
-      });
-    setOwnPosts(updater);
-    setLikedPosts(updater);
+    try {
+      if (isLiked) await deleteFavorite(postId);
+      else await createFavorite(postId);
+      const updater = (prev: Post[]) =>
+        prev.map(p => {
+          if (p.ID !== postId) return p;
+          return isLiked
+            ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
+            : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+        });
+      setOwnPosts(updater);
+      setLikedPosts(updater);
+    } catch {
+      addToast('いいねの更新に失敗しました', 'error');
+    }
   };
 
   const handlePostClick = (postId: string) => {
@@ -232,16 +233,7 @@ export const UserDashboard = () => {
     setEditSubmitting(true);
     setEditError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (editFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          editFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(editFiles);
       const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs);
       const filteredUpdated = {
         ...updated,

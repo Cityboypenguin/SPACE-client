@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { API_URL } from '../../lib/graphql';
+import { USER_TOKEN_KEY } from '../../lib/authStorage';
 
 const MAINTENANCE_KEY = 'space_maintenance';
 const POLL_INTERVAL_MS = 30_000; // 30秒ごとにサーバーへ確認
@@ -16,7 +17,7 @@ export const MaintenancePage = () => {
         const res = await fetch(API_URL, { method: 'GET' });
         if (res.status !== 503) {
           localStorage.removeItem(MAINTENANCE_KEY);
-          const hasToken = !!localStorage.getItem('space_user_token');
+          const hasToken = !!localStorage.getItem(USER_TOKEN_KEY);
           window.location.href = hasToken ? '/mypage' : '/login';
         }
       } catch {

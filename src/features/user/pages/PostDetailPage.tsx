@@ -5,7 +5,7 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { PostCard } from '../components/organisms/PostCard';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
@@ -27,16 +27,14 @@ import {
   deletePost,
   createFavorite,
   deleteFavorite,
-  getPresignedMediaUploadUrl,
-  uploadFileToStorage,
   type Post,
-  type MediaInput,
 } from '../api/post';
+import { uploadMediaFiles } from '../api/media';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
 import { useToast } from '../../../context/ToastContext';
-import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache, updatePostInUserPostListCache } from '../cache/postListCache';
+import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
 
 
 export const PostDetailPage = () => {
@@ -103,29 +101,18 @@ export const PostDetailPage = () => {
       const updater = (p: Post): Post => isLiked
         ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
         : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
-      updatePostInCache(postId, updater);
-      if (userId) updatePostInUserPostListCache(userId, postId, updater);
+      updatePostAcrossCaches(postId, updater);
     }
     void mutate();
   };
 
   const handleReplyToPost = async (content: string, files: File[]) => {
     if (!replyingTo) return;
-    let mediaInputs: MediaInput[] | undefined;
-    if (files.length > 0) {
-      mediaInputs = await Promise.all(
-        files.map(async (file) => {
-          const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-          await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-          return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-        }),
-      );
-    }
+    const mediaInputs = await uploadMediaFiles(files);
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
     if (id) {
       const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
-      updatePostInCache(id, updater);
-      if (userId) updatePostInUserPostListCache(userId, id, updater);
+      updatePostAcrossCaches(id, updater);
     }
     void mutate();
   };
@@ -135,23 +122,13 @@ export const PostDetailPage = () => {
     setReplying(true);
     setReplyError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (replyFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          replyFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(replyFiles);
       await createPost(replyContent.trim(), id, mediaInputs);
       setReplyContent('');
       setReplyFiles([]);
       if (id) {
         const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
-        updatePostInCache(id, updater);
-        if (userId) updatePostInUserPostListCache(userId, id, updater);
+        updatePostAcrossCaches(id, updater);
       }
       void mutate();
     } catch (err) {
@@ -176,16 +153,7 @@ export const PostDetailPage = () => {
     setIsUpdating(true);
     setUpdateError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (editSelectedFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          editSelectedFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          })
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(editSelectedFiles);
 
       const deletedIDs = [...editDeletedMediaIDs];
       await updatePost(id, editContent.trim(), mediaInputs, deletedIDs);
@@ -199,7 +167,7 @@ export const PostDetailPage = () => {
             ...updatedPost,
             media: updatedPost.media?.filter(m => !deletedIDs.includes(m.ID)) ?? [],
           };
-          updatePostInCache(id, () => filtered);
+          updatePostAcrossCaches(id, () => filtered);
         }
       });
     } catch (err) {
@@ -213,8 +181,7 @@ export const PostDetailPage = () => {
     if (!id || !window.confirm('本当にこの投稿を削除しますか？')) return;
     try {
       await deletePost(id);
-      removePostFromCache(id);
-      if (userId) removePostFromUserPostListCache(userId, id);
+      removePostAcrossCaches(id);
       navigate(-1);
     } catch (err) {
       console.error(err);

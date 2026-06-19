@@ -1,3 +1,10 @@
+import {
+  ADMIN_REFRESH_TOKEN_KEY,
+  ADMIN_TOKEN_KEY,
+  USER_REFRESH_TOKEN_KEY,
+  USER_TOKEN_KEY,
+} from './authStorage';
+
 const fallbackApiUrl = '/query';
 
 export const API_URL = import.meta.env.VITE_API_URL || fallbackApiUrl;
@@ -5,11 +12,6 @@ export const API_URL = import.meta.env.VITE_API_URL || fallbackApiUrl;
 export const SSE_URL = (import.meta.env.VITE_API_URL as string | undefined ?? '/query').replace(/\/query$/, '/events');
 
 export const HEALTH_URL = API_URL.replace(/\/query$/, '/');
-
-const USER_TOKEN_KEY = 'space_user_token';
-const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
-const ADMIN_TOKEN_KEY = 'space_admin_token';
-const ADMIN_REFRESH_TOKEN_KEY = 'space_admin_refresh_token';
 
 let _onUnauthorized: (() => void) | null = null;
 let _onTokenRefreshed: ((token: string, refreshToken: string) => void) | null = null;

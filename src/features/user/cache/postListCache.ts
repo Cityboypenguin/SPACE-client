@@ -37,6 +37,28 @@ export const removePostFromCache = (postId: string) => {
   cache = { ...cache, posts: cache.posts.filter(p => p.ID !== postId), total: Math.max(0, cache.total - 1) };
 };
 
+export const updatePostAcrossCaches = (postId: string, updater: (post: Post) => Post) => {
+  updatePostInCache(postId, updater);
+  userPostCaches.forEach((data, userId) => {
+    userPostCaches.set(userId, {
+      ...data,
+      posts: data.posts.map(p => p.ID === postId ? updater(p) : p),
+    });
+  });
+};
+
+export const removePostAcrossCaches = (postId: string) => {
+  removePostFromCache(postId);
+  userPostCaches.forEach((data, userId) => {
+    const nextPosts = data.posts.filter(p => p.ID !== postId);
+    userPostCaches.set(userId, {
+      ...data,
+      posts: nextPosts,
+      total: nextPosts.length === data.posts.length ? data.total : Math.max(0, data.total - 1),
+    });
+  });
+};
+
 export const clearPostListCache = () => { cache = null; };
 
 export const getUserPostListCache = (userId: string): PostListCacheData | null => {

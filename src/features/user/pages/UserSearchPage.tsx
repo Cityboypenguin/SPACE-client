@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { searchUsers, getProfileByUserID, type UserProfile } from '../api/profile';
 import {
   searchPosts, createPost, createFavorite, deleteFavorite, getPostByID,
-  getPresignedMediaUploadUrl, uploadFileToStorage,
-  type Post, type MediaInput,
+  type Post,
 } from '../api/post';
+import { uploadMediaFiles } from '../api/media';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostCard } from '../components/organisms/PostCard';
 import { ReplyModal } from '../components/organisms/ReplyModal';
@@ -215,16 +215,7 @@ export const UserSearchPage = () => {
 
   const handleReplySubmit = useCallback(async (content: string, files: File[]) => {
     if (!replyingTo) return;
-    let mediaInputs: MediaInput[] | undefined;
-    if (files.length > 0) {
-      mediaInputs = await Promise.all(
-        files.map(async (file) => {
-          const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-          await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-          return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-        }),
-      );
-    }
+    const mediaInputs = await uploadMediaFiles(files);
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
     const applyReply = (posts: Post[]) =>
       posts.map(p => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p);

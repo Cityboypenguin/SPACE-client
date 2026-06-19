@@ -5,7 +5,7 @@ import { Tabs } from '../../../components/molecules/Tabs';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/ToastContext';
 import styles from './PostListPage.module.css';
@@ -20,11 +20,9 @@ import {
   deletePost,
   createFavorite,
   deleteFavorite,
-  getPresignedMediaUploadUrl,
-  uploadFileToStorage,
   type Post,
-  type MediaInput,
 } from '../api/post';
+import { uploadMediaFiles } from '../api/media';
 import { createBlocker } from '../api/block';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
@@ -42,8 +40,7 @@ export const PostListPage = () => {
   const { profile } = useProfile(userId);
   const { addToast } = useToast();
 
-  const initialCacheRef = useRef(getPostListCache());
-  const initialCache = initialCacheRef.current;
+  const [initialCache] = useState(() => getPostListCache());
 
   const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
   const [total, setTotal] = useState(initialCache?.total ?? 0);
@@ -249,11 +246,11 @@ export const PostListPage = () => {
         total: totalRef.current,
         offset: postsRef.current.length,
         scrollY: scrollYRef.current,
-        searchQuery: searchQueryRef.current,
-        searchResults: searchResultsRef.current,
+        searchQuery,
+        searchResults,
       });
     };
-  }, []);
+  }, [posts, total, searchQuery, searchResults]);
 
   const isSearching = searchQuery.trim() !== '';
 
@@ -285,19 +282,14 @@ export const PostListPage = () => {
     isSearching && searchDisplayedCount < searchResults.length,
   );
 
-  const searchQueryRef = useRef(searchQuery);
-  const searchResultsRef = useRef(searchResults);
-  useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
-  useEffect(() => { searchResultsRef.current = searchResults; }, [searchResults]);
-
   const handlePostClick = (postId: string) => {
     savePostListCache({
       posts: postsRef.current,
       total: totalRef.current,
       offset: postsRef.current.length,
       scrollY: scrollYRef.current,
-      searchQuery: searchQueryRef.current,
-      searchResults: searchResultsRef.current,
+      searchQuery,
+      searchResults,
     });
     navigate(`/posts/${postId}`);
   };
@@ -307,16 +299,7 @@ export const PostListPage = () => {
     setPosting(true);
     setPostError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (selectedFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          selectedFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(selectedFiles);
       const newPost = await createPost(content.trim(), undefined, mediaInputs);
       setContent('');
       setSelectedFiles([]);
@@ -334,16 +317,7 @@ export const PostListPage = () => {
     setPosting(true);
     setPostError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (modalFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          modalFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(modalFiles);
       const newPost = await createPost(modalContent.trim(), undefined, mediaInputs);
       setModalContent('');
       setModalFiles([]);
@@ -384,16 +358,7 @@ export const PostListPage = () => {
 
   const handleReplySubmit = async (content: string, files: File[]) => {
     if (!replyingTo) return;
-    let mediaInputs: MediaInput[] | undefined;
-    if (files.length > 0) {
-      mediaInputs = await Promise.all(
-        files.map(async (file) => {
-          const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-          await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-          return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-        }),
-      );
-    }
+    const mediaInputs = await uploadMediaFiles(files);
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
     updatePostInAllLists(replyingTo.ID, p => ({ ...p, replyCount: p.replyCount + 1 }));
   };
@@ -429,16 +394,7 @@ export const PostListPage = () => {
     setEditSubmitting(true);
     setEditError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (editFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          editFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(editFiles);
       const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs);
       const filteredUpdated = {
         ...updated,

@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ProfileCard } from '../components/organisms/ProfileCard';
 import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -62,8 +62,7 @@ export const UserPublicProfilePage = () => {
   const [reportingPostContent, setReportingPostContent] = useState('');
 
   // ── posts ─────────────────────────────────────────────────────────────────
-  const initialCacheRef = useRef(id ? getUserPostListCache(id) : null);
-  const initialCache = initialCacheRef.current;
+  const [initialCache] = useState(() => id ? getUserPostListCache(id) : null);
 
   const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
   const [postsTotal, setPostsTotal] = useState(initialCache?.total ?? 0);
