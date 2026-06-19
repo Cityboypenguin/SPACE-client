@@ -34,7 +34,7 @@ export const CommunityRoomPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { userId: currentUserID } = useAuth();
-  const { room, messages, wsConnected, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -165,10 +165,6 @@ export const CommunityRoomPage = () => {
           <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
           <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         </button>
-        <span
-          className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}
-          title={wsConnected ? '接続中' : '切断'}
-        />
       </div>
 
       <div className={styles.messageListWrapper}>
