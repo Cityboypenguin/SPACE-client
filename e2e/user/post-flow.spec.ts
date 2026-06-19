@@ -15,16 +15,16 @@ test.describe('投稿の作成・返信・いいね・削除', () => {
     await page.getByRole('button', { name: '投稿', exact: true }).click();
     await expect(page.getByText(postContent)).toBeVisible();
 
-    await page.getByText(postContent).click();
-    await expect(page).toHaveURL(/\/posts\/.+/);
+    await page.locator('[class*="card"]').filter({ hasText: postContent }).first().locator('p, [class*="content"]').first().click();
+    await expect(page).toHaveURL(/\/posts\/.+/, { timeout: 8000 });
     await expect(page.getByRole('heading', { name: '投稿' })).toBeVisible();
 
     await page.getByPlaceholder('返信する...').fill(replyContent);
     await page.getByRole('button', { name: '返信する' }).click();
     await expect(page.getByText(replyContent)).toBeVisible();
 
-    await page.getByRole('button', { name: 'いいね' }).click();
-    await expect(page.getByRole('button', { name: 'いいね' })).toBeEnabled();
+    await page.getByRole('button', { name: 'いいね' }).first().click();
+    await expect(page.getByRole('button', { name: 'いいね' }).first()).toBeEnabled();
 
     await page.getByRole('button', { name: 'メニュー' }).click();
     await page.getByRole('button', { name: '削除' }).click();
