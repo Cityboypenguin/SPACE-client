@@ -31,6 +31,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
   const loadingRef = useRef(false);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [actionLoadingIds, setActionLoadingIds] = useState<Set<string>>(new Set());
+  const hasMore = users.length < total;
 
   const loadUsers = useCallback(async (currentOffset: number, isInitial: boolean) => {
     if (loadingRef.current) return;
@@ -59,12 +60,12 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
 
   const sentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setUsers((prev) => {
-        if (!loadingRef.current && prev.length < total) loadUsers(prev.length, false);
-        return prev;
-      });
-    }, [total, loadUsers]),
+      if (!loadingRef.current && hasMore) {
+        loadUsers(users.length, false);
+      }
+    }, [hasMore, loadUsers, users.length]),
     loadingMore,
+    hasMore,
   );
 
   const handleToggle = async (targetId: string, isRemoved: boolean) => {
