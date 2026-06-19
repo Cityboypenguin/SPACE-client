@@ -66,6 +66,13 @@ const validatePassword = (value: string): string => {
   return '';
 };
 
+const accountIDRe = /^[a-zA-Z0-9_-]+$/;
+
+const validateAccountID = (value: string): string => {
+  if (value && !accountIDRe.test(value)) return 'ユーザーIDは半角英数字・_・-のみ使用できます';
+  return '';
+};
+
 type Step = 1 | 2 | 3 | 4;
 
 const StepIndicator = ({ current }: { current: Step }) => {
@@ -134,6 +141,7 @@ export const UserRegisterPage = () => {
   // Account info (step 4)
   const [name, setName] = useState(initialProgress.name ?? '');
   const [accountID, setAccountID] = useState(initialProgress.accountID ?? '');
+  const [accountIDError, setAccountIDError] = useState('');
   // パスワードはセキュリティ上の理由でリロード後も復元しない（再入力してもらう）
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -268,6 +276,7 @@ export const UserRegisterPage = () => {
     const errors: string[] = [];
     if (!name) errors.push('ユーザー名を入力してください');
     if (!accountID) errors.push('ユーザーIDを入力してください');
+    else if (accountIDError) errors.push(accountIDError);
     if (!password) errors.push('パスワードを入力してください');
     else if (passwordError) errors.push(passwordError);
     if (errors.length > 0) {
@@ -459,10 +468,14 @@ export const UserRegisterPage = () => {
               <input
                 type="text"
                 value={accountID}
-                onChange={(e) => setAccountID(e.target.value)}
+                onChange={(e) => {
+                  setAccountID(e.target.value);
+                  setAccountIDError(validateAccountID(e.target.value));
+                }}
                 placeholder="半角英数字"
                 className={styles.input}
               />
+              {accountIDError && <p className={styles.fieldError}>{accountIDError}</p>}
             </div>
             <div className={styles.fieldGroup}>
               <label className={styles.fieldLabel}>パスワード</label>

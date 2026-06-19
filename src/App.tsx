@@ -147,6 +147,14 @@ function App() {
                 }
               />
               <Route
+                path="/mypage/followers"
+                element={
+                  <UserProtectedRoute>
+                    <FavoriteUsersPage mode="followers" />
+                  </UserProtectedRoute>
+                }
+              />
+              <Route
                 path="/mypage/blocks"
                 element={
                   <UserProtectedRoute>

@@ -58,6 +58,17 @@ const LIST_FAVORITE_USERS_QUERY = `
   }
 `;
 
+const MY_FOLLOWERS_QUERY = `
+  query MyFollowers($limit: Int, $offset: Int) {
+    myFollowers(limit: $limit, offset: $offset) {
+      items {
+        ${USER_FIELDS}
+      }
+      total
+    }
+  }
+`;
+
 export const getFavoriteUsersByUserID = async (userID: string): Promise<User[]> => {
   const data = await request<{ GetFavoriteUsersByUserID: User[] }>(
     GET_FAVORITE_USERS_BY_USER_ID_QUERY,
@@ -93,4 +104,13 @@ export const listFavoriteUsers = async (limit = 20, offset = 0): Promise<UserPag
     getUserToken(),
   );
   return data.listFavoriteUsers;
+};
+
+export const listMyFollowers = async (limit = 20, offset = 0): Promise<UserPage> => {
+  const data = await request<{ myFollowers: UserPage }>(
+    MY_FOLLOWERS_QUERY,
+    { limit, offset },
+    getUserToken(),
+  );
+  return data.myFollowers;
 };
