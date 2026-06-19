@@ -58,6 +58,8 @@ export const UserPublicProfilePage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportingPostId, setReportingPostId] = useState<string | null>(null);
+  const [reportingPostContent, setReportingPostContent] = useState('');
 
   // ── posts ─────────────────────────────────────────────────────────────────
   const initialCacheRef = useRef(id ? getUserPostListCache(id) : null);
@@ -219,6 +221,20 @@ export const UserPublicProfilePage = () => {
     setIsReportOpen(true);
   };
 
+  const handlePostBlock = async (blockedUserId: string) => {
+    try {
+      await createBlocker(blockedUserId);
+      addToast('ユーザーをブロックしました', 'success');
+    } catch {
+      addToast('ブロックに失敗しました', 'error');
+    }
+  };
+
+  const handlePostReport = (postId: string, postContent: string) => {
+    setReportingPostId(postId);
+    setReportingPostContent(postContent);
+  };
+
   // ── right-side action buttons (passed to ProfileCard) ────────────────────
   const rightActions = profile && !isMe ? (
     <div className={styles.profileActions}>
@@ -303,6 +319,8 @@ export const UserPublicProfilePage = () => {
               sentinelRef={postsSentinelRef}
               onLike={handleLike}
               onPostClick={handlePostClick}
+              onBlock={handlePostBlock}
+              onReport={(postId) => handlePostReport(postId, posts.find(p => p.ID === postId)?.content ?? '')}
             />
           </>
         )}
@@ -314,6 +332,16 @@ export const UserPublicProfilePage = () => {
           onClose={() => setIsReportOpen(false)}
           targetType="USER"
           targetID={id}
+        />
+      )}
+
+      {reportingPostId && (
+        <ReportModal
+          isOpen={true}
+          onClose={() => { setReportingPostId(null); setReportingPostContent(''); }}
+          targetType="POST"
+          targetID={reportingPostId}
+          postContent={reportingPostContent}
         />
       )}
     </div>

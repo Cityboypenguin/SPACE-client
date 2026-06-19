@@ -11,6 +11,10 @@ type Props = {
   sentinelRef: RefObject<HTMLDivElement | null>;
   onLike: (postId: string, isLiked: boolean) => Promise<void>;
   onPostClick: (postId: string) => void;
+  onBlock?: (userId: string) => void;
+  onReport?: (postId: string) => void;
+  onEdit?: (post: Post) => void;
+  onDelete?: (postId: string) => void;
   emptyMessage?: string;
   errorMessage?: string;
 };
@@ -24,6 +28,10 @@ export const ScrollablePostsList = ({
   sentinelRef,
   onLike,
   onPostClick,
+  onBlock,
+  onReport,
+  onEdit,
+  onDelete,
   emptyMessage = '投稿がまだありません',
   errorMessage = '投稿の読み込みに失敗しました',
 }: Props) => (
@@ -40,6 +48,10 @@ export const ScrollablePostsList = ({
             currentUserId={currentUserId ?? null}
             onLike={onLike}
             onClick={() => onPostClick(post.ID)}
+            onBlock={onBlock}
+            onReport={onReport}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         ))}
         <div ref={sentinelRef} style={{ height: '1px' }} />
