@@ -9,6 +9,8 @@ export type MessageUser = {
   avatarUrl?: string | null;
 };
 
+export const DELETED_ACCOUNT_ID = 'deleted-account';
+
 export type Media = {
   ID: string;
   url: string;
@@ -113,6 +115,12 @@ const UPDATE_MESSAGE_MUTATION = `
 const DELETE_MESSAGE_MUTATION = `
   mutation DeleteMessage($roomID: ID!, $id: ID!) {
     deleteMessage(roomID: $roomID, id: $id)
+  }
+`;
+
+const DELETE_ROOM_MUTATION = `
+  mutation DeleteRoom($roomID: ID!) {
+    deleteRoom(roomID: $roomID)
   }
 `;
 
@@ -232,6 +240,15 @@ export const deleteMessage = async (roomID: string, id: string) => {
   return await request<{ deleteMessage: boolean }>(
     DELETE_MESSAGE_MUTATION,
     { roomID, id },
+    token,
+  );
+};
+
+export const deleteRoom = async (roomID: string) => {
+  const token = getUserToken();
+  return await request<{ deleteRoom: boolean }>(
+    DELETE_ROOM_MUTATION,
+    { roomID },
     token,
   );
 };

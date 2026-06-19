@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Avatar } from '../../../components/atoms/Avatar';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
-import { listMyDMRooms, type Room } from '../api/message';
+import { listMyDMRooms, deleteRoom, DELETED_ACCOUNT_ID, type Room } from '../api/message';
+import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
@@ -23,6 +24,7 @@ export const DMListPage = () => {
   const [dmInitialLoading, setDmInitialLoading] = useState(true);
   const [dmLoadingMore, setDmLoadingMore] = useState(false);
   const [dmError, setDmError] = useState(false);
+  const [deletingRoomID, setDeletingRoomID] = useState<string | null>(null);
   const dmLoadingRef = useRef(false);
 
   const loadDMRooms = useCallback(async (currentOffset: number, isInitial: boolean) => {
@@ -63,6 +65,21 @@ export const DMListPage = () => {
       prev.map((room) => room.ID === roomID ? { ...room, unreadCount } : room),
     );
   });
+
+  const handleDeleteRoom = async (e: React.MouseEvent, roomID: string) => {
+    e.stopPropagation();
+    if (!window.confirm('このトークルームを削除しますか？')) return;
+    setDeletingRoomID(roomID);
+    try {
+      await deleteRoom(roomID);
+      setDmRooms((prev) => prev.filter((room) => room.ID !== roomID));
+      setDmTotal((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      alert(toUserMessage(err, 'トークルームの削除に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setDeletingRoomID(null);
+    }
+  };
 
   const filteredRooms = dmRooms.filter((room) => {
     if (!query) return true;
@@ -131,6 +148,16 @@ export const DMListPage = () => {
                       <p className={styles.lastMessage}>{room.lastMessage}</p>
                     )}
                     <UnreadCountBadge count={room.unreadCount ?? 0} />
+                    {partner.accountID === DELETED_ACCOUNT_ID && (
+                      <button
+                        type="button"
+                        className={styles.deleteRoomButton}
+                        disabled={deletingRoomID === room.ID}
+                        onClick={(e) => handleDeleteRoom(e, room.ID)}
+                      >
+                        削除
+                      </button>
+                    )}
                   </div>
                 </li>
               );

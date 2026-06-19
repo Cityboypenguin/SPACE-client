@@ -131,6 +131,26 @@
   max-width: 130px;
 }
 
+.deleteRoomButton {
+  flex-shrink: 0;
+  border: 1.5px solid #ef4444;
+  border-radius: 9999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  color: #ef4444;
+  background: #fff;
+  cursor: pointer;
+}
+
+.deleteRoomButton:hover {
+  background: #fef2f2;
+}
+
+.deleteRoomButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .empty {
   color: #94a3b8;
   text-align: center;
