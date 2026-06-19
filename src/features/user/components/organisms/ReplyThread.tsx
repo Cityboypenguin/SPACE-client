@@ -9,6 +9,22 @@ import { countAllReplies } from '../../../../lib/postUtils';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
 import styles from './ReplyThread.module.css';
 
+const URL_SPLIT_REGEX = /(https?:\/\/[^\s　　、。！？「」（）【】『』〔〕…‥・]+)/g;
+const URL_TEST_REGEX = /^https?:\/\//;
+
+const renderTextWithLinks = (text: string) => {
+  const parts = text.split(URL_SPLIT_REGEX);
+  return parts.map((part, i) =>
+    URL_TEST_REGEX.test(part) ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={styles.descriptionLink}>
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  );
+};
+
 type Props = {
   post: Post;
   depth?: number;
@@ -37,7 +53,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
             timestamp={formatTime(post.createdAt)}
             small
           />
-          <p className={styles.content}>{post.content}</p>
+          <p className={styles.content}>{renderTextWithLinks(post.content)}</p>
           {post.media && post.media.length > 0 && (
             <div className={styles.mediaWrapper}>
               <PostMediaGrid media={post.media} />

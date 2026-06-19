@@ -36,6 +36,22 @@ import { createBlocker } from '../api/block';
 import { useToast } from '../../../context/ToastContext';
 import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
 
+const URL_SPLIT_REGEX = /(https?:\/\/[^\s　　、。！？「」（）【】『』〔〕…‥・]+)/g;
+const URL_TEST_REGEX = /^https?:\/\//;
+
+const renderTextWithLinks = (text: string) => {
+  const parts = text.split(URL_SPLIT_REGEX);
+  return parts.map((part, i) =>
+    URL_TEST_REGEX.test(part) ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={styles.descriptionLink}>
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  );
+};
+
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -322,7 +338,7 @@ export const PostDetailPage = () => {
                     />
                   </div>
                 ) : (
-                  post.content && <p className={styles.postContent}>{post.content}</p>
+                  post.content && <p className={styles.content}>{renderTextWithLinks(post.content)}</p>
                 )}
 
                 {!isEditing && post.media && post.media.length > 0 && (
