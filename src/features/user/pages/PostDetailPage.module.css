@@ -168,6 +168,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .commentIcon {
