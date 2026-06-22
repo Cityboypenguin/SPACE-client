@@ -252,4 +252,8 @@
     padding-left: 0;
     gap: 0.2rem;
   }
+
+  .label {
+    display: none;
+  }
 }
