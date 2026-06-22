@@ -19,7 +19,8 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
-import favoriteIcon from '../../../assets/パーツ_お気に入り.svg';
+import favoriteIconOff from '../../../assets/パーツ_お気に入り.svg';
+import favoeirteIconOn from '../../../assets/パーツ_お気に入り（ON）.svg';
 import dmIcon from '../../../assets/パーツ_メール.svg';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserPublicProfilePage.module.css';
@@ -292,7 +293,7 @@ export const UserPublicProfilePage = () => {
           disabled={actionLoading}
         >
           <img
-            src={favoriteIcon}
+            src={isFavorited ? favoeirteIconOn : favoriteIconOff}
             alt=""
             className={`${styles.profileActionIcon}${isFavorited ? ` ${styles.profileActionIconFavorited}` : ''}`}
           />
