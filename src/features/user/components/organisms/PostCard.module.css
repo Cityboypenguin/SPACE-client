@@ -149,3 +149,7 @@
   cursor: pointer;
   padding: 0;
 }
+
+.avatarWrap {
+  flex-shrink: 0;
+}
