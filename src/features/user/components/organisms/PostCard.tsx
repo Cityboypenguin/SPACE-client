@@ -62,7 +62,9 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
 
   return (
     <div className={styles.card} onClick={onClick}>
+      <div className={styles.avatarWrap}>
       <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
+      </div>
       <div className={styles.body}>
         <div className={styles.header}>
           <UserMeta userId={post.user.ID} name={post.user.name} accountID={post.user.accountID} timestamp={formatTime(post.createdAt)} />
