@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
@@ -74,6 +74,12 @@ export const PostComposer = ({
   const { addToast } = useToast();
   const large = rows >= 3;
 
+  const [isDragging, setIsDragging] = useState(false);
+  const previewUrls = useMemo(
+    () => selectedFiles.map((file) => URL.createObjectURL(file)),
+    [selectedFiles],
+  );
+
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -81,22 +87,60 @@ export const PostComposer = ({
     el.style.height = `${el.scrollHeight}px`;
   }, [value]);
 
+  useEffect(() => () => {
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+  }, [previewUrls]);
+
+  const addFiles = (incoming: File[]) => {
+    const validTypes = incoming.filter((f) => ACCEPTED_IMAGE_TYPES.includes(f.type));
+    if (validTypes.length < incoming.length) {
+      addToast('対応していないファイル形式が含まれています。', 'error');
+    }
+
+    const validSize = validTypes.filter((f) => f.size <= MAX_FILE_SIZE);
+    if (validSize.length < validTypes.length) {
+      addToast('10MBを超えるファイルが含まれています。', 'error');
+    }
+
+    const remaining = MAX_IMAGES - totalMediaCount;
+    if (remaining <= 0) return;
+
+    const filesToAdd = validSize.slice(0, remaining);
+    if (filesToAdd.length > 0) {
+      onFileSelect?.([...selectedFiles, ...filesToAdd]);
+    }
+  };
+
+  // ▼ 変更: 単一ファイルから複数ファイルの配列処理に変更
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      addToast('対応していないファイル形式です。JPEG, PNG, GIF, WEBPのみアップロードできます。', 'error');
-      e.target.value = '';
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      addToast('ファイルサイズが大きすぎます。10MB以下の画像をアップロードしてください。', 'error');
-      e.target.value = '';
-      return;
-    }
-    if (totalMediaCount >= MAX_IMAGES) return;
-    onFileSelect?.([...selectedFiles, file]);
+    const incoming = Array.from(e.target.files ?? []);
+    if (!incoming.length) return;
+    addFiles(incoming);
     e.target.value = '';
+  };
+
+  // ▼ 新規追加: ドラッグ＆ドロップイベントのハンドラー
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!submitting && onFileSelect && totalMediaCount < MAX_IMAGES) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (submitting || !onFileSelect) return;
+
+    const incoming = Array.from(e.dataTransfer.files);
+    if (!incoming.length) return;
+    addFiles(incoming);
   };
 
   const removeFile = (index: number) => {
@@ -108,7 +152,33 @@ export const PostComposer = ({
   const canSubmit = !submitting && hasAnyContent && !overLimit;
 
   return (
-    <div className={`${styles.wrapper} ${isEmbedded ? styles.wrapperEmbedded : styles.wrapperNormal}`}>
+    <div
+      className={`${styles.wrapper} ${isEmbedded ? styles.wrapperEmbedded : styles.wrapperNormal}`}
+      // ▼ 追加: ドラッグ＆ドロップのイベントを外枠に紐付け
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{ position: 'relative' }} // オーバーレイ表示の基準点にするため追加
+    >
+      {/* ▼ 追加: ドラッグ中のオーバーレイUI */}
+      {isDragging && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            border: '2px dashed #6b7280',
+            borderRadius: 8,
+            background: 'rgba(107, 114, 128, 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10,
+            pointerEvents: 'none',
+          }}
+        >
+        </div>
+      )}
+
       {userId && userName ? (
         <UserAvatar userId={userId} name={userName} avatarUrl={avatarUrl} size={iconSize} />
       ) : userName ? (
@@ -163,7 +233,7 @@ export const PostComposer = ({
             })}
             {selectedFiles.map((file, i) => (
               <div key={`new-${i}`} className={styles.mediaThumb}>
-                <img src={URL.createObjectURL(file)} alt={file.name} className={styles.mediaThumbImg} />
+                <img src={previewUrls[i] ?? ''} alt={file.name} className={styles.mediaThumbImg} />
                 <button type="button" className={styles.removeButton} onClick={() => removeFile(i)}>✕</button>
               </div>
             ))}
@@ -177,7 +247,14 @@ export const PostComposer = ({
 
         <div className={`${styles.footer} ${large ? styles.footerLarge : styles.footerSmall}`}>
           {onFileSelect && (
-            <input ref={fileInputRef} type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={handleFileChange} style={{ display: 'none' }} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple /* ← ▼ 追加: ファイル選択ダイアログで複数選択を許可 */
+              accept={ACCEPTED_IMAGE_TYPES.join(',')}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
           )}
           {onCancel && (
             <button
