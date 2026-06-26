@@ -114,8 +114,8 @@ export const PostComposer = ({
   const addFiles = (incoming: File[]) => {
     if (totalMediaCount + incoming.length > MAX_IMAGES) {
       addToast(`最大${MAX_IMAGES}枚までしか投稿できません。`, 'error');
-    }
       return;
+    }
 
     if (incoming.some((f) => !ACCEPTED_IMAGE_TYPES.includes(f.type))) {
       addToast('対応していないファイル形式が含まれています。', 'error');
