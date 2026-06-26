@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
@@ -69,16 +69,14 @@ export const PostComposer = ({
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewUrlCacheRef = useRef<Map<File, string>>(new Map());
   const visibleExistingMedia = existingMedia.filter(m => !deletedMediaIDs.includes(m.ID));
   const totalMediaCount = visibleExistingMedia.length + selectedFiles.length;
   const { addToast } = useToast();
   const large = rows >= 3;
 
   const [isDragging, setIsDragging] = useState(false);
-  const previewUrls = useMemo(
-    () => selectedFiles.map((file) => URL.createObjectURL(file)),
-    [selectedFiles],
-  );
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -87,28 +85,49 @@ export const PostComposer = ({
     el.style.height = `${el.scrollHeight}px`;
   }, [value]);
 
+  useEffect(() => {
+    const cache = previewUrlCacheRef.current;
+    const selectedSet = new Set(selectedFiles);
+
+    for (const [file, url] of cache) {
+      if (!selectedSet.has(file)) {
+        URL.revokeObjectURL(url);
+        cache.delete(file);
+      }
+    }
+
+    setPreviewUrls(selectedFiles.map((file) => {
+      const cachedUrl = cache.get(file);
+      if (cachedUrl) return cachedUrl;
+
+      const url = URL.createObjectURL(file);
+      cache.set(file, url);
+      return url;
+    }));
+  }, [selectedFiles]);
+
   useEffect(() => () => {
-    previewUrls.forEach((url) => URL.revokeObjectURL(url));
-  }, [previewUrls]);
+    previewUrlCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewUrlCacheRef.current.clear();
+  }, []);
 
   const addFiles = (incoming: File[]) => {
-    const validTypes = incoming.filter((f) => ACCEPTED_IMAGE_TYPES.includes(f.type));
-    if (validTypes.length < incoming.length) {
+    if (totalMediaCount + incoming.length > MAX_IMAGES) {
+      addToast(`最大${MAX_IMAGES}枚までしか投稿できません。`, 'error');
+    }
+      return;
+
+    if (incoming.some((f) => !ACCEPTED_IMAGE_TYPES.includes(f.type))) {
       addToast('対応していないファイル形式が含まれています。', 'error');
+      return;
     }
 
-    const validSize = validTypes.filter((f) => f.size <= MAX_FILE_SIZE);
-    if (validSize.length < validTypes.length) {
+    if (incoming.some((f) => f.size > MAX_FILE_SIZE)) {
       addToast('10MBを超えるファイルが含まれています。', 'error');
+      return;
     }
 
-    const remaining = MAX_IMAGES - totalMediaCount;
-    if (remaining <= 0) return;
-
-    const filesToAdd = validSize.slice(0, remaining);
-    if (filesToAdd.length > 0) {
-      onFileSelect?.([...selectedFiles, ...filesToAdd]);
-    }
+    onFileSelect?.([...selectedFiles, ...incoming]);
   };
 
   // ▼ 変更: 単一ファイルから複数ファイルの配列処理に変更
@@ -233,7 +252,12 @@ export const PostComposer = ({
             })}
             {selectedFiles.map((file, i) => (
               <div key={`new-${i}`} className={styles.mediaThumb}>
-                <img src={previewUrls[i] ?? ''} alt={file.name} className={styles.mediaThumbImg} />
+                <img
+                  src={previewUrls[i] ?? ''}
+                  alt={file.name}
+                  className={styles.mediaThumbImg}
+                  decoding="async"
+                />
                 <button type="button" className={styles.removeButton} onClick={() => removeFile(i)}>✕</button>
               </div>
             ))}
