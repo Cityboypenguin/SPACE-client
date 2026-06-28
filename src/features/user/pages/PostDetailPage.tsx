@@ -322,7 +322,7 @@ export const PostDetailPage = () => {
                     />
                   </div>
                 ) : (
-                  post.content && <p className={styles.content}>{renderTextWithLinks({ text: post.content })}</p>
+                  post.content && <p className={styles.postContent}>{renderTextWithLinks({ text: post.content })}</p>
                 )}
 
                 {!isEditing && post.media && post.media.length > 0 && (
