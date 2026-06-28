@@ -34,11 +34,13 @@ body.has-sidebar {
 }
 
 @media (max-width: 768px) {
+  body {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top);
+  }
+
   body.has-sidebar {
     padding-left: 0;
-    padding-bottom: calc(56px + env(safe-area-inset-bottom));
-    min-height: calc(100vh - 56px - env(safe-area-inset-bottom));
-    min-height: calc(100dvh - 56px - env(safe-area-inset-bottom));
   }
 }
 
