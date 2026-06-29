@@ -7,8 +7,9 @@
 
 @media (max-width: 768px) {
   .container {
-    height: calc(100vh - 56px - env(safe-area-inset-bottom));
-    height: calc(100dvh - 56px - env(safe-area-inset-bottom));
+    /* body の上部セーフエリアと固定ボトムナビの実占有分を除く */
+    height: calc(100vh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    height: calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }
 
