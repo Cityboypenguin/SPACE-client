@@ -166,6 +166,22 @@ export const PostComposer = ({
     onFileSelect?.(selectedFiles.filter((_, i) => i !== index));
   };
 
+  // ▼ 新規追加: クリップボードから画像が貼り付けられた場合に写真として扱う
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!onFileSelect || submitting) return;
+
+    const items = Array.from(e.clipboardData.items);
+    const imageFiles = items
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (!imageFiles.length) return;
+
+    e.preventDefault();
+    addFiles(imageFiles);
+  };
+
   const hasAnyContent = value.trim() !== '' || totalMediaCount > 0;
   const overLimit = maxLength !== undefined && value.length > maxLength;
   const canSubmit = !submitting && hasAnyContent && !overLimit;
@@ -223,6 +239,7 @@ export const PostComposer = ({
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onPaste={handlePaste}
           placeholder={placeholder}
           rows={rows}
           className={`${styles.textarea} ${large ? styles.textareaLarge : styles.textareaSmall}`}
