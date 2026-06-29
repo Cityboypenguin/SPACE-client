@@ -102,6 +102,21 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     onFileSelect(selectedFiles.filter((_, i) => i !== index));
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (disabled || isBlocked) return;
+
+    const items = Array.from(e.clipboardData.items);
+    const imageFiles = items
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (!imageFiles.length) return;
+
+    e.preventDefault();
+    addFiles(imageFiles);
+  };
+
   const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
 
 
@@ -242,6 +257,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             e.target.style.height = 'auto';
             e.target.style.height = `${e.target.scrollHeight}px`;
           }}
+          onPaste={handlePaste}
           onKeyDown={(e) => {
             // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
             // Enterは改行として扱い、送信は送信ボタンのみで行う。
