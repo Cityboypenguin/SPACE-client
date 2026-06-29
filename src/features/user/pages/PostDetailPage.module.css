@@ -3,13 +3,6 @@
   margin: 0 auto;
 }
 
-@media (max-width: 768px) {
-  .main {
-    /* 最後の返信が固定ボトムナビ／ホームインジケーターに隠れないようにする */
-    padding-bottom: calc(56px + env(safe-area-inset-bottom));
-  }
-}
-
 .pageHeader {
   display: flex;
   align-items: center;

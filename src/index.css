@@ -41,6 +41,8 @@ body.has-sidebar {
 
   body.has-sidebar {
     padding-left: 0;
+    /* 固定ボトムナビ（高さ56px）より上に全体を収める */
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
   }
 }
 
