@@ -63,6 +63,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                 </div>
               )}
             </div>
+            <button className={styles.mobileCloseBtn} onClick={onClose}>✕</button>
             {isOwner && (
               <button
                 className={styles.editBtn}
@@ -98,7 +99,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                 編集
               </button>
             )}
-            <button className={styles.closeBtn} onClick={onClose}>✕</button>
+            <button className={styles.pcCloseBtn} onClick={onClose}>✕</button>
           </div>
           <ul className={styles.memberList}>
             {members.map((m) => (

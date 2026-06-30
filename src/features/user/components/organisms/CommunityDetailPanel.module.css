@@ -226,18 +226,43 @@
   flex: 1;
 }
 
-.closeBtn {
+.pcCloseBtn {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.5rem;
   color: #94a3b8;
   padding: 2px 4px;
   line-height: 1;
 }
 
-.closeBtn:hover {
+.pcCloseBtn:hover {
   color: #475569;
+}
+
+.mobileCloseBtn {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .mobileCloseBtn {
+    display: block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #94a3b8;
+    padding: 2px 4px;
+    line-height: 1;
+  }
+
+  .mobileCloseBtn:hover {
+    color: #475569;
+  }
+
+  .pcCloseBtn {
+    display: none;
+  }
 }
 
 .memberList {
