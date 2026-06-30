@@ -27,6 +27,7 @@ import community from '../../../assets/パーツ_コミュニティマーク.svg
 import reply from '../../../assets/パーツ_コメント.svg';
 import notification from '../../../assets/パーツ_通知.svg';
 import person from '../../../assets/パーツ_お気に入り.svg';
+import swal from 'sweetalert2';
 
 type Tab = 'notifications' | 'announcements';
 
@@ -159,7 +160,13 @@ export const NotificationListPage = () => {
   };
 
   const handleDeleteRead = async () => {
-    if (!window.confirm('既読済みの通知をすべて削除しますか？')) return;
+    const result = await swal.fire({
+      text: '既読済みの通知をすべて削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     setDeleting(true);
     setNotifError('');
     try {
@@ -174,7 +181,13 @@ export const NotificationListPage = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
-    if (!window.confirm(`選択した${selectedIds.size}件の通知を削除しますか？`)) return;
+    const result = await swal.fire({
+      text: `選択した${selectedIds.size}件の通知を削除しますか？`,
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     setDeleting(true);
     setNotifError('');
     try {
@@ -234,7 +247,13 @@ export const NotificationListPage = () => {
 
   const handleDeleteActorRead = async () => {
     if (!viewingActor) return;
-    if (!window.confirm('この相手の既読済み通知をすべて削除しますか？')) return;
+    const result = await swal.fire({
+      text: 'この相手の既読済み通知をすべて削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     setDeleting(true);
     setNotifError('');
     try {

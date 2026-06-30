@@ -7,6 +7,7 @@ import {
 } from '../api/message';
 import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
+import swal from 'sweetalert2';
 
 export const useChatActions = (
   roomId: string | undefined,
@@ -40,7 +41,13 @@ export const useChatActions = (
 
   const handleDelete = async (msgId: string) => {
     if (!roomId) return;
-    if (!window.confirm('このメッセージを削除しますか？')) return;
+    const result = await swal.fire({
+      text: 'このメッセージを削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteMessage(roomId, msgId);
     } catch (err) {

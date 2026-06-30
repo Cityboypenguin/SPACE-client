@@ -16,6 +16,7 @@ import {
 } from '../../api/community';
 import { uploadAvatarToStorage } from '../../api/profile';
 import { storageUrl } from '../../../../lib/storage';
+import swal from 'sweetalert2';
 
 type Props = {
   community: Community;
@@ -97,7 +98,13 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handleKick = async (member: CommunityMember) => {
-    if (!window.confirm(`${member.user.name} をコミュニティから削除しますか？`)) return;
+    const result = await swal.fire({
+      text: `${member.user.name} をコミュニティから削除しますか？`,
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await kickUserFromCommunity(community.ID, member.user.ID);
       setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
@@ -107,7 +114,13 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handlePromote = async (member: CommunityMember) => {
-    if (!window.confirm(`${member.user.name} をオーナーに昇格しますか？`)) return;
+    const result = await swal.fire({
+      text: `${member.user.name} をオーナーに昇格しますか？`,
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await promoteToCommunityOwner(community.ID, member.user.ID);
       setMembers((prev) =>
@@ -119,7 +132,13 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handleDemote = async (member: CommunityMember) => {
-    if (!window.confirm(`${member.user.name} をメンバーに降格しますか？`)) return;
+    const result = await swal.fire({
+      text: `${member.user.name} をメンバーに降格しますか？`,
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await demoteFromCommunityOwner(community.ID, member.user.ID);
       setMembers((prev) =>

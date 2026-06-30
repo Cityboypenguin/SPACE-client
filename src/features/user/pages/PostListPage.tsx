@@ -9,6 +9,7 @@ import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/ToastContext';
 import styles from './PostListPage.module.css';
+import swal from 'sweetalert2';
 
 import {
   getTopLevelPosts,
@@ -409,16 +410,26 @@ export const PostListPage = () => {
   };
 
   const handleDelete = async (postId: string) => {
-    if (!window.confirm('本当にこの投稿を削除しますか？')) return;
-    try {
-      await deletePost(postId);
-      setPosts(prev => prev.filter(p => p.ID !== postId));
-      setFollowPosts(prev => prev.filter(p => p.ID !== postId));
-      setSearchResults(prev => prev.filter(p => p.ID !== postId));
-      addToast('投稿を削除しました', 'success');
-    } catch {
-      addToast('削除に失敗しました', 'error');
-    }
+    swal.fire({
+      text: '本当に削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton:true,
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await deletePost(postId);
+          setPosts(prev => prev.filter(p => p.ID !== postId));
+          setFollowPosts(prev => prev.filter(p => p.ID !== postId));
+          setSearchResults(prev => prev.filter(p => p.ID !== postId));
+          addToast('投稿を削除しました', 'success');
+        } catch {
+          addToast('削除に失敗しました', 'error');
+        }
+      } else {
+        return;
+      }
+    });
   };
 
   const handleLike = async (postId: string, isLiked: boolean) => {

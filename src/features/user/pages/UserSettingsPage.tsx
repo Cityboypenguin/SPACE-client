@@ -16,6 +16,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSettingsPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { InquiryForm } from '../components/organisms/InquiryForm';
+import swal from 'sweetalert2';
 
 type View = 'general' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
 
@@ -134,7 +135,13 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
   );
 
   const handleUnblock = async (targetId: string) => {
-    if (!window.confirm('ブロックを解除しますか？')) return;
+    const result = await swal.fire({
+      text: 'ブロックを解除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteBlocker(targetId);
       setUsers((prev) => prev.filter((u) => u.ID !== targetId));
@@ -205,7 +212,13 @@ const GeneralView = ({
   const [deleting, setDeleting] = useState(false);
 
   const handleClearCache = async () => {
-    if (!window.confirm('キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？')) return;
+    const result = await swal.fire({
+      text: 'キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     await globalMutate(() => true);
     clearPostListCache();
     clearAllUserPostListCaches();

@@ -19,6 +19,7 @@ import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../assets/パーツ_削除.svg';
 import styles from './PostDetailPage.module.css';
+import swal from 'sweetalert2';
 
 import {
   getPostByID,
@@ -76,7 +77,13 @@ export const PostDetailPage = () => {
   }, [menuOpen]);
 
   const handleBlock = async (blockedUserId: string) => {
-    if (!window.confirm('このユーザーをブロックしますか？')) return;
+    const result = await swal.fire({
+      text: 'このユーザーをブロックしますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await createBlocker(blockedUserId);
       addToast('ユーザーをブロックしました', 'success');
@@ -178,7 +185,14 @@ export const PostDetailPage = () => {
   };
 
   const handleDelete = async () => {
-    if (!id || !window.confirm('本当にこの投稿を削除しますか？')) return;
+    if (!id) return;
+    const result = await swal.fire({
+      text: '本当にこの投稿を削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await deletePost(id);
       removePostAcrossCaches(id);
