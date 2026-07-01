@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUsers, searchUsers, type User } from '../api/users';
+import { getUsers, searchUsers, adminCreateUser, type User } from '../api/users';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
+
+const DUMMY_FORM_INIT = { accountID: '', name: '', email: '', password: '' };
 
 export const AdminUserListPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -12,6 +14,10 @@ export const AdminUserListPage = () => {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState(DUMMY_FORM_INIT);
+  const [createError, setCreateError] = useState('');
+  const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
 
   const totalPages = Math.ceil(total / pageSize);
@@ -56,12 +62,62 @@ export const AdminUserListPage = () => {
     loadPage(0);
   };
 
+  const handleCreateDummy = async (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    setCreateError('');
+    setCreating(true);
+    try {
+      await adminCreateUser(form);
+      setShowModal(false);
+      setForm(DUMMY_FORM_INIT);
+      loadPage(0);
+    } catch (err: unknown) {
+      setCreateError(err instanceof Error ? err.message : 'アカウント作成に失敗しました');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <h1>ユーザー一覧</h1>
-        <form onSubmit={handleSearch} style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h1 style={{ margin: 0 }}>ユーザー一覧</h1>
+          <button onClick={() => { setShowModal(true); setCreateError(''); setForm(DUMMY_FORM_INIT); }}>
+            ダミーアカウント作成
+          </button>
+        </div>
+
+        {showModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: '#fff', borderRadius: 8, padding: '2rem', minWidth: 360 }}>
+              <h2 style={{ marginTop: 0 }}>ダミーアカウント作成</h2>
+              <form onSubmit={handleCreateDummy}>
+                {(['accountID', 'name', 'email', 'password'] as const).map((field) => (
+                  <div key={field} style={{ marginBottom: '0.75rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem' }}>{field}</label>
+                    <input
+                      type={field === 'password' ? 'password' : 'text'}
+                      value={form[field]}
+                      onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
+                      required
+                      style={{ width: '100%', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                ))}
+                {createError && <p style={{ color: 'red', fontSize: '0.85rem' }}>{createError}</p>}
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                  <button type="button" onClick={() => setShowModal(false)} disabled={creating}>キャンセル</button>
+                  <button type="submit" disabled={creating}>{creating ? '作成中...' : '作成'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+
+        <form onSubmit={handleSearch} style={{ marginBottom: '1rem', marginTop: 0 }}>
           <input
             type="text"
             value={query}

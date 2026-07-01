@@ -31,6 +31,7 @@ type UnfreezeUserResponse = { unfreezeUser: boolean };
 type AdminUpdateUserResponse = { adminUpdateUser: User };
 type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
 type AdminUpdateProfileResponse = { adminUpdateProfile: Profile };
+type AdminCreateUserResponse = { adminCreateUser: User };
 
 const USERS_QUERY = `
   query Users($limit: Int, $offset: Int) {
@@ -133,6 +134,21 @@ const ADMIN_UPDATE_PROFILE_MUTATION = `
   }
 `;
 
+const ADMIN_CREATE_USER_MUTATION = `
+  mutation AdminCreateUser($input: AdminCreateUserInput!) {
+    adminCreateUser(input: $input) {
+      ID
+      accountID
+      name
+      email
+      role
+      status
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 const GET_PROFILE_BY_USER_ID_QUERY = `
   query GetProfileByUserID($userID: ID!) {
     getProfileByUserID(userID: $userID) {
@@ -184,6 +200,15 @@ export const adminUpdateUser = async (
   input: { accountID: string; name: string; email: string; password?: string },
 ) => {
   return await request<AdminUpdateUserResponse>(ADMIN_UPDATE_USER_MUTATION, { id, input }, getAdminToken());
+};
+
+export const adminCreateUser = async (input: {
+  accountID: string;
+  name: string;
+  email: string;
+  password: string;
+}) => {
+  return await request<AdminCreateUserResponse>(ADMIN_CREATE_USER_MUTATION, { input }, getAdminToken());
 };
 
 export const getProfileByUserID = async (userID: string) => {
