@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { config } from 'dotenv';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+config({ path: resolve(dirname(fileURLToPath(import.meta.url)), 'e2e/.env.test.local') });
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
 

@@ -4,6 +4,7 @@ import { test, expect } from '@playwright/test';
 // 表示されることを確認する。
 const routes: { path: string; heading: string }[] = [
   { path: '/admin', heading: 'ダッシュボード' },
+  { path: '/admin/analytics', heading: 'アナリティクス' },
   { path: '/admin/users', heading: 'ユーザー一覧' },
   { path: '/admin/administrators', heading: '管理者一覧' },
   { path: '/admin/communities', heading: 'コミュニティ一覧' },

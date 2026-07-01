@@ -120,6 +120,8 @@ test.describe('投稿の作成・表示・いいね・返信・編集・削除',
         () => expect(page.getByRole('button', { name: '削除' })).toBeVisible({ timeout: 2000 }),
       );
       await page.getByRole('button', { name: '削除' }).click();
+      // SweetAlert2 の確認ダイアログを承認する
+      await page.getByRole('button', { name: 'はい' }).click();
 
       // 削除リクエスト完了後にnavigate(-1)でメイン投稿の詳細ページに戻るが、これは
       // クリックハンドラ内の非同期処理なので、すぐにreloadすると navigate(-1) が
@@ -145,6 +147,8 @@ test.describe('投稿の作成・表示・いいね・返信・編集・削除',
         () => expect(page.getByRole('button', { name: '削除' })).toBeVisible({ timeout: 2000 }),
       );
       await page.getByRole('button', { name: '削除' }).click();
+      // SweetAlert2 の確認ダイアログを承認する
+      await page.getByRole('button', { name: 'はい' }).click();
       await expect(page).toHaveURL(/\/home$/);
       await expect(page.getByText(editedPostContent)).toHaveCount(0);
     });
