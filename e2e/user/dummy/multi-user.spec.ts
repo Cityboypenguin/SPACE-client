@@ -5,19 +5,20 @@ import {
   USER_ID_KEY,
 } from '../../../src/lib/authStorage';
 import { loginUserViaApi } from '../../support/api';
-import { createDummyUser, deleteDummyUser, getAdminToken, consentDummyUserToTerms, createPostAsUser, sendMessageAsUser, type DummyUser } from '../../support/adminApi';
+import { createDummyUser, deleteDummyUser, getAdminToken, consentDummyUserToTerms, createPostAsUser, type DummyUser } from '../../support/adminApi';
 import { dismissTermsConsentModalIfPresent, waitForRoomReady } from '../../support/terms';
 import { env } from '../../support/env';
+import { waitForSuccessfulGraphQL } from '../../support/graphqlResponse';
+
+type UserAuth = Awaited<ReturnType<typeof loginUserViaApi>>;
 
 // ダミーユーザーをAPIで作成してから各テストを実行し、最後に削除する。
 // ダミーユーザーとしてブラウザにログインするためのヘルパー。
 const loginAsDummy = async (
   page: import('@playwright/test').Page,
-  request: import('@playwright/test').APIRequestContext,
-  baseURL: string,
-  dummy: DummyUser,
+  auth: UserAuth,
 ) => {
-  const { token, refreshToken, user } = await loginUserViaApi(request, baseURL, dummy.email, dummy.password);
+  const { token, refreshToken, user } = auth;
   await page.goto('/login');
   await page.evaluate(
     ([tKey, rKey, iKey, t, r, id]: string[]) => {
@@ -37,6 +38,8 @@ test.describe('複数ユーザー間インタラクション', () => {
   let dummyA: DummyUser;
   let dummyB: DummyUser;
   let base: string;
+  let authA: UserAuth;
+  let authB: UserAuth;
 
   test.beforeAll(async ({ request, baseURL }) => {
     base = baseURL ?? env.baseURL;
@@ -47,13 +50,13 @@ test.describe('複数ユーザー間インタラクション', () => {
     ]);
 
     // 利用規約モーダルがテスト中に出ないよう API で事前同意する
-    const [{ token: tokenA }, { token: tokenB }] = await Promise.all([
+    [authA, authB] = await Promise.all([
       loginUserViaApi(request, base, dummyA.email, dummyA.password),
       loginUserViaApi(request, base, dummyB.email, dummyB.password),
     ]);
     await Promise.all([
-      consentDummyUserToTerms(request, base, tokenA),
-      consentDummyUserToTerms(request, base, tokenB),
+      consentDummyUserToTerms(request, base, authA.token),
+      consentDummyUserToTerms(request, base, authB.token),
     ]);
   });
 
@@ -67,11 +70,9 @@ test.describe('複数ユーザー間インタラクション', () => {
     await deleteDummyUser(request, base, freshToken, dummyB.ID);
   });
 
-  test('ダミーユーザーAがBをフォローし、フォロワー数が増える', async ({ page, request, baseURL }) => {
-    const b = base ?? baseURL ?? env.baseURL;
-
+  test('ダミーユーザーAがBをフォローし、フォロワー数が増える', async ({ page }) => {
     // dummyA でログイン
-    await loginAsDummy(page, request, b, dummyA);
+    await loginAsDummy(page, authA);
 
     await page.goto('/home');
     await dismissTermsConsentModalIfPresent(page);
@@ -94,13 +95,12 @@ test.describe('複数ユーザー間インタラクション', () => {
     const b = base ?? baseURL ?? env.baseURL;
 
     // dummyA の投稿を API で作成してURLを直接取得（UI経由の遷移は不安定なため）
-    const { token: tokenA } = await loginUserViaApi(request, b, dummyA.email, dummyA.password);
     const postContent = `マルチユーザーいいねテスト ${Date.now()}`;
-    const postId = await createPostAsUser(request, b, tokenA, postContent);
+    const postId = await createPostAsUser(request, b, authA.token, postContent);
     const postUrl = `/posts/${postId}`;
 
     // dummyA でログインして投稿ページを開く
-    await loginAsDummy(page, request, b, dummyA);
+    await loginAsDummy(page, authA);
     await page.goto(postUrl);
     await dismissTermsConsentModalIfPresent(page);
     await expect(page.getByText(postContent)).toBeVisible({ timeout: 10000 });
@@ -109,26 +109,27 @@ test.describe('複数ユーザー間インタラクション', () => {
     const ctxB = await browser.newContext();
     const pageB = await ctxB.newPage();
     try {
-      await loginAsDummy(pageB, request, b, dummyB);
+      await loginAsDummy(pageB, authB);
       await pageB.goto(postUrl);
       await dismissTermsConsentModalIfPresent(pageB);
-      await pageB.getByRole('button', { name: 'いいね 0いいね' }).click();
+      await Promise.all([
+        waitForSuccessfulGraphQL(pageB, 'CreateFavorite'),
+        pageB.getByRole('button', { name: 'いいね 0いいね' }).click(),
+      ]);
       await expect(pageB.getByRole('button', { name: 'いいね 1いいね' })).toBeVisible({ timeout: 10000 });
     } finally {
       await ctxB.close();
     }
 
     // dummyA 側でリロードして件数が増えていることを確認
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByText(postContent)).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: 'いいね 1いいね' })).toBeVisible({ timeout: 5000 });
   });
 
-  test('ダミーユーザーAとBがDMで会話できる', async ({ page, browser, request, baseURL }) => {
-    const b = base ?? baseURL ?? env.baseURL;
-
+  test('ダミーユーザーAとBがDMで会話できる', async ({ page, browser }) => {
     // dummyA がログインして dummyB との DM ルームを開く
-    await loginAsDummy(page, request, b, dummyA);
+    await loginAsDummy(page, authA);
     await page.goto('/home');
     await dismissTermsConsentModalIfPresent(page);
 
@@ -153,7 +154,7 @@ test.describe('複数ユーザー間インタラクション', () => {
     const pageB = await ctxB.newPage();
     try {
       const roomUrl = page.url();
-      await loginAsDummy(pageB, request, b, dummyB);
+      await loginAsDummy(pageB, authB);
       await pageB.goto(roomUrl);
       await dismissTermsConsentModalIfPresent(pageB);
       await waitForRoomReady(pageB);
@@ -175,13 +176,12 @@ test.describe('複数ユーザー間インタラクション', () => {
     const b = base ?? baseURL ?? env.baseURL;
 
     // dummyB の投稿を API で直接作成（ホームページ UI を経由しない）
-    const { token: tokenB } = await loginUserViaApi(request, b, dummyB.email, dummyB.password);
     const postContent = `B投稿テスト ${Date.now()}`;
-    const postId = await createPostAsUser(request, b, tokenB, postContent);
+    const postId = await createPostAsUser(request, b, authB.token, postContent);
     const postUrl = `/posts/${postId}`;
 
     // dummyA が返信
-    await loginAsDummy(page, request, b, dummyA);
+    await loginAsDummy(page, authA);
     await page.goto(postUrl);
     await dismissTermsConsentModalIfPresent(page);
     await expect(page.getByText(postContent)).toBeVisible({ timeout: 10000 });

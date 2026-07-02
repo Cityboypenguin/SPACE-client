@@ -23,7 +23,7 @@ export type Profile = {
 
 export type UserPage = { items: User[]; total: number };
 type UsersResponse = { users: UserPage };
-type SearchUsersResponse = { searchUsers: User[] };
+type SearchUsersResponse = { searchUsers: UserPage };
 type GetUserByIDResponse = { getUserByID: User };
 type DeleteUserResponse = { deleteUser: boolean };
 type FreezeUserResponse = { freezeUser: boolean };
@@ -54,14 +54,17 @@ const USERS_QUERY = `
 const SEARCH_USERS_QUERY = `
   query SearchUsers($keyword: String!) {
     searchUsers(keyword: $keyword) {
-      ID
-      accountID
-      name
-      email
-      role
-      status
-      createdAt
-      updatedAt
+      items {
+        ID
+        accountID
+        name
+        email
+        role
+        status
+        createdAt
+        updatedAt
+      }
+      total
     }
   }
 `;

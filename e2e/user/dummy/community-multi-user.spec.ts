@@ -19,18 +19,50 @@ import {
 import { dismissTermsConsentModalIfPresent, waitForRoomReady } from '../../support/terms';
 import { env } from '../../support/env';
 
+type UserAuth = Awaited<ReturnType<typeof loginUserViaApi>>;
+
 const waitForCommunityRoomReady = async (page: import('@playwright/test').Page, communityName: string) => {
-  await expect(page.getByText(communityName).first()).toBeVisible({ timeout: 10000 });
   await waitForRoomReady(page);
+  await expect(page.getByText(communityName).first()).toBeVisible({ timeout: 10000 });
+};
+
+const openCommunityRoom = async (
+  page: import('@playwright/test').Page,
+  roomUrl: string,
+  communityName: string,
+) => {
+  await page.goto(roomUrl);
+  await dismissTermsConsentModalIfPresent(page);
+  await waitForCommunityRoomReady(page, communityName);
+};
+
+const expectMessagesExactlyOnce = async (
+  page: import('@playwright/test').Page,
+  messages: string[],
+  communityName: string,
+) => {
+  let attempt = 0;
+  await expect(async () => {
+    // 履歴取得が率制限などで失敗した場合だけ、同じ送信を繰り返さず
+    // ページを再取得して表示確認をやり直す。
+    if (attempt++ > 0) {
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await dismissTermsConsentModalIfPresent(page);
+      await waitForCommunityRoomReady(page, communityName);
+    }
+
+    const counts = await Promise.all(
+      messages.map((msg) => page.getByText(msg, { exact: true }).count()),
+    );
+    expect(counts).toEqual(messages.map(() => 1));
+  }).toPass({ timeout: 30000, intervals: [500, 1000, 2000, 3000] });
 };
 
 const loginAsDummy = async (
   page: import('@playwright/test').Page,
-  request: import('@playwright/test').APIRequestContext,
-  baseURL: string,
-  dummy: DummyUser,
+  auth: UserAuth,
 ) => {
-  const { token, refreshToken, user } = await loginUserViaApi(request, baseURL, dummy.email, dummy.password);
+  const { token, refreshToken, user } = auth;
   await page.goto('/login');
   await page.evaluate(
     ([tKey, rKey, iKey, t, r, id]: string[]) => {
@@ -52,6 +84,9 @@ test.describe('コミュニティ複数ユーザーチャット', () => {
   let base: string;
   let roomID: string;
   let communityName: string;
+  let authA: UserAuth;
+  let authB: UserAuth;
+  let authC: UserAuth;
 
   test.beforeAll(async ({ request, baseURL }) => {
     test.setTimeout(60000);
@@ -64,27 +99,27 @@ test.describe('コミュニティ複数ユーザーチャット', () => {
       createDummyUser(request, base, adminToken),
     ]);
 
-    const [{ token: tokenA }, { token: tokenB }, { token: tokenC }] = await Promise.all([
+    [authA, authB, authC] = await Promise.all([
       loginUserViaApi(request, base, dummyA.email, dummyA.password),
       loginUserViaApi(request, base, dummyB.email, dummyB.password),
       loginUserViaApi(request, base, dummyC.email, dummyC.password),
     ]);
 
     await Promise.all([
-      consentDummyUserToTerms(request, base, tokenA),
-      consentDummyUserToTerms(request, base, tokenB),
-      consentDummyUserToTerms(request, base, tokenC),
+      consentDummyUserToTerms(request, base, authA.token),
+      consentDummyUserToTerms(request, base, authB.token),
+      consentDummyUserToTerms(request, base, authC.token),
     ]);
 
     // dummyA がコミュニティを作成（自動的にオーナーとして参加済み）
     communityName = `E2Eマルチチャット ${Date.now()}`;
-    const { roomID: rid } = await createCommunityAsUser(request, base, tokenA, communityName, 'マルチユーザーE2Eテスト用');
+    const { roomID: rid } = await createCommunityAsUser(request, base, authA.token, communityName, 'マルチユーザーE2Eテスト用');
     roomID = rid;
 
     // dummyB と dummyC が参加
     await Promise.all([
-      joinRoomAsUser(request, base, tokenB, roomID),
-      joinRoomAsUser(request, base, tokenC, roomID),
+      joinRoomAsUser(request, base, authB.token, roomID),
+      joinRoomAsUser(request, base, authC.token, roomID),
     ]);
   });
 
@@ -94,31 +129,20 @@ test.describe('コミュニティ複数ユーザーチャット', () => {
 
     // dummyA はコミュニティオーナーのため、他メンバーがいると削除できない。
     // B・C をコミュニティから退出させてから削除する。
-    const [resB, resC] = await Promise.allSettled([
-      loginUserViaApi(request, base, dummyB.email, dummyB.password),
-      loginUserViaApi(request, base, dummyC.email, dummyC.password),
-    ]);
-    if (resB.status === 'fulfilled') {
-      await leaveRoomAsUser(request, base, resB.value.token, roomID, dummyB.ID).catch(() => {});
-    }
-    if (resC.status === 'fulfilled') {
-      await leaveRoomAsUser(request, base, resC.value.token, roomID, dummyC.ID).catch(() => {});
-    }
+    await leaveRoomAsUser(request, base, authB.token, roomID, dummyB.ID).catch(() => {});
+    await leaveRoomAsUser(request, base, authC.token, roomID, dummyC.ID).catch(() => {});
 
     await deleteDummyUser(request, base, freshToken, dummyA.ID);
     await deleteDummyUser(request, base, freshToken, dummyB.ID);
     await deleteDummyUser(request, base, freshToken, dummyC.ID);
   });
 
-  test('3人のユーザーが同じコミュニティルームでリアルタイムにチャットできる', async ({ page, browser, request, baseURL }) => {
-    const b = base ?? baseURL ?? env.baseURL;
+  test('3人のユーザーが同じコミュニティルームでリアルタイムにチャットできる', async ({ page, browser }) => {
     const roomUrl = `/community/chat/${roomID}`;
 
     // A がルームを開く
-    await loginAsDummy(page, request, b, dummyA);
-    await page.goto(roomUrl);
-    await dismissTermsConsentModalIfPresent(page);
-    await waitForCommunityRoomReady(page, communityName);
+    await loginAsDummy(page, authA);
+    await openCommunityRoom(page, roomUrl, communityName);
 
     const ctxB = await browser.newContext();
     const pageB = await ctxB.newPage();
@@ -127,15 +151,11 @@ test.describe('コミュニティ複数ユーザーチャット', () => {
 
     try {
       // B・C を直列でセットアップ（並列だと API バーストで 429 が連発するため）
-      await loginAsDummy(pageB, request, b, dummyB);
-      await pageB.goto(roomUrl);
-      await dismissTermsConsentModalIfPresent(pageB);
-      await waitForCommunityRoomReady(pageB, communityName);
+      await loginAsDummy(pageB, authB);
+      await openCommunityRoom(pageB, roomUrl, communityName);
 
-      await loginAsDummy(pageC, request, b, dummyC);
-      await pageC.goto(roomUrl);
-      await dismissTermsConsentModalIfPresent(pageC);
-      await waitForCommunityRoomReady(pageC, communityName);
+      await loginAsDummy(pageC, authC);
+      await openCommunityRoom(pageC, roomUrl, communityName);
 
       // B・C の WebSocket サブスクリプションが確立されるまで待機
       await page.waitForTimeout(1000);
@@ -172,69 +192,52 @@ test.describe('コミュニティ複数ユーザーチャット', () => {
   test('BとCが同時にメッセージを送っても両方ルームに届く', async ({ page, request, baseURL }) => {
     const b = base ?? baseURL ?? env.baseURL;
 
-    const [{ token: tokenB }, { token: tokenC }] = await Promise.all([
-      loginUserViaApi(request, b, dummyB.email, dummyB.password),
-      loginUserViaApi(request, b, dummyC.email, dummyC.password),
-    ]);
-
     const msgB = `B同時送信 ${Date.now()}`;
     const msgC = `C同時送信 ${Date.now()}`;
 
     // B と C が同時にメッセージを送信
     await Promise.all([
-      sendMessageAsUser(request, b, tokenB, roomID, msgB),
-      sendMessageAsUser(request, b, tokenC, roomID, msgC),
+      sendMessageAsUser(request, b, authB.token, roomID, msgB),
+      sendMessageAsUser(request, b, authC.token, roomID, msgC),
     ]);
 
     // A のブラウザでルームを開き、両メッセージが届いていることを確認
-    await loginAsDummy(page, request, b, dummyA);
-    await page.goto(`/community/chat/${roomID}`);
-    await dismissTermsConsentModalIfPresent(page);
-    await waitForCommunityRoomReady(page, communityName);
+    await loginAsDummy(page, authA);
+    await openCommunityRoom(page, `/community/chat/${roomID}`, communityName);
     await expect(page.getByText(msgB)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(msgC)).toBeVisible({ timeout: 10000 });
   });
 
   test('10件のメッセージを同時送信しても欠損・重複なく届く', async ({ page, request, baseURL }) => {
+    test.setTimeout(60000);
     const b = base ?? baseURL ?? env.baseURL;
-
-    const [{ token: tokenB }, { token: tokenC }] = await Promise.all([
-      loginUserViaApi(request, b, dummyB.email, dummyB.password),
-      loginUserViaApi(request, b, dummyC.email, dummyC.password),
-    ]);
 
     const timestamp = Date.now();
     // B が5件・C が5件、合計10件を同時送信
+    // 50ms ずつずらしてバースト 429 を防ぎつつ、競合状態のテストとして有効な同時性を維持する
     const messages = Array.from({ length: 10 }, (_, i) => `同時送信${i + 1} ${timestamp}`);
     await Promise.all(
       messages.map((msg, i) =>
-        sendMessageAsUser(request, b, i < 5 ? tokenB : tokenC, roomID, msg),
+        new Promise<void>((r) => setTimeout(r, i * 50)).then(() =>
+          sendMessageAsUser(request, b, i < 5 ? authB.token : authC.token, roomID, msg),
+        ),
       ),
     );
 
     // A のブラウザでルームを開き、全10件が欠損なく届いていることを確認
-    await loginAsDummy(page, request, b, dummyA);
-    await page.goto(`/community/chat/${roomID}`);
-    await dismissTermsConsentModalIfPresent(page);
-    await waitForCommunityRoomReady(page, communityName);
+    await loginAsDummy(page, authA);
+    await openCommunityRoom(page, `/community/chat/${roomID}`, communityName);
 
-    for (const msg of messages) {
-      await expect(page.getByText(msg)).toBeVisible({ timeout: 10000 });
-    }
-    // 各メッセージが1件だけ表示されていること（重複なし）
-    for (const msg of messages) {
-      await expect(page.getByText(msg)).toHaveCount(1);
-    }
+    // 全件を1つのリトライ単位で検証する。count === 1 で欠損と重複を
+    // 同時に検出し、履歴取得だけが失敗した場合はページを再取得する。
+    await expectMessagesExactlyOnce(page, messages, communityName);
   });
 
-  test('複数ブラウザから同時にUIでメッセージを送信しても全員に届く', async ({ page, browser, request, baseURL }) => {
-    const b = base ?? baseURL ?? env.baseURL;
+  test('複数ブラウザから同時にUIでメッセージを送信しても全員に届く', async ({ page, browser }) => {
     const roomUrl = `/community/chat/${roomID}`;
 
-    await loginAsDummy(page, request, b, dummyA);
-    await page.goto(roomUrl);
-    await dismissTermsConsentModalIfPresent(page);
-    await waitForCommunityRoomReady(page, communityName);
+    await loginAsDummy(page, authA);
+    await openCommunityRoom(page, roomUrl, communityName);
 
     const ctxB = await browser.newContext();
     const pageB = await ctxB.newPage();
@@ -243,15 +246,11 @@ test.describe('コミュニティ複数ユーザーチャット', () => {
 
     try {
       // B・C を直列でセットアップして API バーストを防ぐ
-      await loginAsDummy(pageB, request, b, dummyB);
-      await pageB.goto(roomUrl);
-      await dismissTermsConsentModalIfPresent(pageB);
-      await waitForCommunityRoomReady(pageB, communityName);
+      await loginAsDummy(pageB, authB);
+      await openCommunityRoom(pageB, roomUrl, communityName);
 
-      await loginAsDummy(pageC, request, b, dummyC);
-      await pageC.goto(roomUrl);
-      await dismissTermsConsentModalIfPresent(pageC);
-      await waitForCommunityRoomReady(pageC, communityName);
+      await loginAsDummy(pageC, authC);
+      await openCommunityRoom(pageC, roomUrl, communityName);
 
       // WebSocket サブスクリプションの確立を待機
       await page.waitForTimeout(1000);
