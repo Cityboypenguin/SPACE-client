@@ -3,6 +3,7 @@ import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getAnalytics, getCommunityAnalytics } from '../api/analytics';
 import { TimeSeriesChart } from '../components/organisms/TimeSeriesChart';
 import type { AnalyticsSummary, CommunityStatItem } from '../api/analytics';
+import { downloadCsv } from '../lib/exportCsv';
 
 const card: React.CSSProperties = {
   background: '#fff', borderRadius: 10, padding: '1.2rem 1.5rem',
@@ -39,6 +40,82 @@ function fmtSec(sec: number) {
   return `${Math.floor(sec / 60)}分${Math.round(sec % 60)}秒`;
 }
 
+function today() { return new Date().toISOString().slice(0, 10); }
+
+function exportSummaryCsv(data: AnalyticsSummary) {
+  const rows: (string | number)[][] = [
+    ['指標', '値'],
+    ['ユーザー数（累計）', data.totalUsers],
+    ['凍結ユーザー数', data.frozenUsersCount],
+    ['新規登録（本日）', data.newUsersToday],
+    ['新規登録（今週）', data.newUsersThisWeek],
+    ['新規登録（今月）', data.newUsersThisMonth],
+    ['DAU', data.dau],
+    ['WAU', data.wau],
+    ['MAU', data.mau],
+    ['DAU/MAU比率（%）', data.dauMauRatio],
+    ['投稿数', data.totalPosts],
+    ['削除済み投稿数', data.totalDeletedPosts],
+    ['コメント数', data.totalComments],
+    ['いいね数', data.totalLikes],
+    ['コミュニティ数', data.totalCommunities],
+    ['DM送信数', data.totalMessages],
+    ['DM送信ユーザー数', data.uniqueDMSenders],
+    ['通報数', data.totalReports],
+    ['未対応通報数', data.pendingReports],
+    ['解決済み通報数', data.resolvedReports],
+    ['ブロック数', data.totalBlocks],
+    ['問い合わせ数', data.totalInquiries],
+    ['本日の投稿数', data.postsToday],
+    ['本日のコメント数', data.commentsToday],
+    ['本日のDM数', data.messagesToday],
+    ['投稿あたり平均いいね', data.avgLikesPerPost],
+    ['投稿あたり平均コメント', data.avgCommentsPerPost],
+    ['テキストのみの投稿数', data.postsTextOnly],
+    ['画像付き投稿数', data.postsWithImage],
+    ['動画付き投稿数', data.postsWithVideo],
+    ['アクティブなコミュニティ（30日）', data.activeCommunitiesLast30Days],
+    ['コミュニティ平均メンバー数', data.avgCommunityMembers],
+    ['ユーザー平均参加コミュニティ数', data.avgCommunitiesPerUser],
+    ['フォロー総数', data.totalFollows],
+    ['ユーザー平均フォロワー数', data.avgFollowersPerUser],
+    ['プロフィール設定済みユーザー数', data.usersWithProfile],
+    ['アバター設定済みユーザー数', data.usersWithAvatar],
+    ['初投稿済みユーザー数', data.usersWithPost],
+    ['オンボーディング完了率（%）', data.onboardingCompleteRate],
+    ['初投稿までの平均時間（分）', data.avgTimeToFirstPostMinutes],
+    ['通知総数', data.totalNotifications],
+    ['開封済み通知数', data.readNotifications],
+    ['通知開封率（%）', data.notificationReadRate],
+    ['平均セッション時間（秒）', data.avgSessionDurationSeconds],
+    ['1日あたり平均セッション数', data.avgSessionsPerDay],
+    ['平均スクロール深度（%）', data.avgScrollDepth],
+    ['WebSocket接続数', data.webSocketConnections],
+    ['SSE接続数', data.sseConnections],
+    ['エラーレート5xx（%）', data.errorRate5xx],
+    ['APIレスポンス p50（ms）', data.p50ResponseTimeMs],
+    ['APIレスポンス p95（ms）', data.p95ResponseTimeMs],
+    ['APIレスポンス p99（ms）', data.p99ResponseTimeMs],
+  ];
+  downloadCsv(`analytics_summary_${today()}.csv`, rows);
+}
+
+function exportPageViewsCsv(stats: AnalyticsSummary['pageViewStats']) {
+  const rows: (string | number)[][] = [
+    ['ページ', '平均滞在時間（秒）', '平均スクロール深度（%）', '表示回数'],
+    ...stats.map(pv => [pv.pagePath, pv.avgDurationSeconds, pv.avgMaxScrollDepth, pv.totalViews]),
+  ];
+  downloadCsv(`page_views_${today()}.csv`, rows);
+}
+
+function exportCommunitiesCsv(communities: CommunityStatItem[]) {
+  const rows: (string | number)[][] = [
+    ['コミュニティ名', 'メンバー数', 'メッセージ数'],
+    ...communities.map(c => [c.name, c.memberCount, c.messageCount]),
+  ];
+  downloadCsv(`community_stats_${today()}.csv`, rows);
+}
+
 export const AdminAnalyticsPage = () => {
   const [data, setData] = useState<AnalyticsSummary | null>(null);
   const [communities, setCommunities] = useState<CommunityStatItem[]>([]);
@@ -60,7 +137,18 @@ export const AdminAnalyticsPage = () => {
     <>
       <AdminHeader />
       <main style={{ padding: '2rem', maxWidth: 1200, margin: '0 auto' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>アナリティクス</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>アナリティクス</h1>
+          <button
+            onClick={() => exportSummaryCsv(data)}
+            style={{
+              padding: '0.5rem 1.2rem', borderRadius: 8, fontSize: '0.88rem', fontWeight: 600,
+              border: '1px solid #cbd5e1', background: '#fff', color: '#475569', cursor: 'pointer',
+            }}
+          >
+            ↓ サマリーをCSV出力
+          </button>
+        </div>
 
         {/* 時系列グラフ */}
         <div style={section}>
@@ -107,7 +195,13 @@ export const AdminAnalyticsPage = () => {
           </div>
           {data.pageViewStats.length > 0 && (
             <div style={card}>
-              <div style={{ fontWeight: 600, marginBottom: '0.75rem' }}>画面別滞在時間（上位{data.pageViewStats.length}ページ）</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <span style={{ fontWeight: 600 }}>画面別滞在時間（上位{data.pageViewStats.length}ページ）</span>
+                <button
+                  onClick={() => exportPageViewsCsv(data.pageViewStats)}
+                  style={{ padding: '0.25rem 0.75rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500, border: '1px solid #cbd5e1', background: '#fff', color: '#475569', cursor: 'pointer' }}
+                >↓ CSV</button>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
@@ -158,7 +252,13 @@ export const AdminAnalyticsPage = () => {
           </div>
           {communities.length > 0 && (
             <div style={card}>
-              <div style={{ fontWeight: 600, marginBottom: '0.75rem' }}>コミュニティ別アクティビティ（上位{communities.length}件）</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <span style={{ fontWeight: 600 }}>コミュニティ別アクティビティ（上位{communities.length}件）</span>
+                <button
+                  onClick={() => exportCommunitiesCsv(communities)}
+                  style={{ padding: '0.25rem 0.75rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500, border: '1px solid #cbd5e1', background: '#fff', color: '#475569', cursor: 'pointer' }}
+                >↓ CSV</button>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', textAlign: 'left' }}>

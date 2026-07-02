@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { getTimeSeries } from '../../api/analytics';
 import type { TimeSeriesGranularity, TimeSeriesPoint } from '../../api/analytics';
+import { downloadCsv } from '../../lib/exportCsv';
 
 const METRICS = [
   { key: 'posts',    label: '投稿',     color: '#3b82f6' },
@@ -64,6 +65,12 @@ export const TimeSeriesChart = () => {
   const toggleMetric = (key: MetricKey) =>
     setVisible(v => ({ ...v, [key]: !v[key] }));
 
+  const exportCsv = () => {
+    const header = ['日時', '投稿', 'コメント', 'DM', '新規登録', 'いいね'];
+    const rows = data.map(d => [d.label, d.posts, d.comments, d.messages, d.newUsers, d.likes]);
+    downloadCsv(`timeseries_${from}_${to}.csv`, [header, ...rows]);
+  };
+
   // ボタンスタイル
   const btn = (active: boolean, color?: string): React.CSSProperties => ({
     padding: '0.35rem 0.8rem', borderRadius: 6, cursor: 'pointer',
@@ -88,9 +95,22 @@ export const TimeSeriesChart = () => {
   return (
     <div style={{ background: '#fff', borderRadius: 10, padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,.08)' }}>
       {/* タイトル */}
-      <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-        アクティビティ推移
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+          アクティビティ推移
+        </h3>
+        <button
+          onClick={exportCsv}
+          disabled={data.length === 0}
+          style={{
+            padding: '0.35rem 0.9rem', borderRadius: 6, fontSize: '0.82rem', fontWeight: 500,
+            border: '1px solid #cbd5e1', background: data.length === 0 ? '#f8fafc' : '#fff',
+            color: data.length === 0 ? '#94a3b8' : '#475569', cursor: data.length === 0 ? 'default' : 'pointer',
+          }}
+        >
+          ↓ CSV
+        </button>
+      </div>
 
       {/* コントロール行 */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
