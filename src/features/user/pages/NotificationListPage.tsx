@@ -403,7 +403,24 @@ export const NotificationListPage = () => {
                   <li
                     key={n.ID}
                     className={`${styles.item}${!n.isRead ? ` ${styles.itemUnread}` : ''}`}
-                    onClick={() => navigate(`/notifications/${n.ID}`)}
+                    onClick={() => {
+                      if (n.type === 'dm' && n.targetType === 'room' && n.targetID) {
+                        if (!n.isRead) {
+                          markNotificationAsRead(n.ID).catch(() => {});
+                          mutateActorNotifs(
+                            (prev) => prev
+                              ? { ...prev, items: prev.items.map((item) => item.ID === n.ID ? { ...item, isRead: true } : item) }
+                              : prev,
+                            { revalidate: false },
+                          );
+                          void mutateGroups();
+                          decrementUnread();
+                        }
+                        navigate(`/dm/${n.targetID}`);
+                        return;
+                      }
+                      navigate(`/notifications/${n.ID}`);
+                    }}
                   >
                     <span className={styles.typeIcon}>
                       {TYPE_ICON[n.type] ?? <BellIcon />}
