@@ -8,17 +8,23 @@ const post = async <T>(
   query: string,
   variables: Record<string, unknown>,
 ): Promise<T> => {
-  const response = await request.post(graphqlUrl(baseURL), {
-    data: { query, variables },
-  });
-  if (!response.ok()) {
-    throw new Error(`GraphQL request failed: ${response.status()} ${await response.text()}`);
+  for (let attempt = 0; ; attempt++) {
+    const response = await request.post(graphqlUrl(baseURL), {
+      data: { query, variables },
+    });
+    if (response.status() === 429 && attempt < 3) {
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      continue;
+    }
+    if (!response.ok()) {
+      throw new Error(`GraphQL request failed: ${response.status()} ${await response.text()}`);
+    }
+    const json = await response.json();
+    if (json.errors) {
+      throw new Error(`GraphQL errors: ${json.errors.map((e: { message: string }) => e.message).join(', ')}`);
+    }
+    return json.data as T;
   }
-  const json = await response.json();
-  if (json.errors) {
-    throw new Error(`GraphQL errors: ${json.errors.map((e: { message: string }) => e.message).join(', ')}`);
-  }
-  return json.data as T;
 };
 
 const LOGIN_USER_MUTATION = `

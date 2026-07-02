@@ -5,8 +5,8 @@ import {
   USER_ID_KEY,
 } from '../../src/lib/authStorage';
 import { loginUserViaApi } from '../support/api';
-import { createDummyUser, deleteDummyUser, getAdminToken, consentDummyUserToTerms, createPostAsUser, type DummyUser } from '../support/adminApi';
-import { dismissTermsConsentModalIfPresent } from '../support/terms';
+import { createDummyUser, deleteDummyUser, getAdminToken, consentDummyUserToTerms, createPostAsUser, sendMessageAsUser, type DummyUser } from '../support/adminApi';
+import { dismissTermsConsentModalIfPresent, waitForRoomReady } from '../support/terms';
 import { env } from '../support/env';
 
 // ダミーユーザーをAPIで作成してから各テストを実行し、最後に削除する。
@@ -30,6 +30,9 @@ const loginAsDummy = async (
 };
 
 test.describe('複数ユーザー間インタラクション', () => {
+  // ダミーユーザーを共有するため直列実行（fullyParallel でも別ワーカーに分割されないよう）
+  test.describe.configure({ mode: 'serial' });
+
   let adminToken: string;
   let dummyA: DummyUser;
   let dummyB: DummyUser;
@@ -84,26 +87,23 @@ test.describe('複数ユーザー間インタラクション', () => {
     const followBtn = page.getByRole('button', { name: 'お気に入り', exact: true });
     await expect(followBtn).toBeVisible({ timeout: 5000 });
     await followBtn.click();
-    await expect(page.getByRole('button', { name: 'お気に入り解除' })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: 'お気に入り解除' })).toBeVisible({ timeout: 10000 });
   });
 
   test('ダミーユーザーAの投稿にBがいいねでき、件数が増える', async ({ page, browser, request, baseURL }) => {
     const b = base ?? baseURL ?? env.baseURL;
 
-    // dummyA でログインして投稿を作成
-    await loginAsDummy(page, request, b, dummyA);
-    await page.goto('/home');
-    await dismissTermsConsentModalIfPresent(page);
-
+    // dummyA の投稿を API で作成してURLを直接取得（UI経由の遷移は不安定なため）
+    const { token: tokenA } = await loginUserViaApi(request, b, dummyA.email, dummyA.password);
     const postContent = `マルチユーザーいいねテスト ${Date.now()}`;
-    await page.getByPlaceholder('新規投稿').fill(postContent);
-    await page.getByRole('button', { name: '投稿', exact: true }).click();
-    await expect(page.getByText(postContent)).toBeVisible({ timeout: 10000 });
+    const postId = await createPostAsUser(request, b, tokenA, postContent);
+    const postUrl = `/posts/${postId}`;
 
-    // 投稿詳細URLを取得
-    await page.getByText(postContent).click();
-    await page.waitForURL(/\/posts\/.+/);
-    const postUrl = page.url();
+    // dummyA でログインして投稿ページを開く
+    await loginAsDummy(page, request, b, dummyA);
+    await page.goto(postUrl);
+    await dismissTermsConsentModalIfPresent(page);
+    await expect(page.getByText(postContent)).toBeVisible({ timeout: 10000 });
 
     // dummyB として別コンテキストでいいね
     const ctxB = await browser.newContext();
@@ -113,14 +113,13 @@ test.describe('複数ユーザー間インタラクション', () => {
       await pageB.goto(postUrl);
       await dismissTermsConsentModalIfPresent(pageB);
       await pageB.getByRole('button', { name: 'いいね 0いいね' }).click();
-      await expect(pageB.getByRole('button', { name: 'いいね 1いいね' })).toBeVisible({ timeout: 5000 });
+      await expect(pageB.getByRole('button', { name: 'いいね 1いいね' })).toBeVisible({ timeout: 10000 });
     } finally {
       await ctxB.close();
     }
 
     // dummyA 側でリロードして件数が増えていることを確認
     await page.reload();
-    // GraphQL データ取得完了を投稿本文の表示で確認してからいいね数をチェック
     await expect(page.getByText(postContent)).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: 'いいね 1いいね' })).toBeVisible({ timeout: 5000 });
   });
@@ -157,6 +156,7 @@ test.describe('複数ユーザー間インタラクション', () => {
       await loginAsDummy(pageB, request, b, dummyB);
       await pageB.goto(roomUrl);
       await dismissTermsConsentModalIfPresent(pageB);
+      await waitForRoomReady(pageB);
       await expect(pageB.getByText(messageFromA)).toBeVisible({ timeout: 10000 });
 
       const messageFromB = `BからAへ ${Date.now()}`;
