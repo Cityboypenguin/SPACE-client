@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ImageCropModal } from '../components/organisms/ImageCropModal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -35,6 +36,7 @@ export const UserProfileEditPage = () => {
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropTarget, setCropTarget] = useState<{ imageSrc: string; file: File } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
   const [error, setError] = useState('');
@@ -59,8 +61,20 @@ export const UserProfileEditPage = () => {
     }
 
     setError('');
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+
+    if (file.type === 'image/svg+xml') {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setCropTarget({ imageSrc: URL.createObjectURL(file), file });
+    }
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedFile: File, croppedPreviewUrl: string) => {
+    setSelectedFile(croppedFile);
+    setPreviewUrl(croppedPreviewUrl);
+    setCropTarget(null);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -177,6 +191,16 @@ export const UserProfileEditPage = () => {
           </div>
         </form>
       </main>
+
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.imageSrc}
+          fileName={cropTarget.file.name}
+          mimeType={cropTarget.file.type}
+          onCancel={() => setCropTarget(null)}
+          onComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };

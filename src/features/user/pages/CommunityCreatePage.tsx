@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ImageCropModal } from '../components/organisms/ImageCropModal';
 import { createCommunity, getPresignedCommunityIconUploadUrl } from '../api/community';
 import { uploadAvatarToStorage } from '../api/profile';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -16,6 +17,7 @@ export const CommunityCreatePage = () => {
   const [description, setDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cropTarget, setCropTarget] = useState<{ imageSrc: string; file: File } | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -27,9 +29,21 @@ export const CommunityCreatePage = () => {
       setError('画像サイズは5MB以下にしてください。');
       return;
     }
-    setSelectedFile(file);
     setError('');
-    setPreviewUrl(URL.createObjectURL(file));
+
+    if (file.type === 'image/svg+xml') {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setCropTarget({ imageSrc: URL.createObjectURL(file), file });
+    }
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedFile: File, croppedPreviewUrl: string) => {
+    setSelectedFile(croppedFile);
+    setPreviewUrl(croppedPreviewUrl);
+    setCropTarget(null);
   };
 
   const handleRemoveImage = () => {
@@ -143,6 +157,16 @@ export const CommunityCreatePage = () => {
           </button>
         </form>
       </main>
+
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.imageSrc}
+          fileName={cropTarget.file.name}
+          mimeType={cropTarget.file.type}
+          onCancel={() => setCropTarget(null)}
+          onComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Avatar } from '../../../../components/atoms/Avatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
+import { ImageCropModal } from './ImageCropModal';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import {
   getCommunityMembers,
@@ -43,6 +44,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   );
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropTarget, setCropTarget] = useState<{ imageSrc: string; file: File } | null>(null);
   const [isIconDeleted, setIsIconDeleted] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,9 +59,21 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    if (file.type === 'image/svg+xml') {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setIsIconDeleted(false);
+    } else {
+      setCropTarget({ imageSrc: URL.createObjectURL(file), file });
+    }
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedFile: File, croppedPreviewUrl: string) => {
+    setSelectedFile(croppedFile);
+    setPreviewUrl(croppedPreviewUrl);
     setIsIconDeleted(false);
+    setCropTarget(null);
   };
 
   const handleSaveInfo = async (e: React.FormEvent) => {
@@ -356,6 +370,16 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
           )}
         </div>
       </div>
+
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.imageSrc}
+          fileName={cropTarget.file.name}
+          mimeType={cropTarget.file.type}
+          onCancel={() => setCropTarget(null)}
+          onComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };
