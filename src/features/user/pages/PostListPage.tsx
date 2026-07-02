@@ -190,14 +190,14 @@ export const PostListPage = () => {
   }, []);
 
   // バナーからの更新（常にフェッチ）※一時コメントアウト中
-  // const handleRefresh = useCallback(() => {
-  //   lastRefreshedAtRef.current = Date.now();
-  //   setNewPostsCount(0);
-  //   feedLoadedAtRef.current = new Date();
-  //   window.scrollTo(0, 0);
-  //   loadPosts(0, 'refresh');
-  //   loadFollowPosts(0, 'refresh');
-  // }, [loadPosts, loadFollowPosts]);
+  const handleRefresh = useCallback(() => {
+    lastRefreshedAtRef.current = Date.now();
+    setNewPostsCount(0);
+    feedLoadedAtRef.current = new Date();
+    window.scrollTo(0, 0);
+    loadPosts(0, 'refresh');
+    loadFollowPosts(0, 'refresh');
+  }, [loadPosts, loadFollowPosts]);
 
   // 上に戻るボタン（クールダウン中はスクロールのみ）
   const handleScrollToTop = useCallback(() => {
@@ -534,7 +534,7 @@ export const PostListPage = () => {
 
       <main className={styles.main}>
         {newPostsCount > 0 && (
-          <div className={styles.notificationBanner} /* onClick={handleRefresh} */>
+          <div className={styles.notificationBanner} onClick={handleRefresh} >
             <button
               className={styles.notificationDismiss}
               onClick={e => { e.stopPropagation(); setNewPostsCount(0); }}
