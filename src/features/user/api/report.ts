@@ -9,6 +9,7 @@ export type UserReport = {
   reason: string;
   customReason: string | null;
   status: string;
+  content: string | null;
   createdAt: string;
   updatedAt: string;
 };

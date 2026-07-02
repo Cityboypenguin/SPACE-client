@@ -285,6 +285,25 @@ export const ReportsPage: React.FC = () => {
                         詳細を確認する
                       </Link>
                     </td>
+                    {report.targetType === 'POST' && report.content && (
+                      <div style={{
+                        fontSize: '0.75rem',
+                        color: '#334155',
+                        background: '#f1f5f9',
+                        padding: '0.5rem 0.7rem',
+                        borderRadius: '6px',
+                        border: '1px solid #e2e8f0',
+                        wordBreak: 'break-all',
+                        maxHeight: '4.5rem',
+                        overflowY: 'auto',
+                        lineHeight: '1.4'
+                      }}>
+                      <span style={{ fontWeight: 600, color: '#64748b', fontSize: '0.7rem', display: 'block', marginBottom: '0.2rem' }}>
+                        通報時の投稿本文:
+                      </span>
+                      {report.content}
+                      </div>
+                    )}
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
                       <span style={{ 
