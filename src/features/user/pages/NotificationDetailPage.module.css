@@ -78,6 +78,11 @@
   align-items: center;
   gap: 0.6rem;
   margin-bottom: 1rem;
+  min-width: 0;
+}
+
+.actorInfo {
+  min-width: 0;
 }
 
 .actorAvatar {
@@ -107,12 +112,18 @@
   font-weight: 600;
   font-size: 0.9rem;
   color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .actorAccountID {
   margin: 0;
   font-size: 0.75rem;
   color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .message {

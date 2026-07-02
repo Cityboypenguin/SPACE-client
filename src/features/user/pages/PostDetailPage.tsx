@@ -242,7 +242,7 @@ export const PostDetailPage = () => {
                 <div className={styles.postBodyHeader}>
                   <div className={styles.userInfo}>
                     <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
-                    <div>
+                    <div className={styles.userNameBlock}>
                       <UserNameLink userId={post.user.ID}>
                         <div className={styles.userName}>{post.user.name}</div>
                       </UserNameLink>

@@ -329,11 +329,11 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           <UserNameLink userId={m.user.ID}>
-                            <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
+                            <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {m.user.name}
                             </div>
                           </UserNameLink>
-                          <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                          <div style={{ fontSize: '0.78rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             @{m.user.accountID}
                           </div>
                         </div>

@@ -142,7 +142,7 @@ export const NotificationDetailPage = () => {
                     {notification.actor.name.charAt(0)}
                   </div>
                 )}
-                <div>
+                <div className={styles.actorInfo}>
                   <p className={styles.actorName}>{notification.actor.name}</p>
                   <p className={styles.actorAccountID}>@{notification.actor.accountID}</p>
                 </div>
