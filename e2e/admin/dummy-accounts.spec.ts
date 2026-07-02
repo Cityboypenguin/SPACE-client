@@ -24,24 +24,24 @@ test('ダミーアカウントをUIから作成でき、ユーザー一覧に反
   await page.getByRole('button', { name: 'ダミーアカウント作成' }).click();
   await expect(page.getByRole('heading', { name: 'ダミーアカウント作成' })).toBeVisible();
 
-  // フォームに入力
-  await page.getByLabel('accountID').fill(input.accountID);
-  await page.getByLabel('name').fill(input.name);
-  await page.getByLabel('email').fill(input.email);
-  await page.getByLabel('password').fill(input.password);
+  // フォームに入力（labelにhtmlForがないためinput[required]で順番に取得）
+  await page.locator('input[required]').nth(0).fill(input.accountID);
+  await page.locator('input[required]').nth(1).fill(input.name);
+  await page.locator('input[required]').nth(2).fill(input.email);
+  await page.locator('input[required]').nth(3).fill(input.password);
 
   // 作成ボタンを押してモーダルが閉じるのを待つ
-  await page.getByRole('button', { name: '作成する' }).click();
+  await page.getByRole('button', { name: '作成', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ダミーアカウント作成' })).not.toBeVisible({ timeout: 10000 });
 
   // 作成されたユーザーが一覧に表示される（検索で絞り込む）
   await page.locator('input[placeholder="名前で検索"]').fill(input.name);
   await page.getByRole('button', { name: '検索' }).click();
-  await expect(page.getByText(input.accountID)).toBeVisible({ timeout: 10000 });
-  await expect(page.getByText(input.email)).toBeVisible();
+  await expect(page.getByText(input.accountID, { exact: true })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(input.email, { exact: true })).toBeVisible();
 
   // ユーザー詳細ページに遷移してIDを取得する
-  await page.getByText(input.accountID).click();
+  await page.getByText(input.accountID, { exact: true }).click();
   const url = page.url();
   const match = url.match(/\/admin\/users\/(.+)/);
   if (match) createdUserID = match[1];
@@ -59,7 +59,7 @@ test('必須項目が未入力の場合、エラーが表示される', async ({
   await expect(page.getByRole('heading', { name: 'ダミーアカウント作成' })).toBeVisible();
 
   // 何も入力せずに送信
-  await page.getByRole('button', { name: '作成する' }).click();
+  await page.getByRole('button', { name: '作成', exact: true }).click();
 
   // ブラウザのネイティブバリデーションか、フォームエラーが表示される
   // （モーダルが閉じないことで確認）

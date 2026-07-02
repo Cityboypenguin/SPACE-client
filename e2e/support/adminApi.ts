@@ -78,7 +78,7 @@ export const createDummyUser = async (
   adminToken: string,
   overrides: Partial<{ accountID: string; name: string; email: string; password: string }> = {},
 ): Promise<DummyUser> => {
-  const suffix = Date.now();
+  const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const input = {
     accountID: overrides.accountID ?? `e2e_dummy_${suffix}`,
     name: overrides.name ?? `E2Eダミー${suffix}`,
@@ -126,4 +126,67 @@ export const getAdminTokenFromPage = async (page: import('@playwright/test').Pag
 export const getAdminToken = async (request: APIRequestContext, baseURL: string): Promise<string> => {
   const { token } = await loginAdminViaApi(request, baseURL, env.admin.email, env.admin.password);
   return token;
+};
+
+const CREATE_POST_MUTATION = `
+  mutation CreatePost($input: CreatePostInput!) {
+    createPost(input: $input) {
+      ID
+    }
+  }
+`;
+
+/**
+ * ユーザートークンで投稿を作成し、投稿IDを返す。
+ * ホームページUIを使わず直接APIで投稿するため、テストの信頼性が高い。
+ */
+export const createPostAsUser = async (
+  request: APIRequestContext,
+  baseURL: string,
+  userToken: string,
+  content: string,
+): Promise<string> => {
+  const url = graphqlUrl(baseURL);
+  const res = await request.post(url, {
+    headers: { Authorization: `Bearer ${userToken}` },
+    data: { query: CREATE_POST_MUTATION, variables: { input: { content } } },
+  });
+  const json = await res.json();
+  if (json.errors) {
+    throw new Error(`createPost errors: ${json.errors.map((e: { message: string }) => e.message).join(', ')}`);
+  }
+  return json.data.createPost.ID as string;
+};
+
+const CURRENT_TERMS_QUERY = `
+  query CurrentTerms {
+    currentTerms { ID }
+  }
+`;
+
+const CONSENT_TO_TERMS_MUTATION = `
+  mutation ConsentToTerms($termsID: ID!) {
+    consentToTerms(termsID: $termsID)
+  }
+`;
+
+/**
+ * ダミーユーザーのトークンで最新の利用規約に同意する。
+ * テスト中に利用規約モーダルが表示されないよう beforeAll で呼ぶ。
+ */
+export const consentDummyUserToTerms = async (
+  request: APIRequestContext,
+  baseURL: string,
+  userToken: string,
+): Promise<void> => {
+  const url = graphqlUrl(baseURL);
+  const termsRes = await request.post(url, { data: { query: CURRENT_TERMS_QUERY, variables: {} } });
+  const termsJson = await termsRes.json();
+  const currentTerms = termsJson.data?.currentTerms as { ID: string } | null;
+  if (!currentTerms) return;
+
+  await request.post(url, {
+    headers: { Authorization: `Bearer ${userToken}` },
+    data: { query: CONSENT_TO_TERMS_MUTATION, variables: { termsID: currentTerms.ID } },
+  });
 };

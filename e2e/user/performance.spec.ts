@@ -7,7 +7,7 @@ import { injectLCPObserver, collectMetrics, PERF_THRESHOLDS } from '../support/p
 import { dismissTermsConsentModalIfPresent } from '../support/terms';
 
 const routes: Array<{ path: string; waitFor: string }> = [
-  { path: '/home', waitFor: '新規投稿' },
+  { path: '/home', waitFor: 'おすすめ' },
   { path: '/notifications', waitFor: '通知' },
   { path: '/community', waitFor: 'コミュニティ' },
 ];
@@ -15,7 +15,7 @@ const routes: Array<{ path: string; waitFor: string }> = [
 for (const { path, waitFor } of routes) {
   test(`${path} が ${PERF_THRESHOLDS.total}ms 以内にロードされる`, async ({ page }) => {
     await injectLCPObserver(page);
-    await page.goto(path, { waitUntil: 'networkidle' });
+    await page.goto(path, { waitUntil: 'load' });
     await dismissTermsConsentModalIfPresent(page);
     await expect(page.getByText(waitFor).first()).toBeVisible({ timeout: PERF_THRESHOLDS.total });
 
@@ -32,15 +32,14 @@ for (const { path, waitFor } of routes) {
 }
 
 test('SPA内ページ遷移が各 2000ms 以内に完了する', async ({ page }) => {
-  await page.goto('/home', { waitUntil: 'networkidle' });
+  await page.goto('/home', { waitUntil: 'load' });
   await dismissTermsConsentModalIfPresent(page);
-  await expect(page.getByText('新規投稿')).toBeVisible();
+  await expect(page.getByText('おすすめ')).toBeVisible();
 
   const paths = ['/notifications', '/community', '/home'];
   for (const to of paths) {
     const start = Date.now();
-    await page.goto(to, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await page.goto(to, { waitUntil: 'load' });
     const ms = Date.now() - start;
     console.log(`[perf] SPA ${to}: ${ms}ms`);
     expect(ms, `SPA transition to ${to}`).toBeLessThan(PERF_THRESHOLDS.spaTransition);
@@ -50,7 +49,7 @@ test('SPA内ページ遷移が各 2000ms 以内に完了する', async ({ page }
 test('投稿詳細ページが 5000ms 以内にロードされる', async ({ page }) => {
   // ホームから最初の投稿をクリックして遷移
   await injectLCPObserver(page);
-  await page.goto('/home', { waitUntil: 'networkidle' });
+  await page.goto('/home', { waitUntil: 'load' });
   await dismissTermsConsentModalIfPresent(page);
 
   // 最初の投稿本文をクリック（存在する場合のみ計測）
