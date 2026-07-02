@@ -264,6 +264,21 @@ export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Ro
   return { items, total: data.myDMRooms.total };
 };
 
+const MY_UNREAD_DM_COUNT_QUERY = `
+  query MyUnreadDMCount {
+    myUnreadDMCount
+  }
+`;
+
+export const getUnreadDMCount = async (): Promise<number> => {
+  const data = await request<{ myUnreadDMCount: number }>(
+    MY_UNREAD_DM_COUNT_QUERY,
+    undefined,
+    getUserToken(),
+  );
+  return data.myUnreadDMCount;
+};
+
 export const getPresignedMediaUploadUrl = async (contentType: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');

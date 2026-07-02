@@ -309,6 +309,21 @@ export const getRandomCommunities = async (limit: number): Promise<Community[]> 
   return data.randomCommunities;
 };
 
+const MY_UNREAD_COMMUNITY_COUNT_QUERY = `
+  query MyUnreadCommunityCount {
+    myUnreadCommunityCount
+  }
+`;
+
+export const getUnreadCommunityCount = async (): Promise<number> => {
+  const data = await request<{ myUnreadCommunityCount: number }>(
+    MY_UNREAD_COMMUNITY_COUNT_QUERY,
+    undefined,
+    getUserToken(),
+  );
+  return data.myUnreadCommunityCount;
+};
+
 export const getPresignedCommunityIconUploadUrl = async (contentType: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
