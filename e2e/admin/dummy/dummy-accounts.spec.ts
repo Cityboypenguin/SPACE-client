@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { getAdminTokenFromPage, deleteDummyUser } from '../support/adminApi';
-import { env } from '../support/env';
+import { getAdminTokenFromPage, deleteDummyUser } from '../../support/adminApi';
+import { env } from '../../support/env';
 
 // ダミーアカウント作成UIのテスト。
 // UIからフォームを操作→作成→一覧に反映→APIで後片付けの順で行う。
@@ -33,6 +33,8 @@ test('ダミーアカウントをUIから作成でき、ユーザー一覧に反
   // 作成ボタンを押してモーダルが閉じるのを待つ
   await page.getByRole('button', { name: '作成', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ダミーアカウント作成' })).not.toBeVisible({ timeout: 10000 });
+  // モーダル閉じ直後はDBへの書き込みが完了していない場合があるため少し待つ
+  await page.waitForTimeout(1000);
 
   // 作成されたユーザーが一覧に表示される（検索で絞り込む）
   await page.locator('input[placeholder="名前で検索"]').fill(input.name);

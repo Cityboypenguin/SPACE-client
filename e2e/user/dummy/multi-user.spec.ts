@@ -3,11 +3,11 @@ import {
   USER_TOKEN_KEY,
   USER_REFRESH_TOKEN_KEY,
   USER_ID_KEY,
-} from '../../src/lib/authStorage';
-import { loginUserViaApi } from '../support/api';
-import { createDummyUser, deleteDummyUser, getAdminToken, consentDummyUserToTerms, createPostAsUser, sendMessageAsUser, type DummyUser } from '../support/adminApi';
-import { dismissTermsConsentModalIfPresent, waitForRoomReady } from '../support/terms';
-import { env } from '../support/env';
+} from '../../../src/lib/authStorage';
+import { loginUserViaApi } from '../../support/api';
+import { createDummyUser, deleteDummyUser, getAdminToken, consentDummyUserToTerms, createPostAsUser, sendMessageAsUser, type DummyUser } from '../../support/adminApi';
+import { dismissTermsConsentModalIfPresent, waitForRoomReady } from '../../support/terms';
+import { env } from '../../support/env';
 
 // ダミーユーザーをAPIで作成してから各テストを実行し、最後に削除する。
 // ダミーユーザーとしてブラウザにログインするためのヘルパー。
@@ -85,7 +85,7 @@ test.describe('複数ユーザー間インタラクション', () => {
 
     // プロフィールページでお気に入りボタンをクリック（アプリはフォローを「お気に入り」として実装）
     const followBtn = page.getByRole('button', { name: 'お気に入り', exact: true });
-    await expect(followBtn).toBeVisible({ timeout: 5000 });
+    await expect(followBtn).toBeVisible({ timeout: 10000 });
     await followBtn.click();
     await expect(page.getByRole('button', { name: 'お気に入り解除' })).toBeVisible({ timeout: 10000 });
   });

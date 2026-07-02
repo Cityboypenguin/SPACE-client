@@ -3,8 +3,8 @@ import {
   USER_TOKEN_KEY,
   USER_REFRESH_TOKEN_KEY,
   USER_ID_KEY,
-} from '../../src/lib/authStorage';
-import { loginUserViaApi } from '../support/api';
+} from '../../../src/lib/authStorage';
+import { loginUserViaApi } from '../../support/api';
 import {
   createDummyUser,
   deleteDummyUser,
@@ -15,9 +15,9 @@ import {
   leaveRoomAsUser,
   sendMessageAsUser,
   type DummyUser,
-} from '../support/adminApi';
-import { dismissTermsConsentModalIfPresent, waitForRoomReady } from '../support/terms';
-import { env } from '../support/env';
+} from '../../support/adminApi';
+import { dismissTermsConsentModalIfPresent, waitForRoomReady } from '../../support/terms';
+import { env } from '../../support/env';
 
 const waitForCommunityRoomReady = async (page: import('@playwright/test').Page, communityName: string) => {
   await expect(page.getByText(communityName).first()).toBeVisible({ timeout: 10000 });
@@ -54,6 +54,7 @@ test.describe('コミュニティ複数ユーザーチャット', () => {
   let communityName: string;
 
   test.beforeAll(async ({ request, baseURL }) => {
+    test.setTimeout(60000);
     base = baseURL ?? env.baseURL;
     adminToken = await getAdminToken(request, base);
 

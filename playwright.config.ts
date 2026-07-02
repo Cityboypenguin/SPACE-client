@@ -31,12 +31,26 @@ export default defineConfig({
     {
       name: 'user',
       testDir: './e2e/user',
+      testIgnore: ['**/dummy/**'],
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/user.json' },
       dependencies: ['setup'],
     },
     {
       name: 'admin',
       testDir: './e2e/admin',
+      testIgnore: ['**/dummy/**'],
+      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/admin.json' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'user-dummy',
+      testDir: './e2e/user/dummy',
+      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/user.json' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'admin-dummy',
+      testDir: './e2e/admin/dummy',
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/admin.json' },
       dependencies: ['setup'],
     },
