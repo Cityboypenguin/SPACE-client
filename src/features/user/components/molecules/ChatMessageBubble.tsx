@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message, type Media } from '../../api/message';
@@ -156,6 +156,48 @@ export const ChatMessageBubble = ({
 
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
+  const canEdit = isMine && !hasMedia;
+  const canShowActions = (canEdit || canDelete) && !isEditing;
+
+  const [showActions, setShowActions] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!isEditing || !editTextareaRef.current) return;
+    const el = editTextareaRef.current;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [isEditing]);
+
+  const clearLongPressTimer = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchStart = () => {
+    if (!canShowActions) return;
+    clearLongPressTimer();
+    longPressTimer.current = setTimeout(() => setShowActions(true), 500);
+  };
+
+  useEffect(() => {
+    if (!showActions) return;
+    const handleOutside = (e: Event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowActions(false);
+      }
+    };
+    document.addEventListener('touchstart', handleOutside);
+    document.addEventListener('mousedown', handleOutside);
+    return () => {
+      document.removeEventListener('touchstart', handleOutside);
+      document.removeEventListener('mousedown', handleOutside);
+    };
+  }, [showActions]);
 
   const bubbleContent = (
     <div className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}>
@@ -169,26 +211,56 @@ export const ChatMessageBubble = ({
         </span>
       )}
 
-      <div style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', gap: 3, alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-        {(isMine || canDelete) && !isEditing && (
-          <div className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight}`}>
-            {isMine && (
-              <button className={`${styles.actionBtn} ${styles.actionBtnEdit}`} onClick={onStartEdit} title="編集"><img src={editIcon} alt="編集" style={{ width: 14, height: 14 }} /></button>
+      <div
+        ref={wrapperRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={clearLongPressTimer}
+        onTouchMove={clearLongPressTimer}
+        onTouchCancel={clearLongPressTimer}
+        onContextMenu={(e) => { if (canShowActions) e.preventDefault(); }}
+        style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', gap: 3, alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '80%' }}
+      >
+        {canShowActions && (
+          <div
+            className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight} ${showActions ? styles.messageActionsVisible : ''}`}
+          >
+            {canEdit && (
+              <button
+                className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
+                onClick={() => { setShowActions(false); onStartEdit(); }}
+                title="編集"
+              ><img src={editIcon} alt="編集" className={styles.actionIcon} /></button>
             )}
             {canDelete && (
-              <button className={styles.actionBtn} onClick={onDelete} title="削除">✕</button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => { setShowActions(false); onDelete(); }}
+                title="削除"
+              >✕</button>
             )}
           </div>
         )}
         {isEditing ? (
           <div className={styles.editWrapper}>
-            <input
+            <textarea
+              ref={editTextareaRef}
               className={styles.editInput}
               value={editContent}
-              onChange={(e) => onEditContentChange(e.target.value)}
+              rows={1}
+              onChange={(e) => {
+                onEditContentChange(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onSaveEdit();
-                if (e.key === 'Escape') onCancelEdit();
+                if (e.key === 'Escape') { onCancelEdit(); return; }
+                // タッチ操作の端末はEnterを改行として扱い、保存は保存ボタンのみで行う。
+                const isTouch = window.matchMedia('(pointer: coarse)').matches;
+                if (isTouch) return;
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  onSaveEdit();
+                }
               }}
               autoFocus
             />

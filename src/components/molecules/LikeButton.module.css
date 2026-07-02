@@ -14,15 +14,18 @@
 
 .count {
   font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 
 .countLiked {
   color: #f43f5e;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .countDefault {
   color: #94a3b8;
+  font-variant-numeric: tabular-nums;
 }
 
 .suffix {

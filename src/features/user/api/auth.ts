@@ -1,8 +1,7 @@
 import { request } from '../../../lib/graphql';
+import { USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY } from '../../../lib/authStorage';
 
-export const USER_TOKEN_KEY = 'space_user_token';
-export const USER_REFRESH_TOKEN_KEY = 'space_user_refresh_token';
-export const USER_ID_KEY = 'space_user_id';
+export { USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY };
 
 export const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
@@ -60,6 +59,11 @@ const SEND_EMAIL_OTP_MUTATION = `
   }
 `;
 
+const VERIFY_EMAIL_OTP_MUTATION = `
+  mutation VerifyEmailOTP($email: String!, $otp: String!) {
+    verifyEmailOTP(email: $email, otp: $otp)
+  }
+`;
 
 const CREATE_USER_MUTATION = `
   mutation CreateUser($input: CreateUserInput!) {
@@ -84,6 +88,10 @@ export const logoutUser = async (token: string) => {
 
 export const sendEmailOTP = async (email: string) => {
   return await request<{ sendEmailOTP: boolean }>(SEND_EMAIL_OTP_MUTATION, { email });
+};
+
+export const verifyEmailOTP = async (email: string, otp: string) => {
+  return await request<{ verifyEmailOTP: boolean }>(VERIFY_EMAIL_OTP_MUTATION, { email, otp });
 };
 
 export const registerUser = async (accountID: string, name: string, email: string, password: string, otp: string) => {

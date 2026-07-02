@@ -2,27 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
 import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
 import { storageUrl } from '../../../../lib/storage';
 import personIcon from '../../../../assets/パーツ_人間.svg';
 import styles from './CommunityDetailPanel.module.css';
-
-const URL_SPLIT_REGEX = /(https?:\/\/[^\s　　、。！？「」（）【】『』〔〕…‥・]+)/g;
-const URL_TEST_REGEX = /^https?:\/\//;
-
-const renderTextWithLinks = (text: string) => {
-  const parts = text.split(URL_SPLIT_REGEX);
-  return parts.map((part, i) =>
-    URL_TEST_REGEX.test(part) ? (
-      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={styles.descriptionLink}>
-        {part}
-      </a>
-    ) : (
-      part
-    ),
-  );
-};
+import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
 
 type Props = {
   community: Community;
@@ -77,6 +63,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                 </div>
               )}
             </div>
+            <button className={styles.mobileCloseBtn} onClick={onClose}>✕</button>
             {isOwner && (
               <button
                 className={styles.editBtn}
@@ -97,7 +84,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
           </p>
           {leaveError && <p className={styles.leaveError}>{leaveError}</p>}
           <p className={styles.descLabel}>紹介文</p>
-          <p className={styles.description}>{renderTextWithLinks(community.description)}</p>
+          <p>{renderTextWithLinks({ text: community.description, linkClassName: styles.descriptionLink })}</p>
         </div>
 
         {/* 右：メンバー一覧 */}
@@ -112,7 +99,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                 編集
               </button>
             )}
-            <button className={styles.closeBtn} onClick={onClose}>✕</button>
+            <button className={styles.pcCloseBtn} onClick={onClose}>✕</button>
           </div>
           <ul className={styles.memberList}>
             {members.map((m) => (
@@ -123,7 +110,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                   avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) ?? undefined : undefined}
                   size={32}
                 />
-                <span className={styles.memberName}>{m.user.name}</span>
+                <UserNameLink userId={m.user.ID} className={styles.memberName}>{m.user.name}</UserNameLink>
                 <RoleBadge role={m.role} />
               </li>
             ))}

@@ -1,6 +1,5 @@
 import { request } from '../../../lib/graphql';
-
-const ADMIN_TOKEN_KEY = 'space_admin_token';
+import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 export type Administrator = {
   ID: string;

@@ -87,16 +87,27 @@
 .userInfo {
   display: flex;
   gap: 0.75rem;
+  min-width: 0;
+}
+
+.userNameBlock {
+  min-width: 0;
 }
 
 .userName {
   font-weight: 700;
   color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .userAccount {
   color: #94a3b8;
   font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .postActions {
@@ -168,6 +179,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .commentIcon {

@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
+import { ImageCropModal } from './ImageCropModal';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import {
   getCommunityMembers,
@@ -15,6 +17,7 @@ import {
 } from '../../api/community';
 import { uploadAvatarToStorage } from '../../api/profile';
 import { storageUrl } from '../../../../lib/storage';
+import swal from 'sweetalert2';
 
 type Props = {
   community: Community;
@@ -41,6 +44,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   );
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropTarget, setCropTarget] = useState<{ imageSrc: string; file: File } | null>(null);
   const [isIconDeleted, setIsIconDeleted] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,9 +59,21 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    if (file.type === 'image/svg+xml') {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setIsIconDeleted(false);
+    } else {
+      setCropTarget({ imageSrc: URL.createObjectURL(file), file });
+    }
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedFile: File, croppedPreviewUrl: string) => {
+    setSelectedFile(croppedFile);
+    setPreviewUrl(croppedPreviewUrl);
     setIsIconDeleted(false);
+    setCropTarget(null);
   };
 
   const handleSaveInfo = async (e: React.FormEvent) => {
@@ -96,7 +112,13 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handleKick = async (member: CommunityMember) => {
-    if (!window.confirm(`${member.user.name} をコミュニティから削除しますか？`)) return;
+    const result = await swal.fire({
+      text: `${member.user.name} をコミュニティから削除しますか？`,
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await kickUserFromCommunity(community.ID, member.user.ID);
       setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
@@ -106,7 +128,13 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handlePromote = async (member: CommunityMember) => {
-    if (!window.confirm(`${member.user.name} をオーナーに昇格しますか？`)) return;
+    const result = await swal.fire({
+      text: `${member.user.name} をオーナーに昇格しますか？`,
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await promoteToCommunityOwner(community.ID, member.user.ID);
       setMembers((prev) =>
@@ -118,7 +146,13 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handleDemote = async (member: CommunityMember) => {
-    if (!window.confirm(`${member.user.name} をメンバーに降格しますか？`)) return;
+    const result = await swal.fire({
+      text: `${member.user.name} をメンバーに降格しますか？`,
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await demoteFromCommunityOwner(community.ID, member.user.ID);
       setMembers((prev) =>
@@ -294,13 +328,15 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
-                            {m.user.name}
+                          <UserNameLink userId={m.user.ID}>
+                            <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {m.user.name}
                             </div>
-                            <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                              @{m.user.accountID}
-                            </div>
+                          </UserNameLink>
+                          <div style={{ fontSize: '0.78rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            @{m.user.accountID}
                           </div>
+                        </div>
                         </div>
                       <RoleBadge role={m.role} />
                       <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
@@ -334,6 +370,16 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
           )}
         </div>
       </div>
+
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.imageSrc}
+          fileName={cropTarget.file.name}
+          mimeType={cropTarget.file.type}
+          onCancel={() => setCropTarget(null)}
+          onComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };

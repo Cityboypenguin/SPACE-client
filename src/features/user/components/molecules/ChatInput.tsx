@@ -102,6 +102,21 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     onFileSelect(selectedFiles.filter((_, i) => i !== index));
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (disabled || isBlocked) return;
+
+    const items = Array.from(e.clipboardData.items);
+    const imageFiles = items
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (!imageFiles.length) return;
+
+    e.preventDefault();
+    addFiles(imageFiles);
+  };
+
   const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
 
 
@@ -110,7 +125,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', flexShrink: 0 }}
     >
       {isDragging && (
         <div
@@ -133,7 +148,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
         </div>
       )}
       {selectedFiles.length > 0 && (
-        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 130, overflowY: 'auto' }}>
           {selectedFiles.map((file, i) =>
             file.type.startsWith('image/') ? (
               <div
@@ -242,13 +257,26 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             e.target.style.height = 'auto';
             e.target.style.height = `${e.target.scrollHeight}px`;
           }}
+          onPaste={handlePaste}
           onKeyDown={(e) => {
+            // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
+            // Enterは改行として扱い、送信は送信ボタンのみで行う。
+            // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
+            // 通常通りEnterで送信できるようにする。
+            const isTouch = window.matchMedia('(pointer: coarse)').matches;
+            if (isTouch) return;
             if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               if (canSubmit) onSubmit({ preventDefault: () => { } });
             }
           }}
-          placeholder={isBlocked ? 'メッセージを送信できません' : 'メッセージを入力... (Shift+Enterで改行)'}
+          placeholder={
+            isBlocked
+              ? 'メッセージを送信できません'
+              : window.matchMedia('(pointer: coarse)').matches
+              ? 'メッセージを入力...'
+              : 'メッセージを入力... (Shift+Enterで改行)'
+          }
           disabled={disabled || isBlocked}
           className={styles.inputField}
           style={{ cursor: (disabled || isBlocked) ? 'default' : 'text' }}

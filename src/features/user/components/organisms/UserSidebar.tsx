@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useUnreadRoomCounts } from '../../context/UnreadRoomCountsContext';
 import { useProfile } from '../../hooks/useProfile';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
@@ -30,16 +31,27 @@ export const UserSidebar = () => {
   const location = useLocation();
   const { userId } = useAuth();
   const { unreadCount } = useNotification();
+  const { dmUnreadCount, communityUnreadCount } = useUnreadRoomCounts();
   const { profile } = useProfile(userId);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     document.body.classList.add('has-sidebar');
     return () => document.body.classList.remove('has-sidebar');
   }, []);
 
+  const handleNavigate = (path: string) => {
+    setExpanded(false);
+    navigate(path);
+  };
+
   return (
-    <aside className={styles.sidebar}>
-      <div className={styles.logo} onClick={() => navigate('/home')}>
+    <aside
+      className={`${styles.sidebar} ${expanded ? styles.expanded : ''}`}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+    >
+      <div className={styles.logo} onClick={() => handleNavigate('/home')}>
         <span className={styles.logoIconWrap}>
           <img src={appIcon} alt="Senshu-Universe" className={styles.logoMark} />
         </span>
@@ -50,17 +62,21 @@ export const UserSidebar = () => {
         {NAV_ITEMS.map(({ icon, label, path, iconSize }) => {
           const isActive =
             location.pathname === path || location.pathname.startsWith(path + '/');
+          const badgeCount =
+            label === '通知' ? unreadCount :
+            label === 'DM' ? dmUnreadCount :
+            label === 'コミュニティ' ? communityUnreadCount : 0;
           return (
             <button
               key={path}
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-              onClick={() => navigate(path)}
+              onClick={() => handleNavigate(path)}
             >
               <span className={styles.iconWrap}>
                 <img src={icon} alt={label} className={styles.icon} style={{ width: iconSize, height: iconSize }} />
-                {label === '通知' && unreadCount > 0 && (
+                {badgeCount > 0 && (
                   <span className={styles.badge}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
+                    {badgeCount > 99 ? '99+' : badgeCount}
                   </span>
                 )}
               </span>
@@ -71,7 +87,7 @@ export const UserSidebar = () => {
       </nav>
 
       <div className={styles.bottom}>
-        <button className={styles.userItem} onClick={() => navigate('/mypage')}>
+        <button className={styles.userItem} onClick={() => handleNavigate('/mypage')}>
           <span className={styles.iconWrap}>
             {profile ? (
               profile.avatarUrl ? (

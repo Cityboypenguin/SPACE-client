@@ -5,10 +5,11 @@ import { Tabs } from '../../../components/molecules/Tabs';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/ToastContext';
 import styles from './PostListPage.module.css';
+import swal from 'sweetalert2';
 
 import {
   getTopLevelPosts,
@@ -20,18 +21,15 @@ import {
   deletePost,
   createFavorite,
   deleteFavorite,
-  getPresignedMediaUploadUrl,
-  uploadFileToStorage,
   type Post,
-  type MediaInput,
 } from '../api/post';
+import { uploadMediaFiles } from '../api/media';
 import { createBlocker } from '../api/block';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { Footer } from '../../../components/organisms/Footer';
-
 
 const LIMIT = 20;
 const REFRESH_COOLDOWN_MS = 60 * 1000;
@@ -42,8 +40,7 @@ export const PostListPage = () => {
   const { profile } = useProfile(userId);
   const { addToast } = useToast();
 
-  const initialCacheRef = useRef(getPostListCache());
-  const initialCache = initialCacheRef.current;
+  const [initialCache] = useState(() => getPostListCache());
 
   const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
   const [total, setTotal] = useState(initialCache?.total ?? 0);
@@ -193,14 +190,14 @@ export const PostListPage = () => {
   }, []);
 
   // バナーからの更新（常にフェッチ）※一時コメントアウト中
-  // const handleRefresh = useCallback(() => {
-  //   lastRefreshedAtRef.current = Date.now();
-  //   setNewPostsCount(0);
-  //   feedLoadedAtRef.current = new Date();
-  //   window.scrollTo(0, 0);
-  //   loadPosts(0, 'refresh');
-  //   loadFollowPosts(0, 'refresh');
-  // }, [loadPosts, loadFollowPosts]);
+  const handleRefresh = useCallback(() => {
+    lastRefreshedAtRef.current = Date.now();
+    setNewPostsCount(0);
+    feedLoadedAtRef.current = new Date();
+    window.scrollTo(0, 0);
+    loadPosts(0, 'refresh');
+    loadFollowPosts(0, 'refresh');
+  }, [loadPosts, loadFollowPosts]);
 
   // 上に戻るボタン（クールダウン中はスクロールのみ）
   const handleScrollToTop = useCallback(() => {
@@ -249,11 +246,11 @@ export const PostListPage = () => {
         total: totalRef.current,
         offset: postsRef.current.length,
         scrollY: scrollYRef.current,
-        searchQuery: searchQueryRef.current,
-        searchResults: searchResultsRef.current,
+        searchQuery,
+        searchResults,
       });
     };
-  }, []);
+  }, [posts, total, searchQuery, searchResults]);
 
   const isSearching = searchQuery.trim() !== '';
 
@@ -285,19 +282,14 @@ export const PostListPage = () => {
     isSearching && searchDisplayedCount < searchResults.length,
   );
 
-  const searchQueryRef = useRef(searchQuery);
-  const searchResultsRef = useRef(searchResults);
-  useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
-  useEffect(() => { searchResultsRef.current = searchResults; }, [searchResults]);
-
   const handlePostClick = (postId: string) => {
     savePostListCache({
       posts: postsRef.current,
       total: totalRef.current,
       offset: postsRef.current.length,
       scrollY: scrollYRef.current,
-      searchQuery: searchQueryRef.current,
-      searchResults: searchResultsRef.current,
+      searchQuery,
+      searchResults,
     });
     navigate(`/posts/${postId}`);
   };
@@ -307,16 +299,7 @@ export const PostListPage = () => {
     setPosting(true);
     setPostError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (selectedFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          selectedFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(selectedFiles);
       const newPost = await createPost(content.trim(), undefined, mediaInputs);
       setContent('');
       setSelectedFiles([]);
@@ -334,16 +317,7 @@ export const PostListPage = () => {
     setPosting(true);
     setPostError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (modalFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          modalFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(modalFiles);
       const newPost = await createPost(modalContent.trim(), undefined, mediaInputs);
       setModalContent('');
       setModalFiles([]);
@@ -384,16 +358,7 @@ export const PostListPage = () => {
 
   const handleReplySubmit = async (content: string, files: File[]) => {
     if (!replyingTo) return;
-    let mediaInputs: MediaInput[] | undefined;
-    if (files.length > 0) {
-      mediaInputs = await Promise.all(
-        files.map(async (file) => {
-          const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-          await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-          return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-        }),
-      );
-    }
+    const mediaInputs = await uploadMediaFiles(files);
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
     updatePostInAllLists(replyingTo.ID, p => ({ ...p, replyCount: p.replyCount + 1 }));
   };
@@ -429,18 +394,13 @@ export const PostListPage = () => {
     setEditSubmitting(true);
     setEditError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (editFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          editFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(editFiles);
       const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs);
-      updatePostInAllLists(editingPost.ID, () => updated);
+      const filteredUpdated = {
+        ...updated,
+        media: updated.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) ?? [],
+      };
+      updatePostInAllLists(editingPost.ID, () => filteredUpdated);
       setEditingPost(null);
     } catch (err) {
       setEditError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
@@ -450,16 +410,26 @@ export const PostListPage = () => {
   };
 
   const handleDelete = async (postId: string) => {
-    if (!window.confirm('本当にこの投稿を削除しますか？')) return;
-    try {
-      await deletePost(postId);
-      setPosts(prev => prev.filter(p => p.ID !== postId));
-      setFollowPosts(prev => prev.filter(p => p.ID !== postId));
-      setSearchResults(prev => prev.filter(p => p.ID !== postId));
-      addToast('投稿を削除しました', 'success');
-    } catch {
-      addToast('削除に失敗しました', 'error');
-    }
+    swal.fire({
+      text: '本当に削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton:true,
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await deletePost(postId);
+          setPosts(prev => prev.filter(p => p.ID !== postId));
+          setFollowPosts(prev => prev.filter(p => p.ID !== postId));
+          setSearchResults(prev => prev.filter(p => p.ID !== postId));
+          addToast('投稿を削除しました', 'success');
+        } catch {
+          addToast('削除に失敗しました', 'error');
+        }
+      } else {
+        return;
+      }
+    });
   };
 
   const handleLike = async (postId: string, isLiked: boolean) => {
@@ -564,7 +534,7 @@ export const PostListPage = () => {
 
       <main className={styles.main}>
         {newPostsCount > 0 && (
-          <div className={styles.notificationBanner} /* onClick={handleRefresh} */>
+          <div className={styles.notificationBanner} onClick={handleRefresh} >
             <button
               className={styles.notificationDismiss}
               onClick={e => { e.stopPropagation(); setNewPostsCount(0); }}

@@ -1,7 +1,7 @@
 import { request } from '../../../lib/graphql';
+import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 import { storageUrl } from '../../../lib/storage';
 
-const ADMIN_TOKEN_KEY = 'space_admin_token';
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
 export type TermsOfService = {

@@ -78,6 +78,11 @@
   align-items: center;
   gap: 0.6rem;
   margin-bottom: 1rem;
+  min-width: 0;
+}
+
+.actorInfo {
+  min-width: 0;
 }
 
 .actorAvatar {
@@ -107,12 +112,18 @@
   font-weight: 600;
   font-size: 0.9rem;
   color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .actorAccountID {
   margin: 0;
   font-size: 0.75rem;
   color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .message {
@@ -120,6 +131,34 @@
   color: #1e293b;
   line-height: 1.6;
   margin: 0 0 1.5rem;
+}
+
+.targetPostPreview {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1.5rem;
+  background: #f8fafc;
+}
+
+.targetPostAuthor {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.targetPostContent {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.targetPostMedia {
+  margin-top: 0.5rem;
 }
 
 .actionBtn {

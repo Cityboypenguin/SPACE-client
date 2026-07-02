@@ -9,6 +9,8 @@ export type MessageUser = {
   avatarUrl?: string | null;
 };
 
+export const DELETED_ACCOUNT_ID = 'deleted-account';
+
 export type Media = {
   ID: string;
   url: string;
@@ -113,6 +115,12 @@ const UPDATE_MESSAGE_MUTATION = `
 const DELETE_MESSAGE_MUTATION = `
   mutation DeleteMessage($roomID: ID!, $id: ID!) {
     deleteMessage(roomID: $roomID, id: $id)
+  }
+`;
+
+const DELETE_ROOM_MUTATION = `
+  mutation DeleteRoom($roomID: ID!) {
+    deleteRoom(roomID: $roomID)
   }
 `;
 
@@ -236,6 +244,15 @@ export const deleteMessage = async (roomID: string, id: string) => {
   );
 };
 
+export const deleteRoom = async (roomID: string) => {
+  const token = getUserToken();
+  return await request<{ deleteRoom: boolean }>(
+    DELETE_ROOM_MUTATION,
+    { roomID },
+    token,
+  );
+};
+
 export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Room[]; total: number }> => {
   const token = getUserToken();
   const data = await request<{ myDMRooms: { items: (Omit<Room, 'lastMessage'> & { content?: string | null })[]; total: number } }>(
@@ -245,6 +262,21 @@ export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Ro
   );
   const items = data.myDMRooms.items.map(({ content, ...rest }) => ({ ...rest, lastMessage: content ?? null }));
   return { items, total: data.myDMRooms.total };
+};
+
+const MY_UNREAD_DM_COUNT_QUERY = `
+  query MyUnreadDMCount {
+    myUnreadDMCount
+  }
+`;
+
+export const getUnreadDMCount = async (): Promise<number> => {
+  const data = await request<{ myUnreadDMCount: number }>(
+    MY_UNREAD_DM_COUNT_QUERY,
+    undefined,
+    getUserToken(),
+  );
+  return data.myUnreadDMCount;
 };
 
 export const getPresignedMediaUploadUrl = async (contentType: string) => {

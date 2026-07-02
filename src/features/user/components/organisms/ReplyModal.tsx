@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { type Post } from '../../api/post';
 import { PostComposer } from './PostComposer';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './ReplyModal.module.css';
+import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
 
 type Props = {
   post: Post;
@@ -58,11 +60,11 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
             )}
             <div className={styles.previewBody}>
               <div className={styles.previewMeta}>
-                <span className={styles.previewName}>{post.user.name}</span>
+                <UserNameLink userId={post.user.ID} className={styles.previewName}>{post.user.name}</UserNameLink>
                 <span className={styles.previewAccount}>@{post.user.accountID}</span>
                 <span className={styles.previewAccount}> · {formatTime(post.createdAt)}</span>
               </div>
-              {post.content && <p className={styles.previewContent}>{post.content}</p>}
+              {post.content && <p className={styles.previewContent}>{renderTextWithLinks({ text: post.content })}</p>}
               {post.media && post.media.length > 0 && (
                 <div className={styles.previewImages}>
                   {post.media.filter(m => m.contentType.startsWith('image/')).slice(0, 4).map((m) => (

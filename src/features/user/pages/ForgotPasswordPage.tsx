@@ -1,23 +1,56 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { requestPasswordReset, verifyPasswordResetOTP, resetPassword } from '../api/auth';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
+import { useToast } from '../../../context/ToastContext';
 import styles from './ForgotPasswordPage.module.css';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'done';
+
+const OTP_COOLDOWN_SECONDS = 60;
+
+const validatePassword = (value: string): string => {
+  if (value && value.length < 8) return 'パスワードは8文字以上で入力してください';
+  return '';
+};
 
 export const ForgotPasswordPage = () => {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPasswordError, setNewPasswordError] = useState('');
   const [errorModal, setErrorModal] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  const startCooldown = () => {
+    setCooldown(OTP_COOLDOWN_SECONDS);
+    cooldownRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          cooldownRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +58,7 @@ export const ForgotPasswordPage = () => {
     try {
       await requestPasswordReset(email);
       setStep('otp');
+      startCooldown();
     } catch (err) {
       setErrorModal(toUserMessage(err, 'エラーが発生しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -36,6 +70,8 @@ export const ForgotPasswordPage = () => {
     setLoading(true);
     try {
       await requestPasswordReset(email);
+      addToast('認証コードを送信しました', 'success');
+      startCooldown();
     } catch {
       // silent
     } finally {
@@ -45,13 +81,18 @@ export const ForgotPasswordPage = () => {
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (otp.length !== 6) {
+      setOtpError('6桁の認証コードを入力してください');
+      return;
+    }
     setLoading(true);
+    setOtpError('');
     try {
       const data = await verifyPasswordResetOTP(email, otp);
       setResetToken(data.verifyPasswordResetOTP);
       setStep('newPassword');
     } catch (err) {
-      setErrorModal(toUserMessage(err, '認証コードが違います。'));
+      setOtpError(toUserMessage(err, '認証コードが違います。'));
     } finally {
       setLoading(false);
     }
@@ -59,6 +100,11 @@ export const ForgotPasswordPage = () => {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) {
+      setNewPasswordError(pwErr);
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setErrorModal('パスワードが一致しません。');
       return;
@@ -93,17 +139,18 @@ export const ForgotPasswordPage = () => {
     <div className={styles.page}>
       {/* Header */}
       <div className={styles.header}>
-        <button
-          type="button"
-          className={styles.backBtn}
-          onClick={() => {
-            if (step === 'email') navigate('/login');
-            else if (step === 'otp') { setStep('email'); setOtp(''); }
-            else if (step === 'newPassword') setStep('otp');
-          }}
-        >
-          <ChevronLeft />
-        </button>
+        {step !== 'newPassword' && (
+          <button
+            type="button"
+            className={styles.backBtn}
+            onClick={() => {
+              if (step === 'email') navigate('/login');
+              else if (step === 'otp') { setStep('email'); setOtp(''); }
+            }}
+          >
+            <ChevronLeft />
+          </button>
+        )}
         {step === 'email' && <h2 className={styles.pageTitle}>パスワードを再設定する</h2>}
         {step === 'newPassword' && <h2 className={styles.pageTitle}>新規パスワード</h2>}
       </div>
@@ -135,12 +182,14 @@ export const ForgotPasswordPage = () => {
             <OtpInputSection
               email={email}
               otp={otp}
-              onOtpChange={setOtp}
+              onOtpChange={(value) => { setOtp(value); setOtpError(''); }}
+              otpError={otpError}
               onResend={() => void handleResend()}
               resending={loading}
+              cooldown={cooldown}
               warningText="ブラウザの戻るボタンは使わないでください"
             />
-            <button type="submit" className={styles.btnPrimary} disabled={loading}>
+            <button type="submit" className={styles.btnPrimary} disabled={loading || otp.length !== 6}>
               {loading ? '確認中...' : '次へ'}
             </button>
           </form>
@@ -155,10 +204,15 @@ export const ForgotPasswordPage = () => {
                 type="password"
                 className={styles.input}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Value"
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setNewPasswordError(validatePassword(e.target.value));
+                }}
+                placeholder="8文字以上"
+                minLength={8}
                 required
               />
+              {newPasswordError && <p className={styles.fieldError}>{newPasswordError}</p>}
               <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0.75rem 0' }} />
               <label className={styles.fieldLabel}>パスワードを再入力</label>
               <input
@@ -169,8 +223,21 @@ export const ForgotPasswordPage = () => {
                 placeholder="Value"
                 required
               />
+              {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                <p className={styles.fieldError}>パスワードが一致しません。</p>
+              )}
             </div>
-            <button type="submit" className={styles.btnPrimary} disabled={loading}>
+            <button
+              type="submit"
+              className={styles.btnPrimary}
+              disabled={
+                loading ||
+                !newPassword ||
+                !confirmPassword ||
+                !!validatePassword(newPassword) ||
+                newPassword !== confirmPassword
+              }
+            >
               {loading ? '登録中...' : '登録する'}
             </button>
           </form>

@@ -15,136 +15,12 @@ import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postLis
 import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSettingsPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
-import { createInquiry, type InquiryCategory } from '../api/inquiry';
+import { InquiryForm } from '../components/organisms/InquiryForm';
+import swal from 'sweetalert2';
 
 type View = 'general' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
 
 const LIMIT = 20;
-
-const INQUIRY_CATEGORIES: { value: InquiryCategory; label: string }[] = [
-  { value: 'DM', label: 'DMに関して' },
-  { value: 'POST', label: '投稿機能に関して' },
-  { value: 'COMMUNITY', label: 'コミュニティに関して' },
-  { value: 'PASSWORD', label: 'パスワード変更' },
-  { value: 'LOGIN', label: 'ログインに関して' },
-  { value: 'OTHER', label: 'その他のお問い合わせ' },
-];
-
-const InquiryView = ({ onBack }: { onBack: () => void }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [category, setCategory] = useState<InquiryCategory>('DM');
-  const [subject, setSubject] = useState('');
-  const [content, setContent] = useState('');
-  const [error, setError] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      await createInquiry(name, email, category, subject, content);
-      setSubmitted(true);
-    } catch {
-      setError('送信に失敗しました。しばらく時間をおいてから再度お試しください。');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (submitted) {
-    return (
-      <>
-        <h2 className={styles.backTitle}>
-          <button className={styles.backBtn} onClick={onBack}><ChevronLeft /></button>
-          お問い合わせ
-        </h2>
-        <div className={styles.inquirySuccessBox}>
-          <p className={styles.inquirySuccessText}>
-            送信が完了しました。<br />
-            お問い合わせいただきありがとうございます。
-          </p>
-          <button className={styles.inquiryBackBtn} onClick={onBack}>戻る</button>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <h2 className={styles.backTitle}>
-        <button className={styles.backBtn} onClick={onBack}><ChevronLeft /></button>
-        お問い合わせ
-      </h2>
-      <form className={styles.inquiryForm} onSubmit={handleSubmit}>
-        <label className={styles.fieldLabel}>
-          氏名
-          <input
-            type="text"
-            className={styles.input}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Value"
-            required
-          />
-        </label>
-        <label className={styles.fieldLabel}>
-          メールアドレス
-          <input
-            type="email"
-            className={styles.input}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Value"
-            required
-          />
-        </label>
-        <div>
-          <p className={styles.inquiryCategoryTitle}>どのようなお問合せですか？</p>
-          <div className={styles.radioGroup}>
-            {INQUIRY_CATEGORIES.map((cat) => (
-              <label key={cat.value} className={styles.radioItem}>
-                <input
-                  className={styles.radioInput}
-                  type="radio"
-                  name="category"
-                  value={cat.value}
-                  checked={category === cat.value}
-                  onChange={() => setCategory(cat.value)}
-                />
-                <span className={styles.radioLabel}>{cat.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <input
-          type="text"
-          className={styles.input}
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="お問い合わせ内容を入力してください"
-          required
-        />
-        <label className={styles.fieldLabel}>
-          お問い合せ内容
-          <textarea
-            className={styles.textarea}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="詳細を入力してください"
-            required
-          />
-        </label>
-        {error && <p className={styles.errorMsg}>{error}</p>}
-        <button type="submit" className={styles.submitBtn} disabled={loading}>
-          {loading ? '送信中...' : '送信'}
-        </button>
-      </form>
-    </>
-  );
-};
 
 const PasswordView = ({ onBack }: { onBack: () => void }) => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -163,7 +39,7 @@ const PasswordView = ({ onBack }: { onBack: () => void }) => {
     setSuccess('');
     setSubmitting(true);
     try {
-      await updateMyProfile({ password: newPassword });
+      await updateMyProfile({ password: newPassword, currentPassword });
       setSuccess('パスワードを変更しました');
       setCurrentPassword('');
       setNewPassword('');
@@ -259,7 +135,13 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
   );
 
   const handleUnblock = async (targetId: string) => {
-    if (!window.confirm('ブロックを解除しますか？')) return;
+    const result = await swal.fire({
+      text: 'ブロックを解除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteBlocker(targetId);
       setUsers((prev) => prev.filter((u) => u.ID !== targetId));
@@ -330,7 +212,13 @@ const GeneralView = ({
   const [deleting, setDeleting] = useState(false);
 
   const handleClearCache = async () => {
-    if (!window.confirm('キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？')) return;
+    const result = await swal.fire({
+      text: 'キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     await globalMutate(() => true);
     clearPostListCache();
     clearAllUserPostListCaches();
@@ -533,7 +421,7 @@ export const UserSettingsPage = () => {
           {view === 'password' && <PasswordView onBack={() => setView('general')} />}
           {view === 'blocks' && <BlocksView onBack={() => setView('general')} />}
           {view === 'terms' && <TermsView />}
-          {view === 'inquiry' && <InquiryView onBack={() => setView(null)} />}
+          {view === 'inquiry' && <InquiryForm onComplete={() => setView(null)} />}
         </main>
       </div>
     </div>

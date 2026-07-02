@@ -41,6 +41,7 @@ export const AdminHeader = () => {
         <h2 className={styles.logo} onClick={() => navigate('/admin')}>管理画面</h2>
         <nav className={styles.nav}>
           <button className={styles.navButton} onClick={() => navigate('/admin')}>ダッシュボード</button>
+          <button className={styles.navButton} onClick={() => navigate('/admin/analytics')}>アナリティクス</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/users')}>ユーザー管理</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/communities')}>コミュニティ管理</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/posts')}>投稿管理</button>

@@ -1,4 +1,5 @@
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import styles from './UserListItem.module.css';
 
 type User = {
@@ -10,8 +11,8 @@ type User = {
 
 type Props = {
   user: User;
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
   actionVariant?: 'default' | 'danger';
   disabled?: boolean;
 };
@@ -20,15 +21,17 @@ export const UserListItem = ({ user, actionLabel, onAction, actionVariant = 'def
   <li className={styles.item}>
     <UserAvatar userId={user.ID} name={user.name} avatarUrl={user.avatarUrl} size={40} />
     <div className={styles.info}>
-      <span className={styles.name}>{user.name}</span>
+      <UserNameLink userId={user.ID} className={styles.name}>{user.name}</UserNameLink>
       <span className={styles.accountID}>@{user.accountID}</span>
     </div>
-    <button
-      onClick={onAction}
-      disabled={disabled}
-      className={`${styles.action} ${actionVariant === 'danger' ? styles.actionDanger : ''}`}
-    >
-      {actionLabel}
-    </button>
+    {actionLabel && onAction && (
+      <button
+        onClick={onAction}
+        disabled={disabled}
+        className={`${styles.action} ${actionVariant === 'danger' ? styles.actionDanger : ''}`}
+      >
+        {actionLabel}
+      </button>
+    )}
   </li>
 );

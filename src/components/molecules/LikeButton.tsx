@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import likeIcon from '../../assets/パーツ_いいね.svg';
+import likeIconOff from '../../assets/パーツ_いいね.svg';
+import likeIconOn from '../../assets/パーツ_いいね（済）.svg';
 import styles from './LikeButton.module.css';
 
 type LikeablePost = {
@@ -39,14 +40,13 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
       style={{ cursor: currentUserId ? 'pointer' : 'default' }}
     >
       <img
-        src={likeIcon}
+        src={isLiked ? likeIconOn : likeIconOff}
         alt="いいね"
         className={styles.icon}
         style={{
           width: iconSize,
           height: iconSize,
-          filter: isLiked
-            ? 'brightness(0) invert(42%) sepia(100%) saturate(2000%) hue-rotate(325deg)'
+          filter: isLiked ? 'none' 
             : 'opacity(0.35)',
         }}
       />

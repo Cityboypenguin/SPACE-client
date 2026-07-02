@@ -5,10 +5,11 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { PostCard } from '../components/organisms/PostCard';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -18,6 +19,7 @@ import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../assets/パーツ_削除.svg';
 import styles from './PostDetailPage.module.css';
+import swal from 'sweetalert2';
 
 import {
   getPostByID,
@@ -26,22 +28,22 @@ import {
   deletePost,
   createFavorite,
   deleteFavorite,
-  getPresignedMediaUploadUrl,
-  uploadFileToStorage,
   type Post,
-  type MediaInput,
 } from '../api/post';
+import { uploadMediaFiles } from '../api/media';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
-import { updatePostInCache, removePostFromCache, removePostFromUserPostListCache, updatePostInUserPostListCache } from '../cache/postListCache';
-
+import { useToast } from '../../../context/ToastContext';
+import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
+import { renderTextWithLinks } from '../components/atoms/renderTextWithLinks';
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
+  const { addToast } = useToast();
 
   const { data: post, isLoading, error, mutate } = useSWR<Post | null>(
     id ? ['post', id] : null,
@@ -58,7 +60,13 @@ export const PostDetailPage = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const [editContent, setEditContent] = useState('');
-  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<Post | null>(null);
+  const [editingRootPost, setEditingRootPost] = useState<Post | null>(null);
+  const [rootEditContent, setRootEditContent] = useState('');
+  const [rootEditSelectedFiles, setRootEditSelectedFiles] = useState<File[]>([]);
+  const [rootEditDeletedMediaIDs, setRootEditDeletedMediaIDs] = useState<string[]>([]);
+  const [isRootUpdating, setIsRootUpdating] = useState(false);
+  const [rootUpdateError, setRootUpdateError] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -75,12 +83,20 @@ export const PostDetailPage = () => {
   }, [menuOpen]);
 
   const handleBlock = async (blockedUserId: string) => {
-    if (!window.confirm('このユーザーをブロックしますか？')) return;
+    const result = await swal.fire({
+      text: 'このユーザーをブロックしますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await createBlocker(blockedUserId);
+      addToast('ユーザーをブロックしました', 'success');
       navigate(-1);
     } catch (err) {
       console.error(err);
+      addToast('ブロックに失敗しました', 'error');
     }
   };
 
@@ -98,29 +114,18 @@ export const PostDetailPage = () => {
       const updater = (p: Post): Post => isLiked
         ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
         : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
-      updatePostInCache(postId, updater);
-      if (userId) updatePostInUserPostListCache(userId, postId, updater);
+      updatePostAcrossCaches(postId, updater);
     }
     void mutate();
   };
 
   const handleReplyToPost = async (content: string, files: File[]) => {
     if (!replyingTo) return;
-    let mediaInputs: MediaInput[] | undefined;
-    if (files.length > 0) {
-      mediaInputs = await Promise.all(
-        files.map(async (file) => {
-          const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-          await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-          return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-        }),
-      );
-    }
+    const mediaInputs = await uploadMediaFiles(files);
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
     if (id) {
       const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
-      updatePostInCache(id, updater);
-      if (userId) updatePostInUserPostListCache(userId, id, updater);
+      updatePostAcrossCaches(id, updater);
     }
     void mutate();
   };
@@ -130,23 +135,13 @@ export const PostDetailPage = () => {
     setReplying(true);
     setReplyError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (replyFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          replyFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(replyFiles);
       await createPost(replyContent.trim(), id, mediaInputs);
       setReplyContent('');
       setReplyFiles([]);
       if (id) {
         const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
-        updatePostInCache(id, updater);
-        if (userId) updatePostInUserPostListCache(userId, id, updater);
+        updatePostAcrossCaches(id, updater);
       }
       void mutate();
     } catch (err) {
@@ -171,24 +166,22 @@ export const PostDetailPage = () => {
     setIsUpdating(true);
     setUpdateError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (editSelectedFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          editSelectedFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          })
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(editSelectedFiles);
 
-      await updatePost(id, editContent.trim(), mediaInputs, editDeletedMediaIDs);
+      const deletedIDs = [...editDeletedMediaIDs];
+      await updatePost(id, editContent.trim(), mediaInputs, deletedIDs);
 
       setIsEditing(false);
       setEditSelectedFiles([]);
       setEditDeletedMediaIDs([]);
       mutate().then(updatedPost => {
-        if (updatedPost && id) updatePostInCache(id, () => updatedPost);
+        if (updatedPost && id) {
+          const filtered = {
+            ...updatedPost,
+            media: updatedPost.media?.filter(m => !deletedIDs.includes(m.ID)) ?? [],
+          };
+          updatePostAcrossCaches(id, () => filtered);
+        }
       });
     } catch (err) {
       setUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
@@ -197,15 +190,80 @@ export const PostDetailPage = () => {
     }
   };
 
+  const handleRootEditOpen = (rootPost: Post) => {
+    setEditingRootPost(rootPost);
+    setRootEditContent(rootPost.content);
+    setRootEditSelectedFiles([]);
+    setRootEditDeletedMediaIDs([]);
+    setRootUpdateError('');
+  };
+
+  const handleRootUpdate = async () => {
+    if (!editingRootPost || isRootUpdating) return;
+    const remainingExistingMedia = editingRootPost.media?.filter(
+      media => !rootEditDeletedMediaIDs.includes(media.ID),
+    ) ?? [];
+    const hasAnyMedia = remainingExistingMedia.length > 0 || rootEditSelectedFiles.length > 0;
+    if (!rootEditContent.trim() && !hasAnyMedia) return;
+
+    setIsRootUpdating(true);
+    setRootUpdateError('');
+    try {
+      const mediaInputs = await uploadMediaFiles(rootEditSelectedFiles);
+      const updatedPost = await updatePost(
+        editingRootPost.ID,
+        rootEditContent.trim(),
+        mediaInputs,
+        rootEditDeletedMediaIDs,
+      );
+      const filteredPost = {
+        ...updatedPost,
+        media: updatedPost.media?.filter(media => !rootEditDeletedMediaIDs.includes(media.ID)) ?? [],
+      };
+      updatePostAcrossCaches(editingRootPost.ID, () => filteredPost);
+      setEditingRootPost(null);
+      await mutate();
+    } catch (err) {
+      setRootUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setIsRootUpdating(false);
+    }
+  };
+
   const handleDelete = async () => {
-    if (!id || !window.confirm('本当にこの投稿を削除しますか？')) return;
+    if (!id) return;
+    const result = await swal.fire({
+      text: '本当にこの投稿を削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await deletePost(id);
-      removePostFromCache(id);
-      if (userId) removePostFromUserPostListCache(userId, id);
+      removePostAcrossCaches(id);
       navigate(-1);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleRootDelete = async (postId: string) => {
+    const result = await swal.fire({
+      text: '本当にこの投稿を削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await deletePost(postId);
+      removePostAcrossCaches(postId);
+      setEditingRootPost(null);
+      await mutate();
+    } catch (err) {
+      console.error(err);
+      addToast('削除に失敗しました', 'error');
     }
   };
 
@@ -229,13 +287,39 @@ export const PostDetailPage = () => {
             {post.rootPost && (
               <div className={styles.rootPostContainer}>
                 {post.rootPost.deletedAt != null ? (
-                  <div className={styles.deletedPost}>この投稿は削除されました</div>
+                  <div className={styles.deletedPost}>投稿が見つかりません</div>
+                ) : editingRootPost?.ID === post.rootPost.ID ? (
+                  <PostComposer
+                    value={rootEditContent}
+                    onChange={setRootEditContent}
+                    onSubmit={handleRootUpdate}
+                    submitting={isRootUpdating}
+                    error={rootUpdateError}
+                    userId={userId}
+                    avatarUrl={profile?.avatarUrl}
+                    userName={profile?.user.name}
+                    selectedFiles={rootEditSelectedFiles}
+                    onFileSelect={setRootEditSelectedFiles}
+                    existingMedia={editingRootPost.media}
+                    deletedMediaIDs={rootEditDeletedMediaIDs}
+                    onDeleteExistingMedia={(mediaId) => setRootEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                    onCancel={() => setEditingRootPost(null)}
+                    submitLabel="保存する"
+                    submittingLabel="保存中..."
+                    placeholder="投稿を編集..."
+                    maxLength={500}
+                    rows={3}
+                  />
                 ) : (
                   <PostCard
                     post={post.rootPost}
                     currentUserId={userId}
                     onLike={handleLike}
                     onClick={() => navigate(`/posts/${post.rootPost!.ID}`)}
+                    onBlock={handleBlock}
+                    onReport={() => setReportTarget(post.rootPost)}
+                    onEdit={handleRootEditOpen}
+                    onDelete={handleRootDelete}
                   />
                 )}
                 <div className={styles.threadConnector} />
@@ -243,14 +327,16 @@ export const PostDetailPage = () => {
             )}
 
             {isDeleted ? (
-              <div className={styles.deletedMain}>この投稿は削除されました</div>
+              <div className={styles.deletedMain}>投稿が見つかりません</div>
             ) : (
               <div className={styles.postBody}>
                 <div className={styles.postBodyHeader}>
                   <div className={styles.userInfo}>
                     <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
-                    <div>
-                      <div className={styles.userName}>{post.user.name}</div>
+                    <div className={styles.userNameBlock}>
+                      <UserNameLink userId={post.user.ID}>
+                        <div className={styles.userName}>{post.user.name}</div>
+                      </UserNameLink>
                       <div className={styles.userAccount}>@{post.user.accountID}</div>
                     </div>
                   </div>
@@ -299,7 +385,7 @@ export const PostDetailPage = () => {
                               </button>
                               <button
                                 className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
-                                onClick={() => { setMenuOpen(false); setIsReportOpen(true); }}
+                                onClick={() => { setMenuOpen(false); setReportTarget(post); }}
                               >
                                 <img src={reportIcon} alt="" className={styles.dropdownIcon} />
                                 通報
@@ -341,7 +427,7 @@ export const PostDetailPage = () => {
                     />
                   </div>
                 ) : (
-                  post.content && <p className={styles.postContent}>{post.content}</p>
+                  post.content && <p className={styles.postContent}>{renderTextWithLinks({ text: post.content })}</p>
                 )}
 
                 {!isEditing && post.media && post.media.length > 0 && (
@@ -407,13 +493,13 @@ export const PostDetailPage = () => {
               />
             )}
 
-            {id && (
+            {reportTarget && (
               <ReportModal
-                isOpen={isReportOpen}
-                onClose={() => setIsReportOpen(false)}
+                isOpen={true}
+                onClose={() => setReportTarget(null)}
                 targetType="POST"
-                targetID={id}
-                postContent={post.content}
+                targetID={reportTarget.ID}
+                postContent={reportTarget.content}
               />
             )}
           </>

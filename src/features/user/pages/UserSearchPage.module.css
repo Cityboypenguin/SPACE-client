@@ -188,14 +188,20 @@
   font-size: 0.95rem;
   color: #1e293b;
   white-space: nowrap;
-  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .userAccountID {
   font-size: 0.85rem;
   color: #64748b;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── States ── */

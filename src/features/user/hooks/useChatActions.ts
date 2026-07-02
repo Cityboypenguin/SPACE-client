@@ -3,12 +3,11 @@ import {
   sendMessage,
   updateMessage,
   deleteMessage,
-  getPresignedMediaUploadUrl,
-  uploadFileToStorage,
   type Message,
-  type MediaInput,
 } from '../api/message';
+import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
+import swal from 'sweetalert2';
 
 export const useChatActions = (
   roomId: string | undefined,
@@ -28,16 +27,7 @@ export const useChatActions = (
     setSending(true);
     setSendError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (selectedFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          selectedFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(selectedFiles);
       const data = await sendMessage(roomId, content.trim(), mediaInputs);
       setContent('');
       setSelectedFiles([]);
@@ -51,7 +41,13 @@ export const useChatActions = (
 
   const handleDelete = async (msgId: string) => {
     if (!roomId) return;
-    if (!window.confirm('このメッセージを削除しますか？')) return;
+    const result = await swal.fire({
+      text: 'このメッセージを削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteMessage(roomId, msgId);
     } catch (err) {
