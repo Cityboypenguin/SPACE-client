@@ -15,6 +15,7 @@ export const SEARCH_REPORTS_QUERY = `
         targetID
         reason
         customReason
+        content
         status
         createdAt
       }

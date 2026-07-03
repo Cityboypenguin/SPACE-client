@@ -275,35 +275,45 @@ export const ReportsPage: React.FC = () => {
                       </span>
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'top' }}>
                       <Link 
-                        to={targetUrl} 
-                        style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: '0.85rem' }}
-                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                      to={targetUrl} 
+                      style={{ 
+                        color: '#2563eb', 
+                        textDecoration: 'none', 
+                        fontWeight: 600, 
+                        fontSize: '0.85rem',
+                        display: 'block',
+                        marginBottom: report.targetType === 'POST' && report.content ? '0.5rem' : '0'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                       >
-                        詳細を確認する
+                      詳細を確認する
                       </Link>
-                    </td>
-                    {report.targetType === 'POST' && report.content && (
-                      <div style={{
-                        fontSize: '0.75rem',
-                        color: '#334155',
-                        background: '#f1f5f9',
-                        padding: '0.5rem 0.7rem',
-                        borderRadius: '6px',
-                        border: '1px solid #e2e8f0',
-                        wordBreak: 'break-all',
-                        maxHeight: '4.5rem',
-                        overflowY: 'auto',
-                        lineHeight: '1.4'
+                      
+                      {report.targetType === 'POST' && report.content && (
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: '#334155',
+                          background: '#f1f5f9',
+                          padding: '0.5rem 0.7rem',
+                          borderRadius: '6px',
+                          border: '1px solid #e2e8f0',
+                          wordBreak: 'break-all',
+                          maxHeight: '4.5rem',
+                          overflowY: 'auto',
+                          lineHeight: '1.4',
+                          textAlign: 'left',
+                          marginTop: '0.25rem'
                       }}>
-                      <span style={{ fontWeight: 600, color: '#64748b', fontSize: '0.7rem', display: 'block', marginBottom: '0.2rem' }}>
-                        通報時の投稿本文:
-                      </span>
-                      {report.content}
-                      </div>
-                    )}
+                        <span style={{ fontWeight: 600, color: '#64748b', fontSize: '0.7rem', display: 'block', marginBottom: '0.2rem' }}>
+                          通報時の投稿本文:
+                        </span>
+                          {report.content}
+                        </div>
+                      )}
+                    </td>
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
                       <span style={{ 
