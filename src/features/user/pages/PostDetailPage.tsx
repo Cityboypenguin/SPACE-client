@@ -15,7 +15,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import commentIcon from '../../../assets/パーツ_コメント.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
-import blockIcon from '../../../assets/パーツ_ブロック.svg';
+import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../assets/パーツ_削除.svg';
 import styles from './PostDetailPage.module.css';
@@ -377,14 +377,14 @@ export const PostDetailPage = () => {
                           ) : (
                             <>
                               <button
-                                className={styles.dropdownItem}
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                                 onClick={() => { setMenuOpen(false); handleBlock(post.user.ID); }}
                               >
-                                <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                                <img src={redblockIcon} alt="" className={styles.dropdownIcon} />
                                 ブロック
                               </button>
                               <button
-                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                className={styles.dropdownItem}
                                 onClick={() => { setMenuOpen(false); setReportTarget(post); }}
                               >
                                 <img src={reportIcon} alt="" className={styles.dropdownIcon} />

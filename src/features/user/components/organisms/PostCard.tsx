@@ -5,7 +5,7 @@ import { UserMeta } from '../../../../components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { type Post } from '../../api/post';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
-import blockIcon from '../../../../assets/パーツ_ブロック.svg';
+import redblockIcon from '../../../../assets/パーツ_ブロック（赤）.svg';
 import reportIcon from '../../../../assets/パーツ_通報.svg';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
@@ -98,14 +98,14 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
                 ) : (
                   <>
                     <button
-                      className={styles.dropdownItem}
+                      className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                       onClick={() => { setMenuOpen(false); onBlock?.(post.user.ID); }}
                     >
-                      <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                      <img src={redblockIcon} alt="" className={styles.dropdownIcon} />
                       ブロック
                     </button>
                     <button
-                      className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                      className={styles.dropdownItem}
                       onClick={() => { setMenuOpen(false); onReport?.(post.ID); }}
                     >
                       <img src={reportIcon} alt="" className={styles.dropdownIcon} />

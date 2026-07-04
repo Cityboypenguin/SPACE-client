@@ -7,6 +7,8 @@ import { RoleBadge } from '../atoms/RoleBadge';
 import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
 import { storageUrl } from '../../../../lib/storage';
 import personIcon from '../../../../assets/パーツ_人間.svg';
+import redLeaveIcon from '../../../../assets/パーツ_退出（赤）.svg';
+import reportIcon from '../../../../assets/パーツ_通報.svg';
 import styles from './CommunityDetailPanel.module.css';
 import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
 
@@ -58,12 +60,23 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
               </button>
               {showMenu && (
                 <div className={styles.menuDropdown}>
-                  <button className={styles.menuItem} onClick={() => { setShowMenu(false); onReport(); }}>通報</button>
-                  <button className={`${styles.menuItem} ${styles.menuItemDanger}`} onClick={() => { setShowMenu(false); onLeave(); }}>退出</button>
+                  <button 
+                    className={styles.menuItem} 
+                    onClick={() => { setShowMenu(false); onReport();}}
+                  >
+                  <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                  通報
+                  </button>
+                  <button
+                    className={`${styles.menuItem} ${styles.menuItemDanger}`} 
+                    onClick={() => { setShowMenu(false); onLeave(); }}
+                  >
+                  <img src={redLeaveIcon} alt="" className={styles.dropdownIcon} />
+                  退出
+                  </button>
                 </div>
               )}
             </div>
-            <button className={styles.mobileCloseBtn} onClick={onClose}>✕</button>
             {isOwner && (
               <button
                 className={styles.editBtn}
@@ -72,6 +85,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                 編集
               </button>
             )}
+            <button className={styles.mobileCloseBtn} onClick={onClose}>✕</button>
           </div>
 
           <div className={styles.avatarWrap}>
