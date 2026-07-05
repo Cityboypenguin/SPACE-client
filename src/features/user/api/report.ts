@@ -1,25 +1,12 @@
 // src/features/user/api/report.ts
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
+import type { CreateReportMutationVariables } from '../../../generated/graphql';
 import { getUserToken } from './auth';
 
-// createReport ミューテーションが実際に選択するフィールドと一致させること。
-// （型と選択セットがズレると、存在しないフィールドを参照する実行時バグになる）
-export type UserReport = {
-  ID: string;
-  targetType: 'POST' | 'USER' | 'COMMUNITY';
-  targetID: string;
-  reporter: {
-    ID: string;
-    name: string;
-    accountID: string;
-  } | null;
-  reason: string;
-  customReason: string | null;
-};
-
-type CreateReportResponse = { createReport: UserReport };
-
-const CREATE_REPORT_MUTATION = `
+// クエリはサーバーの schema.graphqls に対して codegen で検証される。
+// 存在しないフィールドを選択した場合はビルド前(codegen)で失敗するため、型と選択のズレが起きない。
+const CreateReportDocument = graphql(`
   mutation CreateReport($input: CreateReportInput!) {
     createReport(input: $input) {
       ID
@@ -34,17 +21,12 @@ const CREATE_REPORT_MUTATION = `
       customReason
     }
   }
-`;
+`);
 
-export const createReport = async (input: {
-  targetType: 'POST' | 'USER' | 'COMMUNITY';
-  targetID: string;
-  reason: string;
-  customReason: string | null;
-}) => {
+export const createReport = async (input: CreateReportMutationVariables['input']) => {
   const token = getUserToken();
   if (!token) {
     throw new Error('認証が必要です。ログインしてください。');
   }
-  return await request<CreateReportResponse>(CREATE_REPORT_MUTATION, { input }, token);
+  return await requestDoc(CreateReportDocument, { input }, token);
 };

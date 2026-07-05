@@ -1,36 +1,12 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY } from '../../../lib/authStorage';
 
 export { USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY };
 
 export const getUserToken = () => localStorage.getItem(USER_TOKEN_KEY) ?? undefined;
 
-type User = {
-  ID: string;
-  accountID: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-};
-
-type LoginUserResponse = {
-  loginUser: {
-    token: string;
-    refreshToken: string;
-    user: User;
-  };
-};
-
-type LogoutUserResponse = {
-  logoutUser: boolean;
-};
-
-type RegisterUserResponse = {
-  createUser: User;
-};
-
-const LOGIN_USER_MUTATION = `
+const LoginUserDocument = graphql(`
   mutation LoginUser($input: LoginInput!) {
     loginUser(input: $input) {
       token
@@ -45,27 +21,27 @@ const LOGIN_USER_MUTATION = `
       }
     }
   }
-`;
+`);
 
-const LOGOUT_USER_MUTATION = `
+const LogoutUserDocument = graphql(`
   mutation LogoutUser($token: String!) {
     logoutUser(token: $token)
   }
-`;
+`);
 
-const SEND_EMAIL_OTP_MUTATION = `
+const SendEmailOTPDocument = graphql(`
   mutation SendEmailOTP($email: String!) {
     sendEmailOTP(email: $email)
   }
-`;
+`);
 
-const VERIFY_EMAIL_OTP_MUTATION = `
+const VerifyEmailOTPDocument = graphql(`
   mutation VerifyEmailOTP($email: String!, $otp: String!) {
     verifyEmailOTP(email: $email, otp: $otp)
   }
-`;
+`);
 
-const CREATE_USER_MUTATION = `
+const CreateUserDocument = graphql(`
   mutation CreateUser($input: CreateUserInput!) {
     createUser(input: $input) {
       ID
@@ -76,54 +52,54 @@ const CREATE_USER_MUTATION = `
       status
     }
   }
-`;
+`);
 
 export const loginUser = async (email: string, password: string) => {
-  return await request<LoginUserResponse>(LOGIN_USER_MUTATION, { input: { email, password } });
+  return await requestDoc(LoginUserDocument, { input: { email, password } });
 };
 
 export const logoutUser = async (token: string) => {
-  return await request<LogoutUserResponse>(LOGOUT_USER_MUTATION, { token });
+  return await requestDoc(LogoutUserDocument, { token });
 };
 
 export const sendEmailOTP = async (email: string) => {
-  return await request<{ sendEmailOTP: boolean }>(SEND_EMAIL_OTP_MUTATION, { email });
+  return await requestDoc(SendEmailOTPDocument, { email });
 };
 
 export const verifyEmailOTP = async (email: string, otp: string) => {
-  return await request<{ verifyEmailOTP: boolean }>(VERIFY_EMAIL_OTP_MUTATION, { email, otp });
+  return await requestDoc(VerifyEmailOTPDocument, { email, otp });
 };
 
 export const registerUser = async (accountID: string, name: string, email: string, password: string, otp: string) => {
-  return await request<RegisterUserResponse>(CREATE_USER_MUTATION, { input: { accountID, name, email, password, otp } });
+  return await requestDoc(CreateUserDocument, { input: { accountID, name, email, password, otp } });
 };
 
-const REQUEST_PASSWORD_RESET_MUTATION = `
+const RequestPasswordResetDocument = graphql(`
   mutation RequestPasswordReset($email: String!) {
     requestPasswordReset(email: $email)
   }
-`;
+`);
 
-const VERIFY_PASSWORD_RESET_OTP_MUTATION = `
+const VerifyPasswordResetOTPDocument = graphql(`
   mutation VerifyPasswordResetOTP($email: String!, $otp: String!) {
     verifyPasswordResetOTP(email: $email, otp: $otp)
   }
-`;
+`);
 
-const RESET_PASSWORD_MUTATION = `
+const ResetPasswordDocument = graphql(`
   mutation ResetPassword($resetToken: String!, $newPassword: String!) {
     resetPassword(resetToken: $resetToken, newPassword: $newPassword)
   }
-`;
+`);
 
 export const requestPasswordReset = async (email: string) => {
-  return await request<{ requestPasswordReset: boolean }>(REQUEST_PASSWORD_RESET_MUTATION, { email });
+  return await requestDoc(RequestPasswordResetDocument, { email });
 };
 
 export const verifyPasswordResetOTP = async (email: string, otp: string) => {
-  return await request<{ verifyPasswordResetOTP: string }>(VERIFY_PASSWORD_RESET_OTP_MUTATION, { email, otp });
+  return await requestDoc(VerifyPasswordResetOTPDocument, { email, otp });
 };
 
 export const resetPassword = async (resetToken: string, newPassword: string) => {
-  return await request<{ resetPassword: boolean }>(RESET_PASSWORD_MUTATION, { resetToken, newPassword });
+  return await requestDoc(ResetPasswordDocument, { resetToken, newPassword });
 };

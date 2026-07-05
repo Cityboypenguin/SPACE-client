@@ -13,7 +13,6 @@ import swal from 'sweetalert2';
 
 import {
   getTopLevelPosts,
-  getFollowersTopLevelPosts,
   getNewFeedPostsCount,
   searchPosts,
   createPost,
@@ -29,6 +28,7 @@ import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { useFollowFeed } from '../hooks/useFollowFeed';
 import { Footer } from '../../../components/organisms/Footer';
 
 const LIMIT = 20;
@@ -57,15 +57,8 @@ export const PostListPage = () => {
   const [activeTab, setActiveTab] = useState<'recommended' | 'favorites'>('recommended');
   const lastScrollYRef = useRef(0);
 
-  const [followPosts, setFollowPosts] = useState<Post[]>([]);
-  const [followTotal, setFollowTotal] = useState(0);
-  const [followInitialLoading, setFollowInitialLoading] = useState(false);
-  const [followLoadingMore, setFollowLoadingMore] = useState(false);
-  const followLoadingRef = useRef(false);
-  const followPostsRef = useRef<Post[]>([]);
-  const followTotalRef = useRef(0);
-  useEffect(() => { followPostsRef.current = followPosts; }, [followPosts]);
-  useEffect(() => { followTotalRef.current = followTotal; }, [followTotal]);
+  // フォローフィードのデータ取得・ページングは useFollowFeed に分離済み。
+  const followFeed = useFollowFeed(userId);
 
   const postsRef = useRef(posts);
   const totalRef = useRef(total);
@@ -121,34 +114,11 @@ export const PostListPage = () => {
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
 
-  const loadFollowPosts = useCallback(async (currentOffset: number, mode: 'initial' | 'refresh' | 'more') => {
-    if (!userId || followLoadingRef.current) return;
-    followLoadingRef.current = true;
-    if (mode === 'initial' || mode === 'refresh') setFollowInitialLoading(true);
-    else setFollowLoadingMore(true);
-    try {
-      const result = await getFollowersTopLevelPosts(userId, LIMIT, currentOffset);
-      setFollowPosts(prev => {
-        if (mode === 'initial' || mode === 'refresh') return result.items;
-        const fetchedMap = new Map(result.items.map(p => [p.ID, p]));
-        const prevIds = new Set(prev.map(p => p.ID));
-        const updated = prev.map(p => fetchedMap.get(p.ID) ?? p);
-        const newItems = result.items.filter(p => !prevIds.has(p.ID));
-        return [...updated, ...newItems];
-      });
-      setFollowTotal(result.total);
-    } catch { /* noop */ } finally {
-      followLoadingRef.current = false;
-      if (mode === 'initial' || mode === 'refresh') setFollowInitialLoading(false);
-      else setFollowLoadingMore(false);
-    }
-  }, [userId]);
-
   useEffect(() => {
-    if (activeTab === 'favorites' && followPostsRef.current.length === 0 && !followLoadingRef.current) {
-      loadFollowPosts(0, 'initial');
+    if (activeTab === 'favorites') {
+      followFeed.ensureLoaded();
     }
-  }, [activeTab, loadFollowPosts]);
+  }, [activeTab, followFeed]);
 
   const loadPosts = useCallback(async (currentOffset: number, mode: 'initial' | 'refresh' | 'more') => {
     if (loadingRef.current) return;
@@ -196,8 +166,8 @@ export const PostListPage = () => {
     feedLoadedAtRef.current = new Date();
     window.scrollTo(0, 0);
     loadPosts(0, 'refresh');
-    loadFollowPosts(0, 'refresh');
-  }, [loadPosts, loadFollowPosts]);
+    followFeed.load(0, 'refresh');
+  }, [loadPosts, followFeed]);
 
   // 上に戻るボタン（クールダウン中はスクロールのみ）
   const handleScrollToTop = useCallback(() => {
@@ -207,9 +177,9 @@ export const PostListPage = () => {
       setNewPostsCount(0);
       feedLoadedAtRef.current = new Date();
       loadPosts(0, 'refresh');
-      loadFollowPosts(0, 'refresh');
+      followFeed.load(0, 'refresh');
     }
-  }, [loadPosts, loadFollowPosts]);
+  }, [loadPosts, followFeed]);
 
   // 5分ごとに新着件数をポーリング
   useEffect(() => {
@@ -266,12 +236,10 @@ export const PostListPage = () => {
 
   const followSentinelRef = useInfiniteScroll(
     useCallback(() => {
-      if (!followLoadingRef.current && followPostsRef.current.length < followTotalRef.current) {
-        loadFollowPosts(followPostsRef.current.length, 'more');
-      }
-    }, [loadFollowPosts]),
-    followLoadingMore,
-    activeTab === 'favorites' && followPosts.length < followTotal,
+      followFeed.loadMore();
+    }, [followFeed]),
+    followFeed.loadingMore,
+    activeTab === 'favorites' && followFeed.posts.length < followFeed.total,
   );
 
   const searchSentinelRef = useInfiniteScroll(
@@ -352,9 +320,9 @@ export const PostListPage = () => {
 
   const updatePostInAllLists = useCallback((postId: string, updater: (p: Post) => Post) => {
     setPosts(prev => prev.map(p => p.ID === postId ? updater(p) : p));
-    setFollowPosts(prev => prev.map(p => p.ID === postId ? updater(p) : p));
+    followFeed.updatePost(postId, updater);
     setSearchResults(prev => prev.map(p => p.ID === postId ? updater(p) : p));
-  }, []);
+  }, [followFeed]);
 
   const handleReplySubmit = async (content: string, files: File[]) => {
     if (!replyingTo) return;
@@ -420,7 +388,7 @@ export const PostListPage = () => {
         try {
           await deletePost(postId);
           setPosts(prev => prev.filter(p => p.ID !== postId));
-          setFollowPosts(prev => prev.filter(p => p.ID !== postId));
+          followFeed.removePost(postId);
           setSearchResults(prev => prev.filter(p => p.ID !== postId));
           addToast('投稿を削除しました', 'success');
         } catch {
@@ -453,14 +421,14 @@ export const PostListPage = () => {
   const displayedPosts = isSearching
     ? searchResults.slice(0, searchDisplayedCount)
     : activeTab === 'favorites'
-      ? followPosts
+      ? followFeed.posts
       : posts;
 
-  const isTabLoading = activeTab === 'favorites' ? followInitialLoading : initialLoading;
-  const isTabLoadingMore = activeTab === 'favorites' ? followLoadingMore : loadingMore;
+  const isTabLoading = activeTab === 'favorites' ? followFeed.initialLoading : initialLoading;
+  const isTabLoadingMore = activeTab === 'favorites' ? followFeed.loadingMore : loadingMore;
   const hasMore = !isSearching && (
     activeTab === 'favorites'
-      ? followPosts.length < followTotal
+      ? followFeed.posts.length < followFeed.total
       : posts.length < total
   );
 

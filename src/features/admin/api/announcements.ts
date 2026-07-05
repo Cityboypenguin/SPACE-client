@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -10,7 +11,9 @@ export type Announcement = {
   createdAt: string;
 };
 
-const GET_ANNOUNCEMENT_QUERY = `
+export type AnnouncementPage = { items: Announcement[]; total: number };
+
+const GetAnnouncementDocument = graphql(`
   query GetAnnouncement($id: ID!) {
     announcement(id: $id) {
       ID
@@ -19,22 +22,9 @@ const GET_ANNOUNCEMENT_QUERY = `
       createdAt
     }
   }
-`;
+`);
 
-export type AnnouncementPage = { items: Announcement[]; total: number };
-
-const ANNOUNCEMENTS_QUERY = `
-  query Announcements($limit: Int) {
-    announcements(limit: $limit) {
-      ID
-      title
-      body
-      createdAt
-    }
-  }
-`;
-
-const ADMIN_ANNOUNCEMENTS_QUERY = `
+const AdminListAnnouncementsDocument = graphql(`
   query AdminListAnnouncements($limit: Int, $offset: Int) {
     adminListAnnouncements(limit: $limit, offset: $offset) {
       items {
@@ -46,9 +36,9 @@ const ADMIN_ANNOUNCEMENTS_QUERY = `
       total
     }
   }
-`;
+`);
 
-const CREATE_ANNOUNCEMENT_MUTATION = `
+const CreateAnnouncementDocument = graphql(`
   mutation CreateAnnouncement($input: CreateAnnouncementInput!) {
     createAnnouncement(input: $input) {
       ID
@@ -57,36 +47,19 @@ const CREATE_ANNOUNCEMENT_MUTATION = `
       createdAt
     }
   }
-`;
+`);
 
 export const getAnnouncement = async (id: string): Promise<Announcement> => {
-  const data = await request<{ announcement: Announcement }>(
-    GET_ANNOUNCEMENT_QUERY,
-    { id },
-    getAdminToken(),
-  );
+  const data = await requestDoc(GetAnnouncementDocument, { id }, getAdminToken());
   return data.announcement;
 };
 
-export const getAnnouncements = async (limit = 50): Promise<Announcement[]> => {
-  const data = await request<{ announcements: Announcement[] }>(
-    ANNOUNCEMENTS_QUERY,
-    { limit },
-    getAdminToken(),
-  );
-  return data.announcements ?? [];
-};
-
 export const getAdminAnnouncements = async (limit = 20, offset = 0): Promise<AnnouncementPage> => {
-  const data = await request<{ adminListAnnouncements: AnnouncementPage }>(
-    ADMIN_ANNOUNCEMENTS_QUERY,
-    { limit, offset },
-    getAdminToken(),
-  );
+  const data = await requestDoc(AdminListAnnouncementsDocument, { limit, offset }, getAdminToken());
   return data.adminListAnnouncements;
 };
 
-const UPDATE_ANNOUNCEMENT_MUTATION = `
+const UpdateAnnouncementDocument = graphql(`
   mutation UpdateAnnouncement($id: ID!, $input: UpdateAnnouncementInput!) {
     updateAnnouncement(id: $id, input: $input) {
       ID
@@ -96,37 +69,25 @@ const UPDATE_ANNOUNCEMENT_MUTATION = `
       updatedAt
     }
   }
-`;
+`);
 
-const DELETE_ANNOUNCEMENT_MUTATION = `
+const DeleteAnnouncementDocument = graphql(`
   mutation DeleteAnnouncement($id: ID!) {
     deleteAnnouncement(id: $id)
   }
-`;
+`);
 
 export const createAnnouncement = async (title: string, body: string): Promise<Announcement> => {
-  const data = await request<{ createAnnouncement: Announcement }>(
-    CREATE_ANNOUNCEMENT_MUTATION,
-    { input: { title, body } },
-    getAdminToken(),
-  );
+  const data = await requestDoc(CreateAnnouncementDocument, { input: { title, body } }, getAdminToken());
   return data.createAnnouncement;
 };
 
 export const updateAnnouncement = async (id: string, title: string, body: string): Promise<Announcement> => {
-  const data = await request<{ updateAnnouncement: Announcement }>(
-    UPDATE_ANNOUNCEMENT_MUTATION,
-    { id, input: { title, body } },
-    getAdminToken(),
-  );
+  const data = await requestDoc(UpdateAnnouncementDocument, { id, input: { title, body } }, getAdminToken());
   return data.updateAnnouncement;
 };
 
 export const deleteAnnouncement = async (id: string): Promise<boolean> => {
-  const data = await request<{ deleteAnnouncement: boolean }>(
-    DELETE_ANNOUNCEMENT_MUTATION,
-    { id },
-    getAdminToken(),
-  );
+  const data = await requestDoc(DeleteAnnouncementDocument, { id }, getAdminToken());
   return data.deleteAnnouncement;
 };

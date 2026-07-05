@@ -1,3 +1,6 @@
+import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
+import { print } from 'graphql';
+import type { DocumentNode } from 'graphql';
 import {
   ADMIN_REFRESH_TOKEN_KEY,
   ADMIN_TOKEN_KEY,
@@ -224,4 +227,30 @@ export const request = async <T>(
   }
 
   return json.data;
+};
+
+// print(document) は AST 全体を毎回文字列へ再変換するため、リクエストのたびに呼ぶと
+// ポーリングや投稿ツリーのような大きなクエリで無駄な再シリアライズが発生する。
+// document オブジェクト自体は codegen が生成したモジュールレベルの定数で参照が安定しているため、
+// WeakMap でキャッシュし、同一クエリは初回の print() 結果を使い回す。
+const printedDocumentCache = new WeakMap<object, string>();
+
+const printCached = (document: DocumentNode): string => {
+  const cached = printedDocumentCache.get(document);
+  if (cached !== undefined) return cached;
+  const printed = print(document);
+  printedDocumentCache.set(document, printed);
+  return printed;
+};
+
+// requestDoc は codegen が生成した型付きドキュメント(TypedDocumentNode)を受け取り、
+// 結果と変数の型を完全に推論する型安全なラッパー。認証・トークンリフレッシュ・エラー処理は
+// 既存の request() をそのまま再利用する（フェッチャの二重実装を避ける）。
+export const requestDoc = async <TResult, TVariables>(
+  document: TypedDocumentNode<TResult, TVariables>,
+  ...[variables, token]: TVariables extends Record<string, never>
+    ? [variables?: TVariables, token?: string]
+    : [variables: TVariables, token?: string]
+): Promise<TResult> => {
+  return request<TResult>(printCached(document), variables as Record<string, unknown> | undefined, token);
 };

@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 export type PageViewStat = {
@@ -76,7 +77,7 @@ export type CommunityStatsPage = {
   total: number;
 };
 
-const ANALYTICS_QUERY = `
+const AdminGetAnalyticsDocument = graphql(`
   query AdminGetAnalytics {
     adminGetAnalytics {
       totalUsers newUsersToday newUsersThisWeek newUsersThisMonth frozenUsersCount
@@ -98,20 +99,20 @@ const ANALYTICS_QUERY = `
       pageViewStats { pagePath avgDurationSeconds avgMaxScrollDepth totalViews }
     }
   }
-`;
+`);
 
-const COMMUNITY_ANALYTICS_QUERY = `
+const AdminGetCommunityAnalyticsDocument = graphql(`
   query AdminGetCommunityAnalytics($limit: Int, $offset: Int) {
     adminGetCommunityAnalytics(limit: $limit, offset: $offset) {
       items { communityID name memberCount messageCount }
       total
     }
   }
-`;
+`);
 
 export async function getAnalytics(): Promise<AnalyticsSummary> {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  const data = await request<{ adminGetAnalytics: AnalyticsSummary }>(ANALYTICS_QUERY, {}, token);
+  const data = await requestDoc(AdminGetAnalyticsDocument, {}, token);
   return data.adminGetAnalytics;
 }
 
@@ -126,30 +127,22 @@ export type TimeSeriesPoint = {
   likes: number;
 };
 
-const TIME_SERIES_QUERY = `
+const AdminGetTimeSeriesDocument = graphql(`
   query AdminGetTimeSeries($granularity: TimeSeriesGranularity!, $from: String!, $to: String!) {
     adminGetTimeSeries(granularity: $granularity, from: $from, to: $to) {
       points { label posts comments messages newUsers likes }
     }
   }
-`;
+`);
 
 export async function getTimeSeries(granularity: TimeSeriesGranularity, from: string, to: string): Promise<TimeSeriesPoint[]> {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  const data = await request<{ adminGetTimeSeries: { points: TimeSeriesPoint[] } }>(
-    TIME_SERIES_QUERY,
-    { granularity, from, to },
-    token,
-  );
+  const data = await requestDoc(AdminGetTimeSeriesDocument, { granularity, from, to }, token);
   return data.adminGetTimeSeries.points;
 }
 
 export async function getCommunityAnalytics(limit = 20, offset = 0): Promise<CommunityStatsPage> {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  const data = await request<{ adminGetCommunityAnalytics: CommunityStatsPage }>(
-    COMMUNITY_ANALYTICS_QUERY,
-    { limit, offset },
-    token,
-  );
+  const data = await requestDoc(AdminGetCommunityAnalyticsDocument, { limit, offset }, token);
   return data.adminGetCommunityAnalytics;
 }

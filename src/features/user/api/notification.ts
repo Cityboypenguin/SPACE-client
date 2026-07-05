@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 
 export type NotificationActor = {
@@ -50,7 +51,7 @@ export type NotificationGroup = {
 
 export type NotificationGroupPage = { items: NotificationGroup[]; total: number };
 
-const MY_NOTIFICATIONS_QUERY = `
+const MyNotificationsDocument = graphql(`
   query MyNotifications($limit: Int, $offset: Int, $type: String, $actorID: ID) {
     myNotifications(limit: $limit, offset: $offset, type: $type, actorID: $actorID) {
       items {
@@ -86,9 +87,9 @@ const MY_NOTIFICATIONS_QUERY = `
       total
     }
   }
-`;
+`);
 
-const MY_NOTIFICATION_GROUPS_QUERY = `
+const MyNotificationGroupsDocument = graphql(`
   query MyNotificationGroups($limit: Int, $offset: Int) {
     myNotificationGroups(limit: $limit, offset: $offset) {
       items {
@@ -126,9 +127,9 @@ const MY_NOTIFICATION_GROUPS_QUERY = `
       total
     }
   }
-`;
+`);
 
-const NOTIFICATION_QUERY = `
+const NotificationDocument = graphql(`
   query Notification($id: ID!) {
     notification(id: $id) {
       ID
@@ -161,31 +162,31 @@ const NOTIFICATION_QUERY = `
       createdAt
     }
   }
-`;
+`);
 
-const MY_UNREAD_COUNT_QUERY = `
+const MyUnreadNotificationCountDocument = graphql(`
   query MyUnreadNotificationCount {
     myUnreadNotificationCount
   }
-`;
+`);
 
-const MARK_AS_READ_MUTATION = `
+const MarkNotificationAsReadDocument = graphql(`
   mutation MarkNotificationAsRead($id: ID!) {
     markNotificationAsRead(id: $id)
   }
-`;
+`);
 
-const MARK_ALL_AS_READ_MUTATION = `
+const MarkAllNotificationsAsReadDocument = graphql(`
   mutation MarkAllNotificationsAsRead {
     markAllNotificationsAsRead
   }
-`;
+`);
 
-const MARK_ALL_AS_READ_BY_ACTOR_MUTATION = `
+const MarkAllNotificationsAsReadByActorDocument = graphql(`
   mutation MarkAllNotificationsAsReadByActor($type: String!, $actorID: ID!) {
     markAllNotificationsAsReadByActor(type: $type, actorID: $actorID)
   }
-`;
+`);
 
 export const listMyNotifications = async (
   limit = 20,
@@ -193,103 +194,63 @@ export const listMyNotifications = async (
   type?: string,
   actorID?: string,
 ): Promise<NotificationPage> => {
-  const data = await request<{ myNotifications: NotificationPage }>(
-    MY_NOTIFICATIONS_QUERY,
-    { limit, offset, type, actorID },
-    getUserToken(),
-  );
+  const data = await requestDoc(MyNotificationsDocument, { limit, offset, type, actorID }, getUserToken());
   return data.myNotifications ?? { items: [], total: 0 };
 };
 
 export const listMyNotificationGroups = async (limit = 20, offset = 0): Promise<NotificationGroupPage> => {
-  const data = await request<{ myNotificationGroups: NotificationGroupPage }>(
-    MY_NOTIFICATION_GROUPS_QUERY,
-    { limit, offset },
-    getUserToken(),
-  );
+  const data = await requestDoc(MyNotificationGroupsDocument, { limit, offset }, getUserToken());
   return data.myNotificationGroups ?? { items: [], total: 0 };
 };
 
 export const getNotification = async (id: string): Promise<Notification | null> => {
-  const data = await request<{ notification: Notification | null }>(
-    NOTIFICATION_QUERY,
-    { id },
-    getUserToken(),
-  );
+  const data = await requestDoc(NotificationDocument, { id }, getUserToken());
   return data.notification ?? null;
 };
 
 export const getUnreadNotificationCount = async (): Promise<number> => {
-  const data = await request<{ myUnreadNotificationCount: number }>(
-    MY_UNREAD_COUNT_QUERY,
-    undefined,
-    getUserToken(),
-  );
+  const data = await requestDoc(MyUnreadNotificationCountDocument, {}, getUserToken());
   return data.myUnreadNotificationCount;
 };
 
 export const markNotificationAsRead = async (id: string): Promise<void> => {
-  await request<{ markNotificationAsRead: boolean }>(
-    MARK_AS_READ_MUTATION,
-    { id },
-    getUserToken(),
-  );
+  await requestDoc(MarkNotificationAsReadDocument, { id }, getUserToken());
 };
 
 export const markAllNotificationsAsRead = async (): Promise<void> => {
-  await request<{ markAllNotificationsAsRead: boolean }>(
-    MARK_ALL_AS_READ_MUTATION,
-    undefined,
-    getUserToken(),
-  );
+  await requestDoc(MarkAllNotificationsAsReadDocument, {}, getUserToken());
 };
 
 export const markAllNotificationsAsReadByActor = async (type: string, actorID: string): Promise<void> => {
-  await request<{ markAllNotificationsAsReadByActor: boolean }>(
-    MARK_ALL_AS_READ_BY_ACTOR_MUTATION,
-    { type, actorID },
-    getUserToken(),
-  );
+  await requestDoc(MarkAllNotificationsAsReadByActorDocument, { type, actorID }, getUserToken());
 };
 
-const DELETE_NOTIFICATIONS_MUTATION = `
+const DeleteNotificationsDocument = graphql(`
   mutation DeleteNotifications($ids: [ID!]!) {
     deleteNotifications(ids: $ids)
   }
-`;
+`);
 
-const DELETE_READ_NOTIFICATIONS_MUTATION = `
+const DeleteReadNotificationsDocument = graphql(`
   mutation DeleteReadNotifications {
     deleteReadNotifications
   }
-`;
+`);
 
-const DELETE_READ_NOTIFICATIONS_BY_ACTOR_MUTATION = `
+const DeleteReadNotificationsByActorDocument = graphql(`
   mutation DeleteReadNotificationsByActor($type: String!, $actorID: ID!) {
     deleteReadNotificationsByActor(type: $type, actorID: $actorID)
   }
-`;
+`);
 
 export const deleteNotifications = async (ids: string[]): Promise<void> => {
-  await request<{ deleteNotifications: boolean }>(
-    DELETE_NOTIFICATIONS_MUTATION,
-    { ids },
-    getUserToken(),
-  );
+  await requestDoc(DeleteNotificationsDocument, { ids }, getUserToken());
 };
 
 export const deleteReadNotifications = async (): Promise<void> => {
-  await request<{ deleteReadNotifications: boolean }>(
-    DELETE_READ_NOTIFICATIONS_MUTATION,
-    undefined,
-    getUserToken(),
-  );
+  await requestDoc(DeleteReadNotificationsDocument, {}, getUserToken());
 };
 
 export const deleteReadNotificationsByActor = async (type: string, actorID: string): Promise<void> => {
-  await request<{ deleteReadNotificationsByActor: boolean }>(
-    DELETE_READ_NOTIFICATIONS_BY_ACTOR_MUTATION,
-    { type, actorID },
-    getUserToken(),
-  );
+  await requestDoc(DeleteReadNotificationsByActorDocument, { type, actorID }, getUserToken());
 };

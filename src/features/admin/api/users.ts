@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 export type User = {
@@ -18,21 +19,21 @@ export type Profile = {
   avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
-  user: User;
+  // getProfileByUserID/adminUpdateProfile は user の createdAt/updatedAt を取得しないため、
+  // フル User 型ではなくこのサブセットのみを保証する。
+  user: {
+    ID: string;
+    accountID: string;
+    name: string;
+    email: string;
+    role: string;
+    status: string;
+  };
 };
 
 export type UserPage = { items: User[]; total: number };
-type UsersResponse = { users: UserPage };
-type SearchUsersResponse = { searchUsers: User[] };
-type GetUserByIDResponse = { getUserByID: User };
-type DeleteUserResponse = { deleteUser: boolean };
-type FreezeUserResponse = { freezeUser: boolean };
-type UnfreezeUserResponse = { unfreezeUser: boolean };
-type AdminUpdateUserResponse = { adminUpdateUser: User };
-type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
-type AdminUpdateProfileResponse = { adminUpdateProfile: Profile };
 
-const USERS_QUERY = `
+const UsersDocument = graphql(`
   query Users($limit: Int, $offset: Int) {
     users(limit: $limit, offset: $offset) {
       items {
@@ -48,24 +49,27 @@ const USERS_QUERY = `
       total
     }
   }
-`;
+`);
 
-const SEARCH_USERS_QUERY = `
-  query SearchUsers($keyword: String!) {
+const SearchUsersDocument = graphql(`
+  query AdminSearchUsers($keyword: String!) {
     searchUsers(keyword: $keyword) {
-      ID
-      accountID
-      name
-      email
-      role
-      status
-      createdAt
-      updatedAt
+      items {
+        ID
+        accountID
+        name
+        email
+        role
+        status
+        createdAt
+        updatedAt
+      }
+      total
     }
   }
-`;
+`);
 
-const GET_USER_BY_ID_QUERY = `
+const GetUserByIDDocument = graphql(`
   query GetUserByID($id: ID!) {
     getUserByID(id: $id) {
       ID
@@ -78,27 +82,27 @@ const GET_USER_BY_ID_QUERY = `
       updatedAt
     }
   }
-`;
+`);
 
-const DELETE_USER_MUTATION = `
+const DeleteUserDocument = graphql(`
   mutation DeleteUser($id: ID!) {
     deleteUser(id: $id)
   }
-`;
+`);
 
-const FREEZE_USER_MUTATION = `
+const FreezeUserDocument = graphql(`
   mutation FreezeUser($id: ID!) {
     freezeUser(id: $id)
   }
-`;
+`);
 
-const UNFREEZE_USER_MUTATION = `
+const UnfreezeUserDocument = graphql(`
   mutation UnfreezeUser($id: ID!) {
     unfreezeUser(id: $id)
   }
-`;
+`);
 
-const ADMIN_UPDATE_USER_MUTATION = `
+const AdminUpdateUserDocument = graphql(`
   mutation AdminUpdateUser($id: ID!, $input: UpdateUserInput!) {
     adminUpdateUser(id: $id, input: $input) {
       ID
@@ -111,9 +115,9 @@ const ADMIN_UPDATE_USER_MUTATION = `
       updatedAt
     }
   }
-`;
+`);
 
-const ADMIN_UPDATE_PROFILE_MUTATION = `
+const AdminUpdateProfileDocument = graphql(`
   mutation AdminUpdateProfile($userID: ID!, $input: UpdateProfileInput!) {
     adminUpdateProfile(userID: $userID, input: $input) {
       username
@@ -131,10 +135,10 @@ const ADMIN_UPDATE_PROFILE_MUTATION = `
       }
     }
   }
-`;
+`);
 
-const GET_PROFILE_BY_USER_ID_QUERY = `
-  query GetProfileByUserID($userID: ID!) {
+const GetProfileByUserIDDocument = graphql(`
+  query AdminGetProfileByUserID($userID: ID!) {
     getProfileByUserID(userID: $userID) {
       username
       bio
@@ -151,52 +155,48 @@ const GET_PROFILE_BY_USER_ID_QUERY = `
       }
     }
   }
-`;
+`);
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
 export const getUsers = async (limit = 20, offset = 0) => {
-  return await request<UsersResponse>(USERS_QUERY, { limit, offset }, getAdminToken());
+  return await requestDoc(UsersDocument, { limit, offset }, getAdminToken());
 };
 
 export const searchUsers = async (keyword: string) => {
-  return await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword }, getAdminToken());
+  return await requestDoc(SearchUsersDocument, { keyword }, getAdminToken());
 };
 
 export const getUserByID = async (id: string) => {
-  return await request<GetUserByIDResponse>(GET_USER_BY_ID_QUERY, { id }, getAdminToken());
+  return await requestDoc(GetUserByIDDocument, { id }, getAdminToken());
 };
 
 export const deleteUser = async (id: string) => {
-  return await request<DeleteUserResponse>(DELETE_USER_MUTATION, { id }, getAdminToken());
+  return await requestDoc(DeleteUserDocument, { id }, getAdminToken());
 };
 
 export const freezeUser = async (id: string) => {
-  return await request<FreezeUserResponse>(FREEZE_USER_MUTATION, { id }, getAdminToken());
+  return await requestDoc(FreezeUserDocument, { id }, getAdminToken());
 };
 
 export const unfreezeUser = async (id: string) => {
-  return await request<UnfreezeUserResponse>(UNFREEZE_USER_MUTATION, { id }, getAdminToken());
+  return await requestDoc(UnfreezeUserDocument, { id }, getAdminToken());
 };
 
 export const adminUpdateUser = async (
   id: string,
   input: { accountID: string; name: string; email: string; password?: string },
 ) => {
-  return await request<AdminUpdateUserResponse>(ADMIN_UPDATE_USER_MUTATION, { id, input }, getAdminToken());
+  return await requestDoc(AdminUpdateUserDocument, { id, input }, getAdminToken());
 };
 
 export const getProfileByUserID = async (userID: string) => {
-  return await request<GetProfileByUserIDResponse>(GET_PROFILE_BY_USER_ID_QUERY, { userID }, getAdminToken());
+  return await requestDoc(GetProfileByUserIDDocument, { userID }, getAdminToken());
 };
 
 export const adminUpdateProfile = async (
   userID: string,
   input: { bio?: string },
 ) => {
-  return await request<AdminUpdateProfileResponse>(
-    ADMIN_UPDATE_PROFILE_MUTATION,
-    { userID, input },
-    getAdminToken(),
-  );
+  return await requestDoc(AdminUpdateProfileDocument, { userID, input }, getAdminToken());
 };
