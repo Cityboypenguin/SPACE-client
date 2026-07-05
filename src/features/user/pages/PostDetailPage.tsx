@@ -15,7 +15,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import commentIcon from '../../../assets/パーツ_コメント.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
-import blockIcon from '../../../assets/パーツ_ブロック.svg';
+import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../assets/パーツ_削除.svg';
 import styles from './PostDetailPage.module.css';
@@ -60,7 +60,13 @@ export const PostDetailPage = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const [editContent, setEditContent] = useState('');
-  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<Post | null>(null);
+  const [editingRootPost, setEditingRootPost] = useState<Post | null>(null);
+  const [rootEditContent, setRootEditContent] = useState('');
+  const [rootEditSelectedFiles, setRootEditSelectedFiles] = useState<File[]>([]);
+  const [rootEditDeletedMediaIDs, setRootEditDeletedMediaIDs] = useState<string[]>([]);
+  const [isRootUpdating, setIsRootUpdating] = useState(false);
+  const [rootUpdateError, setRootUpdateError] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -184,6 +190,46 @@ export const PostDetailPage = () => {
     }
   };
 
+  const handleRootEditOpen = (rootPost: Post) => {
+    setEditingRootPost(rootPost);
+    setRootEditContent(rootPost.content);
+    setRootEditSelectedFiles([]);
+    setRootEditDeletedMediaIDs([]);
+    setRootUpdateError('');
+  };
+
+  const handleRootUpdate = async () => {
+    if (!editingRootPost || isRootUpdating) return;
+    const remainingExistingMedia = editingRootPost.media?.filter(
+      media => !rootEditDeletedMediaIDs.includes(media.ID),
+    ) ?? [];
+    const hasAnyMedia = remainingExistingMedia.length > 0 || rootEditSelectedFiles.length > 0;
+    if (!rootEditContent.trim() && !hasAnyMedia) return;
+
+    setIsRootUpdating(true);
+    setRootUpdateError('');
+    try {
+      const mediaInputs = await uploadMediaFiles(rootEditSelectedFiles);
+      const updatedPost = await updatePost(
+        editingRootPost.ID,
+        rootEditContent.trim(),
+        mediaInputs,
+        rootEditDeletedMediaIDs,
+      );
+      const filteredPost = {
+        ...updatedPost,
+        media: updatedPost.media?.filter(media => !rootEditDeletedMediaIDs.includes(media.ID)) ?? [],
+      };
+      updatePostAcrossCaches(editingRootPost.ID, () => filteredPost);
+      setEditingRootPost(null);
+      await mutate();
+    } catch (err) {
+      setRootUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setIsRootUpdating(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!id) return;
     const result = await swal.fire({
@@ -199,6 +245,25 @@ export const PostDetailPage = () => {
       navigate(-1);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleRootDelete = async (postId: string) => {
+    const result = await swal.fire({
+      text: '本当にこの投稿を削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await deletePost(postId);
+      removePostAcrossCaches(postId);
+      setEditingRootPost(null);
+      await mutate();
+    } catch (err) {
+      console.error(err);
+      addToast('削除に失敗しました', 'error');
     }
   };
 
@@ -223,12 +288,38 @@ export const PostDetailPage = () => {
               <div className={styles.rootPostContainer}>
                 {post.rootPost.deletedAt != null ? (
                   <div className={styles.deletedPost}>投稿が見つかりません</div>
+                ) : editingRootPost?.ID === post.rootPost.ID ? (
+                  <PostComposer
+                    value={rootEditContent}
+                    onChange={setRootEditContent}
+                    onSubmit={handleRootUpdate}
+                    submitting={isRootUpdating}
+                    error={rootUpdateError}
+                    userId={userId}
+                    avatarUrl={profile?.avatarUrl}
+                    userName={profile?.user.name}
+                    selectedFiles={rootEditSelectedFiles}
+                    onFileSelect={setRootEditSelectedFiles}
+                    existingMedia={editingRootPost.media}
+                    deletedMediaIDs={rootEditDeletedMediaIDs}
+                    onDeleteExistingMedia={(mediaId) => setRootEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                    onCancel={() => setEditingRootPost(null)}
+                    submitLabel="保存する"
+                    submittingLabel="保存中..."
+                    placeholder="投稿を編集..."
+                    maxLength={500}
+                    rows={3}
+                  />
                 ) : (
                   <PostCard
                     post={post.rootPost}
                     currentUserId={userId}
                     onLike={handleLike}
                     onClick={() => navigate(`/posts/${post.rootPost!.ID}`)}
+                    onBlock={handleBlock}
+                    onReport={() => setReportTarget(post.rootPost)}
+                    onEdit={handleRootEditOpen}
+                    onDelete={handleRootDelete}
                   />
                 )}
                 <div className={styles.threadConnector} />
@@ -242,7 +333,7 @@ export const PostDetailPage = () => {
                 <div className={styles.postBodyHeader}>
                   <div className={styles.userInfo}>
                     <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
-                    <div>
+                    <div className={styles.userNameBlock}>
                       <UserNameLink userId={post.user.ID}>
                         <div className={styles.userName}>{post.user.name}</div>
                       </UserNameLink>
@@ -286,15 +377,15 @@ export const PostDetailPage = () => {
                           ) : (
                             <>
                               <button
-                                className={styles.dropdownItem}
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                                 onClick={() => { setMenuOpen(false); handleBlock(post.user.ID); }}
                               >
-                                <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                                <img src={redblockIcon} alt="" className={styles.dropdownIcon} />
                                 ブロック
                               </button>
                               <button
-                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
-                                onClick={() => { setMenuOpen(false); setIsReportOpen(true); }}
+                                className={styles.dropdownItem}
+                                onClick={() => { setMenuOpen(false); setReportTarget(post); }}
                               >
                                 <img src={reportIcon} alt="" className={styles.dropdownIcon} />
                                 通報
@@ -402,13 +493,13 @@ export const PostDetailPage = () => {
               />
             )}
 
-            {id && (
+            {reportTarget && (
               <ReportModal
-                isOpen={isReportOpen}
-                onClose={() => setIsReportOpen(false)}
+                isOpen={true}
+                onClose={() => setReportTarget(null)}
                 targetType="POST"
-                targetID={id}
-                postContent={post.content}
+                targetID={reportTarget.ID}
+                postContent={reportTarget.content}
               />
             )}
           </>

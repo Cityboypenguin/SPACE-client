@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { storageUrl } from '../../../lib/storage';
 import { getUserToken } from './auth';
 
@@ -15,7 +16,6 @@ export type Media = {
   ID: string;
   url: string;
   contentType: string;
-  createdAt: string;
 };
 
 export type MediaInput = {
@@ -26,7 +26,6 @@ export type MediaInput = {
 export type Message = {
   ID: string;
   roomID: string;
-  accountID: string;
   user: MessageUser;
   content: string;
   media: Media[];
@@ -46,6 +45,8 @@ export type Room = {
   lastMessage?: string | null;
 };
 
+// useRoomMessages.ts の WebSocket サブスクリプション（別系統の subscribeToGraphQL 経由、
+// codegen の対象外）が引き続き参照するため、このフィールド選択の文字列定数は残す。
 export const MESSAGE_FIELDS = `
   ID
   roomID
@@ -65,76 +66,117 @@ export const MESSAGE_FIELDS = `
   updatedAt
 `;
 
-const ROOM_FIELDS = `
-  ID
-  name
-  type
-  user {
-    ID
-    name
-    accountID
-    avatarUrl
-  }
-  isMessagingDisabled
-  lastReadAt
-  unreadCount
-  partnerLastReadAt
-  content
-`;
-
-const MARK_ROOM_AS_READ_MUTATION = `
+const MarkRoomAsReadDocument = graphql(`
   mutation MarkRoomAsRead($roomID: ID!) {
     markRoomAsRead(roomID: $roomID)
   }
-`;
+`);
 
-const GET_OR_CREATE_DM_ROOM_MUTATION = `
+const GetOrCreateDMRoomDocument = graphql(`
   mutation GetOrCreateDMRoom($targetUserID: ID!) {
     getOrCreateDMRoom(targetUserID: $targetUserID) {
-      ${ROOM_FIELDS}
+      ID
+      name
+      type
+      user {
+        ID
+        name
+        accountID
+        avatarUrl
+      }
+      isMessagingDisabled
+      lastReadAt
+      unreadCount
+      partnerLastReadAt
+      content
     }
   }
-`;
+`);
 
-const SEND_MESSAGE_MUTATION = `
+const SendMessageDocument = graphql(`
   mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!]) {
     sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs) {
-      ${MESSAGE_FIELDS}
+      ID
+      roomID
+      user {
+        ID
+        name
+        accountID
+        avatarUrl
+      }
+      content
+      media {
+        ID
+        url
+        contentType
+      }
+      createdAt
+      updatedAt
     }
   }
-`;
+`);
 
-const UPDATE_MESSAGE_MUTATION = `
+const UpdateMessageDocument = graphql(`
   mutation UpdateMessage($roomID: ID!, $id: ID!, $content: String!) {
     updateMessage(roomID: $roomID, id: $id, content: $content) {
-      ${MESSAGE_FIELDS}
+      ID
+      roomID
+      user {
+        ID
+        name
+        accountID
+        avatarUrl
+      }
+      content
+      media {
+        ID
+        url
+        contentType
+      }
+      createdAt
+      updatedAt
     }
   }
-`;
+`);
 
-const DELETE_MESSAGE_MUTATION = `
+const DeleteMessageDocument = graphql(`
   mutation DeleteMessage($roomID: ID!, $id: ID!) {
     deleteMessage(roomID: $roomID, id: $id)
   }
-`;
+`);
 
-const DELETE_ROOM_MUTATION = `
+const DeleteRoomDocument = graphql(`
   mutation DeleteRoom($roomID: ID!) {
     deleteRoom(roomID: $roomID)
   }
-`;
+`);
 
-const LIST_MESSAGES_QUERY = `
+const ListMessagesDocument = graphql(`
   query ListMessages($roomID: ID!, $limit: Int, $before: ID, $after: ID, $afterTime: String) {
     messages(roomID: $roomID, limit: $limit, before: $before, after: $after, afterTime: $afterTime) {
       items {
-        ${MESSAGE_FIELDS}
+        ID
+        roomID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        content
+        media {
+          ID
+          url
+          contentType
+        }
+        createdAt
+        updatedAt
       }
       hasMoreBefore
       hasMoreAfter
     }
   }
-`;
+`);
 
 export type MessagePage = {
   items: Message[];
@@ -142,59 +184,73 @@ export type MessagePage = {
   hasMoreAfter: boolean;
 };
 
-const GET_ROOM_QUERY = `
+const GetRoomDocument = graphql(`
   query GetRoom($id: ID!) {
     room(id: $id) {
-      ${ROOM_FIELDS}
+      ID
+      name
+      type
+      user {
+        ID
+        name
+        accountID
+        avatarUrl
+      }
+      isMessagingDisabled
+      lastReadAt
+      unreadCount
+      partnerLastReadAt
+      content
     }
   }
-`;
+`);
 
-const MY_DM_ROOMS_QUERY = `
+const MyDMRoomsDocument = graphql(`
   query MyDMRooms($limit: Int, $offset: Int) {
     myDMRooms(limit: $limit, offset: $offset) {
       items {
-        ${ROOM_FIELDS}
+        ID
+        name
+        type
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        isMessagingDisabled
+        lastReadAt
+        unreadCount
+        partnerLastReadAt
+        content
       }
       total
     }
   }
-`;
+`);
 
-const PRESIGNED_MEDIA_UPLOAD_URL_QUERY = `
+const PresignedMediaUploadUrlDocument = graphql(`
   query PresignedMediaUploadUrl($contentType: String!) {
     presignedMediaUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
     }
   }
-`;
+`);
 
 export const markRoomAsRead = async (roomID: string) => {
   const token = getUserToken();
-  return await request<{ markRoomAsRead: boolean }>(
-    MARK_ROOM_AS_READ_MUTATION,
-    { roomID },
-    token,
-  );
+  return await requestDoc(MarkRoomAsReadDocument, { roomID }, token);
 };
 
 export const getOrCreateDMRoom = async (targetUserID: string) => {
   const token = getUserToken();
-  return await request<{ getOrCreateDMRoom: Room }>(
-    GET_OR_CREATE_DM_ROOM_MUTATION,
-    { targetUserID },
-    token,
-  );
+  return await requestDoc(GetOrCreateDMRoomDocument, { targetUserID }, token);
 };
 
 export const sendMessage = async (roomID: string, content: string, mediaInputs?: MediaInput[]) => {
   const token = getUserToken();
-  return await request<{ sendMessage: Message }>(
-    SEND_MESSAGE_MUTATION,
-    { roomID, content, mediaInputs },
-    token,
-  );
+  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs }, token);
 };
 
 export type ListMessagesOptions = {
@@ -204,8 +260,8 @@ export type ListMessagesOptions = {
 };
 
 export const listMessages = async (roomID: string, limit = 50, options?: ListMessagesOptions): Promise<MessagePage> => {
-  const data = await request<{ messages: MessagePage }>(
-    LIST_MESSAGES_QUERY,
+  const data = await requestDoc(
+    ListMessagesDocument,
     {
       roomID,
       limit,
@@ -219,59 +275,46 @@ export const listMessages = async (roomID: string, limit = 50, options?: ListMes
 };
 
 export const getRoom = async (id: string) => {
-  return await request<{ room: Room }>(
-    GET_ROOM_QUERY,
-    { id },
-    getUserToken(),
-  );
+  return await requestDoc(GetRoomDocument, { id }, getUserToken());
 };
 
 export const updateMessage = async (roomID: string, id: string, content: string) => {
   const token = getUserToken();
-  return await request<{ updateMessage: Message }>(
-    UPDATE_MESSAGE_MUTATION,
-    { roomID, id, content },
-    token,
-  );
+  return await requestDoc(UpdateMessageDocument, { roomID, id, content }, token);
 };
 
 export const deleteMessage = async (roomID: string, id: string) => {
   const token = getUserToken();
-  return await request<{ deleteMessage: boolean }>(
-    DELETE_MESSAGE_MUTATION,
-    { roomID, id },
-    token,
-  );
+  return await requestDoc(DeleteMessageDocument, { roomID, id }, token);
 };
 
 export const deleteRoom = async (roomID: string) => {
   const token = getUserToken();
-  return await request<{ deleteRoom: boolean }>(
-    DELETE_ROOM_MUTATION,
-    { roomID },
-    token,
-  );
+  return await requestDoc(DeleteRoomDocument, { roomID }, token);
 };
 
 export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Room[]; total: number }> => {
   const token = getUserToken();
-  const data = await request<{ myDMRooms: { items: (Omit<Room, 'lastMessage'> & { content?: string | null })[]; total: number } }>(
-    MY_DM_ROOMS_QUERY,
-    { limit, offset },
-    token,
-  );
+  const data = await requestDoc(MyDMRoomsDocument, { limit, offset }, token);
   const items = data.myDMRooms.items.map(({ content, ...rest }) => ({ ...rest, lastMessage: content ?? null }));
   return { items, total: data.myDMRooms.total };
+};
+
+const MyUnreadDMCountDocument = graphql(`
+  query MyUnreadDMCount {
+    myUnreadDMCount
+  }
+`);
+
+export const getUnreadDMCount = async (): Promise<number> => {
+  const data = await requestDoc(MyUnreadDMCountDocument, {}, getUserToken());
+  return data.myUnreadDMCount;
 };
 
 export const getPresignedMediaUploadUrl = async (contentType: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
-  return await request<{ presignedMediaUploadUrl: { uploadUrl: string; objectKey: string } }>(
-    PRESIGNED_MEDIA_UPLOAD_URL_QUERY,
-    { contentType },
-    token,
-  );
+  return await requestDoc(PresignedMediaUploadUrlDocument, { contentType }, token);
 };
 
 export const uploadFileToStorage = async (uploadUrl: string, file: File): Promise<void> => {

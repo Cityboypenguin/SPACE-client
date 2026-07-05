@@ -22,6 +22,9 @@
   font-size: 1.25rem;
   font-weight: 700;
   color: #1e293b;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 .headerActions {
@@ -152,6 +155,7 @@
   font-weight: 600;
   font-size: 0.9rem;
   color: #1e293b;
+  overflow-wrap: break-word;
 }
 
 .itemMessage {
@@ -159,6 +163,7 @@
   font-size: 0.9rem;
   color: #475569;
   line-height: 1.5;
+  overflow-wrap: break-word;
 }
 
 .itemDate {

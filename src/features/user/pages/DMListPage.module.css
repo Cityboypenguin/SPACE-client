@@ -106,18 +106,27 @@
   align-items: baseline;
   gap: 0.4rem;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .partnerName {
   font-size: 0.95rem;
   font-weight: 500;
   color: #1e293b;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .partnerAccount {
   font-size: 0.85rem;
   color: #94a3b8;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

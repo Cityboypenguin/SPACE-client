@@ -98,7 +98,18 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
           size={40} 
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: '1rem', color: '#1e293b' }}>{community.name}</div>
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: '1rem',
+              color: '#1e293b',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {community.name}
+          </div>
           {!expanded && (
             <div
               style={{

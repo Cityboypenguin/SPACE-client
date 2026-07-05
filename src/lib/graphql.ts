@@ -1,3 +1,6 @@
+import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
+import { print } from 'graphql';
+import type { DocumentNode } from 'graphql';
 import {
   ADMIN_REFRESH_TOKEN_KEY,
   ADMIN_TOKEN_KEY,
@@ -125,7 +128,22 @@ const doRefresh = async (isAdmin: boolean): Promise<string | null> => {
   }
 };
 
-const isAuthError = (message: string): boolean =>
+type GraphQLError = { message: string; extensions?: { code?: string } };
+
+// 認証エラー判定は extensions.code（サーバーと共有する安定した契約）を優先する。
+// code が無い古いサーバー／エラー経路のためにメッセージ文字列マッチをフォールバックとして残す。
+const AUTH_ERROR_CODE = 'UNAUTHORIZED';
+
+const isAuthErrorFromErrors = (errors: GraphQLError[]): boolean => {
+  if (errors.some((e) => e.extensions?.code === AUTH_ERROR_CODE)) {
+    return true;
+  }
+  // フォールバック：code を付けないエラーは従来どおりメッセージで判定する。
+  const uncoded = errors.filter((e) => !e.extensions?.code);
+  return uncoded.some((e) => isAuthErrorMessage(e.message ?? ''));
+};
+
+const isAuthErrorMessage = (message: string): boolean =>
   message.includes('invalid token') ||
   message.includes('token has been revoked') ||
   message.includes('token is expired') ||
@@ -191,18 +209,16 @@ export const request = async <T>(
   const json = await response.json();
 
   if (json.errors) {
-    const message = json.errors.map((e: { message: string }) => e.message).join(', ');
+    const errors: GraphQLError[] = json.errors;
+    const message = errors.map((e) => e.message).join(', ');
 
-    if (!_retrying && isAuthError(message)) {
-      const newToken = await tryRefreshAccessToken(isAdminToken(token));
-      if (newToken) {
-        return request<T>(query, variables, newToken, true);
+    if (isAuthErrorFromErrors(errors)) {
+      if (!_retrying) {
+        const newToken = await tryRefreshAccessToken(isAdminToken(token));
+        if (newToken) {
+          return request<T>(query, variables, newToken, true);
+        }
       }
-      handleUnauthorized();
-      return Promise.reject(new Error('Unauthorized'));
-    }
-
-    if (isAuthError(message)) {
       handleUnauthorized();
       return Promise.reject(new Error('Unauthorized'));
     }
@@ -211,4 +227,30 @@ export const request = async <T>(
   }
 
   return json.data;
+};
+
+// print(document) は AST 全体を毎回文字列へ再変換するため、リクエストのたびに呼ぶと
+// ポーリングや投稿ツリーのような大きなクエリで無駄な再シリアライズが発生する。
+// document オブジェクト自体は codegen が生成したモジュールレベルの定数で参照が安定しているため、
+// WeakMap でキャッシュし、同一クエリは初回の print() 結果を使い回す。
+const printedDocumentCache = new WeakMap<object, string>();
+
+const printCached = (document: DocumentNode): string => {
+  const cached = printedDocumentCache.get(document);
+  if (cached !== undefined) return cached;
+  const printed = print(document);
+  printedDocumentCache.set(document, printed);
+  return printed;
+};
+
+// requestDoc は codegen が生成した型付きドキュメント(TypedDocumentNode)を受け取り、
+// 結果と変数の型を完全に推論する型安全なラッパー。認証・トークンリフレッシュ・エラー処理は
+// 既存の request() をそのまま再利用する（フェッチャの二重実装を避ける）。
+export const requestDoc = async <TResult, TVariables>(
+  document: TypedDocumentNode<TResult, TVariables>,
+  ...[variables, token]: TVariables extends Record<string, never>
+    ? [variables?: TVariables, token?: string]
+    : [variables: TVariables, token?: string]
+): Promise<TResult> => {
+  return request<TResult>(printCached(document), variables as Record<string, unknown> | undefined, token);
 };

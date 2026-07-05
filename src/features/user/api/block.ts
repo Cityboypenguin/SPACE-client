@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 
 export type User = {
@@ -15,22 +16,18 @@ export type Blocker = {
   createdAt: string;
 };
 
-const USER_FIELDS = `
-  ID
-  name
-  accountID
-  avatarUrl
-`;
-
-const GET_BLOCKERS_BY_USER_ID_QUERY = `
+const GetBlockersByUserIDDocument = graphql(`
   query GetBlockersByUserID($userID: ID!) {
     GetBlockersByUserID(userID: $userID) {
-      ${USER_FIELDS}
+      ID
+      name
+      accountID
+      avatarUrl
     }
   }
-`;
+`);
 
-const CREATE_BLOCKER_MUTATION = `
+const CreateBlockerDocument = graphql(`
   mutation CreateBlocker($blockedUserID: ID!) {
     createBlocker(blockedUserID: $blockedUserID) {
       ID
@@ -39,58 +36,45 @@ const CREATE_BLOCKER_MUTATION = `
       createdAt
     }
   }
-`;
+`);
 
-const DELETE_BLOCKER_MUTATION = `
+const DeleteBlockerDocument = graphql(`
   mutation DeleteBlocker($blockedUserID: ID!) {
     deleteBlocker(blockedUserID: $blockedUserID)
   }
-`;
+`);
 
-const LIST_BLOCKED_USERS_QUERY = `
+const ListBlockedUsersDocument = graphql(`
   query ListBlockedUsers($limit: Int, $offset: Int) {
     listBlockedUsers(limit: $limit, offset: $offset) {
       items {
-        ${USER_FIELDS}
+        ID
+        name
+        accountID
+        avatarUrl
       }
       total
     }
   }
-`;
+`);
 
 export const getBlockersByUserID = async (userID: string): Promise<User[]> => {
-  const data = await request<{ GetBlockersByUserID: User[] }>(
-    GET_BLOCKERS_BY_USER_ID_QUERY,
-    { userID },
-    getUserToken(),
-  );
+  const data = await requestDoc(GetBlockersByUserIDDocument, { userID }, getUserToken());
   return data.GetBlockersByUserID;
 };
 
 export const createBlocker = async (blockedUserID: string): Promise<Blocker> => {
-  const data = await request<{ createBlocker: Blocker }>(
-    CREATE_BLOCKER_MUTATION,
-    { blockedUserID },
-    getUserToken(),
-  );
+  const data = await requestDoc(CreateBlockerDocument, { blockedUserID }, getUserToken());
   return data.createBlocker;
 };
 
 export const deleteBlocker = async (blockedUserID: string): Promise<void> => {
-  await request<{ deleteBlocker: boolean }>(
-    DELETE_BLOCKER_MUTATION,
-    { blockedUserID },
-    getUserToken(),
-  );
+  await requestDoc(DeleteBlockerDocument, { blockedUserID }, getUserToken());
 };
 
 export type UserPage = { items: User[]; total: number };
 
 export const listBlockedUsers = async (limit = 20, offset = 0): Promise<UserPage> => {
-  const data = await request<{ listBlockedUsers: UserPage }>(
-    LIST_BLOCKED_USERS_QUERY,
-    { limit, offset },
-    getUserToken(),
-  );
+  const data = await requestDoc(ListBlockedUsersDocument, { limit, offset }, getUserToken());
   return data.listBlockedUsers;
 };

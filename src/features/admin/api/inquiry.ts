@@ -1,4 +1,6 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
+import type { InquiryStatus } from '../../../generated/graphql';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -17,7 +19,7 @@ type Inquiry = {
 
 export type InquiryPage = { items: Inquiry[]; total: number };
 
-const SEARCH_INQUIRIES_QUERY = `
+const SearchInquiriesDocument = graphql(`
   query SearchInquiries($status: InquiryStatus, $limit: Int, $offset: Int) {
     searchInquiries(status: $status, limit: $limit, offset: $offset) {
       items {
@@ -34,9 +36,9 @@ const SEARCH_INQUIRIES_QUERY = `
       total
     }
   }
-`;
+`);
 
-const GET_INQUIRY_QUERY = `
+const GetInquiryDocument = graphql(`
   query GetInquiry($id: ID!) {
     getInquiry(id: $id) {
       id
@@ -50,42 +52,30 @@ const GET_INQUIRY_QUERY = `
       updatedAt
     }
   }
-`;
+`);
 
-const UPDATE_INQUIRY_STATUS_MUTATION = `
+const UpdateInquiryStatusDocument = graphql(`
   mutation UpdateInquiryStatus($id: ID!, $status: InquiryStatus!) {
     updateInquiryStatus(id: $id, status: $status) {
       id
       status
     }
   }
-`;
+`);
 
 export const getInquiries = async (status?: string, limit = 20, offset = 0) => {
-  const variables: Record<string, unknown> = { limit, offset };
-  if (status && status !== 'ALL') variables.status = status;
-  const data = await request<{ searchInquiries: InquiryPage }>(
-    SEARCH_INQUIRIES_QUERY,
-    variables,
-    getAdminToken(),
-  );
-  return data.searchInquiries;
+  const variables: { status?: InquiryStatus; limit: number; offset: number } = { limit, offset };
+  if (status && status !== 'ALL') variables.status = status as InquiryStatus;
+  const data = await requestDoc(SearchInquiriesDocument, variables, getAdminToken());
+  return data.searchInquiries as InquiryPage;
 };
 
 export const getInquiry = async (id: string) => {
-  const data = await request<{ getInquiry: Inquiry }>(
-    GET_INQUIRY_QUERY,
-    { id },
-    getAdminToken(),
-  );
-  return data.getInquiry;
+  const data = await requestDoc(GetInquiryDocument, { id }, getAdminToken());
+  return data.getInquiry as Inquiry;
 };
 
 export const updateInquiryStatus = async (id: string, status: string) => {
-  const data = await request<{ updateInquiryStatus: Inquiry }>(
-    UPDATE_INQUIRY_STATUS_MUTATION,
-    { id, status },
-    getAdminToken(),
-  );
+  const data = await requestDoc(UpdateInquiryStatusDocument, { id, status: status as InquiryStatus }, getAdminToken());
   return data.updateInquiryStatus;
 };

@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 import { type Media, type MediaInput } from './message';
 
@@ -33,36 +34,42 @@ export type Post = {
   media: Media[];
 };
 
-const POST_FIELDS = `
-  ID
-  content
-  createdAt
-  replyCount
-  deletedAt
-  user {
+// PostFields は投稿ツリー(返信の再帰的な入れ子)全体で繰り返し使われる共通フィールド選択。
+// GraphQL フラグメントとして定義し、各クエリから ...PostFields で参照する。
+// export しているのは JS 上の未使用変数警告を避けるためだけではなく、
+// codegen がこのフラグメント定義をドキュメント集合として認識するために必要。
+export const PostFieldsFragment = graphql(`
+  fragment PostFields on Post {
     ID
-    name
-    accountID
-    avatarUrl
-  }
-  favorites {
-    ID
+    content
+    createdAt
+    replyCount
+    deletedAt
     user {
       ID
+      name
+      accountID
+      avatarUrl
+    }
+    favorites {
+      ID
+      user {
+        ID
+      }
+    }
+    media {
+      ID
+      url
+      contentType
     }
   }
-  media {
-    ID
-    url
-    contentType
-  }
-`;
+`);
 
-const TOP_LEVEL_POSTS_QUERY = `
+const TopLevelPostsDocument = graphql(`
   query TopLevelPosts($limit: Int, $offset: Int) {
     topLevelPosts(limit: $limit, offset: $offset) {
       items {
-        ${POST_FIELDS}
+        ...PostFields
         replies {
           ID
         }
@@ -70,23 +77,23 @@ const TOP_LEVEL_POSTS_QUERY = `
       total
     }
   }
-`;
+`);
 
-const GET_POST_BY_ID_QUERY = `
+const GetPostByIDDocument = graphql(`
   query GetPostByID($id: ID!) {
     getPostByID(id: $id) {
-      ${POST_FIELDS}
+      ...PostFields
       rootPost {
-        ${POST_FIELDS}
+        ...PostFields
       }
       replies {
-        ${POST_FIELDS}
+        ...PostFields
         replies {
-          ${POST_FIELDS}
+          ...PostFields
           replies {
-            ${POST_FIELDS}
+            ...PostFields
             replies {
-              ${POST_FIELDS}
+              ...PostFields
               replies {
                 ID
               }
@@ -96,13 +103,13 @@ const GET_POST_BY_ID_QUERY = `
       }
     }
   }
-`;
+`);
 
-const GET_POSTS_BY_USER_ID_QUERY = `
+const GetPostsByUserIDDocument = graphql(`
   query GetPostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {
     getPostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
       items {
-        ${POST_FIELDS}
+        ...PostFields
         replies {
           ID
         }
@@ -110,13 +117,13 @@ const GET_POSTS_BY_USER_ID_QUERY = `
       total
     }
   }
-`;
+`);
 
-const GET_FAVORITE_POSTS_BY_USER_ID_QUERY = `
+const GetFavoritePostsByUserIDDocument = graphql(`
   query GetFavoritePostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {
     getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
       items {
-        ${POST_FIELDS}
+        ...PostFields
         replies {
           ID
         }
@@ -124,52 +131,52 @@ const GET_FAVORITE_POSTS_BY_USER_ID_QUERY = `
       total
     }
   }
-`;
+`);
 
-const CREATE_POST_MUTATION = `
+const CreatePostDocument = graphql(`
   mutation CreatePost($input: CreatePostInput!) {
-  createPost(input: $input) {
-      ${POST_FIELDS}
+    createPost(input: $input) {
+      ...PostFields
       replies {
-      ID
+        ID
+      }
     }
   }
-}
-`;
+`);
 
-const UPDATE_POST_MUTATION = `
+const UpdatePostDocument = graphql(`
   mutation UpdatePost($input: UpdatePostInput!) {
-  updatePost(input: $input) {
-      ${POST_FIELDS}
+    updatePost(input: $input) {
+      ...PostFields
       replies {
-      ID
+        ID
+      }
     }
   }
-}
-`;
+`);
 
-const DELETE_POST_MUTATION = `
+const DeletePostDocument = graphql(`
   mutation DeletePost($id: ID!) {
-  deletePost(id: $id)
-}
-`;
+    deletePost(id: $id)
+  }
+`);
 
-const CREATE_FAVORITE_MUTATION = `
+const CreateFavoriteDocument = graphql(`
   mutation CreateFavorite($input: CreateFavoriteInput!) {
-  createFavorite(input: $input) {
-    ID
-      user {
+    createFavorite(input: $input) {
       ID
+      user {
+        ID
+      }
     }
   }
-}
-`;
+`);
 
-const DELETE_FAVORITE_MUTATION = `
+const DeleteFavoriteDocument = graphql(`
   mutation DeleteFavorite($input: DeleteFavoriteInput!) {
-  deleteFavorite(input: $input)
-}
-`;
+    deleteFavorite(input: $input)
+  }
+`);
 
 export type PostPage = {
   items: Post[];
@@ -177,26 +184,18 @@ export type PostPage = {
 };
 
 export const getTopLevelPosts = async (limit = 20, offset = 0): Promise<PostPage> => {
-  const data = await request<{ topLevelPosts: PostPage }>(
-    TOP_LEVEL_POSTS_QUERY,
-    { limit, offset },
-    getUserToken(),
-  );
-  return data.topLevelPosts;
+  const data = await requestDoc(TopLevelPostsDocument, { limit, offset }, getUserToken());
+  return data.topLevelPosts as PostPage;
 };
 
 export const getPostByID = async (id: string): Promise<Post | null> => {
-  const data = await request<{ getPostByID: Post | null }>(
-    GET_POST_BY_ID_QUERY,
-    { id },
-    getUserToken(),
-  );
-  return data.getPostByID;
+  const data = await requestDoc(GetPostByIDDocument, { id }, getUserToken());
+  return (data.getPostByID as Post | null) ?? null;
 };
 
 export const createPost = async (content: string, parentId?: string, mediaInputs?: MediaInput[]): Promise<Post> => {
-  const data = await request<{ createPost: Post }>(
-    CREATE_POST_MUTATION,
+  const data = await requestDoc(
+    CreatePostDocument,
     {
       input: {
         content,
@@ -206,7 +205,7 @@ export const createPost = async (content: string, parentId?: string, mediaInputs
     },
     getUserToken(),
   );
-  return data.createPost;
+  return data.createPost as Post;
 };
 
 export const updatePost = async (
@@ -215,8 +214,8 @@ export const updatePost = async (
   newMediaInputs?: MediaInput[],
   deletedMediaIDs?: string[]
 ): Promise<Post> => {
-  const data = await request<{ updatePost: Post }>(
-    UPDATE_POST_MUTATION,
+  const data = await requestDoc(
+    UpdatePostDocument,
     {
       input: {
         id,
@@ -227,91 +226,63 @@ export const updatePost = async (
     },
     getUserToken(),
   );
-  return data.updatePost;
+  return data.updatePost as Post;
 };
 
 export const deletePost = async (id: string): Promise<void> => {
-  await request<{ deletePost: boolean }>(
-    DELETE_POST_MUTATION,
-    { id },
-    getUserToken(),
-  );
+  await requestDoc(DeletePostDocument, { id }, getUserToken());
 };
 
 export const createFavorite = async (postId: string): Promise<void> => {
-  await request<{ createFavorite: PostFavorite }>(
-    CREATE_FAVORITE_MUTATION,
-    { input: { post_id: postId } },
-    getUserToken(),
-  );
+  await requestDoc(CreateFavoriteDocument, { input: { post_id: postId } }, getUserToken());
 };
 
 export const getPostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
-  const data = await request<{ getPostsByUserID: { items: Post[]; total: number } }>(
-    GET_POSTS_BY_USER_ID_QUERY,
-    { user_id: userId, limit, offset },
-    getUserToken(),
-  );
-  return data.getPostsByUserID;
+  const data = await requestDoc(GetPostsByUserIDDocument, { user_id: userId, limit, offset }, getUserToken());
+  return data.getPostsByUserID as { items: Post[]; total: number };
 };
 
 export const getFavoritePostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
-  const data = await request<{ getFavoritePostsByUserID: { items: Post[]; total: number } }>(
-    GET_FAVORITE_POSTS_BY_USER_ID_QUERY,
-    { user_id: userId, limit, offset },
-    getUserToken(),
-  );
-  return data.getFavoritePostsByUserID;
+  const data = await requestDoc(GetFavoritePostsByUserIDDocument, { user_id: userId, limit, offset }, getUserToken());
+  return data.getFavoritePostsByUserID as { items: Post[]; total: number };
 };
 
 export const deleteFavorite = async (postId: string): Promise<void> => {
-  await request<{ deleteFavorite: boolean }>(
-    DELETE_FAVORITE_MUTATION,
-    { input: { post_id: postId } },
-    getUserToken(),
-  );
+  await requestDoc(DeleteFavoriteDocument, { input: { post_id: postId } }, getUserToken());
 };
 
-const NEW_FEED_POSTS_COUNT_QUERY = `
+const NewFeedPostsCountDocument = graphql(`
   query NewFeedPostsCount($since: String!) {
     newFeedPostsCount(since: $since)
   }
-`;
+`);
 
 export const getNewFeedPostsCount = async (since: Date): Promise<number> => {
-  const data = await request<{ newFeedPostsCount: number }>(
-    NEW_FEED_POSTS_COUNT_QUERY,
-    { since: since.toISOString() },
-    getUserToken(),
-  );
+  const data = await requestDoc(NewFeedPostsCountDocument, { since: since.toISOString() }, getUserToken());
   return data.newFeedPostsCount;
 };
 
-const SEARCH_POSTS_QUERY = `
+const SearchPostsDocument = graphql(`
   query SearchPosts($keyword: String!) {
     searchPosts(keyword: $keyword) {
-      ${POST_FIELDS}
+      ...PostFields
       replies {
         ID
       }
     }
   }
-`;
+`);
 
 export const searchPosts = async (keyword: string): Promise<Post[]> => {
-  const data = await request<{ searchPosts: Post[] }>(
-    SEARCH_POSTS_QUERY,
-    { keyword },
-    getUserToken(),
-  );
-  return data.searchPosts;
+  const data = await requestDoc(SearchPostsDocument, { keyword }, getUserToken());
+  return data.searchPosts as Post[];
 };
 
-const FOLLOWERS_TOP_LEVEL_POSTS_QUERY = `
+const FollowersTopLevelPostsDocument = graphql(`
   query FollowersTopLevelPosts($userID: ID!, $limit: Int, $offset: Int) {
     followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {
       items {
-        ${POST_FIELDS}
+        ...PostFields
         replies {
           ID
         }
@@ -319,13 +290,9 @@ const FOLLOWERS_TOP_LEVEL_POSTS_QUERY = `
       total
     }
   }
-`;
+`);
 
 export const getFollowersTopLevelPosts = async (userID: string, limit = 20, offset = 0): Promise<PostPage> => {
-  const data = await request<{ followersTopLevelPosts: PostPage }>(
-    FOLLOWERS_TOP_LEVEL_POSTS_QUERY,
-    { userID, limit, offset },
-    getUserToken(),
-  );
-  return data.followersTopLevelPosts;
+  const data = await requestDoc(FollowersTopLevelPostsDocument, { userID, limit, offset }, getUserToken());
+  return data.followersTopLevelPosts as PostPage;
 };

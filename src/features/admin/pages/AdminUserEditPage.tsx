@@ -21,6 +21,10 @@ export const AdminUserEditPage = () => {
     getUserByID(id)
       .then((data) => {
         const u = data.getUserByID;
+        if (!u) {
+          setError('ユーザーが見つかりません');
+          return;
+        }
         setUser(u);
         setAccountID(u.accountID);
         setName(u.name);

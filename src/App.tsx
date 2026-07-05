@@ -5,6 +5,7 @@ import { ToastContainer } from './components/organisms/ToastContainer';
 import { OfflineBanner } from './components/organisms/OfflineBanner';
 import { MaintenancePage } from './components/pages/MaintenancePage';
 import { NotificationProvider } from './features/user/context/NotificationContext';
+import { UnreadRoomCountsProvider } from './features/user/context/UnreadRoomCountsContext';
 import { userRoutes } from './features/user/routes/UserRoutes';
 import { initSessionTracker, trackPageEnter } from './lib/sessionTracker';
 
@@ -32,16 +33,18 @@ function App() {
   return (
     <ToastProvider>
       <NotificationProvider>
-        <SessionTracker />
-        <OfflineBanner />
-        <ToastContainer />
-        <Suspense fallback={<p>読み込み中...</p>}>
-          <Routes>
-            <Route path="/maintenance" element={<MaintenancePage />} />
-            <Route path="/admin/*" element={<AdminRoutes />} />
-            {userRoutes}
-          </Routes>
-        </Suspense>
+        <UnreadRoomCountsProvider>
+          <SessionTracker />
+          <OfflineBanner />
+          <ToastContainer />
+          <Suspense fallback={<p>読み込み中...</p>}>
+            <Routes>
+              <Route path="/maintenance" element={<MaintenancePage />} />
+              <Route path="/admin/*" element={<AdminRoutes />} />
+              {userRoutes}
+            </Routes>
+          </Suspense>
+        </UnreadRoomCountsProvider>
       </NotificationProvider>
     </ToastProvider >
   );

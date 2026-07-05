@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 import { storageUrl } from '../../../lib/storage';
 
@@ -12,22 +13,20 @@ export type TermsOfService = {
   createdAt: string;
 };
 
-const PRESIGNED_TERMS_DOCUMENT_UPLOAD_URL_QUERY = `
+const PresignedTermsDocumentUploadUrlDocument = graphql(`
   query PresignedTermsDocumentUploadUrl {
     presignedTermsDocumentUploadUrl {
       uploadUrl
       objectKey
     }
   }
-`;
+`);
 
 export const getPresignedTermsDocumentUploadUrl = async (): Promise<{
   uploadUrl: string;
   objectKey: string;
 }> => {
-  const data = await request<{
-    presignedTermsDocumentUploadUrl: { uploadUrl: string; objectKey: string };
-  }>(PRESIGNED_TERMS_DOCUMENT_UPLOAD_URL_QUERY, {}, getAdminToken());
+  const data = await requestDoc(PresignedTermsDocumentUploadUrlDocument, {}, getAdminToken());
   return data.presignedTermsDocumentUploadUrl;
 };
 
@@ -51,7 +50,7 @@ export type TermsConsentRecord = {
   consentedAt: string;
 };
 
-const LIST_TERMS_QUERY = `
+const AdminListTermsDocument = graphql(`
   query AdminListTerms {
     adminListTerms {
       ID
@@ -61,20 +60,16 @@ const LIST_TERMS_QUERY = `
       createdAt
     }
   }
-`;
+`);
 
 export const listTerms = async (): Promise<TermsOfService[]> => {
-  const data = await request<{ adminListTerms: TermsOfService[] }>(
-    LIST_TERMS_QUERY,
-    {},
-    getAdminToken(),
-  );
+  const data = await requestDoc(AdminListTermsDocument, {}, getAdminToken());
   return data.adminListTerms;
 };
 
 export type TermsConsentPage = { items: TermsConsentRecord[]; total: number };
 
-const LIST_CONSENTS_QUERY = `
+const AdminListConsentsDocument = graphql(`
   query AdminListConsents($termsID: ID!, $limit: Int, $offset: Int) {
     adminListConsents(termsID: $termsID, limit: $limit, offset: $offset) {
       items {
@@ -90,18 +85,14 @@ const LIST_CONSENTS_QUERY = `
       total
     }
   }
-`;
+`);
 
 export const listConsents = async (termsID: string, limit = 20, offset = 0): Promise<TermsConsentPage> => {
-  const data = await request<{ adminListConsents: TermsConsentPage }>(
-    LIST_CONSENTS_QUERY,
-    { termsID, limit, offset },
-    getAdminToken(),
-  );
+  const data = await requestDoc(AdminListConsentsDocument, { termsID, limit, offset }, getAdminToken());
   return data.adminListConsents;
 };
 
-const CREATE_TERMS_MUTATION = `
+const CreateTermsOfServiceDocument = graphql(`
   mutation CreateTermsOfService($input: CreateTermsOfServiceInput!) {
     createTermsOfService(input: $input) {
       ID
@@ -111,15 +102,15 @@ const CREATE_TERMS_MUTATION = `
       createdAt
     }
   }
-`;
+`);
 
 export const createTermsOfService = async (
   version: string,
   objectKey: string,
   effectiveDate: string,
 ): Promise<TermsOfService> => {
-  const data = await request<{ createTermsOfService: TermsOfService }>(
-    CREATE_TERMS_MUTATION,
+  const data = await requestDoc(
+    CreateTermsOfServiceDocument,
     { input: { version, objectKey, effectiveDate } },
     getAdminToken(),
   );

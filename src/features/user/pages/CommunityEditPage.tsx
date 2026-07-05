@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { mutate } from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ImageCropModal } from '../components/organisms/ImageCropModal';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { updateCommunityInfo, getPresignedCommunityIconUploadUrl, type Community } from '../api/community';
 import { uploadAvatarToStorage } from '../api/profile';
@@ -25,6 +26,7 @@ export const CommunityEditPage = () => {
     hasValidAvatar ? (storageUrl(community!.avatarURL) ?? null) : null,
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropTarget, setCropTarget] = useState<{ imageSrc: string; file: File } | null>(null);
   const [isIconDeleted, setIsIconDeleted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -50,10 +52,23 @@ export const CommunityEditPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { setError('画像サイズは5MB以下にしてください。'); return; }
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setIsIconDeleted(false);
     setError('');
+
+    if (file.type === 'image/svg+xml') {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setIsIconDeleted(false);
+    } else {
+      setCropTarget({ imageSrc: URL.createObjectURL(file), file });
+    }
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedFile: File, croppedPreviewUrl: string) => {
+    setSelectedFile(croppedFile);
+    setPreviewUrl(croppedPreviewUrl);
+    setIsIconDeleted(false);
+    setCropTarget(null);
   };
 
   const handleRemoveImage = () => {
@@ -192,6 +207,16 @@ export const CommunityEditPage = () => {
           </div>
         )}
       </main>
+
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.imageSrc}
+          fileName={cropTarget.file.name}
+          mimeType={cropTarget.file.type}
+          onCancel={() => setCropTarget(null)}
+          onComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };

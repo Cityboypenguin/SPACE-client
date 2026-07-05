@@ -17,6 +17,7 @@ import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
+import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
 import favoriteIconOff from '../../../assets/パーツ_お気に入り.svg';
@@ -340,15 +341,15 @@ export const UserPublicProfilePage = () => {
               {menuOpen && (
                 <div className={styles.dropdown}>
                   <button
-                    className={styles.dropdownItem}
+                    className={isBlocked ?  styles.dropdownItem : `${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                     onClick={handleBlockToggle}
                     disabled={actionLoading}
                   >
-                    <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                    <img src={isBlocked ? blockIcon : redblockIcon} alt="" className={styles.dropdownIcon} />
                     {isBlocked ? 'ブロック解除' : 'ブロック'}
                   </button>
                   <button
-                    className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                    className={styles.dropdownItem}
                     onClick={handleReportUser}
                   >
                     <img src={reportIcon} alt="" className={styles.dropdownIcon} />
