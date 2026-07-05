@@ -125,7 +125,22 @@ const doRefresh = async (isAdmin: boolean): Promise<string | null> => {
   }
 };
 
-const isAuthError = (message: string): boolean =>
+type GraphQLError = { message: string; extensions?: { code?: string } };
+
+// 認証エラー判定は extensions.code（サーバーと共有する安定した契約）を優先する。
+// code が無い古いサーバー／エラー経路のためにメッセージ文字列マッチをフォールバックとして残す。
+const AUTH_ERROR_CODE = 'UNAUTHORIZED';
+
+const isAuthErrorFromErrors = (errors: GraphQLError[]): boolean => {
+  if (errors.some((e) => e.extensions?.code === AUTH_ERROR_CODE)) {
+    return true;
+  }
+  // フォールバック：code を付けないエラーは従来どおりメッセージで判定する。
+  const uncoded = errors.filter((e) => !e.extensions?.code);
+  return uncoded.some((e) => isAuthErrorMessage(e.message ?? ''));
+};
+
+const isAuthErrorMessage = (message: string): boolean =>
   message.includes('invalid token') ||
   message.includes('token has been revoked') ||
   message.includes('token is expired') ||
@@ -191,18 +206,16 @@ export const request = async <T>(
   const json = await response.json();
 
   if (json.errors) {
-    const message = json.errors.map((e: { message: string }) => e.message).join(', ');
+    const errors: GraphQLError[] = json.errors;
+    const message = errors.map((e) => e.message).join(', ');
 
-    if (!_retrying && isAuthError(message)) {
-      const newToken = await tryRefreshAccessToken(isAdminToken(token));
-      if (newToken) {
-        return request<T>(query, variables, newToken, true);
+    if (isAuthErrorFromErrors(errors)) {
+      if (!_retrying) {
+        const newToken = await tryRefreshAccessToken(isAdminToken(token));
+        if (newToken) {
+          return request<T>(query, variables, newToken, true);
+        }
       }
-      handleUnauthorized();
-      return Promise.reject(new Error('Unauthorized'));
-    }
-
-    if (isAuthError(message)) {
       handleUnauthorized();
       return Promise.reject(new Error('Unauthorized'));
     }

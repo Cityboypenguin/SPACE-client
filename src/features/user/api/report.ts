@@ -2,16 +2,19 @@
 import { request } from '../../../lib/graphql';
 import { getUserToken } from './auth';
 
+// createReport ミューテーションが実際に選択するフィールドと一致させること。
+// （型と選択セットがズレると、存在しないフィールドを参照する実行時バグになる）
 export type UserReport = {
   ID: string;
-  targetType: 'POST' | 'USER';
+  targetType: 'POST' | 'USER' | 'COMMUNITY';
   targetID: string;
+  reporter: {
+    ID: string;
+    name: string;
+    accountID: string;
+  } | null;
   reason: string;
   customReason: string | null;
-  status: string;
-  content: string | null;
-  createdAt: string;
-  updatedAt: string;
 };
 
 type CreateReportResponse = { createReport: UserReport };
