@@ -7,8 +7,12 @@ import { dismissTermsConsentModalIfPresent } from '../support/terms';
 // hasSidebar: false の画面（/inquiry）は未ログインでもお問い合わせできるよう
 // protectedElement の外（公開ルート）に置かれているため、UserSidebarを描画しない。
 // そのためサイドバー表示チェックの対象から外す。
-const routes: { path: string; heading: string | RegExp; hasSidebar?: boolean }[] = [
-  { path: '/home', heading: 'ホーム' },
+// heading は原則ページの <h1>/<h2> 見出しを指定する。サイドバーのナビゲーションラベルは
+// <span> であり見出しロールを持たないため、getByRole('heading', ...) で検索すれば
+// 非表示のサイドバーラベルと文字列が衝突することはない。
+// isHeading: false の /home のみ例外（ページ自体に見出しがなく、タブボタンの文言で確認する）。
+const routes: { path: string; heading: string | RegExp; hasSidebar?: boolean; isHeading?: boolean }[] = [
+  { path: '/home', heading: 'おすすめ', isHeading: false },
   { path: '/mypage', heading: 'マイページ' },
   { path: '/mypage/settings', heading: '設定' },
   { path: '/mypage/profile-edit', heading: 'プロフィール編集' },
@@ -24,14 +28,19 @@ const routes: { path: string; heading: string | RegExp; hasSidebar?: boolean }[]
   { path: '/inquiry', heading: 'お問い合わせ', hasSidebar: false },
 ];
 
-for (const { path, heading, hasSidebar = true } of routes) {
+for (const { path, heading, hasSidebar = true, isHeading = true } of routes) {
   test(`${path} が表示される`, async ({ page }) => {
     await page.goto(path);
     await dismissTermsConsentModalIfPresent(page);
-    await expect(page.getByText(heading).first()).toBeVisible();
+    const locator = isHeading
+      ? page.getByRole('heading', { name: heading })
+      : page.getByText(heading);
+    await expect(locator.first()).toBeVisible();
     if (hasSidebar) {
       // サイドバーが出ている = 未ログインへリダイレクトされていない
-      await expect(page.getByText('ホーム', { exact: true })).toBeVisible();
+      // ラベル文字はホバーで展開されるまで opacity:0 のため、
+      // 常時表示のアイコン(alt属性)で判定する。
+      await expect(page.getByAltText('ホーム', { exact: true })).toBeVisible();
     }
   });
 }

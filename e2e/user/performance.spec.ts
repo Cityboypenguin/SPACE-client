@@ -6,10 +6,12 @@ import { test, expect } from '@playwright/test';
 import { injectLCPObserver, collectMetrics, PERF_THRESHOLDS } from '../support/perfUtils';
 import { dismissTermsConsentModalIfPresent } from '../support/terms';
 
+// waitFor はサイドバーのナビゲーションラベル（ホバーで展開されるまで非表示）と
+// 文言が衝突しないよう、各ページ本体の見出しを指定する。
 const routes: Array<{ path: string; waitFor: string }> = [
   { path: '/home', waitFor: 'おすすめ' },
-  { path: '/notifications', waitFor: '通知' },
-  { path: '/community', waitFor: 'コミュニティ' },
+  { path: '/notifications', waitFor: '通知一覧' },
+  { path: '/community', waitFor: '参加中のコミュニティ' },
 ];
 
 for (const { path, waitFor } of routes) {

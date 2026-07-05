@@ -77,19 +77,6 @@ const DELETE_USER_MUTATION = `
   }
 `;
 
-const SEARCH_USERS_QUERY = `
-  query SearchUsers($keyword: String!, $limit: Int) {
-    searchUsers(keyword: $keyword, limit: $limit) {
-      items {
-        ID
-        accountID
-        name
-        email
-      }
-    }
-  }
-`;
-
 export type DummyUser = {
   ID: string;
   accountID: string;

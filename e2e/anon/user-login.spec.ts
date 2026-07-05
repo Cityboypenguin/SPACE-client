@@ -24,7 +24,9 @@ test.describe('ユーザーログイン', () => {
     await page.getByPlaceholder('パスワード').fill(env.user.password);
     await page.getByRole('button', { name: 'ログイン' }).click();
     await expect(page).toHaveURL(/\/home$/);
-    await expect(page.getByText('ホーム')).toBeVisible();
+    // サイドバーのラベル文字はホバーで展開されるまで opacity:0 のため、
+    // 常時表示のアイコン(alt属性)でログイン後のサイドバー表示を確認する。
+    await expect(page.getByAltText('ホーム', { exact: true })).toBeVisible();
   });
 
   test('新規登録ボタンで登録画面へ遷移する', async ({ page }) => {
