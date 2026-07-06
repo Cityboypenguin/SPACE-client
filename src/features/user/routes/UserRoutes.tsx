@@ -1,5 +1,4 @@
 import { lazy } from 'react';
-import type { ReactNode } from 'react';
 import { Route } from 'react-router-dom';
 import { NotFoundPage } from '../../../components/pages/NotFoundPage';
 import { MaintenanceGuardLayout } from '../../../components/MaintenanceGuardLayout';
@@ -81,10 +80,6 @@ const ForgotPasswordPage = lazy(() =>
   import('../pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
 );
 
-const protectedElement = (element: ReactNode) => (
-  <UserProtectedRoute>{element}</UserProtectedRoute>
-);
-
 export const userRoutes = (
   <Route element={<MaintenanceGuardLayout />}>
     <Route path="/" element={<UserLoginForm />} />
@@ -92,28 +87,30 @@ export const userRoutes = (
     <Route path="/register" element={<UserRegisterPage />} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/inquiry" element={<InquiryPage />} />
-    <Route path="/mypage" element={protectedElement(<UserDashboard />)} />
-    <Route path="/mypage/settings" element={protectedElement(<UserSettingsPage />)} />
-    <Route path="/mypage/profile-edit" element={protectedElement(<UserProfileEditPage />)} />
-    <Route path="/mypage/user-info-edit" element={protectedElement(<UserInfoEditPage />)} />
-    <Route path="/mypage/favorites" element={protectedElement(<FavoriteUsersPage />)} />
-    <Route path="/mypage/followers" element={protectedElement(<FavoriteUsersPage mode="followers" />)} />
-    <Route path="/mypage/blocks" element={protectedElement(<BlockedUsersPage />)} />
-    <Route path="/search" element={protectedElement(<UserSearchPage />)} />
-    <Route path="/users/:id" element={protectedElement(<UserPublicProfilePage />)} />
-    <Route path="/dm" element={protectedElement(<DMListPage />)} />
-    <Route path="/dm/:roomId" element={protectedElement(<DMPage />)} />
-    <Route path="/community" element={protectedElement(<CommunityListPage />)} />
-    <Route path="/community/browse" element={protectedElement(<CommunityBoardListPage />)} />
-    <Route path="/community/create" element={protectedElement(<CommunityCreatePage />)} />
-    <Route path="/community/chat/:roomId" element={protectedElement(<CommunityRoomPage />)} />
-    <Route path="/community/edit/:communityID" element={protectedElement(<CommunityEditPage />)} />
-    <Route path="/community/members/:communityID" element={protectedElement(<CommunityMembersPage />)} />
-    <Route path="/home" element={protectedElement(<PostListPage />)} />
-    <Route path="/posts/:id" element={protectedElement(<PostDetailPage />)} />
-    <Route path="/notifications" element={protectedElement(<NotificationListPage />)} />
-    <Route path="/notifications/:id" element={protectedElement(<NotificationDetailPage />)} />
-    <Route path="/announcements/:id" element={protectedElement(<AnnouncementDetailPage />)} />
+    <Route element={<UserProtectedRoute />}>
+      <Route path="/mypage" element={<UserDashboard />} />
+      <Route path="/mypage/settings" element={<UserSettingsPage />} />
+      <Route path="/mypage/profile-edit" element={<UserProfileEditPage />} />
+      <Route path="/mypage/user-info-edit" element={<UserInfoEditPage />} />
+      <Route path="/mypage/favorites" element={<FavoriteUsersPage />} />
+      <Route path="/mypage/followers" element={<FavoriteUsersPage mode="followers" />} />
+      <Route path="/mypage/blocks" element={<BlockedUsersPage />} />
+      <Route path="/search" element={<UserSearchPage />} />
+      <Route path="/users/:id" element={<UserPublicProfilePage />} />
+      <Route path="/dm" element={<DMListPage />} />
+      <Route path="/dm/:roomId" element={<DMPage />} />
+      <Route path="/community" element={<CommunityListPage />} />
+      <Route path="/community/browse" element={<CommunityBoardListPage />} />
+      <Route path="/community/create" element={<CommunityCreatePage />} />
+      <Route path="/community/chat/:roomId" element={<CommunityRoomPage />} />
+      <Route path="/community/edit/:communityID" element={<CommunityEditPage />} />
+      <Route path="/community/members/:communityID" element={<CommunityMembersPage />} />
+      <Route path="/home" element={<PostListPage />} />
+      <Route path="/posts/:id" element={<PostDetailPage />} />
+      <Route path="/notifications" element={<NotificationListPage />} />
+      <Route path="/notifications/:id" element={<NotificationDetailPage />} />
+      <Route path="/announcements/:id" element={<AnnouncementDetailPage />} />
+    </Route>
     <Route path="*" element={<NotFoundPage />} />
   </Route>
 );

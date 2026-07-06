@@ -1,13 +1,10 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { TermsConsentModal } from './organisms/TermsConsentModal';
+import { UnreadRoomCountsProvider } from '../context/UnreadRoomCountsContext';
 
-interface Props {
-  children: React.ReactNode;
-}
-
-export const UserProtectedRoute = ({ children }: Props) => {
+export const UserProtectedRoute = () => {
   const { token } = useAuth();
   const { pendingTerms, consentChecking, clearPendingTerms } = useNotification();
 
@@ -20,14 +17,14 @@ export const UserProtectedRoute = ({ children }: Props) => {
   }
 
   return (
-    <>
+    <UnreadRoomCountsProvider>
       {pendingTerms && (
         <TermsConsentModal
           terms={pendingTerms}
           onConsented={clearPendingTerms}
         />
       )}
-      {children}
-    </>
+      <Outlet />
+    </UnreadRoomCountsProvider>
   );
 };
