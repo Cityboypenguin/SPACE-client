@@ -55,8 +55,10 @@ export const CommunityListPage = () => {
     loadingMore,
   );
 
-  useUnreadSubscription(({ roomID, unreadCount }) => {
-    setCommunities(prev => prev.map(c => c.roomID === roomID ? { ...c, unreadCount } : c));
+  useUnreadSubscription(({ roomID, unreadCount, lastMessage }) => {
+    setCommunities(prev => prev.map(c => c.roomID === roomID
+      ? { ...c, unreadCount, ...(lastMessage !== undefined ? { lastMessage } : {}) }
+      : c));
   });
 
   const filteredCommunities = communities.filter((c) => {

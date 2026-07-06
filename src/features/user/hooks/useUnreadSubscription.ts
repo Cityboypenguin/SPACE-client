@@ -1,30 +1,24 @@
 import { useEffect, useRef } from 'react';
-import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 
-const MY_UNREAD_UPDATED_SUBSCRIPTION = `
-  subscription MyUnreadUpdated {
-    myUnreadUpdated {
-      roomID
-      unreadCount
-    }
-  }
-`;
+type UnreadUpdate = { roomID: string; unreadCount: number; lastMessage?: string };
+type Listener = (update: UnreadUpdate) => void;
 
-type UnreadUpdate = { roomID: string; unreadCount: number };
+const listeners = new Set<Listener>();
 
-export const useUnreadSubscription = (
-  onUpdate: (update: UnreadUpdate) => void,
-) => {
+// NotificationContext の SSE 接続（unread_room イベント）から呼ばれる
+export const emitUnreadRoomUpdate = (update: UnreadUpdate) => {
+  for (const listener of listeners) listener(update);
+};
+
+export const useUnreadSubscription = (onUpdate: Listener) => {
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
   useEffect(() => {
-    const unsubscribe = subscribeToGraphQL<{ myUnreadUpdated: UnreadUpdate }>(
-      MY_UNREAD_UPDATED_SUBSCRIPTION,
-      {},
-      (data) => onUpdateRef.current(data.myUnreadUpdated),
-      (err) => console.error('[useUnreadSubscription] error:', err),
-    );
-    return () => unsubscribe();
+    const listener: Listener = (update) => onUpdateRef.current(update);
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
   }, []);
 };

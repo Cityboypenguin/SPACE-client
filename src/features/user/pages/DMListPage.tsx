@@ -61,9 +61,11 @@ export const DMListPage = () => {
     dmLoadingMore,
   );
 
-  useUnreadSubscription(({ roomID, unreadCount }) => {
+  useUnreadSubscription(({ roomID, unreadCount, lastMessage }) => {
     setDmRooms((prev) =>
-      prev.map((room) => room.ID === roomID ? { ...room, unreadCount } : room),
+      prev.map((room) => room.ID === roomID
+        ? { ...room, unreadCount, ...(lastMessage !== undefined ? { lastMessage } : {}) }
+        : room),
     );
   });
 

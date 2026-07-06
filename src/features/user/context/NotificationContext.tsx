@@ -10,6 +10,7 @@ import {
 import { useAuth } from './AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
+import { emitUnreadRoomUpdate } from '../hooks/useUnreadSubscription';
 
 import { SSE_URL } from '../../../lib/graphql';
 
@@ -111,6 +112,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       refreshConsent();
     });
     es.addEventListener('terms_updated', refreshConsent);
+
+    es.addEventListener('unread_room', (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data as string) as { roomID: string; unreadCount: number };
+        emitUnreadRoomUpdate(payload);
+      } catch {
+        // ignore malformed event
+      }
+    });
 
     es.addEventListener('notification', (e: MessageEvent) => {
       console.log('[SSE] notification raw data:', e.data);
