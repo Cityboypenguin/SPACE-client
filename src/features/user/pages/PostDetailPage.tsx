@@ -36,7 +36,7 @@ import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
 import { useToast } from '../../../context/ToastContext';
 import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
-import { renderTextWithLinks } from '../components/atoms/renderTextWithLinks';
+import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();

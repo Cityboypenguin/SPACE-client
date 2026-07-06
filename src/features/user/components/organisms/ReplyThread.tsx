@@ -8,7 +8,7 @@ import { type Post } from '../../api/post';
 import { countAllReplies } from '../../../../lib/postUtils';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
 import styles from './ReplyThread.module.css';
-import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
+import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
 
 type Props = {
   post: Post;

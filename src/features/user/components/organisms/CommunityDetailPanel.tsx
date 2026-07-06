@@ -10,7 +10,7 @@ import personIcon from '../../../../assets/パーツ_人間.svg';
 import redLeaveIcon from '../../../../assets/パーツ_退出（赤）.svg';
 import reportIcon from '../../../../assets/パーツ_通報.svg';
 import styles from './CommunityDetailPanel.module.css';
-import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
+import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
 
 type Props = {
   community: Community;

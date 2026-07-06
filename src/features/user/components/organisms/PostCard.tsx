@@ -11,7 +11,7 @@ import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './PostCard.module.css';
-import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
+import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
 
 type Props = {
   post: Post;

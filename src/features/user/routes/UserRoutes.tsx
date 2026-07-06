@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Route } from 'react-router-dom';
 import { NotFoundPage } from '../../../components/pages/NotFoundPage';
 import { MaintenanceGuardLayout } from '../../../components/MaintenanceGuardLayout';
-import { UserProtectedRoute } from '../components/UserProtectedRoute';
+import { UserProtectedRoute } from './UserProtectedRoute';
 
 const UserLoginForm = lazy(() =>
   import('../components/organisms/UserLoginForm').then((m) => ({ default: m.UserLoginForm })),

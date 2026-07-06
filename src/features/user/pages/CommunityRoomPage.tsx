@@ -16,7 +16,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
-import styles from '../components/organisms/chatRoom.module.css';
+import styles from '../components/ChatRoom.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import swal from 'sweetalert2';
 

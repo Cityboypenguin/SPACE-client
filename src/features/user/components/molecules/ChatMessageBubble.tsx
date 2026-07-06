@@ -4,7 +4,7 @@ import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message, type Media } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { storageUrl } from '../../../../lib/storage';
-import styles from '../organisms/chatRoom.module.css';
+import styles from '../ChatRoom.module.css';
 
 const URL_REGEX = /(https?:\/\/[^\s　《》「」（）、。！？]+)/g;
 
