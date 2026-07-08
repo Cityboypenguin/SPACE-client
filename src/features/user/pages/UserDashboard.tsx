@@ -294,7 +294,7 @@ export const UserDashboard = () => {
       <Link to="/mypage/profile-edit" className={styles.actionButton}>プロフィール編集</Link>
       <Link to="/mypage/user-info-edit" className={styles.actionButton}>ユーザー情報の編集</Link>
       <Link to="/mypage/favorites" className={styles.actionButton}>お気に入りリスト</Link>
-      <Link to="/mypage/followers" className={styles.actionButton}>フォロワー</Link>
+      {/* <Link to="/mypage/followers" className={styles.actionButton}>フォロワー</Link> */}
     </div>
   );
 
