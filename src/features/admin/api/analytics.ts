@@ -24,6 +24,7 @@ export type AnalyticsSummary = {
   totalReports: number;
   totalBlocks: number;
   totalInquiries: number;
+  currentActiveUsers: number;
   dau: number;
   wau: number;
   mau: number;
@@ -83,7 +84,7 @@ const AdminGetAnalyticsDocument = graphql(`
       totalUsers newUsersToday newUsersThisWeek newUsersThisMonth frozenUsersCount
       totalPosts totalComments totalDeletedPosts totalLikes totalCommunities
       totalMessages totalReports totalBlocks totalInquiries
-      dau wau mau dauMauRatio
+      currentActiveUsers dau wau mau dauMauRatio
       postsToday commentsToday messagesToday
       avgLikesPerPost avgCommentsPerPost
       postsTextOnly postsWithImage postsWithVideo
@@ -125,12 +126,13 @@ export type TimeSeriesPoint = {
   messages: number;
   newUsers: number;
   likes: number;
+  activeUsers: number;
 };
 
 const AdminGetTimeSeriesDocument = graphql(`
   query AdminGetTimeSeries($granularity: TimeSeriesGranularity!, $from: String!, $to: String!) {
     adminGetTimeSeries(granularity: $granularity, from: $from, to: $to) {
-      points { label posts comments messages newUsers likes }
+      points { label posts comments messages newUsers likes activeUsers }
     }
   }
 `);

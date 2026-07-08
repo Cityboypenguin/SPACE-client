@@ -50,6 +50,7 @@ function exportSummaryCsv(data: AnalyticsSummary) {
     ['新規登録（本日）', data.newUsersToday],
     ['新規登録（今週）', data.newUsersThisWeek],
     ['新規登録（今月）', data.newUsersThisMonth],
+    ['アクティブユーザー（直近3日）', data.currentActiveUsers],
     ['DAU', data.dau],
     ['WAU', data.wau],
     ['MAU', data.mau],
@@ -178,7 +179,8 @@ export const AdminAnalyticsPage = () => {
         <div style={section}>
           <div style={sectionTitle}>アクティビティ・継続率</div>
           <div style={grid(4)}>
-            <Stat label="DAU（本日）" value={fmtInt(data.dau)} />
+            <Stat label="アクティブユーザー（直近3日）" value={fmtInt(data.currentActiveUsers)} />
+            <Stat label="本日のアクティブユーザー" value={fmtInt(data.dau)} />
             <Stat label="WAU（今週）" value={fmtInt(data.wau)} />
             <Stat label="MAU（今月）" value={fmtInt(data.mau)} />
             <Stat label="DAU/MAU比率（スティッキネス）" value={`${fmt(data.dauMauRatio)}%`} />
