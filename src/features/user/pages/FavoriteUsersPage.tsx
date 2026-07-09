@@ -89,7 +89,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
     <div>
       <UserSidebar />
       <main style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
-        <button onClick={() => navigate('/mypage')} style={{ marginBottom: '1rem' }}><ChevronLeft /> マイページに戻る</button>
+        <button onClick={() => navigate('/mypage')}><ChevronLeft /> マイページに戻る</button>
         <h1>{isFollowersMode ? 'フォロワー' : 'お気に入りリスト'}</h1>
 
         {initialLoading ? (

@@ -51,15 +51,6 @@ export const AdminTermsDetailPage: React.FC = () => {
       <main style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1rem' }}>
         <button
           onClick={() => navigate('/admin/terms')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#3b82f6',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-            marginBottom: '1rem',
-            padding: 0,
-          }}
         >
           <ChevronLeft /> 利用規約一覧に戻る
         </button>

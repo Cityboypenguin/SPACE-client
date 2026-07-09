@@ -68,15 +68,6 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
       <main style={{ maxWidth: 700, margin: '2rem auto', padding: '0 1rem' }}>
         <button
           onClick={() => navigate('/admin/announcements')}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#3b82f6',
-            fontSize: '0.875rem',
-            padding: '0.25rem 0',
-            marginBottom: '1.5rem',
-          }}
         >
           <ChevronLeft /> お知らせ一覧に戻る
         </button>

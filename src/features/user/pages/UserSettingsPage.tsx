@@ -54,7 +54,7 @@ const PasswordView = ({ onBack }: { onBack: () => void }) => {
   return (
     <>
       <h2 className={styles.backTitle}>
-        <button className={styles.backBtn} onClick={onBack}><ChevronLeft /></button>
+        <button onClick={onBack}><ChevronLeft /></button>
         パスワード変更
       </h2>
       <form className={styles.form} onSubmit={handleSubmit}>
@@ -154,7 +154,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
   return (
     <>
       <h2 className={styles.backTitle}>
-        <button className={styles.backBtn} onClick={onBack}><ChevronLeft /></button>
+        <button onClick={onBack}><ChevronLeft /></button>
         ブロックリスト
       </h2>
       {initialLoading ? (

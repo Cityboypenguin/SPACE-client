@@ -326,7 +326,7 @@ export const UserPublicProfilePage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <button onClick={() => navigate(-1)}>
             <ChevronLeft />
           </button>
           {profile && !isMe && (

@@ -117,7 +117,7 @@ export const CommunityMembersPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.header}>
-          <button className={styles.backButton} onClick={handleBack}>
+          <button onClick={handleBack}>
             <ChevronLeft />
           </button>
           <h1 className={styles.title}>メンバー一覧</h1>
