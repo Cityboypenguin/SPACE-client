@@ -131,7 +131,7 @@ export const CommunityEditPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.header}>
-          <button className={styles.backButton} onClick={handleBack}>
+          <button onClick={handleBack}>
             <ChevronLeft />
           </button>
         </div>

@@ -272,7 +272,7 @@ export const PostDetailPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.pageHeader}>
-          <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
+          <button onClick={() => navigate(-1)}><ChevronLeft /></button>
           <h1 className={styles.pageTitle}>投稿</h1>
         </div>
 

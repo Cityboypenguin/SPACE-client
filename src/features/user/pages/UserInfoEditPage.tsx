@@ -86,7 +86,7 @@ export const UserInfoEditPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.header}>
-          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <button onClick={() => navigate(-1)}>
             <ChevronLeft />
           </button>
           <h1 className={styles.title}>ユーザー情報の編集</h1>

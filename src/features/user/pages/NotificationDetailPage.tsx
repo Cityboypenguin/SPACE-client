@@ -102,7 +102,7 @@ export const NotificationDetailPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <button type="button" className={styles.backBtn} onClick={() => navigate(-1)}>
+          <button type="button" onClick={() => navigate(-1)}>
             <ChevronLeft />
           </button>
           {notification && (

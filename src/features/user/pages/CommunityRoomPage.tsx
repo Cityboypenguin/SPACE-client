@@ -164,7 +164,7 @@ export const CommunityRoomPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/community')}><ChevronLeft /></button>
+        <button onClick={() => navigate('/community')}><ChevronLeft /></button>
         <button
           onClick={() => openDetail()}
           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, flex: 1, overflow: 'hidden' }}

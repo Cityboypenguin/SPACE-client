@@ -130,7 +130,6 @@ export const CommunityBoardListPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
           <button
             onClick={() => navigate('/community')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#646cff', fontWeight: 600, padding: 0 }}
           >
             <ChevronLeft /> 戻る
           </button>

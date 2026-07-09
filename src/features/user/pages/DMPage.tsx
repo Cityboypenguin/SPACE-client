@@ -109,7 +109,7 @@ export const DMPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
+        <button onClick={() => navigate(-1)}><ChevronLeft /></button>
         {partner ? (
           <button
             type="button"

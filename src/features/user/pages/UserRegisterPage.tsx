@@ -331,7 +331,7 @@ export const UserRegisterPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={goBack} type="button">
+        <button onClick={goBack} type="button">
           <ChevronLeft />
         </button>
         <h1 className={styles.pageTitle}>新規会員登録</h1>
@@ -439,7 +439,7 @@ export const UserRegisterPage = () => {
               sendError={otpSendError}
             />
             <div className={styles.actionRow}>
-              <button type="button" className={styles.btnOutline} onClick={() => setStep(2)}>
+              <button type="button" onClick={() => setStep(2)}>
                 <ChevronLeft /> 戻る
               </button>
               <button
@@ -507,7 +507,7 @@ export const UserRegisterPage = () => {
             )}
             {submitError && <p className={styles.submitError}>{submitError}</p>}
             <div className={styles.actionRow}>
-              <button type="button" className={styles.btnOutline} onClick={() => setStep(3)}>
+              <button type="button" onClick={() => setStep(3)}>
                 <ChevronLeft /> 戻る
               </button>
               <button

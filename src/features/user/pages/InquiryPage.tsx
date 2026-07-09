@@ -11,7 +11,7 @@ export const InquiryPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+        <button onClick={() => navigate(-1)}>
           <ChevronLeft />
         </button>
         <h1 className={styles.title}>お問い合わせ</h1>

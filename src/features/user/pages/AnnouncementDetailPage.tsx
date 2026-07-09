@@ -21,15 +21,6 @@ export const AnnouncementDetailPage = () => {
       <main style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
         <button
           onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#3b82f6',
-            fontSize: '0.875rem',
-            padding: '0.25rem 0',
-            marginBottom: '1rem',
-          }}
         >
           <ChevronLeft /> 戻る
         </button>

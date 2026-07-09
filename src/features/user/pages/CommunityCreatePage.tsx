@@ -81,7 +81,7 @@ export const CommunityCreatePage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.header}>
-          <button className={styles.backButton} onClick={() => navigate('/community')}>
+          <button onClick={() => navigate('/community')}>
             <ChevronLeft />
           </button>
           <h1 className={styles.title}>コミュニティを作る</h1>
