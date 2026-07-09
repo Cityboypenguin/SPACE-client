@@ -67,9 +67,12 @@ const validatePassword = (value: string): string => {
 };
 
 const accountIDRe = /^[a-zA-Z0-9_-]+$/;
+const MAX_NAME_LENGTH = 50;
+const MAX_ACCOUNT_ID_LENGTH = 15;
 
 const validateAccountID = (value: string): string => {
   if (value && !accountIDRe.test(value)) return 'ユーザーIDは半角英数字・_・-のみ使用できます';
+  if ([...value].length > MAX_ACCOUNT_ID_LENGTH) return `ユーザーIDは${MAX_ACCOUNT_ID_LENGTH}文字以内で入力してください`;
   return '';
 };
 
@@ -276,6 +279,7 @@ export const UserRegisterPage = () => {
   const handleSubmit = async () => {
     const errors: string[] = [];
     if (!name) errors.push('ユーザー名を入力してください');
+    else if ([...name].length > MAX_NAME_LENGTH) errors.push(`名前は${MAX_NAME_LENGTH}文字以内で入力してください`);
     if (!accountID) errors.push('ユーザーIDを入力してください');
     else if (accountIDError) errors.push(accountIDError);
     if (!password) errors.push('パスワードを入力してください');
@@ -459,6 +463,7 @@ export const UserRegisterPage = () => {
               <input
                 type="text"
                 value={name}
+                maxLength={MAX_NAME_LENGTH}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="表示名"
                 className={styles.input}
@@ -469,6 +474,7 @@ export const UserRegisterPage = () => {
               <input
                 type="text"
                 value={accountID}
+                maxLength={MAX_ACCOUNT_ID_LENGTH}
                 onChange={(e) => {
                   setAccountID(e.target.value);
                   setAccountIDError(validateAccountID(e.target.value));
