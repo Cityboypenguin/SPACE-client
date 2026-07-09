@@ -132,6 +132,8 @@ type Documents = {
     "\n  query NewFeedPostsCount($since: String!) {\n    newFeedPostsCount(since: $since)\n  }\n": typeof types.NewFeedPostsCountDocument,
     "\n  query SearchPosts($keyword: String!) {\n    searchPosts(keyword: $keyword) {\n      ...PostFields\n      replies {\n        ID\n      }\n    }\n  }\n": typeof types.SearchPostsDocument,
     "\n  query SearchPostsByHashtag($tag: String!) {\n    searchPostsByHashtag(tag: $tag) {\n      ...PostFields\n      replies {\n        ID\n      }\n    }\n  }\n": typeof types.SearchPostsByHashtagDocument,
+    "\n  query PopularHashtags {\n    popularHashtags {\n      items {\n        tag\n        count\n      }\n      total\n    }\n  }\n": typeof types.PopularHashtagsDocument,
+    "\n  query SuggestHashtags($prefix: String!, $limit: Int) {\n    suggestHashtags(prefix: $prefix, limit: $limit) {\n      tag\n      count\n    }\n  }\n": typeof types.SuggestHashtagsDocument,
     "\n  query FollowersTopLevelPosts($userID: ID!, $limit: Int, $offset: Int) {\n    followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {\n      items {\n        ...PostFields\n        replies {\n          ID\n        }\n      }\n      total\n    }\n  }\n": typeof types.FollowersTopLevelPostsDocument,
     "\n  query Me {\n    me {\n      ID\n      accountID\n      name\n      email\n      role\n      status\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.MeDocument,
     "\n  query SearchUsers($keyword: String!, $limit: Int, $offset: Int) {\n    searchUsers(keyword: $keyword, limit: $limit, offset: $offset) {\n      items {\n        ID\n        accountID\n        name\n        email\n        role\n        status\n        avatarUrl\n        createdAt\n        updatedAt\n      }\n      total\n    }\n  }\n": typeof types.SearchUsersDocument,
@@ -266,6 +268,8 @@ const documents: Documents = {
     "\n  query NewFeedPostsCount($since: String!) {\n    newFeedPostsCount(since: $since)\n  }\n": types.NewFeedPostsCountDocument,
     "\n  query SearchPosts($keyword: String!) {\n    searchPosts(keyword: $keyword) {\n      ...PostFields\n      replies {\n        ID\n      }\n    }\n  }\n": types.SearchPostsDocument,
     "\n  query SearchPostsByHashtag($tag: String!) {\n    searchPostsByHashtag(tag: $tag) {\n      ...PostFields\n      replies {\n        ID\n      }\n    }\n  }\n": types.SearchPostsByHashtagDocument,
+    "\n  query PopularHashtags {\n    popularHashtags {\n      items {\n        tag\n        count\n      }\n      total\n    }\n  }\n": types.PopularHashtagsDocument,
+    "\n  query SuggestHashtags($prefix: String!, $limit: Int) {\n    suggestHashtags(prefix: $prefix, limit: $limit) {\n      tag\n      count\n    }\n  }\n": types.SuggestHashtagsDocument,
     "\n  query FollowersTopLevelPosts($userID: ID!, $limit: Int, $offset: Int) {\n    followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {\n      items {\n        ...PostFields\n        replies {\n          ID\n        }\n      }\n      total\n    }\n  }\n": types.FollowersTopLevelPostsDocument,
     "\n  query Me {\n    me {\n      ID\n      accountID\n      name\n      email\n      role\n      status\n      createdAt\n      updatedAt\n    }\n  }\n": types.MeDocument,
     "\n  query SearchUsers($keyword: String!, $limit: Int, $offset: Int) {\n    searchUsers(keyword: $keyword, limit: $limit, offset: $offset) {\n      items {\n        ID\n        accountID\n        name\n        email\n        role\n        status\n        avatarUrl\n        createdAt\n        updatedAt\n      }\n      total\n    }\n  }\n": types.SearchUsersDocument,
@@ -768,6 +772,14 @@ export function graphql(source: "\n  query SearchPosts($keyword: String!) {\n   
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query SearchPostsByHashtag($tag: String!) {\n    searchPostsByHashtag(tag: $tag) {\n      ...PostFields\n      replies {\n        ID\n      }\n    }\n  }\n"): (typeof documents)["\n  query SearchPostsByHashtag($tag: String!) {\n    searchPostsByHashtag(tag: $tag) {\n      ...PostFields\n      replies {\n        ID\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query PopularHashtags {\n    popularHashtags {\n      items {\n        tag\n        count\n      }\n      total\n    }\n  }\n"): (typeof documents)["\n  query PopularHashtags {\n    popularHashtags {\n      items {\n        tag\n        count\n      }\n      total\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query SuggestHashtags($prefix: String!, $limit: Int) {\n    suggestHashtags(prefix: $prefix, limit: $limit) {\n      tag\n      count\n    }\n  }\n"): (typeof documents)["\n  query SuggestHashtags($prefix: String!, $limit: Int) {\n    suggestHashtags(prefix: $prefix, limit: $limit) {\n      tag\n      count\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
