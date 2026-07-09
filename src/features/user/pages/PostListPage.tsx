@@ -81,6 +81,7 @@ export const PostListPage = () => {
 
   // フォローフィードのデータ取得・ページングは useFollowFeed に分離済み。
   const followFeed = useFollowFeed(userId);
+  const { ensureLoaded: followFeedEnsureLoaded } = followFeed;
 
   const postsRef = useRef(posts);
   const totalRef = useRef(total);
@@ -158,9 +159,9 @@ export const PostListPage = () => {
 
   useEffect(() => {
     if (activeTab === 'favorites') {
-      followFeed.ensureLoaded();
+      followFeedEnsureLoaded();
     }
-  }, [activeTab, followFeed]);
+  }, [activeTab, followFeedEnsureLoaded]);
 
   const loadPosts = useCallback(async (currentOffset: number, mode: 'initial' | 'refresh' | 'more') => {
     if (loadingRef.current) return;
@@ -485,7 +486,6 @@ export const PostListPage = () => {
   return (
     <div>
       <UserSidebar />
-
       <div className={`${styles.fabGroup} ${showScrollTop ? styles.fabGroupExpanded : ''}`}>
         <button
           className={`${styles.scrollTopFab} ${showScrollTop ? styles.scrollTopFabVisible : ''}`}
