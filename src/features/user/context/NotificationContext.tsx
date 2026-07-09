@@ -172,10 +172,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           }
           setUnreadCount((c) => c + 1);
           setLastSseAt(Date.now());
-          const link =
-            payload.type === 'announcement' && payload.targetID
-              ? `/announcements/${payload.targetID}`
-              : `/notifications/${payload.id}`;
+          let link = `/notifications/${payload.id}`;
+          if (payload.type === 'announcement' && payload.targetID) {
+            link = `/announcements/${payload.targetID}`;
+          } else if (payload.type === 'dm' && payload.targetType === 'room' && payload.targetID) {
+            // DM は通知詳細をスキップして個別 DM ルームへ直行（通知一覧のタップ挙動と揃える）
+            link = `/dm/${payload.targetID}`;
+          }
           console.log('[SSE] calling addToast:', payload.message, link);
           addToastRef.current(payload.message, 'info', 4000, link);
         } catch (err) {
