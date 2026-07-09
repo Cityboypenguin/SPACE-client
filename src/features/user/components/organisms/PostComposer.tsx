@@ -3,6 +3,8 @@ import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import { useToast } from '../../../../context/ToastContext';
+import { useHashtagSuggestions } from '../../hooks/useHashtagSuggestions';
+import { HashtagSuggestionList } from '../molecules/HashtagSuggestionList';
 import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
 import styles from './PostComposer.module.css';
 
@@ -16,6 +18,19 @@ const MAX_IMAGES = 4;
 const HASHTAG_HL_REGEX = /#[^\s]+/g;
 const WHITESPACE_REGEX = /\s/;
 const HASHTAG_COLOR = '#1d9bf0';
+
+// キャレット位置(caret)から、いま編集中のハッシュタグトークンを取り出す。
+// 返り値: { query: "#"の後ろ〜caretの文字列, start: "#"の位置, end: トークン末尾 } / なければ null。
+function getActiveHashtag(text: string, caret: number): { query: string; start: number; end: number } | null {
+  let i = caret - 1;
+  while (i >= 0 && !WHITESPACE_REGEX.test(text[i]) && text[i] !== '#') i--;
+  if (i < 0 || text[i] !== '#') return null;
+  // "#" は本文先頭 or 直前が空白のときのみ有効。
+  if (!(i === 0 || WHITESPACE_REGEX.test(text[i - 1]))) return null;
+  let end = caret;
+  while (end < text.length && !WHITESPACE_REGEX.test(text[end])) end++;
+  return { query: text.slice(i + 1, caret), start: i, end };
+}
 
 function renderHashtagHighlight(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
@@ -71,6 +86,7 @@ type Props = {
   cancelLabel?: string;
   isEmbedded?: boolean;
   maxLength?: number;
+  enableHashtagSuggestions?: boolean;
 };
 
 export const PostComposer = ({
@@ -97,6 +113,7 @@ export const PostComposer = ({
   cancelLabel = 'キャンセル',
   isEmbedded = false,
   maxLength,
+  enableHashtagSuggestions = false,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -109,6 +126,39 @@ export const PostComposer = ({
 
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+  // ハッシュタグサジェスト用の状態。
+  const [caretPos, setCaretPos] = useState(0);
+  const [focused, setFocused] = useState(false);
+  const [suggestDismissed, setSuggestDismissed] = useState(false);
+  const [suggestActiveIndex, setSuggestActiveIndex] = useState(0);
+
+  const activeHashtag = enableHashtagSuggestions ? getActiveHashtag(value, caretPos) : null;
+  const suggestions = useHashtagSuggestions(
+    focused && !suggestDismissed && activeHashtag ? activeHashtag.query : null,
+  );
+  const showSuggestions = enableHashtagSuggestions && focused && !suggestDismissed && activeHashtag !== null && suggestions.length > 0;
+
+  const selectSuggestion = (tag: string) => {
+    if (!activeHashtag) return;
+    const before = value.slice(0, activeHashtag.start);
+    const after = value.slice(activeHashtag.end);
+    // 直後が空白でなければ空白を補い、続けて入力できるようにする。
+    const needsSpace = after === '' || !WHITESPACE_REGEX.test(after[0]);
+    const inserted = `#${tag}${needsSpace ? ' ' : ''}`;
+    const newValue = `${before}${inserted}${after}`;
+    const newCaret = before.length + inserted.length;
+    onChange(newValue);
+    setSuggestDismissed(true);
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        el.selectionStart = el.selectionEnd = newCaret;
+        setCaretPos(newCaret);
+      }
+    });
+  };
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -278,7 +328,39 @@ export const PostComposer = ({
           <textarea
             ref={textareaRef}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+              onChange(e.target.value);
+              if (enableHashtagSuggestions) {
+                setCaretPos(e.target.selectionStart ?? 0);
+                setSuggestDismissed(false);
+                setSuggestActiveIndex(0);
+              }
+            }}
+            onKeyUp={(e) => { if (enableHashtagSuggestions) setCaretPos(e.currentTarget.selectionStart ?? 0); }}
+            onClick={(e) => { if (enableHashtagSuggestions) setCaretPos(e.currentTarget.selectionStart ?? 0); }}
+            onFocus={() => { if (enableHashtagSuggestions) { setFocused(true); setSuggestDismissed(false); } }}
+            onBlur={() => { if (enableHashtagSuggestions) setFocused(false); }}
+            onKeyDown={(e) => {
+              if (!showSuggestions) return;
+              // IME変換中の Enter 等は確定操作なので横取りしない。
+              if (e.nativeEvent.isComposing) return;
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSuggestActiveIndex(prev => {
+                  const clamped = Math.min(prev, suggestions.length - 1);
+                  return e.key === 'ArrowDown'
+                    ? Math.min(clamped + 1, suggestions.length - 1)
+                    : Math.max(clamped - 1, 0);
+                });
+              } else if (e.key === 'Enter' || e.key === 'Tab') {
+                // 候補が出ているときは Enter/Tab で確定（改行は挿入しない）。
+                e.preventDefault();
+                const chosen = suggestions[Math.min(suggestActiveIndex, suggestions.length - 1)];
+                if (chosen) selectSuggestion(chosen.tag);
+              } else if (e.key === 'Escape') {
+                setSuggestDismissed(true);
+              }
+            }}
             onPaste={handlePaste}
             onScroll={(e) => {
               if (backdropRef.current) {
@@ -290,6 +372,16 @@ export const PostComposer = ({
             rows={rows}
             className={`${styles.textarea} ${styles.textareaHighlighted} ${large ? styles.textareaLarge : styles.textareaSmall}`}
           />
+          {showSuggestions && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>
+              <HashtagSuggestionList
+                suggestions={suggestions}
+                activeIndex={Math.min(suggestActiveIndex, suggestions.length - 1)}
+                onSelect={selectSuggestion}
+                onHover={setSuggestActiveIndex}
+              />
+            </div>
+          )}
         </div>
         {maxLength !== undefined && (
           <div className={`${styles.charCount} ${overLimit ? styles.charCountOver : ''}`}>

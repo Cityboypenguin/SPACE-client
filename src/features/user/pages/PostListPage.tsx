@@ -31,6 +31,8 @@ import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useFollowFeed } from '../hooks/useFollowFeed';
+import { useHashtagSuggestions } from '../hooks/useHashtagSuggestions';
+import { HashtagSuggestionList } from '../components/molecules/HashtagSuggestionList';
 import { Footer } from '../../../components/organisms/Footer';
 
 const LIMIT = 20;
@@ -76,7 +78,20 @@ export const PostListPage = () => {
   const [searchResults, setSearchResults] = useState<Post[]>(initialCache?.searchResults ?? []);
   const [searchDisplayedCount, setSearchDisplayedCount] = useState(LIMIT);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [suggestDismissed, setSuggestDismissed] = useState(false);
+  const [suggestActiveIndex, setSuggestActiveIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'recommended' | 'favorites'>('recommended');
+
+  // 検索ボックスが "#..." のとき、入力中のタグ本体（"#"の後〜最初の空白まで）をサジェスト対象にする。
+  const searchHashtagQuery = (() => {
+    const m = searchQuery.match(/^#(\S*)/);
+    return m ? m[1] : null;
+  })();
+  const suggestions = useHashtagSuggestions(
+    searchFocused && !suggestDismissed ? searchHashtagQuery : null,
+  );
+  const showSuggestions = suggestions.length > 0 && searchFocused && !suggestDismissed;
   const lastScrollYRef = useRef(0);
 
   // フォローフィードのデータ取得・ページングは useFollowFeed に分離済み。
@@ -130,6 +145,13 @@ export const PostListPage = () => {
       setSearchLoading(false);
     }
   }, []);
+
+  const handleSelectHashtag = useCallback((tag: string) => {
+    setSearchQuery(`#${tag}`);
+    setSuggestDismissed(true);
+    setSearchFocused(false);
+    void handleSearch(`#${tag}`);
+  }, [handleSearch]);
 
   // ハッシュタグをクリックして /home?q=#tag に遷移してきたら、ホームの検索を実行する。
   useEffect(() => {
@@ -524,6 +546,7 @@ export const PostListPage = () => {
               maxLength={500}
               isEmbedded
               rows={3}
+              enableHashtagSuggestions
             />
           </div>
         </div>
@@ -564,24 +587,59 @@ export const PostListPage = () => {
           </div>
         )}
 
-        <div className={styles.searchBar}>
-          <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-          </svg>
-          <input
-            className={styles.searchInput}
-            type="text"
-            placeholder="search"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSearch(searchQuery); }}
-          />
-          {searchQuery && (
-            <button
-              className={styles.searchClear}
-              onClick={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); }}
-              aria-label="クリア"
-            >✕</button>
+        <div style={{ position: 'relative' }}>
+          <div className={styles.searchBar}>
+            <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder="search"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
+              onFocus={() => { setSearchFocused(true); setSuggestDismissed(false); }}
+              onBlur={() => setSearchFocused(false)}
+              onKeyDown={e => {
+                // IME変換中の Enter 等は確定操作なので横取りしない。
+                if (e.nativeEvent.isComposing) return;
+                if (showSuggestions && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+                  e.preventDefault();
+                  setSuggestActiveIndex(prev => {
+                    const clamped = Math.min(prev, suggestions.length - 1);
+                    return e.key === 'ArrowDown'
+                      ? Math.min(clamped + 1, suggestions.length - 1)
+                      : Math.max(clamped - 1, 0);
+                  });
+                  return;
+                }
+                if (e.key === 'Escape') { setSuggestDismissed(true); return; }
+                if (e.key === 'Enter') {
+                  if (showSuggestions) {
+                    const chosen = suggestions[Math.min(suggestActiveIndex, suggestions.length - 1)];
+                    if (chosen) { e.preventDefault(); handleSelectHashtag(chosen.tag); return; }
+                  }
+                  handleSearch(searchQuery);
+                }
+              }}
+            />
+            {searchQuery && (
+              <button
+                className={styles.searchClear}
+                onClick={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); setSuggestDismissed(true); }}
+                aria-label="クリア"
+              >✕</button>
+            )}
+          </div>
+          {showSuggestions && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>
+              <HashtagSuggestionList
+                suggestions={suggestions}
+                activeIndex={Math.min(suggestActiveIndex, suggestions.length - 1)}
+                onSelect={handleSelectHashtag}
+                onHover={setSuggestActiveIndex}
+              />
+            </div>
           )}
         </div>
 
@@ -601,6 +659,7 @@ export const PostListPage = () => {
           selectedFiles={selectedFiles}
           onFileSelect={setSelectedFiles}
           maxLength={500}
+          enableHashtagSuggestions
         />
 
         {!isSearching && (
