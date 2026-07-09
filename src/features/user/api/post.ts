@@ -278,6 +278,22 @@ export const searchPosts = async (keyword: string): Promise<Post[]> => {
   return data.searchPosts as Post[];
 };
 
+const SearchPostsByHashtagDocument = graphql(`
+  query SearchPostsByHashtag($tag: String!) {
+    searchPostsByHashtag(tag: $tag) {
+      ...PostFields
+      replies {
+        ID
+      }
+    }
+  }
+`);
+
+export const searchPostsByHashtag = async (tag: string): Promise<Post[]> => {
+  const data = await requestDoc(SearchPostsByHashtagDocument, { tag }, getUserToken());
+  return data.searchPostsByHashtag as Post[];
+};
+
 const FollowersTopLevelPostsDocument = graphql(`
   query FollowersTopLevelPosts($userID: ID!, $limit: Int, $offset: Int) {
     followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { PostCard } from '../components/organisms/PostCard';
@@ -15,6 +15,7 @@ import {
   getTopLevelPosts,
   getNewFeedPostsCount,
   searchPosts,
+  searchPostsByHashtag,
   createPost,
   updatePost,
   deletePost,
@@ -23,6 +24,7 @@ import {
   type Post,
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
+import { extractHashtags } from '../../../lib/hashtags';
 import { createBlocker } from '../api/block';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
@@ -34,8 +36,25 @@ import { Footer } from '../../../components/organisms/Footer';
 const LIMIT = 20;
 const REFRESH_COOLDOWN_MS = 60 * 1000;
 
+// 検索ボックスが "#タグ" 始まりならハッシュタグ完全一致検索とみなす。[1] がタグ本体。
+const HASHTAG_QUERY_REGEX = /^#(\S+)/;
+
+// 新規投稿が現在の検索条件にヒットするか（サーバーの検索と同じ判定基準）を返す。
+// - "#タグ" 検索: 投稿に同名タグ（完全一致）が含まれるか。
+// - 通常検索: 本文にキーワードが部分一致で含まれるか（大文字小文字は無視）。
+function postMatchesSearch(content: string, query: string): boolean {
+  const trimmed = query.trim();
+  if (!trimmed) return false;
+  const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
+  if (hashtagMatch) {
+    return extractHashtags(content).includes(hashtagMatch[1]);
+  }
+  return content.toLowerCase().includes(trimmed.toLowerCase());
+}
+
 export const PostListPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
   const { addToast } = useToast();
@@ -51,6 +70,9 @@ export const PostListPage = () => {
 
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialCache?.searchQuery ?? '');
+  // submittedQuery は「実際に検索を実行したキーワード」。入力中(searchQuery)とは分離し、
+  // Enter を押すまでは表示中の投稿(タイムライン)を検索結果に切り替えない。
+  const [submittedQuery, setSubmittedQuery] = useState(initialCache?.searchQuery ?? '');
   const [searchResults, setSearchResults] = useState<Post[]>(initialCache?.searchResults ?? []);
   const [searchDisplayedCount, setSearchDisplayedCount] = useState(LIMIT);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -86,7 +108,10 @@ export const PostListPage = () => {
   }, []);
 
   const handleSearch = useCallback(async (keyword: string) => {
-    if (!keyword.trim()) {
+    const trimmed = keyword.trim();
+    // Enter を押したこのタイミングで初めて検索結果表示へ切り替える。
+    setSubmittedQuery(trimmed);
+    if (!trimmed) {
       setSearchResults([]);
       setSearchDisplayedCount(LIMIT);
       return;
@@ -94,7 +119,10 @@ export const PostListPage = () => {
     setSearchLoading(true);
     setSearchDisplayedCount(LIMIT);
     try {
-      const results = await searchPosts(keyword.trim());
+      const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
+      const results = hashtagMatch
+        ? await searchPostsByHashtag(hashtagMatch[1])
+        : await searchPosts(trimmed);
       setSearchResults(results);
     } catch {
       setSearchResults([]);
@@ -102,6 +130,20 @@ export const PostListPage = () => {
       setSearchLoading(false);
     }
   }, []);
+
+  // ハッシュタグをクリックして /home?q=#tag に遷移してきたら、ホームの検索を実行する。
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (!q) return;
+    void (async () => {
+      setSearchQuery(q);
+      window.scrollTo(0, 0);
+      await handleSearch(q);
+      // 使い終わった URL パラメータは消し、リロード/再検索での二重実行を防ぐ。
+      setSearchParams({}, { replace: true });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const [newPostsCount, setNewPostsCount] = useState(0);
   const feedLoadedAtRef = useRef<Date | null>(null);
@@ -216,13 +258,13 @@ export const PostListPage = () => {
         total: totalRef.current,
         offset: postsRef.current.length,
         scrollY: scrollYRef.current,
-        searchQuery,
+        searchQuery: submittedQuery,
         searchResults,
       });
     };
-  }, [posts, total, searchQuery, searchResults]);
+  }, [posts, total, submittedQuery, searchResults]);
 
-  const isSearching = searchQuery.trim() !== '';
+  const isSearching = submittedQuery.trim() !== '';
 
   const recommendedSentinelRef = useInfiniteScroll(
     useCallback(() => {
@@ -256,7 +298,7 @@ export const PostListPage = () => {
       total: totalRef.current,
       offset: postsRef.current.length,
       scrollY: scrollYRef.current,
-      searchQuery,
+      searchQuery: submittedQuery,
       searchResults,
     });
     navigate(`/posts/${postId}`);
@@ -273,6 +315,10 @@ export const PostListPage = () => {
       setSelectedFiles([]);
       setPosts(prev => [newPost, ...prev]);
       setTotal(prev => prev + 1);
+      // 検索中で、その検索条件にヒットする投稿なら検索結果にも即時反映する。
+      if (postMatchesSearch(newPost.content, submittedQuery)) {
+        setSearchResults(prev => [newPost, ...prev]);
+      }
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -291,6 +337,10 @@ export const PostListPage = () => {
       setModalFiles([]);
       setPosts(prev => [newPost, ...prev]);
       setTotal(prev => prev + 1);
+      // 検索中で、その検索条件にヒットする投稿なら検索結果にも即時反映する。
+      if (postMatchesSearch(newPost.content, submittedQuery)) {
+        setSearchResults(prev => [newPost, ...prev]);
+      }
       setComposerOpen(false);
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
@@ -529,7 +579,7 @@ export const PostListPage = () => {
           {searchQuery && (
             <button
               className={styles.searchClear}
-              onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+              onClick={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); }}
               aria-label="クリア"
             >✕</button>
           )}

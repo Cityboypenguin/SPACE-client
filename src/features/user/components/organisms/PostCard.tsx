@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../../../../components/molecules/LikeButton';
 import { UserMeta } from '../../../../components/molecules/UserMeta';
@@ -32,6 +33,12 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
   const [isClamped, setIsClamped] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLParagraphElement>(null);
+  const navigate = useNavigate();
+
+  const handleHashtagClick = useCallback((tag: string) => {
+    // ホーム(/home)の検索を使ってハッシュタグ検索する。
+    navigate(`/home?q=${encodeURIComponent(`#${tag}`)}`);
+  }, [navigate]);
 
   useLayoutEffect(() => {
     if (contentRef.current) {
@@ -123,7 +130,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
               ref={contentRef}
               className={`${styles.content} ${!expanded ? styles.contentClamped : ''}`}
             >
-              {renderTextWithLinks({ text: post.content })}
+              {renderTextWithLinks({ text: post.content, onHashtagClick: handleHashtagClick })}
             </p>
             {isClamped && !expanded && (
               <button className={styles.expandButton} onClick={handleExpand}>もっと見る</button>

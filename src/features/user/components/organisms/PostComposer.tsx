@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, type ReactNode } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
@@ -9,6 +9,37 @@ import styles from './PostComposer.module.css';
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_IMAGES = 4;
+
+// 入力中の本文からハッシュタグ部分だけを色付けするためのハイライト用ノードを生成する。
+// ルールは表示側 (renderTextWithLinks) / サーバー側 (hashtag.go) と揃える:
+//   マーカー "#"（直後に空白なし）が本文先頭 or 直前が空白のときのみ、最初の空白までをタグとして着色。
+const HASHTAG_HL_REGEX = /#[^\s]+/g;
+const WHITESPACE_REGEX = /\s/;
+const HASHTAG_COLOR = '#1d9bf0';
+
+function renderHashtagHighlight(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+
+  HASHTAG_HL_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = HASHTAG_HL_REGEX.exec(text)) !== null) {
+    const start = match.index;
+    if (!(start === 0 || WHITESPACE_REGEX.test(text[start - 1]))) {
+      continue;
+    }
+    if (start > lastIndex) {
+      nodes.push(text.slice(lastIndex, start));
+    }
+    nodes.push(
+      <span key={key++} style={{ color: HASHTAG_COLOR }}>{match[0]}</span>,
+    );
+    lastIndex = start + match[0].length;
+  }
+  nodes.push(text.slice(lastIndex));
+  return nodes;
+}
 
 type MinimalMedia = {
   ID: string;
@@ -69,6 +100,7 @@ export const PostComposer = ({
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const previewUrlCacheRef = useRef<Map<File, string>>(new Map());
   const visibleExistingMedia = existingMedia.filter(m => !deletedMediaIDs.includes(m.ID));
   const totalMediaCount = visibleExistingMedia.length + selectedFiles.length;
@@ -235,15 +267,30 @@ export const PostComposer = ({
             {accountId && <span className={styles.accountId}>@{accountId}</span>}
           </div>
         )}
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onPaste={handlePaste}
-          placeholder={placeholder}
-          rows={rows}
-          className={`${styles.textarea} ${large ? styles.textareaLarge : styles.textareaSmall}`}
-        />
+        <div className={styles.textareaStack}>
+          <div
+            ref={backdropRef}
+            aria-hidden="true"
+            className={`${styles.highlightBackdrop} ${large ? styles.textareaLarge : styles.textareaSmall}`}
+          >
+            {renderHashtagHighlight(value)}
+          </div>
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onPaste={handlePaste}
+            onScroll={(e) => {
+              if (backdropRef.current) {
+                backdropRef.current.scrollTop = e.currentTarget.scrollTop;
+                backdropRef.current.scrollLeft = e.currentTarget.scrollLeft;
+              }
+            }}
+            placeholder={placeholder}
+            rows={rows}
+            className={`${styles.textarea} ${styles.textareaHighlighted} ${large ? styles.textareaLarge : styles.textareaSmall}`}
+          />
+        </div>
         {maxLength !== undefined && (
           <div className={`${styles.charCount} ${overLimit ? styles.charCountOver : ''}`}>
             {value.length} / {maxLength}
