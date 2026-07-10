@@ -11,7 +11,7 @@ import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import styles from './DMListPage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 const LIMIT = 20;
 
@@ -71,7 +71,7 @@ export const DMListPage = () => {
 
   const handleDeleteRoom = async (e: React.MouseEvent, roomID: string) => {
     e.stopPropagation();
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'このトークルームを削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

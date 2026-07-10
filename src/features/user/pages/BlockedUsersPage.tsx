@@ -7,7 +7,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useToast } from '../../../context/ToastContext';
 import { useRef } from 'react';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 const LIMIT = 20;
 
@@ -52,7 +52,7 @@ export const BlockedUsersPage = () => {
   );
 
   const handleUnblock = async (targetId: string) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'ブロックを解除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

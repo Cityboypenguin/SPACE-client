@@ -9,7 +9,7 @@ import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/ToastContext';
 import styles from './PostListPage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 import {
   getTopLevelPosts,
@@ -451,7 +451,7 @@ export const PostListPage = () => {
   };
 
   const handleDelete = async (postId: string) => {
-    swal.fire({
+    AppSwal.fire({
       text: '本当に削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
