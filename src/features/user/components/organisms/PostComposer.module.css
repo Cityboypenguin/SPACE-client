@@ -60,6 +60,11 @@
   overflow-y: auto;
   max-height: 240px;
   line-height: 1.5;
+  /* backdrop(div) と字幅を完全に一致させないと、入力のたびにキャレットが 1px ずつズレる。
+     textarea はデフォルトでフォーム用フォントになるため、明示的に本文フォントを継承させる。 */
+  font-family: inherit;
+  letter-spacing: normal;
+  word-spacing: normal;
 }
 
 .textareaLarge {
@@ -89,6 +94,10 @@
   word-break: break-word;
   overflow: hidden;
   pointer-events: none;
+  /* textarea 側と字幅を厳密に揃える（キャレットのズレ防止）。 */
+  font-family: inherit;
+  letter-spacing: normal;
+  word-spacing: normal;
 }
 
 .textareaHighlighted {
