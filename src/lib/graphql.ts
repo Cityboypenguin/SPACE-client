@@ -90,6 +90,11 @@ const tryRefreshAccessToken = (isAdmin: boolean): Promise<string | null> => {
   }
 };
 
+// リフレッシュトークンでユーザーのアクセストークンを更新し、新しいトークンを返す（失敗時 null）。
+// SSE 再接続時に「古いアクセストークンで繋いで 401 → 永久停止」を防ぐために使う。
+// 内部の多重リフレッシュ防止（_userRefreshPromise）も共有される。
+export const refreshUserAccessToken = (): Promise<string | null> => tryRefreshAccessToken(false);
+
 const doRefresh = async (isAdmin: boolean): Promise<string | null> => {
   try {
     const refreshKey = isAdmin ? ADMIN_REFRESH_TOKEN_KEY : USER_REFRESH_TOKEN_KEY;

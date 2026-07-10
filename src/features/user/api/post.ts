@@ -278,6 +278,64 @@ export const searchPosts = async (keyword: string): Promise<Post[]> => {
   return data.searchPosts as Post[];
 };
 
+const SearchPostsByHashtagDocument = graphql(`
+  query SearchPostsByHashtag($tag: String!) {
+    searchPostsByHashtag(tag: $tag) {
+      ...PostFields
+      replies {
+        ID
+      }
+    }
+  }
+`);
+
+export const searchPostsByHashtag = async (tag: string): Promise<Post[]> => {
+  const data = await requestDoc(SearchPostsByHashtagDocument, { tag }, getUserToken());
+  return data.searchPostsByHashtag as Post[];
+};
+
+export type HashtagSuggestion = {
+  tag: string;
+  count: number;
+};
+
+const PopularHashtagsDocument = graphql(`
+  query PopularHashtags {
+    popularHashtags {
+      items {
+        tag
+        count
+      }
+      total
+    }
+  }
+`);
+
+// 先読み（人気タグ一括取得）。items は人気上位・最大500件、total はタグ種類数。
+// complete = total <= items.length のとき全タグを取得できている（サーバー補完が不要）。
+export const getPopularHashtags = async (): Promise<{ items: HashtagSuggestion[]; total: number }> => {
+  const data = await requestDoc(PopularHashtagsDocument, {}, getUserToken());
+  return {
+    items: data.popularHashtags.items as HashtagSuggestion[],
+    total: data.popularHashtags.total,
+  };
+};
+
+const SuggestHashtagsDocument = graphql(`
+  query SuggestHashtags($prefix: String!, $limit: Int) {
+    suggestHashtags(prefix: $prefix, limit: $limit) {
+      tag
+      count
+    }
+  }
+`);
+
+// プレフィックス前方一致のサジェスト（先読みで足りないときの補完）。
+export const suggestHashtags = async (prefix: string, limit = 8): Promise<HashtagSuggestion[]> => {
+  const data = await requestDoc(SuggestHashtagsDocument, { prefix, limit }, getUserToken());
+  return data.suggestHashtags as HashtagSuggestion[];
+};
+
 const FollowersTopLevelPostsDocument = graphql(`
   query FollowersTopLevelPosts($userID: ID!, $limit: Int, $offset: Int) {
     followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {

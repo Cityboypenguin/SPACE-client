@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { searchUsers, getProfileByUserID, type UserProfile } from '../api/profile';
 import {
-  searchPosts, createPost, createFavorite, deleteFavorite, getPostByID,
+  searchPosts, searchPostsByHashtag, createPost, createFavorite, deleteFavorite, getPostByID,
   type Post,
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
@@ -19,6 +19,10 @@ import styles from './UserSearchPage.module.css';
 
 type Mode = 'user' | 'post';
 const LIMIT = 20;
+
+// 検索ボックスが "#タグ" 始まりならハッシュタグ完全一致検索とみなす。
+// マッチしたときの [1] がタグ本体（最初の空白まで）。
+const HASHTAG_QUERY_REGEX = /^#(\S+)/;
 
 function loadRecent<T>(mode: Mode): T[] {
   try { return JSON.parse(localStorage.getItem(`search-recent-${mode}`) ?? '[]'); }
@@ -140,6 +144,22 @@ export const UserSearchPage = () => {
     }
   }, [currentUserId]);
 
+  const runPostSearch = useCallback(async (rawQuery: string) => {
+    const trimmed = rawQuery.trim();
+    setAllPostResults([]);
+    setPostDisplayedCount(LIMIT);
+    setPostLoading(true);
+    try {
+      const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
+      const posts = hashtagMatch
+        ? await searchPostsByHashtag(hashtagMatch[1])
+        : await searchPosts(trimmed);
+      setAllPostResults(posts);
+    } catch { /* noop */ } finally {
+      setPostLoading(false);
+    }
+  }, []);
+
   const handleSearch = async () => {
     if (!query.trim()) return;
     setSearched(true);
@@ -151,15 +171,7 @@ export const UserSearchPage = () => {
       setUserLoadedCount(0);
       await loadMoreUsers(query, 0, true);
     } else {
-      setAllPostResults([]);
-      setPostDisplayedCount(LIMIT);
-      setPostLoading(true);
-      try {
-        const posts = await searchPosts(query);
-        setAllPostResults(posts);
-      } catch { /* noop */ } finally {
-        setPostLoading(false);
-      }
+      await runPostSearch(query);
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { PostCard } from '../components/organisms/PostCard';
@@ -15,6 +15,7 @@ import {
   getTopLevelPosts,
   getNewFeedPostsCount,
   searchPosts,
+  searchPostsByHashtag,
   createPost,
   updatePost,
   deletePost,
@@ -23,19 +24,39 @@ import {
   type Post,
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
+import { extractHashtags } from '../../../lib/hashtags';
 import { createBlocker } from '../api/block';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useFollowFeed } from '../hooks/useFollowFeed';
+import { useHashtagSuggestions } from '../hooks/useHashtagSuggestions';
+import { HashtagSuggestionList } from '../components/molecules/HashtagSuggestionList';
 import { Footer } from '../../../components/organisms/Footer';
 
 const LIMIT = 20;
 const REFRESH_COOLDOWN_MS = 60 * 1000;
 
+// 検索ボックスが "#タグ" 始まりならハッシュタグ完全一致検索とみなす。[1] がタグ本体。
+const HASHTAG_QUERY_REGEX = /^#(\S+)/;
+
+// 新規投稿が現在の検索条件にヒットするか（サーバーの検索と同じ判定基準）を返す。
+// - "#タグ" 検索: 投稿に同名タグ（完全一致）が含まれるか。
+// - 通常検索: 本文にキーワードが部分一致で含まれるか（大文字小文字は無視）。
+function postMatchesSearch(content: string, query: string): boolean {
+  const trimmed = query.trim();
+  if (!trimmed) return false;
+  const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
+  if (hashtagMatch) {
+    return extractHashtags(content).includes(hashtagMatch[1]);
+  }
+  return content.toLowerCase().includes(trimmed.toLowerCase());
+}
+
 export const PostListPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
   const { addToast } = useToast();
@@ -51,10 +72,26 @@ export const PostListPage = () => {
 
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialCache?.searchQuery ?? '');
+  // submittedQuery は「実際に検索を実行したキーワード」。入力中(searchQuery)とは分離し、
+  // Enter を押すまでは表示中の投稿(タイムライン)を検索結果に切り替えない。
+  const [submittedQuery, setSubmittedQuery] = useState(initialCache?.searchQuery ?? '');
   const [searchResults, setSearchResults] = useState<Post[]>(initialCache?.searchResults ?? []);
   const [searchDisplayedCount, setSearchDisplayedCount] = useState(LIMIT);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [suggestDismissed, setSuggestDismissed] = useState(false);
+  const [suggestActiveIndex, setSuggestActiveIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'recommended' | 'favorites'>('recommended');
+
+  // 検索ボックスが "#..." のとき、入力中のタグ本体（"#"の後〜最初の空白まで）をサジェスト対象にする。
+  const searchHashtagQuery = (() => {
+    const m = searchQuery.match(/^#(\S*)/);
+    return m ? m[1] : null;
+  })();
+  const suggestions = useHashtagSuggestions(
+    searchFocused && !suggestDismissed ? searchHashtagQuery : null,
+  );
+  const showSuggestions = suggestions.length > 0 && searchFocused && !suggestDismissed;
   const lastScrollYRef = useRef(0);
 
   // フォローフィードのデータ取得・ページングは useFollowFeed に分離済み。
@@ -87,7 +124,10 @@ export const PostListPage = () => {
   }, []);
 
   const handleSearch = useCallback(async (keyword: string) => {
-    if (!keyword.trim()) {
+    const trimmed = keyword.trim();
+    // Enter を押したこのタイミングで初めて検索結果表示へ切り替える。
+    setSubmittedQuery(trimmed);
+    if (!trimmed) {
       setSearchResults([]);
       setSearchDisplayedCount(LIMIT);
       return;
@@ -95,7 +135,10 @@ export const PostListPage = () => {
     setSearchLoading(true);
     setSearchDisplayedCount(LIMIT);
     try {
-      const results = await searchPosts(keyword.trim());
+      const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
+      const results = hashtagMatch
+        ? await searchPostsByHashtag(hashtagMatch[1])
+        : await searchPosts(trimmed);
       setSearchResults(results);
     } catch {
       setSearchResults([]);
@@ -103,6 +146,27 @@ export const PostListPage = () => {
       setSearchLoading(false);
     }
   }, []);
+
+  const handleSelectHashtag = useCallback((tag: string) => {
+    setSearchQuery(`#${tag}`);
+    setSuggestDismissed(true);
+    setSearchFocused(false);
+    void handleSearch(`#${tag}`);
+  }, [handleSearch]);
+
+  // ハッシュタグをクリックして /home?q=#tag に遷移してきたら、ホームの検索を実行する。
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (!q) return;
+    void (async () => {
+      setSearchQuery(q);
+      window.scrollTo(0, 0);
+      await handleSearch(q);
+      // 使い終わった URL パラメータは消し、リロード/再検索での二重実行を防ぐ。
+      setSearchParams({}, { replace: true });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const [newPostsCount, setNewPostsCount] = useState(0);
   const feedLoadedAtRef = useRef<Date | null>(null);
@@ -217,13 +281,13 @@ export const PostListPage = () => {
         total: totalRef.current,
         offset: postsRef.current.length,
         scrollY: scrollYRef.current,
-        searchQuery,
+        searchQuery: submittedQuery,
         searchResults,
       });
     };
-  }, [posts, total, searchQuery, searchResults]);
+  }, [posts, total, submittedQuery, searchResults]);
 
-  const isSearching = searchQuery.trim() !== '';
+  const isSearching = submittedQuery.trim() !== '';
 
   const recommendedSentinelRef = useInfiniteScroll(
     useCallback(() => {
@@ -257,7 +321,7 @@ export const PostListPage = () => {
       total: totalRef.current,
       offset: postsRef.current.length,
       scrollY: scrollYRef.current,
-      searchQuery,
+      searchQuery: submittedQuery,
       searchResults,
     });
     navigate(`/posts/${postId}`);
@@ -274,6 +338,10 @@ export const PostListPage = () => {
       setSelectedFiles([]);
       setPosts(prev => [newPost, ...prev]);
       setTotal(prev => prev + 1);
+      // 検索中で、その検索条件にヒットする投稿なら検索結果にも即時反映する。
+      if (postMatchesSearch(newPost.content, submittedQuery)) {
+        setSearchResults(prev => [newPost, ...prev]);
+      }
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -292,6 +360,10 @@ export const PostListPage = () => {
       setModalFiles([]);
       setPosts(prev => [newPost, ...prev]);
       setTotal(prev => prev + 1);
+      // 検索中で、その検索条件にヒットする投稿なら検索結果にも即時反映する。
+      if (postMatchesSearch(newPost.content, submittedQuery)) {
+        setSearchResults(prev => [newPost, ...prev]);
+      }
       setComposerOpen(false);
     } catch (err) {
       setPostError(toUserMessage(err, '投稿の送信に失敗しました。時間をおいてから再度お試しください。'));
@@ -474,6 +546,7 @@ export const PostListPage = () => {
               maxLength={500}
               isEmbedded
               rows={3}
+              enableHashtagSuggestions
             />
           </div>
         </div>
@@ -514,24 +587,59 @@ export const PostListPage = () => {
           </div>
         )}
 
-        <div className={styles.searchBar}>
-          <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-          </svg>
-          <input
-            className={styles.searchInput}
-            type="text"
-            placeholder="search"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSearch(searchQuery); }}
-          />
-          {searchQuery && (
-            <button
-              className={styles.searchClear}
-              onClick={() => { setSearchQuery(''); setSearchResults([]); }}
-              aria-label="クリア"
-            >✕</button>
+        <div style={{ position: 'relative' }}>
+          <div className={styles.searchBar}>
+            <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder="search"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
+              onFocus={() => { setSearchFocused(true); setSuggestDismissed(false); }}
+              onBlur={() => setSearchFocused(false)}
+              onKeyDown={e => {
+                // IME変換中の Enter 等は確定操作なので横取りしない。
+                if (e.nativeEvent.isComposing) return;
+                if (showSuggestions && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+                  e.preventDefault();
+                  setSuggestActiveIndex(prev => {
+                    const clamped = Math.min(prev, suggestions.length - 1);
+                    return e.key === 'ArrowDown'
+                      ? Math.min(clamped + 1, suggestions.length - 1)
+                      : Math.max(clamped - 1, 0);
+                  });
+                  return;
+                }
+                if (e.key === 'Escape') { setSuggestDismissed(true); return; }
+                if (e.key === 'Enter') {
+                  if (showSuggestions) {
+                    const chosen = suggestions[Math.min(suggestActiveIndex, suggestions.length - 1)];
+                    if (chosen) { e.preventDefault(); handleSelectHashtag(chosen.tag); return; }
+                  }
+                  handleSearch(searchQuery);
+                }
+              }}
+            />
+            {searchQuery && (
+              <button
+                className={styles.searchClear}
+                onClick={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); setSuggestDismissed(true); }}
+                aria-label="クリア"
+              >✕</button>
+            )}
+          </div>
+          {showSuggestions && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>
+              <HashtagSuggestionList
+                suggestions={suggestions}
+                activeIndex={Math.min(suggestActiveIndex, suggestions.length - 1)}
+                onSelect={handleSelectHashtag}
+                onHover={setSuggestActiveIndex}
+              />
+            </div>
           )}
         </div>
 
@@ -551,6 +659,7 @@ export const PostListPage = () => {
           selectedFiles={selectedFiles}
           onFileSelect={setSelectedFiles}
           maxLength={500}
+          enableHashtagSuggestions
         />
 
         {!isSearching && (

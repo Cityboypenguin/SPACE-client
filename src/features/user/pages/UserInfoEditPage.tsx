@@ -10,9 +10,17 @@ import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserInfoEditPage.module.css';
 
 const accountIDRe = /^[a-zA-Z0-9_-]+$/;
+const MAX_NAME_LENGTH = 50;
+const MAX_ACCOUNT_ID_LENGTH = 25;
 
 const validateAccountID = (value: string): string => {
   if (value && !accountIDRe.test(value)) return 'ユーザーIDは半角英数字・_・-のみ使用できます';
+  if ([...value].length > MAX_ACCOUNT_ID_LENGTH) return `ユーザーIDは${MAX_ACCOUNT_ID_LENGTH}文字以内で入力してください`;
+  return '';
+};
+
+const validateName = (value: string): string => {
+  if ([...value].length > MAX_NAME_LENGTH) return `名前は${MAX_NAME_LENGTH}文字以内で入力してください`;
   return '';
 };
 
@@ -43,6 +51,14 @@ export const UserInfoEditPage = () => {
       const accountIDErr = validateAccountID(newAccountID.trim());
       if (accountIDErr) {
         setError(accountIDErr);
+        return;
+      }
+    }
+
+    if (newName.trim()) {
+      const nameErr = validateName(newName.trim());
+      if (nameErr) {
+        setError(nameErr);
         return;
       }
     }
@@ -89,6 +105,7 @@ export const UserInfoEditPage = () => {
                 type="text"
                 className={styles.input}
                 value={newAccountID}
+                maxLength={MAX_ACCOUNT_ID_LENGTH}
                 onChange={(e) => {
                   setNewAccountID(e.target.value);
                   setAccountIDError(validateAccountID(e.target.value));
@@ -113,6 +130,7 @@ export const UserInfoEditPage = () => {
                 type="text"
                 className={styles.input}
                 value={newName}
+                maxLength={MAX_NAME_LENGTH}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="名前を入力してください"
               />
