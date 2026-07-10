@@ -386,19 +386,11 @@ export const UserSettingsPage = () => {
             一般
             <span className={styles.menuArrow}>›</span>
           </button>
-          <button className={styles.menuItem} disabled style={{ color: '#cbd5e1', cursor: 'default' }}>
-            通知設定
-            <span className={styles.menuArrow}>›</span>
-          </button>
           <button
             className={`${styles.menuItem} ${view === 'terms' ? styles.menuItemActive : ''}`}
             onClick={() => setView('terms')}
           >
             利用規約及びプライバシーポリシー
-            <span className={styles.menuArrow}>›</span>
-          </button>
-          <button className={styles.menuItem} disabled style={{ color: '#cbd5e1', cursor: 'default' }}>
-            運営からのアンケート
             <span className={styles.menuArrow}>›</span>
           </button>
           <button
