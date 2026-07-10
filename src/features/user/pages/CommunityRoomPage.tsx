@@ -18,7 +18,7 @@ import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import styles from '../components/ChatRoom.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 // performance.getEntriesByType('navigation') はタブの実際のロード種別を返し、
 // SPA内のクライアントサイド遷移では変化しない。そのため「リロード時のみ
@@ -134,7 +134,7 @@ export const CommunityRoomPage = () => {
 
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'このコミュニティを退出しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

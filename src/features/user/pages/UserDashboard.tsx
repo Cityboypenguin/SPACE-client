@@ -24,7 +24,7 @@ import { uploadMediaFiles } from '../api/media';
 import { createBlocker } from '../api/block';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import styles from './UserDashboard.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 const LIMIT = 20;
 
@@ -250,7 +250,7 @@ export const UserDashboard = () => {
   };
 
   const handleDelete = async (postId: string) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: '本当にこの投稿を削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

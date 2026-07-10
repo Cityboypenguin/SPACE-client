@@ -25,7 +25,7 @@ import favoeirteIconOn from '../../../assets/パーツ_お気に入り（ON）.s
 import dmIcon from '../../../assets/パーツ_メール.svg';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserPublicProfilePage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -215,7 +215,7 @@ export const UserPublicProfilePage = () => {
   const handleBlockToggle = async () => {
     if (!id) return;
     if (!isBlocked) {
-      const result = await swal.fire({
+      const result = await AppSwal.fire({
         text: '本当にこのユーザーをブロックしますか？',
         confirmButtonText: 'はい',
         cancelButtonText: 'いいえ',
