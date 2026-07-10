@@ -40,7 +40,6 @@ export const UserLoginForm = () => {
         <form className={styles.form} onSubmit={handleSubmit}>
           {error && <p className={styles.error}>{error}</p>}
           <input
-            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="メールアドレス"
@@ -48,7 +47,6 @@ export const UserLoginForm = () => {
             required
           />
           <input
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="パスワード"
@@ -65,9 +63,6 @@ export const UserLoginForm = () => {
           >
             新規登録
           </button>
-          <Link to="/forgot-password" className={styles.link}>
-            パスワードを忘れた場合
-          </Link>
           <Link to="/inquiry" className={styles.link}>
             お問い合わせはこちら
           </Link>

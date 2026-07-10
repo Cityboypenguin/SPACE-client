@@ -24,6 +24,7 @@ const SERVER_ERROR_MAP: Array<[string, string]> = [
 
   // --- 重複登録エラー ---
   ['account_id is already taken', 'このユーザーIDはすでに使用されています。別のIDをお試しください。'],
+  ['email is already taken', 'このメールアドレスはすでに使用されています。別のメールアドレスをお試しください。'],
 
   // --- メール変更エラー（詳細は開示しない）---
   ['email update failed', 'メールアドレスを変更できませんでした。入力内容をご確認ください。'],

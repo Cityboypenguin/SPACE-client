@@ -79,6 +79,9 @@ const AnnouncementDetailPage = lazy(() =>
 const ForgotPasswordPage = lazy(() =>
   import('../pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
 );
+const ResetPasswordPage = lazy(() =>
+  import('../pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+);
 
 export const userRoutes = (
   <Route element={<MaintenanceGuardLayout />}>
@@ -86,6 +89,7 @@ export const userRoutes = (
     <Route path="/login" element={<UserLoginForm />} />
     <Route path="/register" element={<UserRegisterPage />} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/inquiry" element={<InquiryPage />} />
     <Route element={<UserProtectedRoute />}>
       <Route path="/mypage" element={<UserDashboard />} />

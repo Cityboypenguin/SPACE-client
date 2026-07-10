@@ -1,5 +1,11 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
+import type {
+  CreateUserMutation,
+  LoginUserMutation,
+  RequestPasswordResetMutation,
+  ResetPasswordMutation,
+} from '../../../generated/graphql';
 import { USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY } from '../../../lib/authStorage';
 
 export { USER_ID_KEY, USER_REFRESH_TOKEN_KEY, USER_TOKEN_KEY };
@@ -29,18 +35,6 @@ const LogoutUserDocument = graphql(`
   }
 `);
 
-const SendEmailOTPDocument = graphql(`
-  mutation SendEmailOTP($email: String!) {
-    sendEmailOTP(email: $email)
-  }
-`);
-
-const VerifyEmailOTPDocument = graphql(`
-  mutation VerifyEmailOTP($email: String!, $otp: String!) {
-    verifyEmailOTP(email: $email, otp: $otp)
-  }
-`);
-
 const CreateUserDocument = graphql(`
   mutation CreateUser($input: CreateUserInput!) {
     createUser(input: $input) {
@@ -55,34 +49,22 @@ const CreateUserDocument = graphql(`
 `);
 
 export const loginUser = async (email: string, password: string) => {
-  return await requestDoc(LoginUserDocument, { input: { email, password } });
+  return await requestDoc<LoginUserMutation, { input: { email: string; password: string } }>(LoginUserDocument, { input: { email, password } });
 };
 
 export const logoutUser = async (token: string) => {
   return await requestDoc(LogoutUserDocument, { token });
 };
 
-export const sendEmailOTP = async (email: string) => {
-  return await requestDoc(SendEmailOTPDocument, { email });
-};
-
-export const verifyEmailOTP = async (email: string, otp: string) => {
-  return await requestDoc(VerifyEmailOTPDocument, { email, otp });
-};
-
-export const registerUser = async (accountID: string, name: string, email: string, password: string, otp: string) => {
-  return await requestDoc(CreateUserDocument, { input: { accountID, name, email, password, otp } });
+export const registerUser = async (accountID: string, name: string, email: string, password: string) => {
+  return await requestDoc<CreateUserMutation, { input: { accountID: string; name: string; email: string; password: string } }>(CreateUserDocument, {
+    input: { accountID, name, email, password },
+  });
 };
 
 const RequestPasswordResetDocument = graphql(`
   mutation RequestPasswordReset($email: String!) {
     requestPasswordReset(email: $email)
-  }
-`);
-
-const VerifyPasswordResetOTPDocument = graphql(`
-  mutation VerifyPasswordResetOTP($email: String!, $otp: String!) {
-    verifyPasswordResetOTP(email: $email, otp: $otp)
   }
 `);
 
@@ -93,13 +75,9 @@ const ResetPasswordDocument = graphql(`
 `);
 
 export const requestPasswordReset = async (email: string) => {
-  return await requestDoc(RequestPasswordResetDocument, { email });
-};
-
-export const verifyPasswordResetOTP = async (email: string, otp: string) => {
-  return await requestDoc(VerifyPasswordResetOTPDocument, { email, otp });
+  return await requestDoc<RequestPasswordResetMutation, { email: string }>(RequestPasswordResetDocument, { email });
 };
 
 export const resetPassword = async (resetToken: string, newPassword: string) => {
-  return await requestDoc(ResetPasswordDocument, { resetToken, newPassword });
+  return await requestDoc<ResetPasswordMutation, { resetToken: string; newPassword: string }>(ResetPasswordDocument, { resetToken, newPassword });
 };

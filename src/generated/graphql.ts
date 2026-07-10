@@ -66,7 +66,6 @@ export type CreateUserInput = {
   accountID: string;
   email: string;
   name: string;
-  otp: string;
   password: string;
 };
 
