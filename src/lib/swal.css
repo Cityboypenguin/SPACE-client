@@ -1,0 +1,76 @@
+/* src/styles/swal.css */
+
+.app-swal-popup {
+  width: min(90vw, 420px);
+  padding: 24px;
+  border-radius: 16px;
+  font-family: inherit;
+}
+
+.app-swal-title {
+  color: #1f2937;
+  font-size: 20px;
+}
+
+.app-swal-content {
+  color: #4b5563;
+  font-size: 15px;
+}
+
+.app-swal-actions {
+  width: 100%;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.app-swal-confirm,
+.app-swal-cancel {
+  min-width: 120px;
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app-swal-confirm {
+  background: #e9965c;
+}
+
+.app-swal-confirm:hover {
+  background: #FF7431;
+}
+
+.app-swal-cancel {
+  background: #6b7280;
+}
+
+.app-swal-cancel:hover {
+  background: #4b5563;
+}
+
+.app-swal-confirm:focus,
+.app-swal-cancel:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.app-swal-confirm:focus-visible,
+.app-swal-cancel:focus-visible {
+  outline: 3px solid rgb(255 116 49 / 35%);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+@media (max-width: 480px) {
+  .app-swal-actions {
+    flex-direction: column;
+  }
+
+  .app-swal-confirm,
+  .app-swal-cancel {
+    width: 100%;
+  }
+}

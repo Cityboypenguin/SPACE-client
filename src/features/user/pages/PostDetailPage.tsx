@@ -19,7 +19,7 @@ import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../assets/パーツ_削除.svg';
 import styles from './PostDetailPage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 import {
   getPostByID,
@@ -83,7 +83,7 @@ export const PostDetailPage = () => {
   }, [menuOpen]);
 
   const handleBlock = async (blockedUserId: string) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'このユーザーをブロックしますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -232,7 +232,7 @@ export const PostDetailPage = () => {
 
   const handleDelete = async () => {
     if (!id) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: '本当にこの投稿を削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -249,7 +249,7 @@ export const PostDetailPage = () => {
   };
 
   const handleRootDelete = async (postId: string) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: '本当にこの投稿を削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

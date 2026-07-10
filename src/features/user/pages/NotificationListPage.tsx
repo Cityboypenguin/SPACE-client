@@ -27,7 +27,7 @@ import community from '../../../assets/パーツ_コミュニティマーク.svg
 import reply from '../../../assets/パーツ_コメント.svg';
 import notification from '../../../assets/パーツ_通知.svg';
 import person from '../../../assets/パーツ_お気に入り.svg';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 type Tab = 'notifications' | 'announcements';
 
@@ -160,7 +160,7 @@ export const NotificationListPage = () => {
   };
 
   const handleDeleteRead = async () => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: '既読済みの通知をすべて削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -181,7 +181,7 @@ export const NotificationListPage = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: `選択した${selectedIds.size}件の通知を削除しますか？`,
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -247,7 +247,7 @@ export const NotificationListPage = () => {
 
   const handleDeleteActorRead = async () => {
     if (!viewingActor) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'この相手の既読済み通知をすべて削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

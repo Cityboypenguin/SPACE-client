@@ -16,7 +16,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSettingsPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { InquiryForm } from '../components/organisms/InquiryForm';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 type View = 'general' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
 
@@ -135,7 +135,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
   );
 
   const handleUnblock = async (targetId: string) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'ブロックを解除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -212,7 +212,7 @@ const GeneralView = ({
   const [deleting, setDeleting] = useState(false);
 
   const handleClearCache = async () => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

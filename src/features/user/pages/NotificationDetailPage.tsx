@@ -12,7 +12,7 @@ import {
 import { storageUrl } from '../../../lib/storage';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import styles from './NotificationDetailPage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 const TYPE_LABEL: Record<string, string> = {
   favorite: 'いいね',
@@ -70,7 +70,7 @@ export const NotificationDetailPage = () => {
 
   const handleDelete = async () => {
     if (!notification) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'この通知を削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
