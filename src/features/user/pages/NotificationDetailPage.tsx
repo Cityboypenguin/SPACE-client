@@ -130,7 +130,11 @@ export const NotificationDetailPage = () => {
             </div>
 
             {notification.actor && (
-              <div className={styles.actorRow}>
+              <button
+                type="button"
+                className={styles.actorRow}
+                onClick={() => navigate(`/users/${notification.actor!.ID}`)}
+              >
                 {notification.actor.avatarUrl ? (
                   <img
                     src={storageUrl(notification.actor.avatarUrl) ?? undefined}
@@ -146,7 +150,7 @@ export const NotificationDetailPage = () => {
                   <p className={styles.actorName}>{notification.actor.name}</p>
                   <p className={styles.actorAccountID}>@{notification.actor.accountID}</p>
                 </div>
-              </div>
+              </button>
             )}
 
             <p className={styles.message}>{notification.message}</p>
