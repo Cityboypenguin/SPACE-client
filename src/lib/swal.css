@@ -36,11 +36,11 @@
 }
 
 .app-swal-confirm {
-  background: #e9965c;
+  background: #FF7431
 }
 
 .app-swal-confirm:hover {
-  background: #FF7431;
+  background: #f16419;
 }
 
 .app-swal-cancel {
