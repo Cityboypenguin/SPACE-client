@@ -17,6 +17,7 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
   const startTouchPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasMoved = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isSwipeToCloseActive = useRef(false);
   const updateDOMTransform = (s: number, x: number, y: number, disableTransition = false) => {
     if (containerRef.current) {
       containerRef.current.style.transition = disableTransition ? 'none' : 'transform 0.15s ease-out';
@@ -37,6 +38,8 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
 
   const handleTouchStart = (e: TouchEvent) => {
     hasMoved.current = false;
+    isSwipeToCloseActive.current = false;
+
     if (e.touches.length === 2) {
       startDistance.current = getDistance(e.touches);
       startScale.current = scaleRef.current;
@@ -45,11 +48,16 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
         x: e.touches[0].clientX - positionRef.current.x,
         y: e.touches[0].clientY - positionRef.current.y,
       };
+
+      if (scaleRef.current <= 1 && window.innerWidth < 768) {
+        isSwipeToCloseActive.current = true;
+      }
     }
   };
 
   const handleTouchMove = (e: TouchEvent) => {
     hasMoved.current = true;
+
     if (e.touches.length === 2 && startDistance.current !== null) {
       const distance = getDistance(e.touches);
       const newScale = startScale.current * (distance / startDistance.current);
@@ -63,22 +71,37 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
       } else {
         updateDOMTransform(nextScale, positionRef.current.x, positionRef.current.y, true);
       }
-    } else if (e.touches.length === 1 && scaleRef.current > 1) {
+    } else if (e.touches.length === 1) {
       const x = e.touches[0].clientX - startTouchPos.current.x;
       const y = e.touches[0].clientY - startTouchPos.current.y;
-      
-      positionRef.current = { x, y };
-      updateDOMTransform(scaleRef.current, x, y, true);
+
+      if (scaleRef.current > 1) {
+        positionRef.current = { x, y };
+        updateDOMTransform(scaleRef.current, x, y, true);
+      } else if (isSwipeToCloseActive.current) {
+        positionRef.current = { x: 0, y };
+        updateDOMTransform(scaleRef.current, 0, y, true);
+      }
     }
   };
 
   const handleTouchEnd = () => {
     startDistance.current = null;
+
+    if (isSwipeToCloseActive.current) {
+      const dragY = positionRef.current.y;
+      if (Math.abs(dragY) > 100) {
+        onClose();
+        return;
+      }
+    }
+
     if (scaleRef.current <= 1) {
       scaleRef.current = 1;
       setScale(1);
       resetPosition(true);
     }
+    isSwipeToCloseActive.current = false;
   };
 
   const handleMouseDown = (e: MouseEvent) => {
