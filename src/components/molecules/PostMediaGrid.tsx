@@ -1,5 +1,5 @@
-import { storageUrl } from '../../lib/storage';
 import { useState, useRef, useEffect, type TouchEvent, type MouseEvent, type WheelEvent } from 'react';
+import { storageUrl } from '../../lib/storage';
 
 type MediaItem = {
   ID: string;
@@ -7,7 +7,14 @@ type MediaItem = {
   contentType: string;
 };
 
-export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => {
+interface LightboxProps {
+  urls: string[];
+  initialIndex: number;
+  onClose: () => void;
+}
+
+export const ImageLightbox = ({ urls, initialIndex, onClose }: LightboxProps) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const positionRef = useRef({ x: 0, y: 0 });
@@ -18,6 +25,21 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
   const hasMoved = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const isSwipeToCloseActive = useRef(false);
+  const isSwipeToNavActive = useRef(false);
+
+  const swipeDirectionDetermined = useRef<boolean>(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const currentUrl = urls[currentIndex];
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const updateDOMTransform = (s: number, x: number, y: number, disableTransition = false) => {
     if (containerRef.current) {
       containerRef.current.style.transition = disableTransition ? 'none' : 'transform 0.15s ease-out';
@@ -30,6 +52,24 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
     updateDOMTransform(scaleRef.current, 0, 0, !smooth);
   };
 
+  const showPrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+      scaleRef.current = 1;
+      setScale(1);
+      resetPosition(false);
+    }
+  };
+
+  const showNext = () => {
+    if (currentIndex < urls.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      scaleRef.current = 1;
+      setScale(1);
+      resetPosition(false);
+    }
+  };
+
   const getDistance = (touches: React.TouchList) => {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
@@ -39,6 +79,8 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
   const handleTouchStart = (e: TouchEvent) => {
     hasMoved.current = false;
     isSwipeToCloseActive.current = false;
+    isSwipeToNavActive.current = false;
+    swipeDirectionDetermined.current = false;
 
     if (e.touches.length === 2) {
       startDistance.current = getDistance(e.touches);
@@ -48,10 +90,6 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
         x: e.touches[0].clientX - positionRef.current.x,
         y: e.touches[0].clientY - positionRef.current.y,
       };
-
-      if (scaleRef.current <= 1 && window.innerWidth < 768) {
-        isSwipeToCloseActive.current = true;
-      }
     }
   };
 
@@ -78,9 +116,33 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
       if (scaleRef.current > 1) {
         positionRef.current = { x, y };
         updateDOMTransform(scaleRef.current, x, y, true);
-      } else if (isSwipeToCloseActive.current) {
-        positionRef.current = { x: 0, y };
-        updateDOMTransform(scaleRef.current, 0, y, true);
+      } else {
+        if (!swipeDirectionDetermined.current) {
+          const absX = Math.abs(x);
+          const absY = Math.abs(y);
+          
+          if (absX > 5 || absY > 5) {
+            swipeDirectionDetermined.current = true;
+            if (absX > absY * 1.5) {
+              isSwipeToNavActive.current = true;
+              isSwipeToCloseActive.current = false;
+            } else if (absY > absX * 1.8) {
+              isSwipeToCloseActive.current = true;
+              isSwipeToNavActive.current = false;
+            } else {
+              isSwipeToCloseActive.current = false;
+              isSwipeToNavActive.current = false;
+            }
+          }
+        }
+
+        if (isSwipeToNavActive.current) {
+          positionRef.current = { x, y: 0 };
+          updateDOMTransform(scaleRef.current, x, 0, true);
+        } else if (isSwipeToCloseActive.current) {
+          positionRef.current = { x: 0, y };
+          updateDOMTransform(scaleRef.current, 0, y, true);
+        }
       }
     }
   };
@@ -88,9 +150,20 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
   const handleTouchEnd = () => {
     startDistance.current = null;
 
-    if (isSwipeToCloseActive.current) {
+    if (isSwipeToNavActive.current && scaleRef.current <= 1) {
+      const dragX = positionRef.current.x;
+      if (dragX > 80 && currentIndex > 0) {
+        showPrev();
+        return;
+      } else if (dragX < -80 && currentIndex < urls.length - 1) {
+        showNext();
+        return;
+      }
+    }
+
+    if (isSwipeToCloseActive.current && scaleRef.current <= 1) {
       const dragY = positionRef.current.y;
-      if (Math.abs(dragY) > 100) {
+      if (Math.abs(dragY) > 150) {
         onClose();
         return;
       }
@@ -102,6 +175,8 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
       resetPosition(true);
     }
     isSwipeToCloseActive.current = false;
+    isSwipeToNavActive.current = false;
+    swipeDirectionDetermined.current = false;
   };
 
   const handleMouseDown = (e: MouseEvent) => {
@@ -149,10 +224,12 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight') showNext();
+      if (e.key === 'ArrowLeft') showPrev();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [currentIndex, urls]);
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (isDragging) return;
@@ -209,6 +286,73 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
         ✕
       </button>
 
+      {isDesktop && currentIndex > 0 && scale === 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); showPrev(); }}
+          style={{
+            position: 'absolute',
+            left: 20,
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: 'none',
+            color: '#fff',
+            fontSize: '1.5rem',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ‹
+        </button>
+      )}
+
+      {isDesktop && currentIndex < urls.length - 1 && scale === 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); showNext(); }}
+          style={{
+            position: 'absolute',
+            right: 20,
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: 'none',
+            color: '#fff',
+            fontSize: '1.5rem',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ›
+        </button>
+      )}
+
+      {urls.length > 1 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,0.6)',
+            color: '#fff',
+            padding: '6px 12px',
+            borderRadius: '16px',
+            fontSize: '0.9rem',
+            zIndex: 10000,
+          }}
+        >
+          {currentIndex + 1} / {urls.length}
+        </div>
+      )}
+
       <div
         ref={containerRef}
         style={{
@@ -222,7 +366,7 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
         }}
       >
         <img
-          src={url}
+          src={currentUrl}
           alt="拡大表示"
           onClick={(e) => e.stopPropagation()}
           onDragStart={(e) => e.preventDefault()}
@@ -240,7 +384,8 @@ export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => vo
 };
 
 export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; large?: boolean }) => {
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
+  
   const images = media.filter((m) => m.contentType.startsWith('image/'));
   const files = media.filter((m) => !m.contentType.startsWith('image/'));
   const count = images.length;
@@ -278,6 +423,8 @@ export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; la
     gridRow: count === 3 && i === 0 ? '1 / 3' : count === 4 ? gridPos4[i].gridRow : undefined,
   });
 
+  const imageUrls = images.map((m) => storageUrl(m.url));
+
   return (
     <>
       {images.length > 0 && (
@@ -290,7 +437,7 @@ export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; la
                 src={url}
                 alt="添付画像"
                 style={imgStyle(i)}
-                onClick={(e) => { e.stopPropagation(); setLightboxUrl(url); }}
+                onClick={(e) => { e.stopPropagation(); setActiveImageIndex(i); }}
               />
             );
           })}
@@ -317,7 +464,14 @@ export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; la
           ))}
         </div>
       )}
-      {lightboxUrl && <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
+      
+      {activeImageIndex !== null && (
+        <ImageLightbox
+          urls={imageUrls}
+          initialIndex={activeImageIndex}
+          onClose={() => setActiveImageIndex(null)}
+        />
+      )}
     </>
   );
 };
