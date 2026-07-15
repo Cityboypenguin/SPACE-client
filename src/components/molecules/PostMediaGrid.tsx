@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { storageUrl } from '../../lib/storage';
+import { useState, useRef, useEffect, type TouchEvent, type MouseEvent, type WheelEvent } from 'react';
 
 type MediaItem = {
   ID: string;
@@ -7,30 +7,214 @@ type MediaItem = {
   contentType: string;
 };
 
-export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
-  <div
-    onClick={(e) => { e.stopPropagation(); onClose(); }}
-    style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 9999, cursor: 'zoom-out',
-    }}
-  >
-    <button
-      onClick={(e) => { e.stopPropagation(); onClose(); }}
+export const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => {
+  const [scale, setScale] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const positionRef = useRef({ x: 0, y: 0 });
+  const scaleRef = useRef(1);
+  const startDistance = useRef<number | null>(null);
+  const startScale = useRef<number>(1);
+  const startTouchPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasMoved = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const updateDOMTransform = (s: number, x: number, y: number, disableTransition = false) => {
+    if (containerRef.current) {
+      containerRef.current.style.transition = disableTransition ? 'none' : 'transform 0.15s ease-out';
+      containerRef.current.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+    }
+  };
+
+  const resetPosition = (smooth = true) => {
+    positionRef.current = { x: 0, y: 0 };
+    updateDOMTransform(scaleRef.current, 0, 0, !smooth);
+  };
+
+  const getDistance = (touches: React.TouchList) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e: TouchEvent) => {
+    hasMoved.current = false;
+    if (e.touches.length === 2) {
+      startDistance.current = getDistance(e.touches);
+      startScale.current = scaleRef.current;
+    } else if (e.touches.length === 1) {
+      startTouchPos.current = {
+        x: e.touches[0].clientX - positionRef.current.x,
+        y: e.touches[0].clientY - positionRef.current.y,
+      };
+    }
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    hasMoved.current = true;
+    if (e.touches.length === 2 && startDistance.current !== null) {
+      const distance = getDistance(e.touches);
+      const newScale = startScale.current * (distance / startDistance.current);
+      const nextScale = Math.max(0.8, Math.min(newScale, 4));
+      
+      scaleRef.current = nextScale;
+      setScale(nextScale);
+
+      if (nextScale <= 1) {
+        resetPosition(false);
+      } else {
+        updateDOMTransform(nextScale, positionRef.current.x, positionRef.current.y, true);
+      }
+    } else if (e.touches.length === 1 && scaleRef.current > 1) {
+      const x = e.touches[0].clientX - startTouchPos.current.x;
+      const y = e.touches[0].clientY - startTouchPos.current.y;
+      
+      positionRef.current = { x, y };
+      updateDOMTransform(scaleRef.current, x, y, true);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    startDistance.current = null;
+    if (scaleRef.current <= 1) {
+      scaleRef.current = 1;
+      setScale(1);
+      resetPosition(true);
+    }
+  };
+
+  const handleMouseDown = (e: MouseEvent) => {
+    if (scaleRef.current <= 1) return;
+    e.preventDefault();
+    setIsDragging(true);
+    hasMoved.current = false;
+    startTouchPos.current = {
+      x: e.clientX - positionRef.current.x,
+      y: e.clientY - positionRef.current.y,
+    };
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging || scaleRef.current <= 1) return;
+    hasMoved.current = true;
+    const x = e.clientX - startTouchPos.current.x;
+    const y = e.clientY - startTouchPos.current.y;
+    
+    positionRef.current = { x, y };
+    updateDOMTransform(scaleRef.current, x, y, true);
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    const zoomIntensity = 0.15;
+    const delta = e.deltaY < 0 ? 1 : -1;
+    const newScale = scaleRef.current + delta * zoomIntensity;
+    const nextScale = Math.max(1, Math.min(newScale, 4));
+    
+    scaleRef.current = nextScale;
+    setScale(nextScale);
+
+    if (nextScale <= 1) {
+      resetPosition(true);
+    } else {
+      updateDOMTransform(nextScale, positionRef.current.x, positionRef.current.y, true);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (isDragging) return;
+    e.stopPropagation();
+    
+    if (hasMoved.current) {
+      hasMoved.current = false;
+      return;
+    }
+    if (scale > 1) return;
+
+    onClose();
+  };
+
+  return (
+    <div
+      onClick={handleOverlayClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUpOrLeave}
+      onMouseLeave={handleMouseUpOrLeave}
+      onWheel={handleWheel}
       style={{
-        position: 'absolute', top: 16, right: 20,
-        background: 'none', border: 'none', color: '#fff',
-        fontSize: '2rem', cursor: 'pointer', lineHeight: 1,
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.95)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-out',
+        overflow: 'hidden',
+        touchAction: 'none',
       }}
-    >✕</button>
-    <img
-      src={url} alt="拡大表示"
-      onClick={(e) => e.stopPropagation()}
-      style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }}
-    />
-  </div>
-);
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 20,
+          background: 'none',
+          border: 'none',
+          color: '#fff',
+          fontSize: '2rem',
+          cursor: 'pointer',
+          lineHeight: 1,
+          zIndex: 10000,
+        }}
+      >
+        ✕
+      </button>
+
+      <div
+        ref={containerRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transform: `translate(0px, 0px) scale(1)`,
+          willChange: 'transform',
+        }}
+      >
+        <img
+          src={url}
+          alt="拡大表示"
+          onClick={(e) => e.stopPropagation()}
+          onDragStart={(e) => e.preventDefault()}
+          style={{
+            maxWidth: '95vw',
+            maxHeight: '95vh',
+            objectFit: 'contain',
+            borderRadius: 8,
+            userSelect: 'none',
+          }}
+        />
+      </div>
+    </div>
+  );
+};
 
 export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; large?: boolean }) => {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
