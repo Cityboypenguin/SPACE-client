@@ -156,7 +156,7 @@ export const ChatMessageBubble = ({
 
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
-  const canEdit = isMine && !hasMedia;
+  const canEdit = isMine && msg.content.trim() !== ''; 
   const canShowActions = (canEdit || canDelete) && !isEditing;
 
   const [showActions, setShowActions] = useState(false);
@@ -254,7 +254,6 @@ export const ChatMessageBubble = ({
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') { onCancelEdit(); return; }
-                // タッチ操作の端末はEnterを改行として扱い、保存は保存ボタンのみで行う。
                 const isTouch = window.matchMedia('(pointer: coarse)').matches;
                 if (isTouch) return;
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -268,6 +267,11 @@ export const ChatMessageBubble = ({
               <button className={styles.editSaveBtn} onClick={onSaveEdit}>保存</button>
               <button className={styles.editCancelBtn} onClick={onCancelEdit}>キャンセル</button>
             </div>
+            {hasMedia && (
+              <div style={{ marginTop: 8, opacity: 0.8 }}>
+                <MediaList mediaItems={msg.media} isMine={isMine} />
+              </div>
+            )}
           </div>
         ) : (
           <>
