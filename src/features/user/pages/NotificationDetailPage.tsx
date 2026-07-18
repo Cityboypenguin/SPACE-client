@@ -28,7 +28,7 @@ const TYPE_LABEL: Record<string, string> = {
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
   announcement: 'お知らせ',
-  follow: 'フォロー',
+  follow: 'お気に入り',
   timetable_removed: '時間割の変更',
 };
 
