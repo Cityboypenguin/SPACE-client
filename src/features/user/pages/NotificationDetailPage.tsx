@@ -21,7 +21,7 @@ const TYPE_LABEL: Record<string, string> = {
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
   announcement: 'お知らせ',
-  follow: 'フォロー',
+  follow: 'お気に入り登録',
 };
 
 const ACTION_LABEL: Record<string, string> = {
@@ -149,7 +149,7 @@ export const NotificationDetailPage = () => {
               </div>
             )}
 
-            <p className={styles.message}>{notification.message}</p>
+            <p className={styles.message}>{notification.message.replace('フォロー', 'お気に入り登録')}</p>
 
             {notification.targetPost && !notification.targetPost.deletedAt && (
               <div className={styles.targetPostPreview}>
