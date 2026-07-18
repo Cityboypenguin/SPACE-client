@@ -24,6 +24,10 @@ const TYPE_LABEL: Record<string, string> = {
   follow: 'お気に入り',
 };
 
+// 過去の通知はDBに旧文言（フォロー表記）のまま保存されているため、
+// 表示時に上書きする（対症療法。DBのmessage列は書き換えない）。
+const FOLLOW_MESSAGE = 'あなたがお気に入りに登録されました';
+
 const ACTION_LABEL: Record<string, string> = {
   dm: 'DMへいく',
   favorite: '投稿へいく',
@@ -153,7 +157,9 @@ export const NotificationDetailPage = () => {
               </button>
             )}
 
-            <p className={styles.message}>{notification.message}</p>
+            <p className={styles.message}>
+              {notification.type === 'follow' ? FOLLOW_MESSAGE : notification.message}
+            </p>
 
             {notification.targetPost && !notification.targetPost.deletedAt && (
               <div className={styles.targetPostPreview}>

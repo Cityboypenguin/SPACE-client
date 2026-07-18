@@ -33,6 +33,11 @@ type Tab = 'notifications' | 'announcements';
 
 type ViewingActor = { actor: NotificationActor; type: string };
 
+// 過去の通知はDBに旧文言（フォロー表記）のまま保存されているため、
+// 表示時に上書きする（対症療法。DBのmessage列は書き換えない）。
+const FOLLOW_MESSAGE = 'あなたがお気に入りに登録されました';
+const displayMessage = (type: string, message: string) => type === 'follow' ? FOLLOW_MESSAGE : message;
+
 function HeartIcon() {
   return (
     <img src={favorite} alt="Favorite" width="20" height="20" />
@@ -426,7 +431,7 @@ export const NotificationListPage = () => {
                       {TYPE_ICON[n.type] ?? <BellIcon />}
                     </span>
                     <div className={styles.itemContent}>
-                      <p className={styles.itemMessage}>{n.message}</p>
+                      <p className={styles.itemMessage}>{displayMessage(n.type, n.message)}</p>
                       <p className={styles.itemDate}>{new Date(n.createdAt).toLocaleString('ja-JP')}</p>
                     </div>
                   </li>
@@ -486,7 +491,7 @@ export const NotificationListPage = () => {
                         ) : (
                           <>
                             {group.actor && <p className={styles.itemActor}>{group.actor.name}</p>}
-                            <p className={styles.itemMessage}>{group.message}</p>
+                            <p className={styles.itemMessage}>{displayMessage(group.type, group.message)}</p>
                             {group.targetPost && !group.targetPost.deletedAt && (
                               <div className={styles.targetPostPreview}>
                                 {group.targetPost.media.length > 0 && (
