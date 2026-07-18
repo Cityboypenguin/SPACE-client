@@ -722,7 +722,7 @@ export const PostListPage = () => {
             )}
             {displayedPosts.length === 0 && (
               <p className={styles.emptyText}>
-                {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'フォロー中のユーザーの投稿がありません' : '投稿がまだありません'}
+                {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'お気に入り登録中のユーザーの投稿がありません' : '投稿がまだありません'}
               </p>
             )}
             <div ref={recommendedSentinelRef} className={styles.sentinel} />
