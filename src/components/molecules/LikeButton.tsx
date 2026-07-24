@@ -47,7 +47,7 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
           width: iconSize,
           height: iconSize,
           filter: isLiked ? 'none' 
-            : 'opacity(0.35)',
+            : 'opacity(0.45)',
         }}
       />
       <span
