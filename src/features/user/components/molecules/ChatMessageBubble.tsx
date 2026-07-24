@@ -419,7 +419,15 @@ const ImageLightbox = ({
   );
 };
 
-const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolean }) => {
+const MediaList = ({
+  mediaItems,
+  isMine,
+  onImageLoad,
+}: {
+  mediaItems: Media[];
+  isMine: boolean;
+  onImageLoad?: () => void;
+}) => {
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
 
   const images = mediaItems.filter((m) => m.contentType.startsWith('image/'));
@@ -442,6 +450,7 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
                 key={m.ID}
                 src={url}
                 alt="添付画像"
+                onLoad={onImageLoad}
                 onClick={() => setActiveImageIndex(i)}
                 style={{
                   width: images.length === 1 ? '100%' : 76,
@@ -509,12 +518,13 @@ type Props = {
   onEditContentChange: (val: string) => void;
   onDelete: () => void;
   isReadByPartner?: boolean;
+  onImageLoad?: () => void;
 };
 
 export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
-  onEditContentChange, onDelete, isReadByPartner,
+  onEditContentChange, onDelete, isReadByPartner, onImageLoad,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -634,7 +644,7 @@ export const ChatMessageBubble = ({
             </div>
             {hasMedia && (
               <div style={{ marginTop: 8, opacity: 0.8 }}>
-                <MediaList mediaItems={msg.media} isMine={isMine} />
+                <MediaList mediaItems={msg.media} isMine={isMine} onImageLoad={onImageLoad} />
               </div>
             )}
           </div>
@@ -645,7 +655,7 @@ export const ChatMessageBubble = ({
                 {renderWithLinks(msg.content)}
               </div>
             )}
-            {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
+            {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} onImageLoad={onImageLoad} />}
           </>
         )}
       </div>

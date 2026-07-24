@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -20,11 +20,6 @@ import styles from '../components/ChatRoom.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
 
-// performance.getEntriesByType('navigation') はタブの実際のロード種別を返し、
-// SPA内のクライアントサイド遷移では変化しない。そのため「リロード時のみ
-// モーダルを閉じる」判定は、このタブで実際にリロードが起きた直後の
-// 最初のマウント1回だけに限定する必要がある（モジュールスコープなので
-// 実際のページリロードでのみリセットされ、SPA内の再マウントでは保持される）。
 let hardReloadPending = (() => {
   const entry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
   return entry?.type === 'reload';
@@ -46,7 +41,14 @@ export const CommunityRoomPage = () => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
-  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
+  const {
+    bottomRef,
+    firstUnreadRef,
+    newMessageCount,
+    isAtBottom,
+    scrollToLatest,
+    scrollToInitialPosition,
+  } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -87,7 +89,6 @@ export const CommunityRoomPage = () => {
   const detailStorageKey = roomId ? `showDetail-${roomId}` : null;
 
   const [showDetail, setShowDetail] = useState(() => {
-    // returnPath からの明示的な指定は、リロード判定より常に優先する
     const fromState = (location.state as { showDetail?: boolean } | null)?.showDetail === true;
     if (fromState) return true;
 
@@ -192,7 +193,7 @@ export const CommunityRoomPage = () => {
               && (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
 
             return (
-              <div key={msg.ID} style={{ display: 'contents' }}>
+              <Fragment key={msg.ID}>
                 <ChatDateSeparator
                   currentCreatedAt={msg.createdAt}
                   prevCreatedAt={prevMsg?.createdAt}
@@ -203,18 +204,19 @@ export const CommunityRoomPage = () => {
                   </div>
                 )}
                 <ChatMessageBubble
-                  msg={msg}
-                  isMine={isMine}
-                  canDelete={isMine || isOwner}
-                  isEditing={editingId === msg.ID}
-                  editContent={editContent}
-                  onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
-                  onSaveEdit={() => handleSaveEdit(msg.ID)}
-                  onCancelEdit={() => setEditingId(null)}
-                  onEditContentChange={setEditContent}
-                  onDelete={() => handleDelete(msg.ID)}
+                msg={msg}
+                isMine={isMine}
+                canDelete={isMine || isOwner}
+                isEditing={editingId === msg.ID}
+                editContent={editContent}
+                onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
+                onSaveEdit={() => handleSaveEdit(msg.ID)}
+                onCancelEdit={() => setEditingId(null)}
+                onEditContentChange={setEditContent}
+                onDelete={() => handleDelete(msg.ID)}
+                onImageLoad={scrollToInitialPosition}
                 />
-              </div>
+              </Fragment>
             );
           })}
           <div ref={bottomSentinelRef} style={{ height: '1px' }} />

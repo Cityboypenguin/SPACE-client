@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
@@ -20,7 +20,21 @@ export const DMPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { userId: currentUserID } = useAuth();
-  const { room, messages, error, addMessage, initialLastReadAt, partnerLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+  const {
+    room,
+    messages,
+    error,
+    addMessage,
+    initialLastReadAt,
+    partnerLastReadAt,
+    hasMoreBefore,
+    hasMoreAfter,
+    loadingOlder,
+    loadingNewer,
+    loadOlderMessages,
+    loadNewerMessages,
+  } = useRoomMessages(roomId);
+
   const partner = room?.user.find((u) => u.ID !== currentUserID);
   const isBlocked = room?.isMessagingDisabled ?? false;
   const {
@@ -33,7 +47,12 @@ export const DMPage = () => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
-  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
+  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(
+    messages,
+    currentUserID,
+    roomId,
+    hasMoreAfter
+  );
 
   // 双方向スクロールページング
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -42,10 +61,10 @@ export const DMPage = () => {
 
   const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
 
-  const loadOlderWithScrollRestore = async () => {
+  const loadOlderWithScrollRestore = useCallback(async () => {
     beginRestore();
     await loadOlderMessages();
-  };
+  }, [beginRestore, loadOlderMessages]);
 
   // 上センチネル: 古いメッセージを取得
   useEffect(() => {
@@ -53,13 +72,16 @@ export const DMPage = () => {
     const container = messageListRef.current;
     if (!sentinel || !container || !hasMoreBefore) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadOlderWithScrollRestore(); },
-      { root: container, rootMargin: '200px 0px 0px 0px', threshold: 0 },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadOlderWithScrollRestore();
+        }
+      },
+      { root: container, rootMargin: '200px 0px 0px 0px', threshold: 0 }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMoreBefore, loadOlderMessages]);
+  }, [hasMoreBefore, loadOlderWithScrollRestore]);
 
   // 下センチネル: 新しいメッセージを取得（歴史閲覧中のみ active）
   useEffect(() => {
@@ -67,12 +89,15 @@ export const DMPage = () => {
     const container = messageListRef.current;
     if (!sentinel || !container || !hasMoreAfter) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadNewerMessages(); },
-      { root: container, rootMargin: '0px 0px 200px 0px', threshold: 0 },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadNewerMessages();
+        }
+      },
+      { root: container, rootMargin: '0px 0px 200px 0px', threshold: 0 }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMoreAfter, loadNewerMessages]);
 
   useEffect(() => {
@@ -80,7 +105,7 @@ export const DMPage = () => {
     if (partner) {
       saveRecentDM({ roomID: roomId, partnerName: partner.name, partnerAccountID: partner.accountID });
     }
-  }, [room, roomId, currentUserID, partner]);
+  }, [room, roomId, partner]);
 
   useEffect(() => {
     if (error && error.includes('not a member of this room')) {
@@ -109,7 +134,15 @@ export const DMPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button onClick={() => navigate(-1)}><ChevronLeft /></button>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="前のページに戻る"
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+        >
+          <ChevronLeft />
+        </button>
+
         {partner ? (
           <button
             type="button"
@@ -125,11 +158,11 @@ export const DMPage = () => {
             }}
           >
             {partner.avatarUrl ? (
-            <img
-              src={storageUrl(partner.avatarUrl) ?? undefined}
-              alt={partner.name}
-              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-            />
+              <img
+                src={storageUrl(partner.avatarUrl) ?? undefined}
+                alt={partner.name}
+                style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              />
             ) : (
               <Avatar name={partnerName} size={36} />
             )}
@@ -138,10 +171,6 @@ export const DMPage = () => {
           <Avatar name={partnerName} size={36} />
         )}
         <strong className={styles.roomTitle}>{partnerName}</strong>
-        {/* <span
-          className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}
-          title={wsConnected ? '接続中' : '切断'}
-        /> */}
       </div>
 
       <div className={styles.messageListWrapper}>
@@ -159,14 +188,16 @@ export const DMPage = () => {
 
             const msgTimeMs = new Date(msg.createdAt).getTime();
             const prevMsgTimeMs = prevMsg ? new Date(prevMsg.createdAt).getTime() : null;
-            const isFirstUnread = !isMine && initialLastReadAtMs !== null
-              && msgTimeMs > initialLastReadAtMs
-              && (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
+            const isFirstUnread =
+              !isMine &&
+              initialLastReadAtMs !== null &&
+              msgTimeMs > initialLastReadAtMs &&
+              (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
 
             const isLastReadByPartner = isMine && msg.ID === lastReadMessageId;
 
             return (
-              <div key={msg.ID} style={{ display: 'contents' }}>
+              <React.Fragment key={msg.ID}>
                 <ChatDateSeparator
                   currentCreatedAt={msg.createdAt}
                   prevCreatedAt={prevMsg?.createdAt}
@@ -184,14 +215,17 @@ export const DMPage = () => {
                   canDelete={isMine}
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
-                  onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
+                  onStartEdit={() => {
+                    setEditingId(msg.ID);
+                    setEditContent(msg.content);
+                  }}
                   onSaveEdit={() => handleSaveEdit(msg.ID)}
                   onCancelEdit={() => setEditingId(null)}
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
                   isReadByPartner={isLastReadByPartner}
                 />
-              </div>
+              </React.Fragment>
             );
           })}
           <div ref={bottomSentinelRef} style={{ height: '1px' }} />
@@ -205,15 +239,17 @@ export const DMPage = () => {
       </div>
 
       {isBlocked && (
-        <div style={{
-          padding: '12px',
-          margin: '0 16px 16px',
-          textAlign: 'center',
-          backgroundColor: '#fee2e2',
-          color: '#dc2626',
-          borderRadius: '8px',
-          fontSize: '0.875rem'
-        }}>
+        <div
+          style={{
+            padding: '12px',
+            margin: '0 16px 16px',
+            textAlign: 'center',
+            backgroundColor: '#fee2e2',
+            color: '#dc2626',
+            borderRadius: '8px',
+            fontSize: '0.875rem',
+          }}
+        >
           ブロック設定により、現在メッセージを送受信できません。
         </div>
       )}
