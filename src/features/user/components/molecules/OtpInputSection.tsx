@@ -26,7 +26,8 @@ export const OtpInputSection = ({
   <div>
     {warningText && <p className={styles.warningText}>{warningText}</p>}
     <p className={styles.hint}>
-      <strong>{email}</strong> に送信した6桁の認証コードを入力してください（有効期限10分）
+      <strong>{email}</strong> に送信した6桁の認証コードを入力してください（有効期限10分）<br />
+      ※迷惑メールフォルダに振り分けられる場合がありますのでご注意ください。
     </p>
     <input
       type="text"

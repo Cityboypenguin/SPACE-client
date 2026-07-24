@@ -408,12 +408,14 @@ export const PostComposer = ({
             })}
             {selectedFiles.map((file, i) => (
               <div key={`new-${i}`} className={styles.mediaThumb}>
-                <img
-                  src={previewUrls[i] ?? ''}
-                  alt={file.name}
-                  className={styles.mediaThumbImg}
-                  decoding="async"
-                />
+                {previewUrls[i] && (
+                  <img
+                    src={previewUrls[i]}
+                    alt={file.name}
+                    className={styles.mediaThumbImg}
+                    decoding="async"
+                  />
+                )}
                 <button type="button" className={styles.removeButton} onClick={() => removeFile(i)}>✕</button>
               </div>
             ))}
