@@ -106,7 +106,7 @@ export const CommunityListPage = () => {
               return (
                 <li
                   key={c.ID}
-                  onClick={() => navigate(`/community/chat/${c.roomID}`, { state: { communityID: c.ID } })}
+                  onClick={() => navigate(`/community/chat/${c.roomID}`, { state: { communityID: c.ID, community: c } })}
                   className={`${styles.item} ${hasUnread ? styles.itemUnread : ''}`}
                 >
                   <div className={styles.avatarWrap}>

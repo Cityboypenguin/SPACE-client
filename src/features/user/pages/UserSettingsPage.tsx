@@ -12,6 +12,7 @@ import { UserListItem } from '../components/molecules/UserListItem';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { useToast } from '../../../context/ToastContext';
 import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postListCache';
+import { staticCacheOptions } from '../cache/swrOptions';
 import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSettingsPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -183,7 +184,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
 };
 
 const TermsView = () => {
-  const { data: terms } = useSWR('currentTerms', getCurrentTerms);
+  const { data: terms } = useSWR('currentTerms', getCurrentTerms, staticCacheOptions);
 
   if (!terms) return <p style={{ color: '#94a3b8' }}>読み込み中...</p>;
 

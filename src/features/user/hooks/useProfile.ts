@@ -1,11 +1,17 @@
 import useSWR from 'swr';
 import { getProfileByUserID } from '../api/profile';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { staticCacheOptions } from '../cache/swrOptions';
+
+export const profileCacheKey = (userId: string) => ['profile', userId] as const;
+
+export const profileCacheOptions = staticCacheOptions;
 
 export const useProfile = (userId: string | null | undefined) => {
   const { data, isLoading, error } = useSWR(
-    userId ? ['profile', userId] : null,
+    userId ? profileCacheKey(userId) : null,
     ([, id]: [string, string]) => getProfileByUserID(id).then((d) => d.getProfileByUserID),
+    profileCacheOptions,
   );
 
   return {

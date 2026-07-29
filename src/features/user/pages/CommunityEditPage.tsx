@@ -96,10 +96,10 @@ export const CommunityEditPage = () => {
       if (name !== community.name) input.name = name;
       if (description !== community.description) input.description = description;
       if (avatarKey !== undefined) input.avatarKey = avatarKey;
-      await updateCommunityInfo(community.ID, input);
+      const updatedCommunity = await updateCommunityInfo(community.ID, input);
       await mutate('my-communities');
       if (returnPath) {
-        navigate(returnPath, { state: { showDetail: true } });
+        navigate(returnPath, { state: { showDetail: true, communityID: updatedCommunity.ID, community: updatedCommunity } });
       } else {
         navigate(-1);
       }
@@ -112,7 +112,7 @@ export const CommunityEditPage = () => {
 
   const doNavigateBack = () => {
     if (returnPath) {
-      navigate(returnPath, { state: { showDetail: true } });
+      navigate(returnPath, { state: { showDetail: true, communityID: community.ID, community } });
     } else {
       navigate(-1);
     }

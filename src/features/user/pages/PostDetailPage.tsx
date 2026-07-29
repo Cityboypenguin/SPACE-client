@@ -36,6 +36,7 @@ import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
 import { useToast } from '../../../context/ToastContext';
 import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
+import { stableCacheOptions } from '../cache/swrOptions';
 import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
 
 export const PostDetailPage = () => {
@@ -48,6 +49,7 @@ export const PostDetailPage = () => {
   const { data: post, isLoading, error, mutate } = useSWR<Post | null>(
     id ? ['post', id] : null,
     ([, postId]: [string, string]) => getPostByID(postId),
+    stableCacheOptions,
   );
 
   const [replyContent, setReplyContent] = useState('');
