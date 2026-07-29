@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useAuth } from '../context/AuthContext';
 import { getProfileByUserID, updateMyProfile } from '../api/profile';
+import { profileCacheKey, profileCacheOptions } from '../hooks/useProfile';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/ToastContext';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -28,10 +29,12 @@ export const UserInfoEditPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { addToast } = useToast();
+  const { mutate } = useSWRConfig();
 
   const { data: profileData } = useSWR(
-    userId ? ['profile', userId] : null,
+    userId ? profileCacheKey(userId) : null,
     ([, id]: [string, string]) => getProfileByUserID(id).then((d) => d.getProfileByUserID),
+    profileCacheOptions,
   );
 
   const [newAccountID, setNewAccountID] = useState('');
@@ -72,6 +75,7 @@ export const UserInfoEditPage = () => {
     setSubmitting(true);
     try {
       await updateMyProfile(input);
+      if (userId) await mutate(profileCacheKey(userId));
       addToast('ユーザー情報を更新しました', 'success');
       navigate('/mypage');
     } catch (err) {

@@ -18,6 +18,7 @@ import {
 import { listAnnouncements } from '../api/announcement';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
+import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import senshuIcon from '../../../assets/Senshu-Universe.svg';
 import { Tabs } from '../../../components/molecules/Tabs';
 import styles from './NotificationListPage.module.css';
@@ -99,16 +100,19 @@ export const NotificationListPage = () => {
   const { data: groupsData, isLoading: notifLoading, mutate: mutateGroups } = useSWR(
     ['my-notification-groups', notifPage, pageSize],
     () => listMyNotificationGroups(pageSize, notifPage * pageSize),
+    stableCacheOptions,
   );
 
   const { data: actorData, mutate: mutateActorNotifs } = useSWR(
     viewingActor ? ['my-notifications-actor', viewingActor.type, viewingActor.actor.ID, actorPage, pageSize] : null,
     () => listMyNotifications(pageSize, actorPage * pageSize, viewingActor!.type, viewingActor!.actor.ID),
+    stableCacheOptions,
   );
 
   const { data: announceData, isLoading: announceLoading } = useSWR(
     tab === 'announcements' ? ['announcements', announcePage, pageSize] : null,
     () => listAnnouncements(pageSize, announcePage * pageSize),
+    staticCacheOptions,
   );
 
   useEffect(() => {

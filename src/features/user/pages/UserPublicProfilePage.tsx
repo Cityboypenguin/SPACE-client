@@ -17,6 +17,7 @@ import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
+import { staticCacheOptions } from '../cache/swrOptions';
 import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
@@ -52,10 +53,12 @@ export const UserPublicProfilePage = () => {
   const { data: favoriteUsers, mutate: mutateFavorites } = useSWR(
     currentUserId && !isMe ? ['favorite-users', currentUserId] : null,
     ([, uid]: [string, string]) => getFavoriteUsersByUserID(uid),
+    staticCacheOptions,
   );
   const { data: blockedUsers, mutate: mutateBlocked } = useSWR(
     currentUserId && !isMe ? ['blocked-users', currentUserId] : null,
     ([, uid]: [string, string]) => getBlockersByUserID(uid),
+    staticCacheOptions,
   );
 
   const isFavorited = favoriteUsers?.some((u) => u.ID === id) ?? false;
@@ -195,7 +198,15 @@ export const UserPublicProfilePage = () => {
         mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
       } else {
         await createFavoriteUser(id);
-        void mutateFavorites();
+        if (profile) {
+          mutateFavorites(
+            (prev) => [
+              ...(prev ?? []),
+              { ID: profile.user.ID, name: profile.user.name, accountID: profile.user.accountID, avatarUrl: profile.user.avatarUrl },
+            ],
+            { revalidate: false },
+          );
+        }
       }
     } catch (err) {
       addToast(toUserMessage(err, 'お気に入りの操作に失敗しました。'), 'error');

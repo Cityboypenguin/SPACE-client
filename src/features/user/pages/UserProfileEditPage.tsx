@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -8,6 +8,7 @@ import { ImageCropModal } from '../components/organisms/ImageCropModal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { profileCacheKey, profileCacheOptions } from '../hooks/useProfile';
 import {
   getProfileByUserID,
   updateProfile,
@@ -26,10 +27,12 @@ export const UserProfileEditPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userId } = useAuth();
   const { addToast } = useToast();
+  const { mutate } = useSWRConfig();
 
   const { data: profileData } = useSWR(
-    userId ? ['profile', userId] : null,
+    userId ? profileCacheKey(userId) : null,
     ([, id]: [string, string]) => getProfileByUserID(id).then((d) => d.getProfileByUserID),
+    profileCacheOptions,
   );
 
   const [bio, setBio] = useState('');
@@ -90,6 +93,7 @@ export const UserProfileEditPage = () => {
       }
 
       await updateProfile({ bio });
+      if (userId) await mutate(profileCacheKey(userId));
       addToast('プロフィールを更新しました', 'success');
       navigate('/mypage');
     } catch (err) {
@@ -104,6 +108,7 @@ export const UserProfileEditPage = () => {
     setIsDeletingAvatar(true);
     try {
       await deleteAvatar();
+      if (userId) await mutate(profileCacheKey(userId));
       setCurrentAvatarUrl(null);
       setPreviewUrl(null);
       setSelectedFile(null);

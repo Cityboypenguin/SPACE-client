@@ -16,6 +16,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
+import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import styles from '../components/ChatRoom.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
@@ -34,6 +35,7 @@ export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const locationState = location.state as { communityID?: string; community?: Community; showDetail?: boolean } | null;
   const { userId: currentUserID } = useAuth();
   const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const {
@@ -88,7 +90,7 @@ export const CommunityRoomPage = () => {
 
   const [showDetail, setShowDetail] = useState(() => {
     // returnPath からの明示的な指定は、リロード判定より常に優先する
-    const fromState = (location.state as { showDetail?: boolean } | null)?.showDetail === true;
+    const fromState = locationState?.showDetail === true;
     if (fromState) return true;
 
     if (hardReloadPending) {
@@ -110,25 +112,31 @@ export const CommunityRoomPage = () => {
     }
   }, [showDetail, detailStorageKey]);
 
-  const openDetail = () => { setShowDetail(true); void mutateCommunities(); };
+  const openDetail = () => setShowDetail(true);
   const closeDetail = () => setShowDetail(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
-  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', () => listMyCommunities(), { revalidateOnFocus: false });
+  const stateCommunity = locationState?.community ?? null;
+  const { data: communities, mutate: mutateCommunities } = useSWR(
+    stateCommunity ? null : 'my-communities',
+    () => listMyCommunities(),
+    staticCacheOptions,
+  );
 
   const community = useMemo((): Community | null => {
+    if (stateCommunity) return stateCommunity;
     if (!communities || !roomId) return null;
-    const stateID = (location.state as { communityID?: string } | null)?.communityID;
+    const stateID = locationState?.communityID;
     if (stateID) return communities.items.find((c) => c.ID === stateID) ?? null;
     return communities.items.find((c) => c.roomID === roomId) ?? null;
-  }, [communities, roomId, location.state]);
+  }, [communities, roomId, locationState, stateCommunity]);
 
   const communityID = community?.ID ?? null;
 
   const { data: role } = useSWR(
     communityID ? ['community-role', communityID] : null,
     ([, cid]: [string, string]) => getMyRoleInCommunity(cid),
-    { revalidateOnFocus: false },
+    stableCacheOptions,
   );
   const isOwner = role === 'owner';
 

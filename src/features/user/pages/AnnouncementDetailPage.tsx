@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { getAnnouncement } from '../api/announcement';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { staticCacheOptions } from '../cache/swrOptions';
 
 export const AnnouncementDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +14,7 @@ export const AnnouncementDetailPage = () => {
   const { data: announcement, isLoading, error } = useSWR(
     id ? ['announcement', id] : null,
     ([, announcementId]: [string, string]) => getAnnouncement(announcementId),
+    staticCacheOptions,
   );
 
   return (

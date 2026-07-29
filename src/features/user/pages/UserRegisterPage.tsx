@@ -61,8 +61,23 @@ const validateEmail = (value: string): string => {
   return '';
 };
 
+const validateName = (value: string): string => {
+  if (!value || value.trim() === '') {
+    return '';
+  }
+  if ([...value].length > 50) {
+    return 'ユーザー名は50文字以内で入力してください';
+  }
+  return '';
+};
+
 const validatePassword = (value: string): string => {
-  if (value && value.length < 8) return 'パスワードは8文字以上で入力してください';
+  if (!value || value.trim() === '') {
+    return ''; 
+  }
+  if (value.length < 8) {
+    return 'パスワードを8文字以上で入力してください';
+  }
   return '';
 };
 
@@ -71,8 +86,15 @@ const MAX_NAME_LENGTH = 50;
 const MAX_ACCOUNT_ID_LENGTH = 15;
 
 const validateAccountID = (value: string): string => {
-  if (value && !accountIDRe.test(value)) return 'ユーザーIDは半角英数字・_・-のみ使用できます';
-  if ([...value].length > MAX_ACCOUNT_ID_LENGTH) return `ユーザーIDは${MAX_ACCOUNT_ID_LENGTH}文字以内で入力してください`;
+  if (!value || value.trim() === '') {
+    return ''; 
+  }
+  if (!accountIDRe.test(value)) {
+    return 'ユーザーIDは半角英数字・_・-のみ使用できます';
+  }
+  if ([...value].length > MAX_ACCOUNT_ID_LENGTH) {
+    return `ユーザーIDは${MAX_ACCOUNT_ID_LENGTH}文字以内で入力してください`;
+  }
   return '';
 };
 
@@ -143,12 +165,12 @@ export const UserRegisterPage = () => {
 
   // Account info (step 4)
   const [name, setName] = useState(initialProgress.name ?? '');
+  const [nameError, setNameError] = useState('');
   const [accountID, setAccountID] = useState(initialProgress.accountID ?? '');
   const [accountIDError, setAccountIDError] = useState('');
   // パスワードはセキュリティ上の理由でリロード後も復元しない（再入力してもらう）
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [step4Errors, setStep4Errors] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -265,7 +287,6 @@ export const UserRegisterPage = () => {
     }
     setVerifyingOtp(true);
     setOtpError('');
-    setVerifyingOtp(true);
     try {
       await verifyEmailOTP(email, otp);
       setStep(4);
@@ -277,24 +298,50 @@ export const UserRegisterPage = () => {
   };
 
   const handleSubmit = async () => {
-    const errors: string[] = [];
-    if (!name) errors.push('ユーザー名を入力してください');
-    else if ([...name].length > MAX_NAME_LENGTH) errors.push(`名前は${MAX_NAME_LENGTH}文字以内で入力してください`);
-    if (!accountID) errors.push('ユーザーIDを入力してください');
-    else if (accountIDError) errors.push(accountIDError);
-    if (!password) errors.push('パスワードを入力してください');
-    else if (passwordError) errors.push(passwordError);
-    if (errors.length > 0) {
-      setStep4Errors(errors);
+    let hasInputError = false;
+
+    if (!name || name.trim() === '') {
+      setNameError('ユーザー名を入力してください');
+      hasInputError = true;
+    } else {
+      const err = validateName(name);
+      if (err) {
+        setNameError(err);
+        hasInputError = true;
+      }
+    }
+
+    if (!accountID || accountID.trim() === '') {
+      setAccountIDError('ユーザーIDを入力してください');
+      hasInputError = true;
+    } else {
+      const err = validateAccountID(accountID);
+      if (err) {
+        setAccountIDError(err);
+        hasInputError = true;
+      }
+    }
+
+    if (!password || password.trim() === '') {
+      setPasswordError('パスワードを入力してください');
+      hasInputError = true;
+    } else {
+      const err = validatePassword(password);
+      if (err) {
+        setPasswordError(err);
+        hasInputError = true;
+      }
+    }
+
+    if (hasInputError) {
       return;
     }
-    setStep4Errors([]);
+
     setSubmitting(true);
     setSubmitError('');
 
     try {
       await registerUser(accountID, name, email, password, otp);
-      // ユーザー作成済み・OTPは使用済みのため、保存していた進行状況はここで破棄する
       clearRegisterProgress();
     } catch {
       setSubmitError('ユーザーIDまたはメールアドレスが既に使用されています。変更して再度お試しください。');
@@ -464,10 +511,14 @@ export const UserRegisterPage = () => {
                 type="text"
                 value={name}
                 maxLength={MAX_NAME_LENGTH}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setNameError(validateName(e.target.value));
+                }}
                 placeholder="表示名"
                 className={styles.input}
               />
+              {nameError && <p className={styles.fieldError}>{nameError}</p>}
             </div>
             <div className={styles.fieldGroup}>
               <label className={styles.fieldLabel}>ユーザーID</label>
@@ -498,13 +549,6 @@ export const UserRegisterPage = () => {
               />
               {passwordError && <p className={styles.fieldError}>{passwordError}</p>}
             </div>
-            {step4Errors.length > 0 && (
-              <ul className={styles.errorList}>
-                {step4Errors.map((e) => (
-                  <li key={e}>{e}</li>
-                ))}
-              </ul>
-            )}
             {submitError && <p className={styles.submitError}>{submitError}</p>}
             <div className={styles.actionRow}>
               <button type="button" onClick={() => setStep(3)}>

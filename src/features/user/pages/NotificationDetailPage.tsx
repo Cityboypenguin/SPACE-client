@@ -11,6 +11,7 @@ import {
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
+import { stableCacheOptions } from '../cache/swrOptions';
 import styles from './NotificationDetailPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -52,6 +53,7 @@ export const NotificationDetailPage = () => {
   const { data: notification, isLoading, mutate } = useSWR(
     id ? ['my-notification-detail', id] : null,
     () => getNotification(id!),
+    stableCacheOptions,
   );
 
   useEffect(() => {
