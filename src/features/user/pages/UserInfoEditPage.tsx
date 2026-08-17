@@ -1,18 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useAuth } from '../context/AuthContext';
 import { getProfileByUserID, updateMyProfile } from '../api/profile';
+import { profileCacheKey, profileCacheOptions } from '../hooks/useProfile';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/ToastContext';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserInfoEditPage.module.css';
 
 const accountIDRe = /^[a-zA-Z0-9_-]+$/;
+const MAX_NAME_LENGTH = 50;
+const MAX_ACCOUNT_ID_LENGTH = 25;
 
 const validateAccountID = (value: string): string => {
   if (value && !accountIDRe.test(value)) return 'ユーザーIDは半角英数字・_・-のみ使用できます';
+  if ([...value].length > MAX_ACCOUNT_ID_LENGTH) return `ユーザーIDは${MAX_ACCOUNT_ID_LENGTH}文字以内で入力してください`;
+  return '';
+};
+
+const validateName = (value: string): string => {
+  if ([...value].length > MAX_NAME_LENGTH) return `名前は${MAX_NAME_LENGTH}文字以内で入力してください`;
   return '';
 };
 
@@ -20,10 +29,12 @@ export const UserInfoEditPage = () => {
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { addToast } = useToast();
+  const { mutate } = useSWRConfig();
 
   const { data: profileData } = useSWR(
-    userId ? ['profile', userId] : null,
+    userId ? profileCacheKey(userId) : null,
     ([, id]: [string, string]) => getProfileByUserID(id).then((d) => d.getProfileByUserID),
+    profileCacheOptions,
   );
 
   const [newAccountID, setNewAccountID] = useState('');
@@ -47,6 +58,14 @@ export const UserInfoEditPage = () => {
       }
     }
 
+    if (newName.trim()) {
+      const nameErr = validateName(newName.trim());
+      if (nameErr) {
+        setError(nameErr);
+        return;
+      }
+    }
+
     const input: { accountID?: string; name?: string } = {};
     if (newAccountID.trim()) input.accountID = newAccountID.trim();
     if (newName.trim()) input.name = newName.trim();
@@ -56,6 +75,7 @@ export const UserInfoEditPage = () => {
     setSubmitting(true);
     try {
       await updateMyProfile(input);
+      if (userId) await mutate(profileCacheKey(userId));
       addToast('ユーザー情報を更新しました', 'success');
       navigate('/mypage');
     } catch (err) {
@@ -70,7 +90,7 @@ export const UserInfoEditPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.header}>
-          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <button onClick={() => navigate(-1)}>
             <ChevronLeft />
           </button>
           <h1 className={styles.title}>ユーザー情報の編集</h1>
@@ -89,6 +109,7 @@ export const UserInfoEditPage = () => {
                 type="text"
                 className={styles.input}
                 value={newAccountID}
+                maxLength={MAX_ACCOUNT_ID_LENGTH}
                 onChange={(e) => {
                   setNewAccountID(e.target.value);
                   setAccountIDError(validateAccountID(e.target.value));
@@ -113,6 +134,7 @@ export const UserInfoEditPage = () => {
                 type="text"
                 className={styles.input}
                 value={newName}
+                maxLength={MAX_NAME_LENGTH}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="名前を入力してください"
               />

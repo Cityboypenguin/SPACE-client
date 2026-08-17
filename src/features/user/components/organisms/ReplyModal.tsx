@@ -7,7 +7,7 @@ import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './ReplyModal.module.css';
-import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
+import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
 
 type Props = {
   post: Post;

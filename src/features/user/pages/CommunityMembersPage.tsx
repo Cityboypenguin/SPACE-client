@@ -21,6 +21,7 @@ export const CommunityMembersPage = () => {
   const { communityID } = useParams<{ communityID: string }>();
   const location = useLocation();
   const state = location.state as { community: Community; returnPath?: string } | null;
+  const community = state?.community;
   const returnPath = state?.returnPath;
 
   const [originalMembers, setOriginalMembers] = useState<CommunityMember[]>([]);
@@ -67,7 +68,7 @@ export const CommunityMembersPage = () => {
 
   const doNavigateBack = () => {
     if (returnPath) {
-      navigate(returnPath, { state: { showDetail: true } });
+      navigate(returnPath, { state: { showDetail: true, communityID: community?.ID, community } });
     } else {
       navigate(-1);
     }
@@ -117,7 +118,7 @@ export const CommunityMembersPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.header}>
-          <button className={styles.backButton} onClick={handleBack}>
+          <button onClick={handleBack}>
             <ChevronLeft />
           </button>
           <h1 className={styles.title}>メンバー一覧</h1>

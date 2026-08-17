@@ -142,7 +142,6 @@ export const ForgotPasswordPage = () => {
         {step !== 'newPassword' && (
           <button
             type="button"
-            className={styles.backBtn}
             onClick={() => {
               if (step === 'email') navigate('/login');
               else if (step === 'otp') { setStep('email'); setOtp(''); }

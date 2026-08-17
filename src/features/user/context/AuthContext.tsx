@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '../api/auth';
+import { getMyProfile } from '../api/profile';
 import { registerUnauthorizedHandler, registerTokenRefreshedHandler, registerMaintenanceHandler } from '../../../lib/graphql';
 import {
   ADMIN_REFRESH_TOKEN_KEY,
@@ -56,6 +57,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     clearAuth();
     navigate('/login');
   }, [token, clearAuth, navigate]);
+
+  // token はあるのに userId が欠落している不整合状態を自己修復する。
+  // この状態だと本人判定に失敗し、DM が全て相手側に表示されたり、投稿カードの自分アイコンが
+  // ✍️ になったりする。userId は opaque な値でクライアント側からは算出できないため、
+  // token から本人を特定できる me クエリで取得して復元する（正常時は発火しない no-op）。
+  useEffect(() => {
+    if (!token || userId) return;
+    let active = true;
+    getMyProfile()
+      .then((data) => {
+        const id = data.me?.ID;
+        if (active && id) {
+          localStorage.setItem(USER_ID_KEY, id);
+          setUserId(id);
+        }
+      })
+      .catch(() => { /* 復元失敗時は既存の挙動のまま */ });
+    return () => { active = false; };
+  }, [token, userId]);
 
   useEffect(() => {
     registerTokenRefreshedHandler((newToken, newRefreshToken) => {

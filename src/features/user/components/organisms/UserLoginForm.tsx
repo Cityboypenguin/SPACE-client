@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
@@ -11,7 +11,13 @@ export const UserLoginForm = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { token, login } = useAuth();
+
+  useEffect(() => {
+    if (token) {
+      navigate('/home', { replace: true });
+    }
+  }, [token, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

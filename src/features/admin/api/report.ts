@@ -1,12 +1,25 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
+import type { ReportStatus, ReportTargetType } from '../../../generated/graphql';
 import { getUserToken } from '../../user/api/auth';
 import { ADMIN_TOKEN_KEY } from './auth';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
-export type ReportPage = { items: any[]; total: number };
+export type Report = {
+  ID: string;
+  targetType: string;
+  targetID: string;
+  reason: string;
+  customReason: string | null;
+  content: string | null;
+  status: string;
+  createdAt: string;
+};
 
-export const SEARCH_REPORTS_QUERY = `
+export type ReportPage = { items: Report[]; total: number };
+
+const SearchReportsDocument = graphql(`
   query SearchReports($filter: ReportSearchFilter, $limit: Int, $offset: Int) {
     searchReports(filter: $filter, limit: $limit, offset: $offset) {
       items {
@@ -15,91 +28,80 @@ export const SEARCH_REPORTS_QUERY = `
         targetID
         reason
         customReason
+        content
         status
         createdAt
       }
       total
     }
   }
-`;
+`);
 
-export const UPDATE_REPORT_STATUS_MUTATION = `
+const UpdateReportStatusDocument = graphql(`
   mutation UpdateReportStatus($id: ID!, $status: ReportStatus!) {
     updateReportStatus(id: $id, status: $status) {
       ID
       status
     }
   }
-`;
+`);
 
-export const CREATE_REPORT_MUTATION = `
-  mutation CreateReport($input: CreateReportInput!) {
+const CreateReportDocument = graphql(`
+  mutation AdminCreateReport($input: CreateReportInput!) {
     createReport(input: $input) {
       ID
       status
     }
   }
-`;
+`);
 
-export const GET_REPORT_SERVICE_STATUS_QUERY = `
+const GetReportServiceStatusDocument = graphql(`
   query GetReportServiceStatus {
     isReportServiceEnabled
   }
-`;
+`);
 
-export const SET_REPORT_SERVICE_STATUS_MUTATION = `
+const SetReportServiceStatusDocument = graphql(`
   mutation SetReportServiceStatus($enabled: Boolean!) {
     setReportServiceStatus(enabled: $enabled)
   }
-`;
+`);
 
 export const getReports = async (filterStatus?: string, targetType?: string, limit = 20, offset = 0): Promise<ReportPage> => {
-  const filter: any = {};
+  const filter: { status?: ReportStatus; targetType?: ReportTargetType } = {};
   if (filterStatus && filterStatus !== 'ALL') {
-    filter.status = filterStatus;
+    filter.status = filterStatus as ReportStatus;
   }
   if (targetType && targetType !== 'ALL') {
-    filter.targetType = targetType;
+    filter.targetType = targetType as ReportTargetType;
   }
-  const variables: any = { limit, offset };
+  const variables: { limit: number; offset: number; filter?: typeof filter } = { limit, offset };
   if (Object.keys(filter).length > 0) variables.filter = filter;
-  const data = await request<{ searchReports: ReportPage }>(SEARCH_REPORTS_QUERY, variables, getAdminToken());
-  return data.searchReports;
+  const data = await requestDoc(SearchReportsDocument, variables, getAdminToken());
+  return data.searchReports as ReportPage;
 };
 
 export const adminUpdateReportStatus = async (id: string, status: string) => {
-  const data = await request(UPDATE_REPORT_STATUS_MUTATION, { id, status }, getAdminToken());
+  const data = await requestDoc(UpdateReportStatusDocument, { id, status: status as ReportStatus }, getAdminToken());
   return data;
 };
 
 export const createReport = async (input: {
-  targetType: 'POST' | 'USER' | 'COMMENT' | 'PROMOTION' | 'COMMUNITY'; 
+  targetType: 'POST' | 'USER' | 'COMMENT' | 'PROMOTION' | 'COMMUNITY';
   targetID: string;
   reason: string;
   customReason: string | null;
 }) => {
-  const data = await request(
-    CREATE_REPORT_MUTATION, 
-    { input }, 
-    getUserToken()
-  );
+  const data = await requestDoc(CreateReportDocument, { input: input as { targetType: ReportTargetType; targetID: string; reason: string; customReason: string | null } }, getUserToken());
   return data;
 };
 
 export const getReportServiceStatus = async (): Promise<boolean> => {
-  const data = await request<{ isReportServiceEnabled: boolean }>(
-    GET_REPORT_SERVICE_STATUS_QUERY,
-    {},
-    getAdminToken()
-  );
+  const data = await requestDoc(GetReportServiceStatusDocument, {}, getAdminToken());
   return data?.isReportServiceEnabled ?? true;
 };
 
 export const updateReportServiceStatus = async (enabled: boolean): Promise<boolean> => {
-  const data = await request<{ setReportServiceStatus: boolean }>(
-    SET_REPORT_SERVICE_STATUS_MUTATION,
-    { enabled },
-    getAdminToken()
-  );
+  const data = await requestDoc(SetReportServiceStatusDocument, { enabled }, getAdminToken());
   return data?.setReportServiceStatus ?? enabled;
 };

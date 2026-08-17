@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 export type Administrator = {
@@ -9,19 +10,7 @@ export type Administrator = {
 
 export type AdministratorPage = { items: Administrator[]; total: number };
 
-type CreateAdministratorResponse = {
-  createAdministrator: Administrator;
-};
-
-type GetAdministratorByIDResponse = {
-  getAdministratorByID: Administrator;
-};
-
-type SearchAdministratorsResponse = {
-  searchAdministrators: Administrator[];
-};
-
-const CREATE_ADMINISTRATOR_MUTATION = `
+const CreateAdministratorDocument = graphql(`
   mutation CreateAdministrator($input: CreateAdministratorInput!) {
     createAdministrator(input: $input) {
       ID
@@ -29,9 +18,9 @@ const CREATE_ADMINISTRATOR_MUTATION = `
       email
     }
   }
-`;
+`);
 
-const GET_ADMINISTRATOR_BY_ID_QUERY = `
+const GetAdministratorByIDDocument = graphql(`
   query GetAdministratorByID($id: ID!) {
     getAdministratorByID(id: $id) {
       ID
@@ -39,9 +28,9 @@ const GET_ADMINISTRATOR_BY_ID_QUERY = `
       email
     }
   }
-`;
+`);
 
-const SEARCH_ADMINISTRATORS_QUERY = `
+const SearchAdministratorsDocument = graphql(`
   query SearchAdministrators($name: String!) {
     searchAdministrators(name: $name) {
       ID
@@ -49,9 +38,9 @@ const SEARCH_ADMINISTRATORS_QUERY = `
       email
     }
   }
-`;
+`);
 
-const GET_ADMINISTRATORS_QUERY = `
+const AdministratorsDocument = graphql(`
   query Administrators($limit: Int, $offset: Int) {
     administrators(limit: $limit, offset: $offset) {
       items {
@@ -62,123 +51,69 @@ const GET_ADMINISTRATORS_QUERY = `
       total
     }
   }
-`;
+`);
+
+const DeleteAdministratorDocument = graphql(`
+  mutation DeleteAdministrator($id: ID!) {
+    deleteAdministrator(id: $id)
+  }
+`);
+
+const UpdateAdministratorDocument = graphql(`
+  mutation UpdateAdministrator($id: ID!, $input: UpdateAdministratorInput!) {
+    updateAdministrator(id: $id, input: $input) {
+      ID
+      name
+      email
+    }
+  }
+`);
 
 export const getAdministrators = async (limit = 20, offset = 0) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<{ administrators: AdministratorPage }>(
-    GET_ADMINISTRATORS_QUERY,
-    { limit, offset },
-    token,
-  );
+  return await requestDoc(AdministratorsDocument, { limit, offset }, token);
 };
 
 export const searchAdministrators = async (name: string) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<SearchAdministratorsResponse>(
-    SEARCH_ADMINISTRATORS_QUERY,
-    { name },
-    token,
-  );
+  return await requestDoc(SearchAdministratorsDocument, { name }, token);
 };
 
 export const getAllAdministrators = async (limit = 20, offset = 0) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<{ administrators: AdministratorPage }>(
-    GET_ADMINISTRATORS_QUERY,
-    { limit, offset },
-    token,
-  );
+  return await requestDoc(AdministratorsDocument, { limit, offset }, token);
 };
 
 export const getAdministratorsByName = async (name: string) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<SearchAdministratorsResponse>(
-    SEARCH_ADMINISTRATORS_QUERY,
-    { name },
-    token,
-  );
+  return await requestDoc(SearchAdministratorsDocument, { name }, token);
 };
 
 export const getAdministratorByID = async (id: string) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<GetAdministratorByIDResponse>(
-    GET_ADMINISTRATOR_BY_ID_QUERY,
-    { id },
-    token,
-  );
+  return await requestDoc(GetAdministratorByIDDocument, { id }, token);
 };
 
 export const registerAdministrator = async (name: string, email: string, password: string) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<CreateAdministratorResponse>(
-    CREATE_ADMINISTRATOR_MUTATION,
-    {
-      input: { name, email, password },
-      },
-    token,
-  );
+  return await requestDoc(CreateAdministratorDocument, { input: { name, email, password } }, token);
 };
 
 export const deleteAdministrator = async (id: string) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  const DELETE_ADMINISTRATOR_MUTATION = `
-    mutation DeleteAdministrator($id: ID!) {
-      deleteAdministrator(id: $id)
-    }
-  `;
-  return await request<{ deleteAdministrator: boolean }>(
-    DELETE_ADMINISTRATOR_MUTATION,
-    { id },
-    token,
-  );
+  return await requestDoc(DeleteAdministratorDocument, { id }, token);
 };
 
 export const updateAdministrator = async (id: string, name?: string, email?: string, password?: string) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  const UPDATE_ADMINISTRATOR_MUTATION = `
-    mutation UpdateAdministrator($id: ID!, $input: UpdateAdministratorInput!) {
-      updateAdministrator(id: $id, input: $input) {
-        ID
-        name
-        email
-      }
-    }
-  `;
   const input: { name?: string; email?: string; password?: string } = {};
   if (name !== undefined) input.name = name;
   if (email !== undefined) input.email = email;
   if (password !== undefined) input.password = password;
-  return await request<{ updateAdministrator: Administrator }>(
-    UPDATE_ADMINISTRATOR_MUTATION,
-    { id, input },
-    token,
-  );
+  return await requestDoc(UpdateAdministratorDocument, { id, input }, token);
 };
 
 export const searchAdministratorsByName = async (name: string) => {
   const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  return await request<SearchAdministratorsResponse>(
-    SEARCH_ADMINISTRATORS_QUERY,
-    { name },
-    token,
-  );
+  return await requestDoc(SearchAdministratorsDocument, { name }, token);
 };
-
-export const getAdministratorByEmail = async (email: string) => {
-  const token = localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
-  const GET_ADMINISTRATOR_BY_EMAIL_QUERY = `
-    query GetAdministratorByEmail($email: String!) {
-      getAdministratorByEmail(email: $email) {
-        ID
-        name
-        email
-      }
-    }
-  `;
-  return await request<{ getAdministratorByEmail: Administrator }>(
-    GET_ADMINISTRATOR_BY_EMAIL_QUERY,
-    { email },
-    token,
-  );
-}

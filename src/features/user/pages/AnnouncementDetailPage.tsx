@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { getAnnouncement } from '../api/announcement';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { staticCacheOptions } from '../cache/swrOptions';
 
 export const AnnouncementDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +14,7 @@ export const AnnouncementDetailPage = () => {
   const { data: announcement, isLoading, error } = useSWR(
     id ? ['announcement', id] : null,
     ([, announcementId]: [string, string]) => getAnnouncement(announcementId),
+    staticCacheOptions,
   );
 
   return (
@@ -21,15 +23,6 @@ export const AnnouncementDetailPage = () => {
       <main style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
         <button
           onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#3b82f6',
-            fontSize: '0.875rem',
-            padding: '0.25rem 0',
-            marginBottom: '1rem',
-          }}
         >
           <ChevronLeft /> 戻る
         </button>

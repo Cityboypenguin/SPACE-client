@@ -11,7 +11,7 @@ import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { saveRecentDM } from '../../../lib/recentDM';
-import styles from '../components/organisms/chatRoom.module.css';
+import styles from '../components/ChatRoom.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { Avatar } from '../../../components/atoms/Avatar';
 import { storageUrl } from '../../../lib/storage';
@@ -109,7 +109,7 @@ export const DMPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
+        <button onClick={() => navigate(-1)}><ChevronLeft /></button>
         {partner ? (
           <button
             type="button"

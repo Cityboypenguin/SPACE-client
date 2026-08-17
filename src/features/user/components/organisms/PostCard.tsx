@@ -1,17 +1,18 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../../../../components/molecules/LikeButton';
 import { UserMeta } from '../../../../components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { type Post } from '../../api/post';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
-import blockIcon from '../../../../assets/パーツ_ブロック.svg';
+import redblockIcon from '../../../../assets/パーツ_ブロック（赤）.svg';
 import reportIcon from '../../../../assets/パーツ_通報.svg';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './PostCard.module.css';
-import { renderTextWithLinks } from '../atoms/renderTextWithLinks';
+import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
 
 type Props = {
   post: Post;
@@ -32,6 +33,12 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
   const [isClamped, setIsClamped] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLParagraphElement>(null);
+  const navigate = useNavigate();
+
+  const handleHashtagClick = useCallback((tag: string) => {
+    // ホーム(/home)の検索を使ってハッシュタグ検索する。
+    navigate(`/home?q=${encodeURIComponent(`#${tag}`)}`);
+  }, [navigate]);
 
   useLayoutEffect(() => {
     if (contentRef.current) {
@@ -98,14 +105,14 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
                 ) : (
                   <>
                     <button
-                      className={styles.dropdownItem}
+                      className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                       onClick={() => { setMenuOpen(false); onBlock?.(post.user.ID); }}
                     >
-                      <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                      <img src={redblockIcon} alt="" className={styles.dropdownIcon} />
                       ブロック
                     </button>
                     <button
-                      className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                      className={styles.dropdownItem}
                       onClick={() => { setMenuOpen(false); onReport?.(post.ID); }}
                     >
                       <img src={reportIcon} alt="" className={styles.dropdownIcon} />
@@ -123,7 +130,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
               ref={contentRef}
               className={`${styles.content} ${!expanded ? styles.contentClamped : ''}`}
             >
-              {renderTextWithLinks({ text: post.content })}
+              {renderTextWithLinks({ text: post.content, onHashtagClick: handleHashtagClick })}
             </p>
             {isClamped && !expanded && (
               <button className={styles.expandButton} onClick={handleExpand}>もっと見る</button>

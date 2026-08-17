@@ -118,7 +118,11 @@ export const AdminDashboard = () => {
         <div style={sectionTitle}>本日のサマリー</div>
         <div style={grid(4)}>
           <KpiCard
-            label="DAU（本日アクティブ）"
+            label="アクティブユーザー（直近3日）"
+            value={loading ? '…' : (analytics?.currentActiveUsers.toLocaleString() ?? '—')}
+          />
+          <KpiCard
+            label="本日のアクティブユーザー"
             value={loading ? '…' : (analytics?.dau.toLocaleString() ?? '—')}
             sub={analytics ? `MAU: ${analytics.mau.toLocaleString()}` : undefined}
           />

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createReport } from '../../api/report';
 import { useToast } from '../../../../context/ToastContext';
 import { toUserMessage } from '../../../../lib/errorMessages';
-import styles from './reportModal.module.css';
+import styles from './ReportModal.module.css';
 
 interface ReportModalProps {
   isOpen: boolean;

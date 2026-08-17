@@ -11,7 +11,7 @@ import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import styles from './DMListPage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 const LIMIT = 20;
 
@@ -61,15 +61,17 @@ export const DMListPage = () => {
     dmLoadingMore,
   );
 
-  useUnreadSubscription(({ roomID, unreadCount }) => {
+  useUnreadSubscription(({ roomID, unreadCount, lastMessage }) => {
     setDmRooms((prev) =>
-      prev.map((room) => room.ID === roomID ? { ...room, unreadCount } : room),
+      prev.map((room) => room.ID === roomID
+        ? { ...room, unreadCount, ...(lastMessage !== undefined ? { lastMessage } : {}) }
+        : room),
     );
   });
 
   const handleDeleteRoom = async (e: React.MouseEvent, roomID: string) => {
     e.stopPropagation();
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'このトークルームを削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

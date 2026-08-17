@@ -185,7 +185,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/community/chat/${community.roomID}`, { state: { communityID: community.ID } });
+                    navigate(`/community/chat/${community.roomID}`, { state: { communityID: community.ID, community } });
                   }}
                   style={{
                     padding: '0.45rem 1.2rem',

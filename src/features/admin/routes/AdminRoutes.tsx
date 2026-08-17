@@ -6,7 +6,7 @@ import { AdminUserListPage } from '../pages/AdminUserListPage';
 import { AdminUserDetailPage } from '../pages/AdminUserDetailPage';
 import { AdminUserEditPage } from '../pages/AdminUserEditPage';
 import { AdminUserProfilePage } from '../pages/AdminUserProfilePage';
-import { AdminProtectedRoute } from '../components/AdminProtectedRoute';
+import { AdminProtectedRoute } from './AdminProtectedRoute';
 import { AdminAdministratorListPage } from '../pages/AdminAdministratorsListPage';
 import { AdminCommunityListPage } from '../pages/AdminCommunityListPage';
 import { AdminCommunityDetailPage } from '../pages/AdminCommunityDetailPage';

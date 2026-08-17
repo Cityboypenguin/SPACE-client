@@ -6,7 +6,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useAuth } from './AuthContext';
 import { getUnreadDMCount } from '../api/message';
 import { getUnreadCommunityCount } from '../api/community';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
@@ -24,7 +23,6 @@ const UnreadRoomCountsContext = createContext<UnreadRoomCountsContextValue>({
 export const useUnreadRoomCounts = () => useContext(UnreadRoomCountsContext);
 
 export const UnreadRoomCountsProvider = ({ children }: { children: ReactNode }) => {
-  const { token } = useAuth();
   const [dmUnreadCount, setDmUnreadCount] = useState(0);
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
 
@@ -34,17 +32,10 @@ export const UnreadRoomCountsProvider = ({ children }: { children: ReactNode }) 
   }, []);
 
   useEffect(() => {
-    if (!token) {
-      setDmUnreadCount(0);
-      setCommunityUnreadCount(0);
-      return;
-    }
     refresh();
-  }, [token, refresh]);
+  }, [refresh]);
 
-  useUnreadSubscription(() => {
-    if (token) refresh();
-  });
+  useUnreadSubscription(refresh);
 
   return (
     <UnreadRoomCountsContext.Provider value={{ dmUnreadCount, communityUnreadCount }}>

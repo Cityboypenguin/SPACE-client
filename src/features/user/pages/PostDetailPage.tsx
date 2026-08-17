@@ -15,11 +15,11 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import commentIcon from '../../../assets/パーツ_コメント.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
-import blockIcon from '../../../assets/パーツ_ブロック.svg';
+import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../assets/パーツ_削除.svg';
 import styles from './PostDetailPage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 import {
   getPostByID,
@@ -36,7 +36,8 @@ import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
 import { useToast } from '../../../context/ToastContext';
 import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
-import { renderTextWithLinks } from '../components/atoms/renderTextWithLinks';
+import { stableCacheOptions } from '../cache/swrOptions';
+import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -48,6 +49,7 @@ export const PostDetailPage = () => {
   const { data: post, isLoading, error, mutate } = useSWR<Post | null>(
     id ? ['post', id] : null,
     ([, postId]: [string, string]) => getPostByID(postId),
+    stableCacheOptions,
   );
 
   const [replyContent, setReplyContent] = useState('');
@@ -83,7 +85,7 @@ export const PostDetailPage = () => {
   }, [menuOpen]);
 
   const handleBlock = async (blockedUserId: string) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'このユーザーをブロックしますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -232,7 +234,7 @@ export const PostDetailPage = () => {
 
   const handleDelete = async () => {
     if (!id) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: '本当にこの投稿を削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -249,7 +251,7 @@ export const PostDetailPage = () => {
   };
 
   const handleRootDelete = async (postId: string) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: '本当にこの投稿を削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -272,7 +274,7 @@ export const PostDetailPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.pageHeader}>
-          <button className={styles.backButton} onClick={() => navigate(-1)}><ChevronLeft /></button>
+          <button onClick={() => navigate(-1)}><ChevronLeft /></button>
           <h1 className={styles.pageTitle}>投稿</h1>
         </div>
 
@@ -377,14 +379,14 @@ export const PostDetailPage = () => {
                           ) : (
                             <>
                               <button
-                                className={styles.dropdownItem}
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                                 onClick={() => { setMenuOpen(false); handleBlock(post.user.ID); }}
                               >
-                                <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                                <img src={redblockIcon} alt="" className={styles.dropdownIcon} />
                                 ブロック
                               </button>
                               <button
-                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                className={styles.dropdownItem}
                                 onClick={() => { setMenuOpen(false); setReportTarget(post); }}
                               >
                                 <img src={reportIcon} alt="" className={styles.dropdownIcon} />

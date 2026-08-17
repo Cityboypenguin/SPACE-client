@@ -1,31 +1,24 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 
-const TOGGLE_MAINTENANCE_MUTATION = `
+const ToggleMaintenanceModeDocument = graphql(`
   mutation ToggleMaintenanceMode($enabled: Boolean!) {
     toggleMaintenanceMode(enabled: $enabled)
   }
-`;
+`);
 
-const MAINTENANCE_MODE_QUERY = `
+const MaintenanceModeDocument = graphql(`
   query MaintenanceMode {
     maintenanceMode
   }
-`;
+`);
 
 export const toggleMaintenanceMode = async (enabled: boolean, token: string): Promise<boolean> => {
-  const data = await request<{ toggleMaintenanceMode: boolean }>(
-    TOGGLE_MAINTENANCE_MUTATION,
-    { enabled },
-    token,
-  );
+  const data = await requestDoc(ToggleMaintenanceModeDocument, { enabled }, token);
   return data.toggleMaintenanceMode;
 };
 
 export const getMaintenanceMode = async (token: string): Promise<boolean> => {
-  const data = await request<{ maintenanceMode: boolean }>(
-    MAINTENANCE_MODE_QUERY,
-    {},
-    token,
-  );
+  const data = await requestDoc(MaintenanceModeDocument, {}, token);
   return data.maintenanceMode;
 };

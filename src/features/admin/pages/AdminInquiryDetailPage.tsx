@@ -74,7 +74,6 @@ export const AdminInquiryDetailPage: React.FC = () => {
         <div style={{ marginBottom: '1.5rem' }}>
           <button
             onClick={() => navigate('/admin/inquiries')}
-            style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '0.95rem', padding: 0, marginBottom: '1rem', display: 'block' }}
           >
             <ChevronLeft /> 問い合わせ一覧に戻る
           </button>

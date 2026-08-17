@@ -1,46 +1,46 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from './auth';
-import type { User } from './users';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
-const USER_FIELDS = `
-  ID
-  name
-  accountID
-  avatarUrl
-`;
+// adminGetBlockers/adminGetFavoriteUsers はこの4フィールドしか返さないため、
+// email/role/status等を含む管理者向けフル User 型は使わず専用の型を用いる。
+export type RelatedUser = {
+  ID: string;
+  name: string;
+  accountID: string;
+  avatarUrl?: string | null;
+};
 
-const ADMIN_GET_BLOCKERS_QUERY = `
+const AdminGetBlockersDocument = graphql(`
   query AdminGetBlockers($userID: ID!) {
     adminGetBlockers(userID: $userID) {
-      ${USER_FIELDS}
+      ID
+      name
+      accountID
+      avatarUrl
     }
   }
-`;
+`);
 
-const ADMIN_GET_FAVORITE_USERS_QUERY = `
+const AdminGetFavoriteUsersDocument = graphql(`
   query AdminGetFavoriteUsers($userID: ID!) {
     adminGetFavoriteUsers(userID: $userID) {
-      ${USER_FIELDS}
+      ID
+      name
+      accountID
+      avatarUrl
     }
   }
-`;
+`);
 
-export const adminGetBlockers = async (userID: string): Promise<User[]> => {
-  const data = await request<{ adminGetBlockers: User[] }>(
-    ADMIN_GET_BLOCKERS_QUERY,
-    { userID },
-    getAdminToken(),
-  );
+export const adminGetBlockers = async (userID: string): Promise<RelatedUser[]> => {
+  const data = await requestDoc(AdminGetBlockersDocument, { userID }, getAdminToken());
   return data.adminGetBlockers;
 };
 
-export const adminGetFavoriteUsers = async (userID: string): Promise<User[]> => {
-  const data = await request<{ adminGetFavoriteUsers: User[] }>(
-    ADMIN_GET_FAVORITE_USERS_QUERY,
-    { userID },
-    getAdminToken(),
-  );
+export const adminGetFavoriteUsers = async (userID: string): Promise<RelatedUser[]> => {
+  const data = await requestDoc(AdminGetFavoriteUsersDocument, { userID }, getAdminToken());
   return data.adminGetFavoriteUsers;
 };

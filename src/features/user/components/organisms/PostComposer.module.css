@@ -59,6 +59,12 @@
   box-sizing: border-box;
   overflow-y: auto;
   max-height: 240px;
+  line-height: 1.5;
+  /* backdrop(div) と字幅を完全に一致させないと、入力のたびにキャレットが 1px ずつズレる。
+     textarea はデフォルトでフォーム用フォントになるため、明示的に本文フォントを継承させる。 */
+  font-family: inherit;
+  letter-spacing: normal;
+  word-spacing: normal;
 }
 
 .textareaLarge {
@@ -67,6 +73,42 @@
 
 .textareaSmall {
   font-size: 0.95rem;
+}
+
+/* ハッシュタグ着色用のバックドロップ・オーバーレイ。
+   textarea の文字は透明にし、背後の div に同じレイアウトで色付きテキストを描画する。 */
+.textareaStack {
+  position: relative;
+}
+
+.highlightBackdrop {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0.25rem 0;
+  box-sizing: border-box;
+  color: #1e293b;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow: hidden;
+  pointer-events: none;
+  /* textarea 側と字幅を厳密に揃える（キャレットのズレ防止）。 */
+  font-family: inherit;
+  letter-spacing: normal;
+  word-spacing: normal;
+}
+
+.textareaHighlighted {
+  position: relative;
+  color: transparent;
+  caret-color: #1e293b;
+}
+
+/* 文字色を透明にしているためプレースホルダも透明になり得る。明示的に色を指定する。 */
+.textareaHighlighted::placeholder {
+  color: #94a3b8;
 }
 
 .mediaPreviews {

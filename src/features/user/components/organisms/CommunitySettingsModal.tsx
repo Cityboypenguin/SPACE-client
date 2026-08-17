@@ -17,7 +17,7 @@ import {
 } from '../../api/community';
 import { uploadAvatarToStorage } from '../../api/profile';
 import { storageUrl } from '../../../../lib/storage';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../../lib/swal';
 
 type Props = {
   community: Community;
@@ -112,7 +112,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handleKick = async (member: CommunityMember) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: `${member.user.name} をコミュニティから削除しますか？`,
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -128,7 +128,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handlePromote = async (member: CommunityMember) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: `${member.user.name} をオーナーに昇格しますか？`,
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -146,7 +146,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   const handleDemote = async (member: CommunityMember) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: `${member.user.name} をメンバーに降格しますか？`,
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

@@ -25,6 +25,10 @@ export const AdminAdministratorEditPage = () => {
     getAdministratorByID(id)
       .then((data) => {
         const a = data.getAdministratorByID;
+        if (!a) {
+          setError('管理者が見つかりません');
+          return;
+        }
         setAdministrator(a);
         setName(a.name);
         setEmail(a.email);

@@ -11,8 +11,9 @@ import {
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
+import { stableCacheOptions } from '../cache/swrOptions';
 import styles from './NotificationDetailPage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 const TYPE_LABEL: Record<string, string> = {
   favorite: 'いいね',
@@ -52,6 +53,7 @@ export const NotificationDetailPage = () => {
   const { data: notification, isLoading, mutate } = useSWR(
     id ? ['my-notification-detail', id] : null,
     () => getNotification(id!),
+    stableCacheOptions,
   );
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export const NotificationDetailPage = () => {
 
   const handleDelete = async () => {
     if (!notification) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'この通知を削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -102,7 +104,7 @@ export const NotificationDetailPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <button type="button" className={styles.backBtn} onClick={() => navigate(-1)}>
+          <button type="button" onClick={() => navigate(-1)}>
             <ChevronLeft />
           </button>
           {notification && (
@@ -130,7 +132,11 @@ export const NotificationDetailPage = () => {
             </div>
 
             {notification.actor && (
-              <div className={styles.actorRow}>
+              <button
+                type="button"
+                className={styles.actorRow}
+                onClick={() => navigate(`/users/${notification.actor!.ID}`)}
+              >
                 {notification.actor.avatarUrl ? (
                   <img
                     src={storageUrl(notification.actor.avatarUrl) ?? undefined}
@@ -146,7 +152,7 @@ export const NotificationDetailPage = () => {
                   <p className={styles.actorName}>{notification.actor.name}</p>
                   <p className={styles.actorAccountID}>@{notification.actor.accountID}</p>
                 </div>
-              </div>
+              </button>
             )}
 
             <p className={styles.message}>{notification.message}</p>

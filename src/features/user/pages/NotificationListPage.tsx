@@ -18,6 +18,7 @@ import {
 import { listAnnouncements } from '../api/announcement';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
+import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import senshuIcon from '../../../assets/Senshu-Universe.svg';
 import { Tabs } from '../../../components/molecules/Tabs';
 import styles from './NotificationListPage.module.css';
@@ -27,7 +28,7 @@ import community from '../../../assets/パーツ_コミュニティマーク.svg
 import reply from '../../../assets/パーツ_コメント.svg';
 import notification from '../../../assets/パーツ_通知.svg';
 import person from '../../../assets/パーツ_お気に入り.svg';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 type Tab = 'notifications' | 'announcements';
 
@@ -99,16 +100,19 @@ export const NotificationListPage = () => {
   const { data: groupsData, isLoading: notifLoading, mutate: mutateGroups } = useSWR(
     ['my-notification-groups', notifPage, pageSize],
     () => listMyNotificationGroups(pageSize, notifPage * pageSize),
+    stableCacheOptions,
   );
 
   const { data: actorData, mutate: mutateActorNotifs } = useSWR(
     viewingActor ? ['my-notifications-actor', viewingActor.type, viewingActor.actor.ID, actorPage, pageSize] : null,
     () => listMyNotifications(pageSize, actorPage * pageSize, viewingActor!.type, viewingActor!.actor.ID),
+    stableCacheOptions,
   );
 
   const { data: announceData, isLoading: announceLoading } = useSWR(
     tab === 'announcements' ? ['announcements', announcePage, pageSize] : null,
     () => listAnnouncements(pageSize, announcePage * pageSize),
+    staticCacheOptions,
   );
 
   useEffect(() => {
@@ -160,7 +164,7 @@ export const NotificationListPage = () => {
   };
 
   const handleDeleteRead = async () => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: '既読済みの通知をすべて削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -181,7 +185,7 @@ export const NotificationListPage = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: `選択した${selectedIds.size}件の通知を削除しますか？`,
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -247,7 +251,7 @@ export const NotificationListPage = () => {
 
   const handleDeleteActorRead = async () => {
     if (!viewingActor) return;
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'この相手の既読済み通知をすべて削除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',

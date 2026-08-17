@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 
 export type InquiryCategory =
   | 'DM'
@@ -18,11 +19,7 @@ type Inquiry = {
   createdAt: string;
 };
 
-type CreateInquiryResponse = {
-  createInquiry: Inquiry;
-};
-
-const CREATE_INQUIRY_MUTATION = `
+const CreateInquiryDocument = graphql(`
   mutation CreateInquiry($input: CreateInquiryInput!) {
     createInquiry(input: $input) {
       id
@@ -34,7 +31,7 @@ const CREATE_INQUIRY_MUTATION = `
       createdAt
     }
   }
-`;
+`);
 
 export const createInquiry = async (
   name: string,
@@ -43,7 +40,7 @@ export const createInquiry = async (
   subject: string,
   content: string,
 ): Promise<Inquiry> => {
-  const data = await request<CreateInquiryResponse>(CREATE_INQUIRY_MUTATION, {
+  const data = await requestDoc(CreateInquiryDocument, {
     input: { name, email, category, subject, content },
   });
   return data.createInquiry;

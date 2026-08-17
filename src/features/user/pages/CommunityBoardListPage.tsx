@@ -10,6 +10,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
@@ -26,10 +27,15 @@ export const CommunityBoardListPage = () => {
   const [error, setError] = useState('');
   const loadingRef = useRef(false);
 
-  const { data: myCommunities, mutate: mutateMyCommunities } = useSWR('my-communities', () => listMyCommunities());
+  const { data: myCommunities, mutate: mutateMyCommunities } = useSWR(
+    'my-communities',
+    () => listMyCommunities(),
+    staticCacheOptions,
+  );
   const { data: randomCommunities, isLoading: loadingRandom } = useSWR(
     'random-communities',
     () => getRandomCommunities(10),
+    stableCacheOptions,
   );
 
   const joinedIDs = useMemo(
@@ -130,7 +136,6 @@ export const CommunityBoardListPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
           <button
             onClick={() => navigate('/community')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#646cff', fontWeight: 600, padding: 0 }}
           >
             <ChevronLeft /> 戻る
           </button>

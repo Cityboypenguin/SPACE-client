@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import styles from '../organisms/chatRoom.module.css';
+import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
 
 const ACCEPTED_FILE_TYPES = [

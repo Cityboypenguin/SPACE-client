@@ -58,14 +58,13 @@
 .infoPaneHeader {
   width: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.4rem;
   margin-bottom: 0.75rem;
 }
 
 .menuWrap {
   position: relative;
+  margin-right: auto;
 }
 
 .menuBtn {
@@ -101,7 +100,9 @@
 }
 
 .menuItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   width: 100%;
   padding: 0.55rem 1rem;
   border: none;
@@ -224,6 +225,15 @@
   font-weight: 600;
   color: #1e293b;
   flex: 1;
+}
+
+.dropdownIcon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .pcCloseBtn {

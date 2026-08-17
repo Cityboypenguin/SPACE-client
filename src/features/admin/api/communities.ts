@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -49,7 +50,7 @@ export type Room = {
   user: RoomUser[];
 };
 
-const COMMUNITIES_QUERY = `
+const CommunitiesDocument = graphql(`
   query Communities($limit: Int, $offset: Int) {
     communities(limit: $limit, offset: $offset) {
       items {
@@ -63,10 +64,10 @@ const COMMUNITIES_QUERY = `
       total
     }
   }
-`;
+`);
 
-const UPDATE_COMMUNITY_MUTATION = `
-  mutation UpdateCommunity($id: ID!, $input: UpdateCommunityInput!) {
+const UpdateCommunityDocument = graphql(`
+  mutation AdminUpdateCommunity($id: ID!, $input: UpdateCommunityInput!) {
     updateCommunity(id: $id, input: $input) {
       ID
       roomID
@@ -76,16 +77,16 @@ const UPDATE_COMMUNITY_MUTATION = `
       updatedAt
     }
   }
-`;
+`);
 
-const KICK_USER_MUTATION = `
+const KickUserFromCommunityDocument = graphql(`
   mutation KickUserFromCommunity($communityID: ID!, $userID: ID!) {
     kickUserFromCommunity(communityID: $communityID, userID: $userID)
   }
-`;
+`);
 
-const GET_ROOM_QUERY = `
-  query GetRoom($id: ID!) {
+const GetRoomDocument = graphql(`
+  query AdminGetRoom($id: ID!) {
     room(id: $id) {
       ID
       name
@@ -97,10 +98,10 @@ const GET_ROOM_QUERY = `
       }
     }
   }
-`;
+`);
 
-const GET_COMMUNITY_MEMBERS_QUERY = `
-  query GetCommunityMembers($communityID: ID!) {
+const GetCommunityMembersDocument = graphql(`
+  query AdminGetCommunityMembers($communityID: ID!) {
     getCommunityMembers(communityID: $communityID) {
       user {
         ID
@@ -111,45 +112,33 @@ const GET_COMMUNITY_MEMBERS_QUERY = `
       role
     }
   }
-`;
+`);
 
 export const getCommunities = async (limit = 20, offset = 0) => {
-  return await request<{ communities: CommunityPage }>(COMMUNITIES_QUERY, { limit, offset }, getAdminToken());
+  return await requestDoc(CommunitiesDocument, { limit, offset }, getAdminToken());
 };
 
 export const updateCommunity = async (
   id: string,
   input: { name?: string; description?: string },
 ) => {
-  return await request<{ updateCommunity: Community }>(
-    UPDATE_COMMUNITY_MUTATION,
-    { id, input },
-    getAdminToken(),
-  );
+  return await requestDoc(UpdateCommunityDocument, { id, input }, getAdminToken());
 };
 
 export const kickUserFromCommunity = async (communityID: string, userID: string) => {
-  return await request<{ kickUserFromCommunity: boolean }>(
-    KICK_USER_MUTATION,
-    { communityID, userID },
-    getAdminToken(),
-  );
+  return await requestDoc(KickUserFromCommunityDocument, { communityID, userID }, getAdminToken());
 };
 
 export const getCommunityRoom = async (roomID: string) => {
-  return await request<{ room: Room | null }>(GET_ROOM_QUERY, { id: roomID }, getAdminToken());
+  return await requestDoc(GetRoomDocument, { id: roomID }, getAdminToken());
 };
 
 export const getCommunityMembers = async (communityID: string) => {
-  return await request<{ getCommunityMembers: CommunityMember[] }>(
-    GET_COMMUNITY_MEMBERS_QUERY,
-    { communityID },
-    getAdminToken(),
-  );
+  return await requestDoc(GetCommunityMembersDocument, { communityID }, getAdminToken());
 };
 
-const LIST_ROOM_MESSAGES_QUERY = `
-  query ListMessages($roomID: ID!, $limit: Int) {
+const ListRoomMessagesDocument = graphql(`
+  query AdminListMessages($roomID: ID!, $limit: Int) {
     messages(roomID: $roomID, limit: $limit) {
       items {
         ID
@@ -171,54 +160,39 @@ const LIST_ROOM_MESSAGES_QUERY = `
       }
     }
   }
-`;
+`);
 
-const PROMOTE_TO_OWNER_MUTATION = `
+const PromoteToCommunityOwnerDocument = graphql(`
   mutation PromoteToCommunityOwner($communityID: ID!, $userID: ID!) {
     promoteToCommunityOwner(communityID: $communityID, userID: $userID)
   }
-`;
+`);
 
-const DEMOTE_FROM_OWNER_MUTATION = `
+const DemoteFromCommunityOwnerDocument = graphql(`
   mutation DemoteFromCommunityOwner($communityID: ID!, $userID: ID!) {
     demoteFromCommunityOwner(communityID: $communityID, userID: $userID)
   }
-`;
+`);
 
 export const promoteToCommunityOwner = async (communityID: string, userID: string) => {
-  return await request<{ promoteToCommunityOwner: boolean }>(
-    PROMOTE_TO_OWNER_MUTATION,
-    { communityID, userID },
-    getAdminToken(),
-  );
+  return await requestDoc(PromoteToCommunityOwnerDocument, { communityID, userID }, getAdminToken());
 };
 
 export const demoteFromCommunityOwner = async (communityID: string, userID: string) => {
-  return await request<{ demoteFromCommunityOwner: boolean }>(
-    DEMOTE_FROM_OWNER_MUTATION,
-    { communityID, userID },
-    getAdminToken(),
-  );
+  return await requestDoc(DemoteFromCommunityOwnerDocument, { communityID, userID }, getAdminToken());
 };
 
-const DELETE_MESSAGE_MUTATION = `
+const DeleteMessageDocument = graphql(`
   mutation DeleteMessage($roomID: ID!, $id: ID!) {
     deleteMessage(roomID: $roomID, id: $id)
   }
-`;
+`);
 
-export const listRoomMessages = async (roomID: string, limit = 200) => {
-  return await request<{ messages: { items: Message[] } }>(
-    LIST_ROOM_MESSAGES_QUERY,
-    { roomID, limit },
-    getAdminToken(),
-  );
+export const listRoomMessages = async (roomID: string, limit = 200): Promise<{ messages: { items: Message[] } }> => {
+  const data = await requestDoc(ListRoomMessagesDocument, { roomID, limit }, getAdminToken());
+  return data as { messages: { items: Message[] } };
 };
 
 export const adminDeleteMessage = async (roomID: string, messageID: string) => {
-  return await request<{ deleteMessage: boolean }>(
-    DELETE_MESSAGE_MUTATION,
-    { roomID, id: messageID },
-    getAdminToken(),
-  );
+  return await requestDoc(DeleteMessageDocument, { roomID, id: messageID }, getAdminToken());
 };

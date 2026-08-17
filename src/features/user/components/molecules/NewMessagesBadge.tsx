@@ -1,4 +1,4 @@
-import styles from '../organisms/chatRoom.module.css';
+import styles from '../ChatRoom.module.css';
 
 type Props = {
   count: number;

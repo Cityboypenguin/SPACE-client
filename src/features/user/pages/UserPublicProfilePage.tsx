@@ -17,6 +17,8 @@ import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
+import { staticCacheOptions } from '../cache/swrOptions';
+import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
 import favoriteIconOff from '../../../assets/パーツ_お気に入り.svg';
@@ -24,7 +26,7 @@ import favoeirteIconOn from '../../../assets/パーツ_お気に入り（ON）.s
 import dmIcon from '../../../assets/パーツ_メール.svg';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserPublicProfilePage.module.css';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -51,10 +53,12 @@ export const UserPublicProfilePage = () => {
   const { data: favoriteUsers, mutate: mutateFavorites } = useSWR(
     currentUserId && !isMe ? ['favorite-users', currentUserId] : null,
     ([, uid]: [string, string]) => getFavoriteUsersByUserID(uid),
+    staticCacheOptions,
   );
   const { data: blockedUsers, mutate: mutateBlocked } = useSWR(
     currentUserId && !isMe ? ['blocked-users', currentUserId] : null,
     ([, uid]: [string, string]) => getBlockersByUserID(uid),
+    staticCacheOptions,
   );
 
   const isFavorited = favoriteUsers?.some((u) => u.ID === id) ?? false;
@@ -194,7 +198,15 @@ export const UserPublicProfilePage = () => {
         mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
       } else {
         await createFavoriteUser(id);
-        void mutateFavorites();
+        if (profile) {
+          mutateFavorites(
+            (prev) => [
+              ...(prev ?? []),
+              { ID: profile.user.ID, name: profile.user.name, accountID: profile.user.accountID, avatarUrl: profile.user.avatarUrl },
+            ],
+            { revalidate: false },
+          );
+        }
       }
     } catch (err) {
       addToast(toUserMessage(err, 'お気に入りの操作に失敗しました。'), 'error');
@@ -214,7 +226,7 @@ export const UserPublicProfilePage = () => {
   const handleBlockToggle = async () => {
     if (!id) return;
     if (!isBlocked) {
-      const result = await swal.fire({
+      const result = await AppSwal.fire({
         text: '本当にこのユーザーをブロックしますか？',
         confirmButtonText: 'はい',
         cancelButtonText: 'いいえ',
@@ -325,7 +337,7 @@ export const UserPublicProfilePage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <button onClick={() => navigate(-1)}>
             <ChevronLeft />
           </button>
           {profile && !isMe && (
@@ -340,15 +352,15 @@ export const UserPublicProfilePage = () => {
               {menuOpen && (
                 <div className={styles.dropdown}>
                   <button
-                    className={styles.dropdownItem}
+                    className={isBlocked ?  styles.dropdownItem : `${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                     onClick={handleBlockToggle}
                     disabled={actionLoading}
                   >
-                    <img src={blockIcon} alt="" className={styles.dropdownIcon} />
+                    <img src={isBlocked ? blockIcon : redblockIcon} alt="" className={styles.dropdownIcon} />
                     {isBlocked ? 'ブロック解除' : 'ブロック'}
                   </button>
                   <button
-                    className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                    className={styles.dropdownItem}
                     onClick={handleReportUser}
                   >
                     <img src={reportIcon} alt="" className={styles.dropdownIcon} />

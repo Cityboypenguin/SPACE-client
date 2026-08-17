@@ -8,11 +8,12 @@ import type { TimeSeriesGranularity, TimeSeriesPoint } from '../../api/analytics
 import { downloadCsv } from '../../lib/exportCsv';
 
 const METRICS = [
-  { key: 'posts',    label: '投稿',     color: '#3b82f6' },
-  { key: 'comments', label: 'コメント', color: '#10b981' },
-  { key: 'messages', label: 'DM',       color: '#8b5cf6' },
-  { key: 'newUsers', label: '新規登録', color: '#f59e0b' },
-  { key: 'likes',    label: 'いいね',   color: '#ef4444' },
+  { key: 'posts',       label: '投稿',             color: '#3b82f6' },
+  { key: 'comments',    label: 'コメント',         color: '#10b981' },
+  { key: 'messages',    label: 'DM',               color: '#8b5cf6' },
+  { key: 'newUsers',    label: '新規登録',         color: '#f59e0b' },
+  { key: 'likes',       label: 'いいね',           color: '#ef4444' },
+  { key: 'activeUsers', label: 'アクティブユーザー', color: '#06b6d4' },
 ] as const;
 
 type MetricKey = typeof METRICS[number]['key'];
@@ -42,16 +43,18 @@ export const TimeSeriesChart = () => {
   const [to, setTo] = useState(today);
   const [data, setData] = useState<TimeSeriesPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [visible, setVisible] = useState<Record<MetricKey, boolean>>({
-    posts: true, comments: true, messages: true, newUsers: true, likes: true,
+    posts: true, comments: true, messages: true, newUsers: true, likes: true, activeUsers: true,
   });
 
   const load = useCallback(() => {
     if (!from || !to || from > to) return;
     setLoading(true);
+    setError('');
     getTimeSeries(granularity, from, to)
-      .then(setData)
-      .catch(() => setData([]))
+      .then((pts) => { setData(pts); setError(''); })
+      .catch((e: Error) => { setData([]); setError(e.message || 'データの取得に失敗しました'); })
       .finally(() => setLoading(false));
   }, [granularity, from, to]);
 
@@ -66,8 +69,8 @@ export const TimeSeriesChart = () => {
     setVisible(v => ({ ...v, [key]: !v[key] }));
 
   const exportCsv = () => {
-    const header = ['日時', '投稿', 'コメント', 'DM', '新規登録', 'いいね'];
-    const rows = data.map(d => [d.label, d.posts, d.comments, d.messages, d.newUsers, d.likes]);
+    const header = ['日時', '投稿', 'コメント', 'DM', '新規登録', 'いいね', 'アクティブユーザー'];
+    const rows = data.map(d => [d.label, d.posts, d.comments, d.messages, d.newUsers, d.likes, d.activeUsers]);
     downloadCsv(`timeseries_${from}_${to}.csv`, [header, ...rows]);
   };
 
@@ -172,6 +175,13 @@ export const TimeSeriesChart = () => {
       ) : loading ? (
         <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
           読み込み中…
+        </div>
+      ) : error ? (
+        <div style={{ height: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+          <div style={{ color: '#ef4444', fontSize: '0.9rem' }}>取得エラー: {error}</div>
+          <button onClick={load} style={{ padding: '0.4rem 1rem', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>
+            再読み込み
+          </button>
         </div>
       ) : data.length === 0 ? (
         <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>

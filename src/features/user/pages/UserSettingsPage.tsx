@@ -12,11 +12,12 @@ import { UserListItem } from '../components/molecules/UserListItem';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { useToast } from '../../../context/ToastContext';
 import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postListCache';
+import { staticCacheOptions } from '../cache/swrOptions';
 import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSettingsPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { InquiryForm } from '../components/organisms/InquiryForm';
-import swal from 'sweetalert2';
+import { AppSwal } from '../../../lib/swal';
 
 type View = 'general' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
 
@@ -54,7 +55,7 @@ const PasswordView = ({ onBack }: { onBack: () => void }) => {
   return (
     <>
       <h2 className={styles.backTitle}>
-        <button className={styles.backBtn} onClick={onBack}><ChevronLeft /></button>
+        <button onClick={onBack}><ChevronLeft /></button>
         パスワード変更
       </h2>
       <form className={styles.form} onSubmit={handleSubmit}>
@@ -135,7 +136,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
   );
 
   const handleUnblock = async (targetId: string) => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'ブロックを解除しますか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -154,7 +155,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
   return (
     <>
       <h2 className={styles.backTitle}>
-        <button className={styles.backBtn} onClick={onBack}><ChevronLeft /></button>
+        <button onClick={onBack}><ChevronLeft /></button>
         ブロックリスト
       </h2>
       {initialLoading ? (
@@ -183,7 +184,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
 };
 
 const TermsView = () => {
-  const { data: terms } = useSWR('currentTerms', getCurrentTerms);
+  const { data: terms } = useSWR('currentTerms', getCurrentTerms, staticCacheOptions);
 
   if (!terms) return <p style={{ color: '#94a3b8' }}>読み込み中...</p>;
 
@@ -212,7 +213,7 @@ const GeneralView = ({
   const [deleting, setDeleting] = useState(false);
 
   const handleClearCache = async () => {
-    const result = await swal.fire({
+    const result = await AppSwal.fire({
       text: 'キャッシュをクリアします。次回アクセス時に各データが再取得されます。よろしいですか？',
       confirmButtonText: 'はい',
       cancelButtonText: 'いいえ',
@@ -386,19 +387,11 @@ export const UserSettingsPage = () => {
             一般
             <span className={styles.menuArrow}>›</span>
           </button>
-          <button className={styles.menuItem} disabled style={{ color: '#cbd5e1', cursor: 'default' }}>
-            通知設定
-            <span className={styles.menuArrow}>›</span>
-          </button>
           <button
             className={`${styles.menuItem} ${view === 'terms' ? styles.menuItemActive : ''}`}
             onClick={() => setView('terms')}
           >
             利用規約及びプライバシーポリシー
-            <span className={styles.menuArrow}>›</span>
-          </button>
-          <button className={styles.menuItem} disabled style={{ color: '#cbd5e1', cursor: 'default' }}>
-            運営からのアンケート
             <span className={styles.menuArrow}>›</span>
           </button>
           <button
