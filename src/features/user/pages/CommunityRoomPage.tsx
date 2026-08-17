@@ -214,7 +214,6 @@ export const CommunityRoomPage = () => {
                 onCancelEdit={() => setEditingId(null)}
                 onEditContentChange={setEditContent}
                 onDelete={() => handleDelete(msg.ID)}
-                onImageLoad={scrollToInitialPosition}
                 />
               </Fragment>
             );

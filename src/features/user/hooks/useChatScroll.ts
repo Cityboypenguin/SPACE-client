@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { type Message } from '../api/message';
+import { storageUrl } from '../../../lib/storage';
 
 export const useChatScroll = (
   messages: Message[],
@@ -41,16 +42,49 @@ export const useChatScroll = (
     }
   };
 
-  // 2. 初回メッセージ読み込み時のスクロール決定（1度だけ実行）
+  // 2. 初回メッセージ読み込み時のスクロール決定（初回取得分の画像のみロード完了を待つ）
   useEffect(() => {
     if (messages.length === 0 || initialScrolledRef.current) return;
 
     seenCountRef.current = messages.length;
     lastKnownTailIdRef.current = messages[messages.length - 1]?.ID;
 
-    // DOM描画タイミングに合わせてスクロール実行
-    scrollToInitialPosition();
-    initialScrolledRef.current = true;
+    // 初回取得されたメッセージ内の画像URLのみ抽出
+    const initialImageUrls = messages
+      .flatMap((msg) => msg.media ?? [])
+      .filter((media) => media.contentType.startsWith('image/'))
+      .map((media) => storageUrl(media.url));
+
+    let isMounted = true;
+
+    if (initialImageUrls.length === 0) {
+      scrollToInitialPosition();
+      initialScrolledRef.current = true;
+      return;
+    }
+
+    // 初回取得分の画像のみ事前ロード
+    Promise.all(
+      initialImageUrls.map((url) => {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.src = url;
+          // ロード成功・失敗どちらでも進行させる
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        });
+      })
+    ).then(() => {
+      if (!isMounted || initialScrolledRef.current) return;
+      
+      // 画像ロード完了後に画面の高さが確定した状態でスクロールを実行
+      scrollToInitialPosition();
+      initialScrolledRef.current = true;
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [messages]);
 
   // 3. 最下部領域の交差検知（初回スクロール完了後のみ有効）
@@ -76,17 +110,14 @@ export const useChatScroll = (
 
   // 4. リアルタイムでメッセージが追加された時の処理
   useEffect(() => {
-    // 初回スクロールが完了していない、またはメッセージがない場合は何もしない
     if (!initialScrolledRef.current || messages.length === 0) return;
 
     const tail = messages[messages.length - 1];
     if (!tail) return;
 
-    // 取得メッセージの末尾が変わっていない（初回データや過去ログ読み込み）場合はスキップ
     if (tail.ID === lastKnownTailIdRef.current) return;
     lastKnownTailIdRef.current = tail.ID;
 
-    // 未来のメッセージがある場合はバッジのみ更新
     if (hasMoreAfter) {
       const unseen = messages.length - seenCountRef.current;
       setNewMessageCount(unseen > 0 ? unseen : 0);
