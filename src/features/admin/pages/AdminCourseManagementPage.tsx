@@ -275,6 +275,7 @@ export const AdminCourseManagementPage = () => {
                   <option value="">学期（すべて）</option>
                   <option value="前期">前期</option>
                   <option value="後期">後期</option>
+                  <option value="通年">通年</option>
                 </select>
                 <select value={filterDayOfWeek} onChange={(e) => setFilterDayOfWeek(e.target.value)} style={{ padding: '0.4rem 0.6rem' }}>
                   <option value="">曜日（すべて）</option>

@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
-import { searchCourses, getMyTimetable, registerTimetableEntry, type Course, type SearchCoursesResult } from '../api/course';
-import { stableCacheOptions } from '../cache/swrOptions';
+import { searchCourses, type Course, type SearchCoursesResult } from '../api/course';
 import styles from '../components/CourseSearch.module.css';
 
 const DAYS = ['月', '火', '水', '木', '金', '土'];
@@ -21,10 +19,6 @@ export const CourseSearchPage = () => {
   const [result, setResult] = useState<SearchCoursesResult | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
-  const [registeringID, setRegisteringID] = useState<string | null>(null);
-
-  const { data: timetable, mutate: mutateTimetable } = useSWR('my-timetable', () => getMyTimetable(), stableCacheOptions);
-  const registeredRoomIDs = useMemo(() => new Set((timetable ?? []).map((t) => t.course.roomID)), [timetable]);
 
   const runSearch = async () => {
     setSearching(true);
@@ -63,16 +57,10 @@ export const CourseSearchPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleRegister = async (course: Course) => {
-    setRegisteringID(course.ID);
-    try {
-      await registerTimetableEntry(course.ID);
-      void mutateTimetable();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '時間割への登録に失敗しました。');
-    } finally {
-      setRegisteringID(null);
-    }
+  // ここでは registerTimetableEntry は呼ばない。選んだ授業は時間割の編集モードの
+  // 下書きに追加されるだけで、実際の登録は編集モードの「完了」時にまとめて行う。
+  const handleSelect = (course: Course) => {
+    navigate('/timetable', { state: { pickedCourse: course } });
   };
 
   return (
@@ -80,10 +68,10 @@ export const CourseSearchPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
-          <button onClick={() => navigate('/timetable')}>
+          <button onClick={() => navigate('/timetable', { state: { resumeEditMode: true } })}>
             <ChevronLeft /> 戻る
           </button>
-          <h1 style={{ margin: 0, fontSize: '1.3rem' }}>授業を検索</h1>
+          <h1 style={{ margin: 0, fontSize: '1.3rem' }}>授業を選択</h1>
         </div>
 
         <form className={styles.filters} onSubmit={handleSearchSubmit}>
@@ -114,34 +102,23 @@ export const CourseSearchPage = () => {
               <p className={styles.empty}>該当する授業が見つかりませんでした。</p>
             ) : (
               <ul className={styles.list}>
-                {result.items.map((course) => {
-                  const isRegistered = registeredRoomIDs.has(course.roomID);
-                  return (
-                    <li key={course.ID} className={styles.item}>
-                      <div className={styles.itemBody}>
-                        <div className={styles.itemName}>{course.courseName}</div>
-                        <div className={styles.itemMeta}>{course.teacherName} ・ {course.dayOfWeek}曜{course.period}限</div>
-                      </div>
-                      <div className={styles.itemActions}>
-                        <button
-                          type="button"
-                          className={styles.actionButton}
-                          onClick={() => navigate(`/courses/chat/${course.roomID}`, { state: { course } })}
-                        >
-                          チャットを見る
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
-                          disabled={isRegistered || registeringID === course.ID}
-                          onClick={() => handleRegister(course)}
-                        >
-                          {isRegistered ? '登録済み' : '時間割に登録'}
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
+                {result.items.map((course) => (
+                  <li key={course.ID} className={styles.item}>
+                    <div className={styles.itemBody}>
+                      <div className={styles.itemName}>{course.courseName}</div>
+                      <div className={styles.itemMeta}>{course.teacherName} ・ {course.dayOfWeek}曜{course.period}限</div>
+                    </div>
+                    <div className={styles.itemActions}>
+                      <button
+                        type="button"
+                        className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
+                        onClick={() => handleSelect(course)}
+                      >
+                        この授業を選択
+                      </button>
+                    </div>
+                  </li>
+                ))}
               </ul>
             )}
           </>

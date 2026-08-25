@@ -81,9 +81,9 @@ const CourseYearsDocument = graphql(`
   }
 `);
 
-const RegisterTimetableEntryDocument = graphql(`
-  mutation RegisterTimetableEntry($courseID: ID!) {
-    registerTimetableEntry(courseID: $courseID) {
+const SetTimetableProfileVisibilityDocument = graphql(`
+  mutation SetTimetableProfileVisibility($id: ID!, $visible: Boolean!) {
+    setTimetableProfileVisibility(id: $id, visible: $visible) {
       ID
       isProfileVisible
       createdAt
@@ -102,15 +102,9 @@ const RegisterTimetableEntryDocument = graphql(`
   }
 `);
 
-const RemoveTimetableEntryDocument = graphql(`
-  mutation RemoveTimetableEntry($id: ID!) {
-    removeTimetableEntry(id: $id)
-  }
-`);
-
-const SetTimetableProfileVisibilityDocument = graphql(`
-  mutation SetTimetableProfileVisibility($id: ID!, $visible: Boolean!) {
-    setTimetableProfileVisibility(id: $id, visible: $visible) {
+const SetMyTimetableDocument = graphql(`
+  mutation SetMyTimetable($year: Int!, $semester: String!, $baselineEntryIDs: [ID!]!, $courseIDs: [ID!]!) {
+    setMyTimetable(year: $year, semester: $semester, baselineEntryIDs: $baselineEntryIDs, courseIDs: $courseIDs) {
       ID
       isProfileVisible
       createdAt
@@ -161,17 +155,21 @@ export const getCourseYears = async (): Promise<number[]> => {
   return data.courseYears;
 };
 
-export const registerTimetableEntry = async (courseID: string): Promise<TimetableEntry> => {
-  const data = await requestDoc(RegisterTimetableEntryDocument, { courseID }, getUserToken());
-  return data.registerTimetableEntry;
-};
-
-export const removeTimetableEntry = async (id: string): Promise<boolean> => {
-  const data = await requestDoc(RemoveTimetableEntryDocument, { id }, getUserToken());
-  return data.removeTimetableEntry;
-};
-
 export const setTimetableProfileVisibility = async (id: string, visible: boolean): Promise<TimetableEntry> => {
   const data = await requestDoc(SetTimetableProfileVisibilityDocument, { id, visible }, getUserToken());
   return data.setTimetableProfileVisibility;
+};
+
+export const setMyTimetable = async (
+  year: number,
+  semester: string,
+  baselineEntryIDs: string[],
+  courseIDs: string[],
+): Promise<TimetableEntry[]> => {
+  const data = await requestDoc(
+    SetMyTimetableDocument,
+    { year, semester, baselineEntryIDs, courseIDs },
+    getUserToken(),
+  );
+  return data.setMyTimetable;
 };

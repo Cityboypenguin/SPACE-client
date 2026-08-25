@@ -41,10 +41,24 @@ export const CourseRoomPage = () => {
     return fromTimetable ?? locationState?.course ?? null;
   }, [timetable, roomId, locationState]);
 
-  const isWritable = useMemo(() => {
-    if (!course || !currentSemester) return true;
-    return course.year === currentSemester.year && course.semester === currentSemester.semester;
+  // 過去の学期（アーカイブ）かどうか。通年の授業はその年度の前期・後期どちらでも
+  // 進行中として扱う（年度が変わった時だけアーカイブになる）。まだ course/
+  // currentSemester が読み込めていない間はちらつき防止のため「アーカイブではない」
+  // 扱いにしておく。
+  const isArchived = useMemo(() => {
+    if (!course || !currentSemester) return false;
+    if (course.year !== currentSemester.year) return true;
+    return course.semester !== currentSemester.semester && course.semester !== '通年';
   }, [course, currentSemester]);
+
+  // 現在の学期の自分の時間割にこの授業が登録されているか。timetable がまだ読み込め
+  // ていない間はちらつき防止のため「登録済み」扱いにしておく。
+  const isRegistered = useMemo(() => {
+    if (!timetable) return true;
+    return timetable.some((t) => t.course.roomID === roomId);
+  }, [timetable, roomId]);
+
+  const isWritable = !isArchived && isRegistered;
 
   if (!roomId) return null;
 
@@ -68,9 +82,14 @@ export const CourseRoomPage = () => {
         <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
-      {!isWritable && (
+      {isArchived && (
         <div style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.8rem', padding: '0.5rem 1.5rem', flexShrink: 0 }}>
           この学期は終了したため閲覧のみです。
+        </div>
+      )}
+      {!isArchived && !isRegistered && (
+        <div style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.8rem', padding: '0.5rem 1.5rem', flexShrink: 0 }}>
+          この授業を時間割に登録していないため、書き込みできません。
         </div>
       )}
 
