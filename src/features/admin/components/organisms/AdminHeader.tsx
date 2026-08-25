@@ -44,6 +44,7 @@ export const AdminHeader = () => {
           <button className={styles.navButton} onClick={() => navigate('/admin/analytics')}>アナリティクス</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/users')}>ユーザー管理</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/communities')}>コミュニティ管理</button>
+          <button className={styles.navButton} onClick={() => navigate('/admin/courses')}>授業管理</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/posts')}>投稿管理</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/reports')}>通報管理</button>
           <button className={styles.navButton} onClick={() => navigate('/admin/inquiries')}>

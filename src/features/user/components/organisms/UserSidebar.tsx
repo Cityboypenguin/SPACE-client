@@ -13,6 +13,7 @@ import appLogo from '../../../../assets/Senshu-Universe_logo.svg';
 import homeIcon from '../../../../assets/パーツ_ホーム.svg';
 import dmIcon from '../../../../assets/パーツ_メール.svg';
 import communityIcon from '../../../../assets/パーツ_コミュニティマーク.svg';
+import timetableIcon from '../../../../assets/パーツ_時間割.svg';
 import notificationIcon from '../../../../assets/パーツ_通知.svg';
 import settingsIcon from '../../../../assets/パーツ_設定.svg';
 import searchIcon from '../../../../assets/パーツ_検索.svg';
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { icon: homeIcon, label: 'ホーム', path: '/home', iconSize: 30 },
   { icon: dmIcon, label: 'DM', path: '/dm', iconSize: 32 },
   { icon: communityIcon, label: 'コミュニティ', path: '/community', iconSize: 32 },
+  { icon: timetableIcon, label: '授業', path: '/timetable', iconSize: 28 },
   { icon: notificationIcon, label: '通知', path: '/notifications', iconSize: 24 },
   { icon: searchIcon, label: '検索', path: '/search', iconSize: 24 },
   { icon: settingsIcon, label: '設定', path: '/mypage/settings', iconSize: 40 },

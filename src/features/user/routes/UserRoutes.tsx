@@ -46,6 +46,15 @@ const CommunityEditPage = lazy(() =>
 const CommunityMembersPage = lazy(() =>
   import('../pages/CommunityMembersPage').then((m) => ({ default: m.CommunityMembersPage })),
 );
+const TimetablePage = lazy(() =>
+  import('../pages/TimetablePage').then((m) => ({ default: m.TimetablePage })),
+);
+const CourseSearchPage = lazy(() =>
+  import('../pages/CourseSearchPage').then((m) => ({ default: m.CourseSearchPage })),
+);
+const CourseRoomPage = lazy(() =>
+  import('../pages/CourseRoomPage').then((m) => ({ default: m.CourseRoomPage })),
+);
 const UserProfileEditPage = lazy(() =>
   import('../pages/UserProfileEditPage').then((m) => ({ default: m.UserProfileEditPage })),
 );
@@ -105,6 +114,9 @@ export const userRoutes = (
       <Route path="/community/chat/:roomId" element={<CommunityRoomPage />} />
       <Route path="/community/edit/:communityID" element={<CommunityEditPage />} />
       <Route path="/community/members/:communityID" element={<CommunityMembersPage />} />
+      <Route path="/timetable" element={<TimetablePage />} />
+      <Route path="/timetable/search" element={<CourseSearchPage />} />
+      <Route path="/courses/chat/:roomId" element={<CourseRoomPage />} />
       <Route path="/home" element={<PostListPage />} />
       <Route path="/posts/:id" element={<PostDetailPage />} />
       <Route path="/notifications" element={<NotificationListPage />} />

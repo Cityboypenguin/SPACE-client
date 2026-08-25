@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message, type Media } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
 import styles from '../ChatRoom.module.css';
 
@@ -509,12 +510,13 @@ type Props = {
   onEditContentChange: (val: string) => void;
   onDelete: () => void;
   isReadByPartner?: boolean;
+  isAnonymousAuthor?: boolean;
 };
 
 export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
-  onEditContentChange, onDelete, isReadByPartner,
+  onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -569,8 +571,8 @@ export const ChatMessageBubble = ({
       {!isMine && (
         <span
           className={styles.senderName}
-          onClick={() => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
-          style={{ cursor: 'pointer' }}
+          onClick={isAnonymousAuthor ? undefined : () => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
+          style={{ cursor: isAnonymousAuthor ? 'default' : 'pointer' }}
         >
           {msg.user.name}
         </span>
@@ -663,7 +665,11 @@ export const ChatMessageBubble = ({
 
   return (
     <div className={styles.theirRow}>
-      <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
+      {isAnonymousAuthor ? (
+        <Avatar name={msg.user.name} size={32} />
+      ) : (
+        <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
+      )}
       <div className={styles.theirContent}>{bubbleContent}</div>
     </div>
   );

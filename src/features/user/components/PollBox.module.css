@@ -1,0 +1,208 @@
+.tabContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.emptyState {
+  color: #9ca3af;
+  text-align: center;
+  padding: 2rem 0;
+  font-size: 0.85rem;
+}
+
+.loadMoreButton {
+  align-self: center;
+  background: none;
+  border: 1px solid #e5e7eb;
+  color: #646cff;
+  padding: 6px 16px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: #fff;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.senderName {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.multiTag {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  color: #374151;
+  margin-left: auto;
+}
+
+.question {
+  font-size: 0.9rem;
+  color: #111;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0.35rem 0 0.6rem;
+  font-weight: 600;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.option {
+  display: block;
+  cursor: pointer;
+}
+
+.optionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: #374151;
+  margin-bottom: 3px;
+}
+
+.optionLabel {
+  flex: 1;
+}
+
+.optionPercent {
+  font-variant-numeric: tabular-nums;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.barTrack {
+  height: 8px;
+  border-radius: 4px;
+  background: #f3f4f6;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background: #646cff;
+  border-radius: 4px;
+  transition: width 0.2s ease-out;
+}
+
+.barFillVoted {
+  background: #4c46e0;
+}
+
+.voteCount {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-top: 0.4rem;
+}
+
+.submitRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+}
+
+.submitButton {
+  background: #646cff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  background: #c7c9f7;
+  cursor: default;
+}
+
+.formCard {
+  border: 1px dashed #c7c9f7;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: #f8f8ff;
+}
+
+.formTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.5rem;
+}
+
+.formInput {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  box-sizing: border-box;
+  margin-bottom: 0.4rem;
+}
+
+.optionInputRow {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.removeOptionButton {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 6px;
+}
+
+.addOptionButton {
+  background: none;
+  border: 1px dashed #c7c9f7;
+  color: #646cff;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #374151;
+  margin: 0.4rem 0;
+}
+
+.toggleFormButton {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid #646cff;
+  color: #646cff;
+  border-radius: 16px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}

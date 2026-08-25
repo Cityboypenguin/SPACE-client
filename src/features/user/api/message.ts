@@ -31,6 +31,7 @@ export type Message = {
   media: Media[];
   createdAt: string;
   updatedAt: string;
+  isMine: boolean;
 };
 
 export type Room = {
@@ -64,6 +65,7 @@ export const MESSAGE_FIELDS = `
   }
   createdAt
   updatedAt
+  isMine
 `;
 
 const MarkRoomAsReadDocument = graphql(`
@@ -112,6 +114,7 @@ const SendMessageDocument = graphql(`
       }
       createdAt
       updatedAt
+      isMine
     }
   }
 `);
@@ -135,6 +138,7 @@ const UpdateMessageDocument = graphql(`
       }
       createdAt
       updatedAt
+      isMine
     }
   }
 `);
@@ -171,6 +175,7 @@ const ListMessagesDocument = graphql(`
         }
         createdAt
         updatedAt
+        isMine
       }
       hasMoreBefore
       hasMoreAfter
