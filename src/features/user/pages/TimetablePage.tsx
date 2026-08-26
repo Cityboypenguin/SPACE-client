@@ -374,7 +374,7 @@ export const TimetablePage = () => {
                           {entry ? (
                             <div
                               className={`${styles.courseChip} ${styles.courseChipClickable} ${!isEditable ? styles.courseChipReadOnly : ''}`}
-                              onClick={() => navigate(`/courses/chat/${entry.course.roomID}`, { state: { course: entry.course } })}
+                              onClick={() => navigate(`/courses/chat/${entry.course.roomID}`, { state: { course: entry.course, year: viewYear, semester: viewSemester } })}
                             >
                               {entry.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}
                               <span className={styles.courseName}>{entry.course.courseName}</span>

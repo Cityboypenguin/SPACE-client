@@ -9,7 +9,7 @@ import { Tabs } from '../../../components/molecules/Tabs';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { getRoom, type Room } from '../api/message';
 import { getMyTimetable, getCurrentSemester, type Course } from '../api/course';
-import { stableCacheOptions, staticCacheOptions, semesterCacheOptions } from '../cache/swrOptions';
+import { stableCacheOptions, semesterCacheOptions } from '../cache/swrOptions';
 import styles from '../components/ChatRoom.module.css';
 
 type TabKey = 'chat' | 'question' | 'poll';
@@ -24,7 +24,7 @@ export const CourseRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const locationState = location.state as { course?: Course } | null;
+  const locationState = location.state as { course?: Course; year?: number; semester?: string } | null;
   const [activeTab, setActiveTab] = useState<TabKey>('chat');
 
   const { data: room } = useSWR<Room | null>(
@@ -33,7 +33,7 @@ export const CourseRoomPage = () => {
     stableCacheOptions,
   );
 
-  const { data: timetable } = useSWR('my-timetable', () => getMyTimetable(), staticCacheOptions);
+  const { data: timetable } = useSWR('my-timetable', () => getMyTimetable(), stableCacheOptions);
   const { data: currentSemester } = useSWR('current-semester', () => getCurrentSemester(), semesterCacheOptions);
 
   const course = useMemo((): Course | null => {
@@ -60,6 +60,13 @@ export const CourseRoomPage = () => {
 
   const isWritable = !isArchived && isRegistered;
 
+  // 時間割から遷移した場合はその時に見ていた年度・学期をそのまま持ち帰る。通年の授業は
+  // course.semester が「通年」自体になっており、そのまま渡すと時間割側の学期セレクタ
+  // （前期／後期のみ）と一致せず編集不可（閲覧のみ）と誤判定されてしまうため、
+  // 遷移元の情報が無い場合（直リンク・リロード等）は現在の学期に読み替える。
+  const backYear = locationState?.year ?? course?.year;
+  const backSemester = locationState?.semester ?? (course?.semester === '通年' ? currentSemester?.semester : course?.semester);
+
   if (!roomId) return null;
 
   return (
@@ -68,7 +75,7 @@ export const CourseRoomPage = () => {
 
       <div className={styles.roomHeader}>
         <button
-          onClick={() => navigate('/timetable', { state: course ? { year: course.year, semester: course.semester } : undefined })}
+          onClick={() => navigate('/timetable', { state: backYear != null && backSemester ? { year: backYear, semester: backSemester } : undefined })}
         >
           <ChevronLeft />
         </button>
