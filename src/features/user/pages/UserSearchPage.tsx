@@ -296,7 +296,7 @@ export const UserSearchPage = () => {
 
         <form className={styles.searchForm} onSubmit={e => { e.preventDefault(); void handleSearch(); }}>
           <div className={styles.searchBar}>
-            <img src={searchIconSvg} alt="" className={styles.searchIcon} />
+            <img src={searchIconSvg} alt="" className={`${styles.searchIcon} themed-icon`} />
             <input
               type="text"
               className={styles.searchInput}

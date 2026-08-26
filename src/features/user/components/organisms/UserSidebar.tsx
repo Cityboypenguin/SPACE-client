@@ -73,7 +73,7 @@ export const UserSidebar = () => {
               onClick={() => handleNavigate(path)}
             >
               <span className={styles.iconWrap}>
-                <img src={icon} alt={label} className={styles.icon} style={{ width: iconSize, height: iconSize }} />
+                <img src={icon} alt={label} className={`${styles.icon} themed-icon`} style={{ width: iconSize, height: iconSize }} />
                 {badgeCount > 0 && (
                   <span className={styles.badge}>
                     {badgeCount > 99 ? '99+' : badgeCount}

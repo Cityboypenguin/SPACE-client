@@ -91,14 +91,14 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
                       className={styles.dropdownItem}
                       onClick={() => { setMenuOpen(false); onEdit?.(post); }}
                     >
-                      <img src={editIcon} alt="" className={styles.dropdownIcon} />
+                      <img src={editIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
                       編集
                     </button>
                     <button
                       className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                       onClick={() => { setMenuOpen(false); onDelete?.(post.ID); }}
                     >
-                      <img src={deleteIcon} alt="" className={styles.dropdownIconDelete} />
+                      <img src={deleteIcon} alt="" className={`${styles.dropdownIconDelete} themed-icon`} />
                       削除
                     </button>
                   </>
@@ -115,7 +115,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
                       className={styles.dropdownItem}
                       onClick={() => { setMenuOpen(false); onReport?.(post.ID); }}
                     >
-                      <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                      <img src={reportIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
                       通報
                     </button>
                   </>
@@ -151,7 +151,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
             style={{ cursor: onReply ? 'pointer' : 'default' }}
             onClick={(e) => { e.stopPropagation(); onReply?.(); }}
           >
-            <img src={commentIcon} alt="返信" className={styles.commentIcon} />
+            <img src={commentIcon} alt="返信" className={`${styles.commentIcon} themed-icon`} />
             {post.replyCount}
           </button>
           <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />

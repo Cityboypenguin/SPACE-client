@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -28,6 +29,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
   const prevDisabledRef = useRef(disabled);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (value === '' && textareaRef.current) {
@@ -297,7 +299,10 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             style={{
               width: 28,
               height: 28,
-              filter: canSubmit ? 'none' : 'opacity(0.3)',
+              filter: [
+                canSubmit ? null : 'opacity(0.3)',
+                theme === 'dark' ? 'invert(1)' : null,
+              ].filter(Boolean).join(' ') || 'none',
               transition: 'filter 0.15s',
             }}
           />

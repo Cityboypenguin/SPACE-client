@@ -177,3 +177,17 @@ input[type='reset'] {
   appearance: none;
   color: var(--color-text);
 }
+
+/* src/assets 内の黒線+白のモノクロ svg アイコンは <img src> で読み込んでいるため、
+   ファイル内部の色は CSS の color/currentColor では変更できない。黒/白のみの
+   配色なので invert(1) で色相をずらさずに白線へ反転できる。ブランドロゴや
+   赤/ピンク/黄色など色付きのアイコン画像には .themed-icon を付けないこと。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) img.themed-icon {
+    filter: invert(1);
+  }
+}
+
+:root[data-theme='dark'] img.themed-icon {
+  filter: invert(1);
+}

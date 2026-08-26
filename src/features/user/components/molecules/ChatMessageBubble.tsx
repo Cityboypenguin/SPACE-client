@@ -595,7 +595,7 @@ export const ChatMessageBubble = ({
                 className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
                 onClick={() => { setShowActions(false); onStartEdit(); }}
                 title="編集"
-              ><img src={editIcon} alt="編集" className={styles.actionIcon} /></button>
+              ><img src={editIcon} alt="編集" className={`${styles.actionIcon} themed-icon`} /></button>
             )}
             {canDelete && (
               <button

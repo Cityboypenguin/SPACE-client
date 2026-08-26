@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import likeIconOff from '../../assets/パーツ_いいね.svg';
 import likeIconOn from '../../assets/パーツ_いいね（済）.svg';
+import { useTheme } from '../../context/ThemeContext';
 import styles from './LikeButton.module.css';
 
 type LikeablePost = {
@@ -18,6 +19,7 @@ type Props = {
 export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
   const isLiked = post.favorites.some((f) => f.user.ID === currentUserId);
   const [liking, setLiking] = useState(false);
+  const { theme } = useTheme();
 
   const handle = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -46,8 +48,9 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
         style={{
           width: iconSize,
           height: iconSize,
-          filter: isLiked ? 'none' 
-            : 'opacity(0.35)',
+          filter: isLiked
+            ? 'none'
+            : theme === 'dark' ? 'opacity(0.35) invert(1)' : 'opacity(0.35)',
         }}
       />
       <span

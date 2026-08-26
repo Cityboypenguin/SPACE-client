@@ -455,7 +455,7 @@ export const PostComposer = ({
               disabled={submitting}
               title={`写真を追加 (最大${MAX_IMAGES}枚)`}
             >
-              <img src={cameraIcon} alt="写真を追加" className={styles.cameraIcon} />
+              <img src={cameraIcon} alt="写真を追加" className={`${styles.cameraIcon} themed-icon`} />
             </button>
           )}
           <button
