@@ -67,7 +67,11 @@ export const CourseRoomPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button onClick={() => navigate('/timetable')}><ChevronLeft /></button>
+        <button
+          onClick={() => navigate('/timetable', { state: course ? { year: course.year, semester: course.semester } : undefined })}
+        >
+          <ChevronLeft />
+        </button>
         <div style={{ minWidth: 0, flex: 1 }}>
           <strong className={styles.roomTitle}>{course?.courseName ?? room?.name ?? '...'}</strong>
           {course && (

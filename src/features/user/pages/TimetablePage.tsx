@@ -44,8 +44,12 @@ export const TimetablePage = () => {
   const { data: currentSemester } = useSWR('current-semester', () => getCurrentSemester(), semesterCacheOptions);
   const { data: courseYears } = useSWR('course-years', () => getCourseYears(), staticCacheOptions);
 
-  const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
-  const [selectedSemester, setSelectedSemester] = useState<string | undefined>(undefined);
+  // 授業チャットの「戻る」から遷移してきた場合は、開いていた時期の時間割に戻す
+  // （現在の学期にリセットしない）。初回マウント時の初期値としてのみ使うので、
+  // 学期セレクタ操作後の再レンダーで location.state を読み直すことはない。
+  const restoreState = location.state as { year?: number; semester?: string } | null;
+  const [selectedYear, setSelectedYear] = useState<number | undefined>(restoreState?.year);
+  const [selectedSemester, setSelectedSemester] = useState<string | undefined>(restoreState?.semester);
 
   const viewYear = selectedYear ?? currentSemester?.year;
   const viewSemester = selectedSemester ?? currentSemester?.semester;
