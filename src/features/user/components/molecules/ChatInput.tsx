@@ -129,12 +129,11 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     >
       {isDragging && (
         <div
+          className={styles.dragOverlayBorder}
           style={{
             position: 'absolute',
             inset: 0,
-            border: '2px dashed #6b7280',
             borderRadius: 8,
-            background: 'rgba(107, 114, 128, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -142,7 +141,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             pointerEvents: 'none',
           }}
         >
-          <span style={{ color: '#6b7280', fontSize: '0.85rem', fontWeight: 500 }}>
+          <span className={styles.dragOverlayText} style={{ fontSize: '0.85rem', fontWeight: 500 }}>
             ここにドロップ
           </span>
         </div>
@@ -158,18 +157,19 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
                 <img
                   src={previewUrls[i]}
                   alt={file.name}
+                  className={styles.filePreviewImgBorder}
                   style={{
                     width: 56,
                     height: 56,
                     objectFit: 'cover',
                     borderRadius: 8,
-                    border: '1px solid #e5e7eb',
                     display: 'block',
                   }}
                 />
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
+                  className={styles.fileRemoveBtn}
                   style={{
                     position: 'absolute',
                     top: -6,
@@ -177,10 +177,8 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
                     width: 18,
                     height: 18,
                     borderRadius: '50%',
-                    background: '#6b7280',
                     border: 'none',
                     cursor: 'pointer',
-                    color: '#fff',
                     fontSize: '0.65rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -195,16 +193,14 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             ) : (
               <div
                 key={i}
+                className={styles.fileChip}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
                   padding: '2px 8px',
-                  background: '#f3f4f6',
-                  border: '1px solid #e5e7eb',
                   borderRadius: 12,
                   fontSize: '0.75rem',
-                  color: '#374151',
                   maxWidth: 160,
                 }}
               >
@@ -214,7 +210,8 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '0.8rem', padding: 0, flexShrink: 0 }}
+                  className={styles.fileChipRemoveBtn}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', padding: 0, flexShrink: 0 }}
                 >
                   ✕
                 </button>
@@ -229,13 +226,13 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
           title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
+          className={(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}
           style={{
             background: 'none',
             border: 'none',
             cursor: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? 'default' : 'pointer',
             fontSize: '1.2rem',
             padding: '0 4px',
-            color: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? '#d1d5db' : '#6b7280'
           }}
         >
           📎

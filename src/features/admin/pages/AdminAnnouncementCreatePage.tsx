@@ -37,7 +37,7 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
           お知らせ作成
         </h1>
 
-        {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>{error}</p>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
@@ -53,7 +53,7 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
               style={{
                 width: '100%',
                 padding: '0.6rem 0.75rem',
-                border: '1px solid #cbd5e1',
+                border: '1px solid var(--color-border)',
                 borderRadius: 8,
                 fontSize: '0.95rem',
                 boxSizing: 'border-box',
@@ -73,7 +73,7 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
               style={{
                 width: '100%',
                 padding: '0.6rem 0.75rem',
-                border: '1px solid #cbd5e1',
+                border: '1px solid var(--color-border)',
                 borderRadius: 8,
                 fontSize: '0.95rem',
                 fontFamily: 'monospace',
@@ -81,7 +81,7 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
                 boxSizing: 'border-box',
               }}
             />
-            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.25rem 0 0' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '0.25rem 0 0' }}>
               マークダウン形式で記述できます
             </p>
           </div>
@@ -92,7 +92,7 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
               disabled={submitting}
               style={{
                 padding: '0.6rem 1.5rem',
-                background: submitting ? '#93c5fd' : '#3b82f6',
+                background: 'var(--color-primary)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,
@@ -108,9 +108,9 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
               onClick={() => navigate('/admin/announcements')}
               style={{
                 padding: '0.6rem 1.5rem',
-                background: '#fff',
-                color: '#475569',
-                border: '1px solid #cbd5e1',
+                background: 'var(--color-bg-elevated)',
+                color: 'var(--color-text)',
+                border: '1px solid var(--color-border)',
                 borderRadius: 8,
                 cursor: 'pointer',
                 fontSize: '0.95rem',

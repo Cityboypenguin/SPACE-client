@@ -46,18 +46,18 @@ export const AdminPostListPage = () => {
     <div>
       <AdminHeader />
       <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+        <div style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text)' }}>
             投稿管理
           </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</span>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>全 {total} 件</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text)' }}>
               表示件数
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                style={{ border: '1px solid var(--color-border)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
               >
                 {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
               </select>
@@ -65,10 +65,10 @@ export const AdminPostListPage = () => {
           </div>
         </div>
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)', padding: '1rem' }}>{error}</p>}
 
         {posts.length === 0 && !error ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
+          <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
         ) : (
           posts.map((post) => (
             <AdminPostCard key={post.ID} post={post} onDelete={handleDelete} />
@@ -78,7 +78,7 @@ export const AdminPostListPage = () => {
         {totalPages > 1 && (
           <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
             <button onClick={() => loadPage(page - 1)} disabled={page === 0}>前へ</button>
-            <span style={{ fontSize: '0.85rem', color: '#475569' }}>{page + 1} / {totalPages}</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>{page + 1} / {totalPages}</span>
             <button onClick={() => loadPage(page + 1)} disabled={page >= totalPages - 1}>次へ</button>
           </div>
         )}

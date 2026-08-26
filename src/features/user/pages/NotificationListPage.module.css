@@ -21,7 +21,7 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text);
   min-width: 0;
   overflow-wrap: break-word;
   word-break: break-all;
@@ -50,9 +50,9 @@
 }
 
 .headerBtnOutline {
-  border: 1px solid #94a3b8;
-  background: #fff;
-  color: #475569;
+  border: 1px solid var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
 }
 
 .headerBtnOutline:disabled {
@@ -61,9 +61,9 @@
 }
 
 .headerBtnOutlineDanger {
-  border: 1px solid #fca5a5;
-  background: #fff;
-  color: #ef4444;
+  border: 1px solid var(--color-danger);
+  background: var(--color-bg-elevated);
+  color: var(--color-danger);
 }
 
 .headerBtnOutlineDanger:disabled {
@@ -73,7 +73,7 @@
 
 .headerBtnDanger {
   border: none;
-  background: #ef4444;
+  background: var(--color-danger);
   color: #fff;
 }
 
@@ -96,14 +96,14 @@
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
   cursor: pointer;
-  background: #fff;
+  background: var(--color-bg-elevated);
   transition: background 0.1s;
 }
 
 .item:hover {
-  background: #f8fafc;
+  background: var(--color-surface);
 }
 
 .itemUnread {
@@ -124,7 +124,7 @@
   width: 17px;
   height: 17px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--color-primary);
   margin-top: 0.15rem;
 }
 
@@ -133,7 +133,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   flex-shrink: 0;
   margin-top: 0.05rem;
 }
@@ -154,14 +154,14 @@
   margin: 0 0 0.15rem;
   font-weight: 600;
   font-size: 0.9rem;
-  color: #1e293b;
+  color: var(--color-text);
   overflow-wrap: break-word;
 }
 
 .itemMessage {
   margin: 0;
   font-size: 0.9rem;
-  color: #475569;
+  color: var(--color-text-muted);
   line-height: 1.5;
   overflow-wrap: break-word;
 }
@@ -169,7 +169,7 @@
 .itemDate {
   margin: 0.2rem 0 0;
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 /* ── グループ件数バッジ ── */
@@ -180,7 +180,7 @@
   height: 24px;
   padding: 0;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--color-primary);
   color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
@@ -197,7 +197,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--color-primary);
 }
 
 /* ── 通知内の投稿プレビュー ── */
@@ -208,7 +208,7 @@
   margin: 0.35rem 0 0;
   padding: 0.4rem 0.6rem;
   border-radius: 8px;
-  background: #f1f5f9;
+  background: var(--color-surface);
 }
 
 .targetPostThumb {
@@ -223,7 +223,7 @@
   flex: 1;
   min-width: 0;
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -232,21 +232,21 @@
 
 /* ── States ── */
 .empty {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   padding: 2rem;
   text-align: center;
   font-size: 0.9rem;
 }
 
 .loading {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   padding: 2rem;
   text-align: center;
   font-size: 0.9rem;
 }
 
 .error {
-  color: #ef4444;
+  color: var(--color-danger);
   padding: 1rem;
   font-size: 0.9rem;
 }

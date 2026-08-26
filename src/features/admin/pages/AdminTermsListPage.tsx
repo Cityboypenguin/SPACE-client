@@ -5,10 +5,10 @@ import { listTerms, type TermsOfService } from '../api/terms';
 
 const now = () => new Date();
 
-const getStatus = (effectiveDate: string): { label: string; color: string } => {
+const getStatus = (effectiveDate: string): { label: string; color: string; bgColor: string } => {
   const effective = new Date(effectiveDate);
-  if (effective > now()) return { label: '施行予定', color: '#f59e0b' };
-  return { label: '施行済み', color: '#10b981' };
+  if (effective > now()) return { label: '施行予定', color: 'var(--color-warning)', bgColor: 'var(--color-warning-bg)' };
+  return { label: '施行済み', color: 'var(--color-success)', bgColor: 'var(--color-success-bg)' };
 };
 
 export const AdminTermsListPage: React.FC = () => {
@@ -34,7 +34,7 @@ export const AdminTermsListPage: React.FC = () => {
             onClick={() => navigate('/admin/terms/new')}
             style={{
               padding: '0.5rem 1.25rem',
-              background: '#3b82f6',
+              background: 'var(--color-primary)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
@@ -47,17 +47,17 @@ export const AdminTermsListPage: React.FC = () => {
           </button>
         </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {loading && <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>読み込み中...</p>}
+        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
+        {loading && <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>読み込み中...</p>}
 
         {!loading && termsList.length === 0 && (
-          <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>登録された利用規約はありません</p>
+          <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>登録された利用規約はありません</p>
         )}
 
         {!loading && termsList.length > 0 && (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+              <tr style={{ background: 'var(--color-surface)', borderBottom: '2px solid var(--color-border)' }}>
                 <th style={thStyle}>バージョン</th>
                 <th style={thStyle}>施行日時</th>
                 <th style={thStyle}>登録日時</th>
@@ -69,9 +69,9 @@ export const AdminTermsListPage: React.FC = () => {
               {termsList.map((t) => {
                 const status = getStatus(t.effectiveDate);
                 return (
-                  <tr key={t.ID} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <tr key={t.ID} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={tdStyle}>
-                      <span style={{ fontWeight: 600, color: '#1e293b' }}>{t.version}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{t.version}</span>
                     </td>
                     <td style={tdStyle}>{new Date(t.effectiveDate).toLocaleString('ja-JP')}</td>
                     <td style={tdStyle}>{new Date(t.createdAt).toLocaleString('ja-JP')}</td>
@@ -82,7 +82,7 @@ export const AdminTermsListPage: React.FC = () => {
                         borderRadius: 12,
                         fontSize: '0.78rem',
                         fontWeight: 600,
-                        background: status.color + '20',
+                        background: status.bgColor,
                         color: status.color,
                       }}>
                         {status.label}
@@ -93,9 +93,9 @@ export const AdminTermsListPage: React.FC = () => {
                         onClick={() => navigate(`/admin/terms/${t.ID}`)}
                         style={{
                           padding: '0.3rem 0.9rem',
-                          background: '#fff',
-                          color: '#3b82f6',
-                          border: '1px solid #3b82f6',
+                          background: 'var(--color-bg-elevated)',
+                          color: 'var(--color-primary)',
+                          border: '1px solid var(--color-primary)',
                           borderRadius: 6,
                           cursor: 'pointer',
                           fontSize: '0.85rem',
@@ -120,12 +120,12 @@ const thStyle: React.CSSProperties = {
   padding: '0.75rem 1rem',
   textAlign: 'left',
   fontWeight: 600,
-  color: '#475569',
+  color: 'var(--color-text-muted)',
   fontSize: '0.85rem',
 };
 
 const tdStyle: React.CSSProperties = {
   padding: '0.75rem 1rem',
-  color: '#334155',
+  color: 'var(--color-text)',
   verticalAlign: 'middle',
 };

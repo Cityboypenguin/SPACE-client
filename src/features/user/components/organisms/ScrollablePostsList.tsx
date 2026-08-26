@@ -1,6 +1,7 @@
 import { type RefObject } from 'react';
 import { PostCard } from './PostCard';
 import { type Post } from '../../api/post';
+import styles from './ScrollablePostsList.module.css';
 
 type Props = {
   posts: Post[];
@@ -38,9 +39,9 @@ export const ScrollablePostsList = ({
   errorMessage = '投稿の読み込みに失敗しました',
 }: Props) => (
   <div>
-    {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{errorMessage}</p>}
+    {error && <p className={styles.errorText}>{errorMessage}</p>}
     {loading ? (
-      <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+      <p className={styles.statusText}>読み込み中...</p>
     ) : posts.length > 0 ? (
       <>
         {posts.map((post) => (
@@ -59,11 +60,11 @@ export const ScrollablePostsList = ({
         ))}
         <div ref={sentinelRef} style={{ height: '1px' }} />
         {loadingMore && (
-          <p style={{ color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>読み込み中...</p>
+          <p className={styles.statusTextCompact}>読み込み中...</p>
         )}
       </>
     ) : (
-      <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>{emptyMessage}</p>
+      <p className={styles.statusText}>{emptyMessage}</p>
     )}
   </div>
 );

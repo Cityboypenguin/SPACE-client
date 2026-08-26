@@ -1,0 +1,16 @@
+.errorText {
+  color: var(--color-danger);
+  margin-bottom: 1rem;
+}
+
+.statusText {
+  color: var(--color-text-muted);
+  padding: 2rem;
+  text-align: center;
+}
+
+.statusTextCompact {
+  color: var(--color-text-muted);
+  padding: 1rem;
+  text-align: center;
+}

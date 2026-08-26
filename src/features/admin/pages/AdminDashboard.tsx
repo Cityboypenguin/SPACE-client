@@ -11,7 +11,7 @@ import type { AnalyticsSummary } from '../api/analytics';
 const pageStyle: React.CSSProperties = { padding: '2rem', maxWidth: 1100, margin: '0 auto' };
 const sectionTitle: React.CSSProperties = {
   fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em',
-  color: '#64748b', textTransform: 'uppercase', marginBottom: '0.75rem',
+  color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem',
 };
 const grid = (cols: number): React.CSSProperties => ({
   display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0.75rem', marginBottom: '2rem',
@@ -19,10 +19,10 @@ const grid = (cols: number): React.CSSProperties => ({
 
 type CardVariant = 'default' | 'alert' | 'warning' | 'ok';
 const cardColors: Record<CardVariant, { bg: string; border: string; accent: string }> = {
-  default: { bg: '#fff',       border: '#e2e8f0', accent: '#0f172a' },
-  alert:   { bg: '#fef2f2',   border: '#fca5a5', accent: '#dc2626' },
-  warning: { bg: '#fffbeb',   border: '#fcd34d', accent: '#d97706' },
-  ok:      { bg: '#f0fdf4',   border: '#86efac', accent: '#16a34a' },
+  default: { bg: 'var(--color-bg-elevated)', border: 'var(--color-border)',     accent: 'var(--color-text)' },
+  alert:   { bg: 'var(--color-danger-bg)',   border: 'var(--color-danger)',     accent: 'var(--color-danger)' },
+  warning: { bg: 'var(--color-warning-bg)',  border: 'var(--color-warning)',    accent: 'var(--color-warning)' },
+  ok:      { bg: 'var(--color-success-bg)',  border: 'var(--color-success)',    accent: 'var(--color-success)' },
 };
 
 function KpiCard({
@@ -47,9 +47,9 @@ function KpiCard({
       onMouseEnter={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(0,0,0,.1)'; }}
       onMouseLeave={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 3px rgba(0,0,0,.06)'; }}
     >
-      <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: '1.7rem', fontWeight: 700, color: c.accent }}>{value}</div>
-      {sub && <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 2 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -84,7 +84,7 @@ export const AdminDashboard = () => {
     <div>
       <AdminHeader />
       <main style={pageStyle}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.75rem', color: '#0f172a' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--color-text)' }}>
           ダッシュボード
         </h1>
 
@@ -175,7 +175,7 @@ export const AdminDashboard = () => {
             onClick={() => navigate('/admin/analytics')}
             style={{
               padding: '0.6rem 1.4rem', borderRadius: 8, border: 'none',
-              background: '#3b82f6', color: '#fff', fontWeight: 600,
+              background: 'var(--color-primary)', color: '#fff', fontWeight: 600,
               cursor: 'pointer', fontSize: '0.9rem',
             }}
           >

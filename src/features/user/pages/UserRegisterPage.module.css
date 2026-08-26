@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: #fff;
+  background: var(--color-bg);
   padding: 1.5rem 1rem 3rem;
 }
 
@@ -17,7 +17,7 @@
   border: none;
   cursor: pointer;
   padding: 0.25rem;
-  color: #1e293b;
+  color: var(--color-text);
   display: flex;
   align-items: center;
   flex-shrink: 0;
@@ -27,7 +27,7 @@
   margin: 0;
   font-size: 1.4rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 /* ── Step indicator ── */
@@ -47,11 +47,11 @@
 .stepLine {
   width: 48px;
   height: 2px;
-  background: #e2e8f0;
+  background: var(--color-border);
 }
 
 .stepLineDone {
-  background: #3b82f6;
+  background: var(--color-primary);
 }
 
 .stepCircle {
@@ -63,12 +63,12 @@
   justify-content: center;
   font-size: 0.9rem;
   font-weight: 700;
-  background: #e2e8f0;
-  color: #94a3b8;
+  background: var(--color-border);
+  color: var(--color-text-muted);
 }
 
 .stepCircleActive {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: #fff;
 }
 
@@ -81,8 +81,8 @@
 .card {
   max-width: 680px;
   margin: 0 auto;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 2rem 2.5rem;
 }
@@ -92,28 +92,28 @@
   display: block;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text);
   margin-bottom: 0.5rem;
 }
 
 .input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 1rem;
-  color: #1e293b;
+  color: var(--color-text);
   box-sizing: border-box;
   transition: border-color 0.15s;
 }
 
 .input:focus {
   outline: none;
-  border-color: #94a3b8;
+  border-color: var(--color-text-muted);
 }
 
 .input::placeholder {
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .inputOtp {
@@ -123,19 +123,19 @@
 }
 
 .fieldError {
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.8rem;
   margin: 0.3rem 0 0;
 }
 
 .hint {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 0.4rem 0 0;
 }
 
 .hintSuccess {
-  color: #22c55e;
+  color: var(--color-success);
 }
 
 /* ── Buttons ── */
@@ -170,9 +170,9 @@
 .btnOutline {
   padding: 0.65rem 1.25rem;
   border-radius: 8px;
-  border: 1px solid #94a3b8;
-  background: #fff;
-  color: #475569;
+  border: 1px solid var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -184,7 +184,7 @@
 }
 
 .btnOutline:hover {
-  background: #f8fafc;
+  background: var(--color-surface);
 }
 
 .btnOutline:focus,
@@ -192,11 +192,16 @@
   outline: none;
 }
 
+.centerMutedText {
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 /* ── Terms ── */
 .termsScrollHint {
   text-align: center;
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   margin: 0.3rem 0 0.75rem;
 }
 
@@ -205,27 +210,27 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  color: #1e293b;
+  color: var(--color-text);
   cursor: pointer;
   margin-top: 0.5rem;
 }
 
 .termsCheckLabel input {
-  accent-color: #3b82f6;
+  accent-color: var(--color-primary);
   width: 17px;
   height: 17px;
 }
 
 /* ── Error list ── */
 .errorList {
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.85rem;
   margin: 0.75rem 0 0;
   padding-left: 1.25rem;
 }
 
 .submitError {
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.875rem;
   text-align: center;
   margin: 0.75rem 0 0;
@@ -255,7 +260,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #3b82f6;
+  color: var(--color-link);
   font-size: 0.875rem;
   padding: 0;
   text-decoration: underline;
@@ -263,7 +268,7 @@
 }
 
 .resendBtn:disabled {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   cursor: not-allowed;
   text-decoration: none;
 }
@@ -280,7 +285,7 @@
 }
 
 .modal {
-  background: #fff;
+  background: var(--color-bg-elevated);
   border-radius: 12px;
   padding: 2rem 1.5rem;
   width: 90%;
@@ -292,15 +297,15 @@
 .modalText {
   margin: 0 0 1.25rem;
   font-size: 0.95rem;
-  color: #1e293b;
+  color: var(--color-text);
   font-weight: 500;
 }
 
 .modalClose {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #fff;
-  color: #475569;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   padding: 0.5rem 2rem;
   cursor: pointer;

@@ -54,20 +54,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
         <h2 className={styles.title}>{title}</h2>
 
         {postContent && (
-          <div style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            padding: '0.75rem',
-            marginBottom: '1rem',
-            fontSize: '0.9rem',
-            color: '#334155',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            maxHeight: '100px',
-            overflowY: 'auto',
-          }}>
-            <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem' }}>対象の投稿内容:</span>
+          <div className={styles.postPreview}>
+            <span className={styles.postPreviewLabel}>対象の投稿内容:</span>
             {postContent}
           </div>
         )}
@@ -77,7 +65,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
           <select
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem' }}
+            className={styles.selectInput}
           >
             <option value="SPAM">スパム / 宣伝目的</option>
             <option value="HARASSMENT">嫌がらせ / 誹謗中傷</option>

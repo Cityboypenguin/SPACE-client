@@ -87,9 +87,9 @@ const PostMediaDetail = ({ media }: { media: Media[] }) => {
               rel="noopener noreferrer"
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 12px', background: '#f3f4f6',
-                border: '1px solid #e5e7eb', borderRadius: 8,
-                fontSize: '0.85rem', color: '#374151', textDecoration: 'none',
+                padding: '6px 12px', background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)', borderRadius: 8,
+                fontSize: '0.85rem', color: 'var(--color-text)', textDecoration: 'none',
               }}
             >
               📎 {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
@@ -156,19 +156,19 @@ export const AdminPostDetailPage = () => {
     <div>
       <AdminHeader />
       <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-border)' }}>
           <button
             onClick={() => navigate(-1)}
           ><ChevronLeft /></button>
-          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿詳細 (管理者)</h1>
+          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)' }}>投稿詳細 (管理者)</h1>
         </div>
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)', padding: '1rem' }}>{error}</p>}
 
         {loading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+          <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
         ) : !post ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
+          <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
         ) : (
           <>
             {post.rootPost && (
@@ -183,14 +183,14 @@ export const AdminPostDetailPage = () => {
 
             <div style={{
               padding: '1rem',
-              borderBottom: '1px solid #e2e8f0',
-              background: isDeleted ? '#fef2f2' : '#ffffff'
+              borderBottom: '1px solid var(--color-border)',
+              background: isDeleted ? 'var(--color-danger-bg)' : 'var(--color-bg-elevated)'
             }}>
 
               {isDeleted && (
                 <div style={{
                   display: 'inline-block',
-                  background: '#ef4444', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold',
+                  background: 'var(--color-danger)', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold',
                   padding: '0.25rem 0.5rem', borderRadius: '4px', marginBottom: '0.75rem'
                 }}>
                   削除済み ({new Date(post.deletedAt!).toLocaleString('ja-JP')})
@@ -202,22 +202,22 @@ export const AdminPostDetailPage = () => {
                   <AdminUserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
                   <div>
                     <AdminUserNameLink userId={post.user.ID}>
-                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{post.user.name}</div>
                     </AdminUserNameLink>
-                    <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+                    <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
                   </div>
                 </div>
 
                 {!isDeleted && (
                   <button
                     onClick={handleMainDelete}
-                    style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
+                    style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--color-danger)' }}
                   >削除</button>
                 )}
               </div>
 
               {post.content && (
-                <p style={{ margin: '0 0 0.75rem', color: isDeleted ? '#64748b' : '#1e293b', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                <p style={{ margin: '0 0 0.75rem', color: isDeleted ? 'var(--color-text-muted)' : 'var(--color-text)', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                   {post.content}
                 </p>
               )}
@@ -226,12 +226,12 @@ export const AdminPostDetailPage = () => {
                 <PostMediaDetail media={post.media} />
               )}
 
-              <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
               </div>
 
               <div style={{ display: 'flex', gap: '1.5rem', fontSize: '1.2rem', alignItems: 'center' }}>
-                <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>
                   💬 <strong>{post.replyCount}</strong> 件の返信
                 </span>
                 <div style={{ pointerEvents: 'none' }}>

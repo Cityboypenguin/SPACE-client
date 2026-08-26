@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { storageUrl } from '../../../../lib/storage';
+import styles from './TermsContent.module.css';
 
 interface Props {
   documentUrl: string;
@@ -41,9 +42,9 @@ export const TermsContent = ({ documentUrl, onScrolledToBottom, onError, style }
   return (
     <div onScroll={handleScroll} style={style}>
       {loading ? (
-        <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
+        <p className={styles.loadingText}>読み込み中...</p>
       ) : error ? (
-        <p style={{ color: '#ef4444', textAlign: 'center' }}>
+        <p className={styles.errorText}>
           規約の読み込みに失敗しました。しばらく経ってから再度お試しください。
         </p>
       ) : (

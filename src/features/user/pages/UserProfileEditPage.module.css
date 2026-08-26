@@ -16,7 +16,7 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  color: #374151;
+  color: var(--color-text);
   display: flex;
   align-items: center;
 }
@@ -29,7 +29,7 @@
 .title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -52,11 +52,11 @@
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
-  background: #e2e8f0;
+  background: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed #94a3b8;
+  border: 2px dashed var(--color-text-muted);
   transition: opacity 0.15s;
 }
 
@@ -72,7 +72,7 @@
 
 .avatarPlaceholder {
   font-size: 2.5rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .avatarActions {
@@ -94,11 +94,11 @@
 }
 
 .avatarBtnChange {
-  color: #3b82f6;
+  color: var(--color-link);
 }
 
 .avatarBtnDelete {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .bioSection {
@@ -109,17 +109,17 @@
 
 .fieldLabel {
   font-size: 0.9rem;
-  color: #475569;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
 .textarea {
   padding: 0.75rem 0.875rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  color: #1e293b;
-  background: #f8fafc;
+  color: var(--color-text);
+  background: var(--color-surface);
   outline: none;
   resize: vertical;
   min-height: 120px;
@@ -132,11 +132,11 @@
 
 .textarea:focus {
   border-color: #f97316;
-  background: #fff;
+  background: var(--color-bg-elevated);
 }
 
 .errorMsg {
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.875rem;
   margin: 0;
   text-align: center;
@@ -149,9 +149,9 @@
 
 .submitBtn {
   padding: 0.75rem 3rem;
-  background: #fff;
-  color: #1e293b;
-  border: 1.5px solid #1e293b;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  border: 1.5px solid var(--color-text);
   border-radius: 24px;
   font-size: 1rem;
   font-weight: 600;
@@ -160,7 +160,7 @@
 }
 
 .submitBtn:hover {
-  background: #f1f5f9;
+  background: var(--color-surface);
 }
 
 .submitBtn:disabled {

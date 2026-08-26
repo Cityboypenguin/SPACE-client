@@ -6,7 +6,7 @@
 .wrapperNormal {
   margin: 0 1rem 0.75rem;
   padding: 0.875rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
 }
 
@@ -30,7 +30,7 @@
 .displayName {
   font-weight: 600;
   font-size: 0.9rem;
-  color: #1e293b;
+  color: var(--color-text);
   min-width: 0;
   flex-shrink: 1;
   overflow: hidden;
@@ -40,7 +40,7 @@
 
 .accountId {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   flex-shrink: 1;
   min-width: 0;
   overflow: hidden;
@@ -53,7 +53,7 @@
   border: none;
   outline: none;
   resize: none;
-  color: #1e293b;
+  color: var(--color-text);
   background: transparent;
   padding: 0.25rem 0;
   box-sizing: border-box;
@@ -87,7 +87,7 @@
   margin: 0;
   padding: 0.25rem 0;
   box-sizing: border-box;
-  color: #1e293b;
+  color: var(--color-text);
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: break-word;
@@ -103,12 +103,12 @@
 .textareaHighlighted {
   position: relative;
   color: transparent;
-  caret-color: #1e293b;
+  caret-color: var(--color-text);
 }
 
 /* 文字色を透明にしているためプレースホルダも透明になり得る。明示的に色を指定する。 */
 .textareaHighlighted::placeholder {
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .mediaPreviews {
@@ -133,7 +133,7 @@
 .mediaThumbFile {
   width: 64px;
   height: 64px;
-  background: #e2e8f0;
+  background: var(--color-border);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -149,7 +149,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #374151;
+  background: var(--color-text-muted);
   border: none;
   color: #fff;
   font-size: 0.65rem;
@@ -165,9 +165,9 @@
   width: 64px;
   height: 64px;
   border-radius: 8px;
-  border: 2px dashed #d1d5db;
-  background: #f9fafb;
-  color: #9ca3af;
+  border: 2px dashed var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   font-size: 1.5rem;
   cursor: pointer;
   display: flex;
@@ -177,18 +177,18 @@
 
 .charCount {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   text-align: right;
   margin-top: 0.2rem;
 }
 
 .charCountOver {
-  color: #ef4444;
+  color: var(--color-danger);
   font-weight: 600;
 }
 
 .error {
-  color: red;
+  color: var(--color-danger);
   font-size: 0.85rem;
   margin: 0.25rem 0 0;
 }
@@ -198,7 +198,7 @@
   justify-content: flex-end;
   align-items: center;
   gap: 0.5rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .footerLarge {
@@ -229,8 +229,8 @@
 
 .cancelButton {
   border-radius: 20px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   border: none;
   font-weight: 600;
   cursor: pointer;
@@ -264,4 +264,10 @@
 .submitButtonSmall {
   padding: 0.4rem 1rem;
   font-size: 0.85rem;
+}
+
+/* ドラッグ＆ドロップ時のオーバーレイ（インラインスタイルから抽出） */
+.dragOverlay {
+  border: 2px dashed var(--color-text-muted);
+  background: rgba(107, 114, 128, 0.08);
 }

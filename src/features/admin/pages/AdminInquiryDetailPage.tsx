@@ -32,9 +32,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  PENDING: { bg: '#fef9c3', color: '#a16207' },
+  PENDING: { bg: 'var(--color-warning-bg)', color: 'var(--color-warning)' },
   IN_PROGRESS: { bg: '#dbeafe', color: '#1d4ed8' },
-  RESOLVED: { bg: '#dcfce7', color: '#15803d' },
+  RESOLVED: { bg: 'var(--color-success-bg)', color: 'var(--color-success)' },
 };
 
 export const AdminInquiryDetailPage: React.FC = () => {
@@ -65,7 +65,7 @@ export const AdminInquiryDetailPage: React.FC = () => {
     }
   };
 
-  const sc = inquiry ? (STATUS_COLOR[inquiry.status] ?? { bg: '#f1f5f9', color: '#475569' }) : null;
+  const sc = inquiry ? (STATUS_COLOR[inquiry.status] ?? { bg: 'var(--color-surface)', color: 'var(--color-text)' }) : null;
 
   return (
     <div>
@@ -77,15 +77,15 @@ export const AdminInquiryDetailPage: React.FC = () => {
           >
             <ChevronLeft /> 問い合わせ一覧に戻る
           </button>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 600, color: '#1e293b' }}>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 600, color: 'var(--color-text)' }}>
             問い合わせ詳細
           </h1>
         </div>
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)', padding: '1rem' }}>{error}</p>}
 
         {inquiry && sc && (
-          <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '2rem' }}>
+          <div style={{ background: 'var(--color-bg-elevated)', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
               <span style={{
                 padding: '0.3rem 0.8rem', borderRadius: 20, fontSize: '0.9rem', fontWeight: 600,
@@ -93,7 +93,7 @@ export const AdminInquiryDetailPage: React.FC = () => {
               }}>
                 {STATUS_LABEL[inquiry.status] ?? inquiry.status}
               </span>
-              <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
+              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                 受信：{new Date(inquiry.createdAt).toLocaleString('ja-JP')}
               </span>
             </div>
@@ -106,21 +106,21 @@ export const AdminInquiryDetailPage: React.FC = () => {
                   { label: '氏名', value: inquiry.name },
                   { label: 'メールアドレス', value: inquiry.email },
                 ].map(({ label, value }) => (
-                  <tr key={label} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', width: '140px', color: '#64748b', fontWeight: 500, background: '#f8fafc' }}>
+                  <tr key={label} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', width: '140px', color: 'var(--color-text-muted)', fontWeight: 500, background: 'var(--color-surface)' }}>
                       {label}
                     </th>
-                    <td style={{ padding: '0.75rem 1rem', color: '#1e293b' }}>{value}</td>
+                    <td style={{ padding: '0.75rem 1rem', color: 'var(--color-text)' }}>{value}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ margin: '0 0 0.5rem', fontWeight: 500, color: '#64748b' }}>お問い合わせ内容</p>
+              <p style={{ margin: '0 0 0.5rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>お問い合わせ内容</p>
               <div style={{
-                padding: '1rem', background: '#f8fafc', borderRadius: 6,
-                color: '#1e293b', lineHeight: 1.8, whiteSpace: 'pre-wrap', fontSize: '0.95rem',
+                padding: '1rem', background: 'var(--color-surface)', borderRadius: 6,
+                color: 'var(--color-text)', lineHeight: 1.8, whiteSpace: 'pre-wrap', fontSize: '0.95rem',
               }}>
                 {inquiry.content}
               </div>
@@ -130,7 +130,7 @@ export const AdminInquiryDetailPage: React.FC = () => {
               {inquiry.status === 'PENDING' && (
                 <button
                   onClick={() => handleUpdateStatus('IN_PROGRESS')}
-                  style={{ padding: '0.5rem 1.2rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                  style={{ padding: '0.5rem 1.2rem', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
                 >
                   対応中にする
                 </button>
@@ -138,7 +138,7 @@ export const AdminInquiryDetailPage: React.FC = () => {
               {inquiry.status !== 'RESOLVED' && (
                 <button
                   onClick={() => handleUpdateStatus('RESOLVED')}
-                  style={{ padding: '0.5rem 1.2rem', background: '#22c55e', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                  style={{ padding: '0.5rem 1.2rem', background: 'var(--color-success)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
                 >
                   対応済にする
                 </button>
@@ -146,7 +146,7 @@ export const AdminInquiryDetailPage: React.FC = () => {
               {inquiry.status === 'RESOLVED' && (
                 <button
                   onClick={() => handleUpdateStatus('PENDING')}
-                  style={{ padding: '0.5rem 1.2rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                  style={{ padding: '0.5rem 1.2rem', background: 'var(--color-warning)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
                 >
                   未対応に戻す
                 </button>

@@ -75,15 +75,15 @@ export const AdminAdministratorListPage = () => {
             </button>
           )}
         </form>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>全 {total} 件</p>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>全 {total} 件</p>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text)' }}>
             表示件数
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
+              style={{ border: '1px solid var(--color-border)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
             >
               {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
             </select>

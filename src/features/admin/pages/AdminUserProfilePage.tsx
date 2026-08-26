@@ -56,7 +56,7 @@ export const AdminUserProfilePage = () => {
         <button onClick={() => navigate(`/admin/users/${id}`)}><ChevronLeft /> 詳細に戻る</button>
         <h1>{user.name} のプロフィール</h1>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
 
         {profile === undefined ? (
           <p>読み込み中...</p>
@@ -65,7 +65,7 @@ export const AdminUserProfilePage = () => {
             <section style={{ marginBottom: '2rem' }}>
               <h2>現在のプロフィール</h2>
               {profile === null ? (
-                <p style={{ color: '#94a3b8' }}>プロフィールが未設定です</p>
+                <p style={{ color: 'var(--color-text-muted)' }}>プロフィールが未設定です</p>
               ) : (
                 <dl style={{ lineHeight: '2' }}>
                   <dt><strong>ユーザー名</strong></dt>
@@ -94,8 +94,8 @@ export const AdminUserProfilePage = () => {
 
             <section>
               <h2>プロフィールの編集</h2>
-              {editError && <p style={{ color: 'red' }}>{editError}</p>}
-              {editSuccess && <p style={{ color: 'green' }}>{editSuccess}</p>}
+              {editError && <p style={{ color: 'var(--color-danger)' }}>{editError}</p>}
+              {editSuccess && <p style={{ color: 'var(--color-success)' }}>{editSuccess}</p>}
               <form
                 onSubmit={handleSubmit}
                 style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}

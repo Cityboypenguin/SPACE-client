@@ -18,6 +18,7 @@ import {
 import { uploadAvatarToStorage } from '../../api/profile';
 import { storageUrl } from '../../../../lib/storage';
 import { AppSwal } from '../../../../lib/swal';
+import styles from './CommunitySettingsModal.module.css';
 
 type Props = {
   community: Community;
@@ -165,36 +166,22 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
 
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      }}
+      className={styles.overlay}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        style={{
-          background: '#fff', borderRadius: 12, width: '90%', maxWidth: 520,
-          maxHeight: '85vh', display: 'flex', flexDirection: 'column',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0' }}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
           <h2 style={{ margin: 0, fontSize: '1.1rem' }}>コミュニティ設定</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+          <button onClick={onClose} className={styles.closeButton}>✕</button>
         </div>
 
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+        <div className={styles.tabs}>
           {(['info', 'members'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              style={{
-                flex: 1, padding: '0.6rem', border: 'none', cursor: 'pointer',
-                background: tab === t ? '#f8faff' : 'transparent',
-                borderBottom: tab === t ? '2px solid #646cff' : '2px solid transparent',
-                color: tab === t ? '#646cff' : '#64748b',
-                fontWeight: tab === t ? 600 : 400,
-              }}
+              className={`${styles.tabButton} ${tab === t ? styles.tabButtonActive : ''}`}
+              style={{ flex: 1 }}
             >
               {t === 'info' ? 'コミュニティ情報' : 'メンバー管理'}
             </button>
@@ -204,13 +191,14 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
           {tab === 'info' && (
             <form onSubmit={handleSaveInfo} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {infoError && <p style={{ color: 'red', margin: 0 }}>{infoError}</p>}
-              {infoSuccess && <p style={{ color: '#16a34a', margin: 0 }}>{infoSuccess}</p>}
-              
+              {infoError && <p className={styles.errorText}>{infoError}</p>}
+              {infoSuccess && <p className={styles.successText}>{infoSuccess}</p>}
+
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <div 
+                <div
                   onClick={() => fileInputRef.current?.click()}
-                  style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e2e8f0' }}
+                  className={styles.avatarWrap}
+                  style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', cursor: 'pointer' }}
                   title="クリックして画像を変更"
                 >
                   {previewUrl ? (
@@ -233,22 +221,18 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                         fileInputRef.current.value = '';
                       }
                     }}
-                    style={{
-                      background: 'none', border: 'none', color: '#ef4444', 
-                      fontSize: '0.8rem', cursor: 'pointer', padding: '4px 8px',
-                      textDecoration: 'underline'
-                    }}
+                    className={styles.deleteImageButton}
                   >
                     画像を削除する
                   </button>
                 )}
 
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
                   accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-                  style={{ display: 'none' }} 
+                  style={{ display: 'none' }}
                 />
               </div>
 
@@ -257,7 +241,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  className={styles.textInput}
+                  style={{ borderRadius: 8 }}
                 />
               </div>
               <div>
@@ -266,13 +251,14 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box', resize: 'vertical' }}
+                  className={styles.textInput}
+                  style={{ borderRadius: 8, resize: 'vertical' }}
                 />
               </div>
               <button
                 type="submit"
                 disabled={saving}
-                style={{ alignSelf: 'flex-end', padding: '0.5rem 1.5rem', borderRadius: 8, background: saving ? '#94a3b8' : '#646cff', color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+                className={`${styles.saveButton} ${saving ? styles.saveButtonDisabled : styles.saveButtonActive}`}
               >
                 {saving ? '保存中...' : '保存'}
               </button>
@@ -281,59 +267,47 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
 
           {tab === 'members' && (
             <div>
-              {membersError && <p style={{ color: 'red', margin: '0 0 0.75rem' }}>{membersError}</p>}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem', 
-                  marginBottom: '1rem', 
-                  paddingBottom: '0.5rem', 
-                  borderBottom: '1px dashed #e2e8f0' 
+              {membersError && <p className={styles.errorText} style={{ marginBottom: '0.75rem' }}>{membersError}</p>}
+              <div
+                className={styles.membersHeaderDivider}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '1rem',
+                  paddingBottom: '0.5rem',
                 }}
               >
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                <span className={styles.membersHeaderLabel}>
                   現在のメンバー
                 </span>
-                <span 
-                  style={{ 
-                    fontSize: '0.75rem', 
-                    fontWeight: 700, 
-                    color: '#646cff', 
-                    background: '#f0f2ff', 
-                    padding: '2px 8px', 
-                    borderRadius: 12 
-                  }}
-                >
+                <span className={styles.memberCountBadge}>
                   {members.length} 人
                 </span>
               </div>
               {members.length === 0 ? (
-                <p style={{ color: '#94a3b8' }}>メンバーがいません</p>
+                <p className={styles.emptyText}>メンバーがいません</p>
               ) : (
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {members.map((m) => (
                     <li
                       key={m.user.ID}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '0.75rem',
-                        padding: '0.6rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0',
-                      }}
+                      className={styles.memberItem}
                     >
-                      <UserAvatar 
-                        userId={m.user.ID} 
-                        name={m.user.name} 
+                      <UserAvatar
+                        userId={m.user.ID}
+                        name={m.user.name}
                         avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) : undefined}
-                        size={36} 
+                        size={36}
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           <UserNameLink userId={m.user.ID}>
-                            <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <div className={styles.memberName}>
                               {m.user.name}
                             </div>
                           </UserNameLink>
-                          <div style={{ fontSize: '0.78rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div className={styles.memberAccountId}>
                             @{m.user.accountID}
                           </div>
                         </div>
@@ -343,21 +317,21 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                         {m.role === ROLE_OWNER ? (
                           <button
                             onClick={() => handleDemote(m)}
-                            style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', color: '#64748b' }}
+                            className={styles.demoteButton}
                           >
                             降格
                           </button>
                         ) : (
                           <button
                             onClick={() => handlePromote(m)}
-                            style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: 6, border: '1px solid #a78bfa', background: '#fff', cursor: 'pointer', color: '#7c3aed' }}
+                            className={styles.promoteButton}
                           >
                             オーナーにする
                           </button>
                         )}
                         <button
                           onClick={() => handleKick(m)}
-                          style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', cursor: 'pointer', color: '#ef4444' }}
+                          className={styles.kickButton}
                         >
                           キック
                         </button>

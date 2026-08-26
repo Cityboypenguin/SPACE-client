@@ -97,7 +97,7 @@ export const AdminUserDetailPage = () => {
         <button onClick={() => navigate(-1)}><ChevronLeft /> 戻る</button>
         <h1>ユーザー詳細</h1>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
 
         <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
           <button onClick={() => navigate(`/admin/users/${id}/profile`)}>プロフィールを見る</button>
@@ -135,19 +135,19 @@ export const AdminUserDetailPage = () => {
           <dd>{user.updatedAt}</dd>
         </dl>
 
-        <div style={{ marginTop: '2rem', marginBottom: '2rem', padding: '1.5rem', background: '#f9fafb', borderRadius: '8px' }}>
+        <div style={{ marginTop: '2rem', marginBottom: '2rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: '8px' }}>
           <h2 style={{ fontSize: '1.25rem', marginTop: 0, marginBottom: '1rem' }}>交友関係 (管理者閲覧用)</h2>
           {relationsLoading ? (
             <p>読み込み中...</p>
           ) : (
             <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
 
-              <div style={{ flex: 1, minWidth: '300px', background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <h3 style={{ fontSize: '1rem', marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+              <div style={{ flex: 1, minWidth: '300px', background: 'var(--color-bg-elevated)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <h3 style={{ fontSize: '1rem', marginTop: 0, borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
                   お気に入り ({favorites.length})
                 </h3>
                 {favorites.length === 0 ? (
-                  <p style={{ color: 'gray', fontSize: '0.9rem' }}>登録なし</p>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>登録なし</p>
                 ) : (
                   <ul style={{
                     listStyle: 'none',
@@ -163,12 +163,12 @@ export const AdminUserDetailPage = () => {
                 )}
               </div>
 
-              <div style={{ flex: 1, minWidth: '300px', background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <h3 style={{ fontSize: '1rem', marginTop: 0, color: '#ef4444', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+              <div style={{ flex: 1, minWidth: '300px', background: 'var(--color-bg-elevated)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                <h3 style={{ fontSize: '1rem', marginTop: 0, color: 'var(--color-danger)', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
                   ブロック ({blockers.length})
                 </h3>
                 {blockers.length === 0 ? (
-                  <p style={{ color: 'gray', fontSize: '0.9rem' }}>ブロックなし</p>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>ブロックなし</p>
                 ) : (
                   <ul style={{
                     listStyle: 'none',
@@ -189,7 +189,7 @@ export const AdminUserDetailPage = () => {
 
         <hr />
 
-        {freezeError && <p style={{ color: 'red' }}>{freezeError}</p>}
+        {freezeError && <p style={{ color: 'var(--color-danger)' }}>{freezeError}</p>}
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {isFrozen ? (
@@ -229,8 +229,8 @@ export const AdminUserDetailPage = () => {
               padding: '0.5rem 1.25rem',
               borderRadius: 8,
               border: '1px solid #fca5a5',
-              background: '#fff',
-              color: '#ef4444',
+              background: 'var(--color-bg-elevated)',
+              color: 'var(--color-danger)',
               fontWeight: 600,
               cursor: 'pointer',
             }}

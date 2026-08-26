@@ -1,0 +1,20 @@
+.loadingText {
+  color: var(--color-text-muted);
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.errorText {
+  color: var(--color-danger);
+}
+
+.blockedBanner {
+  padding: 12px;
+  margin: 0 16px 16px;
+  text-align: center;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}

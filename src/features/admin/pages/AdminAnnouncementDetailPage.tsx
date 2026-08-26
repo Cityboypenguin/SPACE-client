@@ -72,12 +72,12 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
           <ChevronLeft /> お知らせ一覧に戻る
         </button>
 
-        {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>{error}</p>}
 
         {loading ? (
-          <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
+          <p style={{ color: 'var(--color-text-muted)', textAlign: 'center' }}>読み込み中...</p>
         ) : !announcement ? (
-          <p style={{ color: '#94a3b8', textAlign: 'center' }}>お知らせが見つかりません</p>
+          <p style={{ color: 'var(--color-text-muted)', textAlign: 'center' }}>お知らせが見つかりません</p>
         ) : isEditing ? (
           <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>お知らせを編集</h2>
@@ -93,7 +93,7 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: '0.6rem 0.75rem',
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid var(--color-border)',
                   borderRadius: 8,
                   fontSize: '0.95rem',
                   boxSizing: 'border-box',
@@ -111,7 +111,7 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: '0.6rem 0.75rem',
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid var(--color-border)',
                   borderRadius: 8,
                   fontSize: '0.95rem',
                   fontFamily: 'monospace',
@@ -126,7 +126,7 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                 disabled={submitting}
                 style={{
                   padding: '0.6rem 1.5rem',
-                  background: submitting ? '#93c5fd' : '#3b82f6',
+                  background: 'var(--color-primary)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 8,
@@ -147,9 +147,9 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                 }}
                 style={{
                   padding: '0.6rem 1.5rem',
-                  background: '#fff',
-                  color: '#475569',
-                  border: '1px solid #cbd5e1',
+                  background: 'var(--color-bg-elevated)',
+                  color: 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: 8,
                   cursor: 'pointer',
                   fontSize: '0.95rem',
@@ -162,8 +162,8 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
         ) : (
           <div
             style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
+              background: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-border)',
               borderRadius: 12,
               padding: '1.5rem 2rem',
             }}
@@ -174,8 +174,8 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                   fontSize: '0.75rem',
                   padding: '0.2rem 0.6rem',
                   borderRadius: 12,
-                  background: '#fef3c7',
-                  color: '#92400e',
+                  background: 'var(--color-warning-bg)',
+                  color: 'var(--color-warning)',
                   fontWeight: 600,
                   flexShrink: 0,
                 }}
@@ -187,9 +187,9 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                   onClick={() => setIsEditing(true)}
                   style={{
                     padding: '0.35rem 1rem',
-                    background: '#f1f5f9',
-                    color: '#475569',
-                    border: '1px solid #cbd5e1',
+                    background: 'var(--color-surface)',
+                    color: 'var(--color-text)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: 8,
                     cursor: 'pointer',
                     fontSize: '0.85rem',
@@ -203,9 +203,9 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                   disabled={submitting}
                   style={{
                     padding: '0.35rem 1rem',
-                    background: '#fee2e2',
-                    color: '#dc2626',
-                    border: '1px solid #fca5a5',
+                    background: 'var(--color-danger-bg)',
+                    color: 'var(--color-danger)',
+                    border: '1px solid var(--color-danger)',
                     borderRadius: 8,
                     cursor: submitting ? 'not-allowed' : 'pointer',
                     fontSize: '0.85rem',
@@ -221,20 +221,20 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                 fontSize: '1.25rem',
                 fontWeight: 700,
                 margin: '0 0 0.25rem',
-                color: '#1e293b',
+                color: 'var(--color-text)',
               }}
             >
               {announcement.title}
             </h1>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 1.5rem' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 1.5rem' }}>
               {new Date(announcement.createdAt).toLocaleString('ja-JP')}
             </p>
             <div
               style={{
                 lineHeight: 1.8,
-                color: '#334155',
+                color: 'var(--color-text)',
                 fontSize: '0.95rem',
-                borderTop: '1px solid #f1f5f9',
+                borderTop: '1px solid var(--color-border)',
                 paddingTop: '1.25rem',
               }}
             >

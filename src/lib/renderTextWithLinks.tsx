@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import styles from './renderTextWithLinks.module.css';
 
 // URL とハッシュタグを 1 つの走査でトークン化する。
 // ハッシュタグ仕様（サーバーの usecase/post/hashtag.go と挙動を揃える）:
@@ -9,7 +10,6 @@ import type { ReactNode } from 'react';
 // 全角スペース(U+3000)は \s に含まれるため URL の区切りとして別途列挙する必要はない。
 const TOKEN_REGEX = /(https?:\/\/[^\s、。！？「」（）【】『』〔〕…‥・]+)|(#[^\s]+)/g;
 const WHITESPACE_REGEX = /\s/;
-const HASHTAG_COLOR = '#1d9bf0';
 
 type Props = {
   text: string;
@@ -49,8 +49,8 @@ export const renderTextWithLinks = ({ text, linkClassName, hashtagClassName, onH
       nodes.push(
         <span
           key={key++}
-          className={hashtagClassName}
-          style={{ color: HASHTAG_COLOR, cursor: onHashtagClick ? 'pointer' : undefined }}
+          className={[hashtagClassName, styles.hashtag].filter(Boolean).join(' ')}
+          style={{ cursor: onHashtagClick ? 'pointer' : undefined }}
           onClick={onHashtagClick ? (e) => { e.stopPropagation(); onHashtagClick(tag); } : undefined}
         >
           {hashtag}

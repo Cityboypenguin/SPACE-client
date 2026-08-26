@@ -78,14 +78,14 @@ export const TimeSeriesChart = () => {
   const btn = (active: boolean, color?: string): React.CSSProperties => ({
     padding: '0.35rem 0.8rem', borderRadius: 6, cursor: 'pointer',
     fontSize: '0.82rem', fontWeight: 500, transition: 'all 0.15s',
-    border: `1px solid ${active ? (color ?? '#0f172a') : '#e2e8f0'}`,
-    background: active ? (color ?? '#0f172a') : '#fff',
-    color: active ? '#fff' : '#64748b',
+    border: `1px solid ${active ? (color ?? 'var(--color-primary)') : 'var(--color-border)'}`,
+    background: active ? (color ?? 'var(--color-primary)') : 'var(--color-bg-elevated)',
+    color: active ? '#fff' : 'var(--color-text-muted)',
   });
 
   const inputStyle: React.CSSProperties = {
-    padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid #cbd5e1',
-    fontSize: '0.85rem', color: '#0f172a', background: '#fff', cursor: 'pointer',
+    padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)',
+    fontSize: '0.85rem', color: 'var(--color-text)', background: 'var(--color-bg-elevated)', cursor: 'pointer',
   };
 
   // X軸ラベルを短縮（月-日 または 日-時）
@@ -96,10 +96,10 @@ export const TimeSeriesChart = () => {
   const xInterval = data.length > 60 ? Math.ceil(data.length / 30) - 1 : data.length > 20 ? 1 : 0;
 
   return (
-    <div style={{ background: '#fff', borderRadius: 10, padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,.08)' }}>
+    <div style={{ background: 'var(--color-bg-elevated)', borderRadius: 10, padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,.08)' }}>
       {/* タイトル */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>
           アクティビティ推移
         </h3>
         <button
@@ -107,8 +107,8 @@ export const TimeSeriesChart = () => {
           disabled={data.length === 0}
           style={{
             padding: '0.35rem 0.9rem', borderRadius: 6, fontSize: '0.82rem', fontWeight: 500,
-            border: '1px solid #cbd5e1', background: data.length === 0 ? '#f8fafc' : '#fff',
-            color: data.length === 0 ? '#94a3b8' : '#475569', cursor: data.length === 0 ? 'default' : 'pointer',
+            border: '1px solid var(--color-border)', background: data.length === 0 ? 'var(--color-surface)' : 'var(--color-bg-elevated)',
+            color: data.length === 0 ? 'var(--color-text-muted)' : 'var(--color-text)', cursor: data.length === 0 ? 'default' : 'pointer',
           }}
         >
           ↓ CSV
@@ -144,7 +144,7 @@ export const TimeSeriesChart = () => {
             onChange={e => setFrom(e.target.value)}
             style={inputStyle}
           />
-          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>〜</span>
+          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>〜</span>
           <input
             type="date"
             value={to}
@@ -169,38 +169,38 @@ export const TimeSeriesChart = () => {
 
       {/* グラフ本体 */}
       {from > to ? (
-        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171' }}>
+        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-danger)' }}>
           開始日が終了日より後になっています
         </div>
       ) : loading ? (
-        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
           読み込み中…
         </div>
       ) : error ? (
         <div style={{ height: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-          <div style={{ color: '#ef4444', fontSize: '0.9rem' }}>取得エラー: {error}</div>
-          <button onClick={load} style={{ padding: '0.4rem 1rem', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>
+          <div style={{ color: 'var(--color-danger)', fontSize: '0.9rem' }}>取得エラー: {error}</div>
+          <button onClick={load} style={{ padding: '0.4rem 1rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', cursor: 'pointer', fontSize: '0.85rem' }}>
             再読み込み
           </button>
         </div>
       ) : data.length === 0 ? (
-        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
           この期間にデータがありません
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={320}>
           <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-surface)" />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11, fill: '#64748b' }}
+              tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
               tickFormatter={tickFormatter}
               interval={xInterval}
             />
-            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} width={36} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} width={36} />
             <Tooltip
-              contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.85rem' }}
-              labelStyle={{ fontWeight: 600, color: '#0f172a' }}
+              contentStyle={{ borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', fontSize: '0.85rem' }}
+              labelStyle={{ fontWeight: 600, color: 'var(--color-text)' }}
               formatter={(value: number, name: string) => [
                 value.toLocaleString(),
                 METRICS.find(m => m.key === name)?.label ?? name,

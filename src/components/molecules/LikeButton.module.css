@@ -24,12 +24,12 @@
 }
 
 .countDefault {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .suffix {
   font-weight: 400;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   margin-left: 4px;
 }

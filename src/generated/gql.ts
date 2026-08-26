@@ -169,6 +169,8 @@ type Documents = {
     "\n  query MyTermsConsentStatus {\n    myTermsConsentStatus {\n      isConsented\n      currentTerms {\n        ID\n        version\n        documentUrl\n        effectiveDate\n        createdAt\n      }\n    }\n  }\n": typeof types.MyTermsConsentStatusDocument,
     "\n  mutation ConsentToTerms($termsID: ID!) {\n    consentToTerms(termsID: $termsID)\n  }\n": typeof types.ConsentToTermsDocument,
     "\n  query CurrentTerms {\n    currentTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": typeof types.CurrentTermsDocument,
+    "\n  query ThemePreference {\n    themePreference\n  }\n": typeof types.ThemePreferenceDocument,
+    "\n  mutation SetThemePreference($theme: ThemePreference!) {\n    setThemePreference(theme: $theme)\n  }\n": typeof types.SetThemePreferenceDocument,
 };
 const documents: Documents = {
     "\n  mutation CreateAdministrator($input: CreateAdministratorInput!) {\n    createAdministrator(input: $input) {\n      ID\n      name\n      email\n    }\n  }\n": types.CreateAdministratorDocument,
@@ -326,6 +328,8 @@ const documents: Documents = {
     "\n  query MyTermsConsentStatus {\n    myTermsConsentStatus {\n      isConsented\n      currentTerms {\n        ID\n        version\n        documentUrl\n        effectiveDate\n        createdAt\n      }\n    }\n  }\n": types.MyTermsConsentStatusDocument,
     "\n  mutation ConsentToTerms($termsID: ID!) {\n    consentToTerms(termsID: $termsID)\n  }\n": types.ConsentToTermsDocument,
     "\n  query CurrentTerms {\n    currentTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": types.CurrentTermsDocument,
+    "\n  query ThemePreference {\n    themePreference\n  }\n": types.ThemePreferenceDocument,
+    "\n  mutation SetThemePreference($theme: ThemePreference!) {\n    setThemePreference(theme: $theme)\n  }\n": types.SetThemePreferenceDocument,
 };
 
 /**
@@ -962,6 +966,14 @@ export function graphql(source: "\n  mutation ConsentToTerms($termsID: ID!) {\n 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query CurrentTerms {\n    currentTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  query CurrentTerms {\n    currentTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query ThemePreference {\n    themePreference\n  }\n"): (typeof documents)["\n  query ThemePreference {\n    themePreference\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetThemePreference($theme: ThemePreference!) {\n    setThemePreference(theme: $theme)\n  }\n"): (typeof documents)["\n  mutation SetThemePreference($theme: ThemePreference!) {\n    setThemePreference(theme: $theme)\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

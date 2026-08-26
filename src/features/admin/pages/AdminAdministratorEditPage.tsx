@@ -75,8 +75,8 @@ export const AdminAdministratorEditPage = () => {
         <button onClick={() => navigate('/admin/administrators')}><ChevronLeft /> 一覧に戻る</button>
         <h1>管理者アカウントの編集</h1>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {success && <p style={{ color: 'green' }}>{success}</p>}
+        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
+        {success && <p style={{ color: 'var(--color-success)' }}>{success}</p>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}>
           <div>
@@ -99,10 +99,10 @@ export const AdminAdministratorEditPage = () => {
           <button type="submit">保存</button>
         </form>
 
-        <div style={{ marginTop: '2rem', borderTop: '1px solid #ccc', paddingTop: '1rem' }}>
+        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
           <button
             onClick={handleDelete}
-            style={{ color: 'white', backgroundColor: 'red', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer' }}
+            style={{ color: 'white', backgroundColor: 'var(--color-danger)', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer' }}
           >
             このアカウントを削除
           </button>

@@ -12,6 +12,7 @@ import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { saveRecentDM } from '../../../lib/recentDM';
 import styles from '../components/ChatRoom.module.css';
+import pageStyles from './DMPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { Avatar } from '../../../components/atoms/Avatar';
 import { storageUrl } from '../../../lib/storage';
@@ -148,10 +149,10 @@ export const DMPage = () => {
         <div className={styles.messageList} ref={messageListRef}>
           <div ref={topSentinelRef} style={{ height: '1px' }} />
           {loadingOlder && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
 
-          {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
+          {(error || sendError) && <p className={pageStyles.errorText}>{error || sendError}</p>}
 
           {messages.map((msg, index) => {
             const isMine = msg.user.ID === currentUserID;
@@ -196,7 +197,7 @@ export const DMPage = () => {
           })}
           <div ref={bottomSentinelRef} style={{ height: '1px' }} />
           {loadingNewer && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
           <div ref={bottomRef} />
         </div>
@@ -205,15 +206,7 @@ export const DMPage = () => {
       </div>
 
       {isBlocked && (
-        <div style={{
-          padding: '12px',
-          margin: '0 16px 16px',
-          textAlign: 'center',
-          backgroundColor: '#fee2e2',
-          color: '#dc2626',
-          borderRadius: '8px',
-          fontSize: '0.875rem'
-        }}>
+        <div className={pageStyles.blockedBanner}>
           ブロック設定により、現在メッセージを送受信できません。
         </div>
       )}

@@ -166,8 +166,8 @@ export const AdminCommunityDetailPage = () => {
         <button onClick={() => navigate('/admin/communities')}><ChevronLeft /> 一覧に戻る</button>
         <h1>コミュニティ詳細</h1>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {success && <p style={{ color: 'green' }}>{success}</p>}
+        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
+        {success && <p style={{ color: 'var(--color-success)' }}>{success}</p>}
 
         <h2>コミュニティ情報の編集</h2>
         <form
@@ -193,7 +193,7 @@ export const AdminCommunityDetailPage = () => {
         <hr style={{ margin: '2rem 0' }} />
 
         <h2>メンバー一覧</h2>
-        {membersError && <p style={{ color: 'red' }}>{membersError}</p>}
+        {membersError && <p style={{ color: 'var(--color-danger)' }}>{membersError}</p>}
         {members.length > 0 ? (
           <table>
             <thead>
@@ -221,8 +221,8 @@ export const AdminCommunityDetailPage = () => {
                         borderRadius: 12,
                         fontSize: '0.8rem',
                         fontWeight: 600,
-                        background: member.role === ROLE_OWNER ? '#ede9fe' : '#f1f5f9',
-                        color: member.role === ROLE_OWNER ? '#7c3aed' : '#64748b',
+                        background: member.role === ROLE_OWNER ? '#ede9fe' : 'var(--color-surface)',
+                        color: member.role === ROLE_OWNER ? '#7c3aed' : 'var(--color-text-muted)',
                       }}
                     >
                       {member.role === ROLE_OWNER ? 'オーナー' : 'メンバー'}
@@ -231,13 +231,13 @@ export const AdminCommunityDetailPage = () => {
                   <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button
                       onClick={() => handleToggleRole(member)}
-                      style={{ color: member.role === ROLE_OWNER ? '#7c3aed' : '#2563eb' }}
+                      style={{ color: member.role === ROLE_OWNER ? '#7c3aed' : 'var(--color-primary-hover)' }}
                     >
                       {member.role === ROLE_OWNER ? '降格' : '昇格'}
                     </button>
                     <button
                       onClick={() => handleKick(member)}
-                      style={{ color: 'red' }}
+                      style={{ color: 'var(--color-danger)' }}
                     >
                       キック
                     </button>
@@ -253,27 +253,27 @@ export const AdminCommunityDetailPage = () => {
         <hr style={{ margin: '2rem 0' }} />
 
         <h2>メッセージ一覧</h2>
-        {messagesError && <p style={{ color: 'red' }}>{messagesError}</p>}
+        {messagesError && <p style={{ color: 'var(--color-danger)' }}>{messagesError}</p>}
         {messages.length > 0 ? (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>投稿者</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>内容</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>投稿日時</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>操作</th>
+                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>投稿者</th>
+                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>内容</th>
+                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>投稿日時</th>
+                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>操作</th>
               </tr>
             </thead>
             <tbody>
               {messages.map((message) => (
                 <tr key={message.ID}>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
                     {message.user.name}
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: '4px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginLeft: '4px' }}>
                       @{message.user.accountID}
                     </span>
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9', maxWidth: '400px', wordBreak: 'break-word' }}>
+                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', maxWidth: '400px', wordBreak: 'break-word' }}>
                     {message.content && <div>{message.content}</div>}
                     {message.media && message.media.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: message.content ? '4px' : 0 }}>
@@ -292,7 +292,7 @@ export const AdminCommunityDetailPage = () => {
                               href={storageUrl(m.url)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ fontSize: '0.8rem', color: '#3b82f6' }}
+                              style={{ fontSize: '0.8rem', color: 'var(--color-link)' }}
                             >
                               {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
                             </a>
@@ -301,11 +301,11 @@ export const AdminCommunityDetailPage = () => {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>
                     {new Date(message.createdAt).toLocaleString('ja-JP')}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
-                    <button onClick={() => handleDeleteMessage(message)} style={{ color: 'red' }}>
+                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
+                    <button onClick={() => handleDeleteMessage(message)} style={{ color: 'var(--color-danger)' }}>
                       削除
                     </button>
                   </td>

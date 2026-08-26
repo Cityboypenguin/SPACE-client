@@ -126,13 +126,13 @@ export const ReportsPage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
+      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif', backgroundColor: 'var(--color-surface)', minHeight: '100vh' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.4rem', color: '#0f172a', fontWeight: 700 }}>
+            <h1 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--color-text)', fontWeight: 700 }}>
               通報管理一覧
             </h1>
-            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>全 {total} 件</span>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>全 {total} 件</span>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -140,21 +140,21 @@ export const ReportsPage: React.FC = () => {
               display: 'flex', 
               alignItems: 'center', 
               gap: '0.75rem', 
-              background: '#fff', 
+              background: 'var(--color-bg-elevated)', 
               padding: '0.4rem 0.8rem', 
               borderRadius: '8px', 
               boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--color-border)',
               opacity: isStatusLoading ? 0.6 : 1
             }}>
               <span style={{ 
                 width: '8px', 
                 height: '8px', 
                 borderRadius: '50%', 
-                backgroundColor: isServiceEnabled ? '#10b981' : '#ef4444',
+                backgroundColor: isServiceEnabled ? 'var(--color-success)' : 'var(--color-danger)',
                 display: 'inline-block' 
               }} />
-              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 システム通報枠: {isStatusLoading ? '読み込み中...' : isServiceEnabled ? '稼働中' : '停止中'}
               </span>
               <button
@@ -167,7 +167,7 @@ export const ReportsPage: React.FC = () => {
                   borderRadius: '6px',
                   border: 'none',
                   color: '#fff',
-                  backgroundColor: isServiceEnabled ? '#ef4444' : '#2563eb',
+                  backgroundColor: isServiceEnabled ? 'var(--color-danger)' : 'var(--color-primary-hover)',
                   cursor: isProcessing ? 'not-allowed' : 'pointer',
                   transition: 'background 0.15s'
                 }}
@@ -176,12 +176,12 @@ export const ReportsPage: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>ステータス絞り込み：</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-bg-elevated)', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 600 }}>ステータス絞り込み：</span>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
+                style={{ border: '1px solid var(--color-border)', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
               >
                 <option value="ALL">すべて</option>
                 <option value="UNRESOLVED">未対応</option>
@@ -190,12 +190,12 @@ export const ReportsPage: React.FC = () => {
               </select>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>表示件数：</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-bg-elevated)', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 600 }}>表示件数：</span>
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
+                style={{ border: '1px solid var(--color-border)', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
               >
                 {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
               </select>
@@ -203,7 +203,7 @@ export const ReportsPage: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)' }}>
           {(['ALL', 'POST', 'USER', 'COMMUNITY'] as TargetTypeFilter[]).map((tab) => {
             const isActive = activeTab === tab;
             const labelMap: Record<TargetTypeFilter, string> = {
@@ -222,10 +222,10 @@ export const ReportsPage: React.FC = () => {
                   fontWeight: 600,
                   borderRadius: '6px 6px 0 0',
                   border: 'none',
-                  background: isActive ? '#fff' : 'transparent',
-                  color: isActive ? '#2563eb' : '#64748b',
+                  background: isActive ? 'var(--color-bg-elevated)' : 'transparent',
+                  color: isActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)',
                   cursor: 'pointer',
-                  borderBottom: isActive ? '2px solid #2563eb' : '2px solid transparent',
+                  borderBottom: isActive ? '2px solid var(--color-primary-hover)' : '2px solid transparent',
                   transition: 'all 0.15s',
                   marginBottom: '-1px',
                 }}
@@ -237,21 +237,21 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {error && (
-          <p style={{ color: '#ef4444', background: '#fef2f2', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.8rem', fontWeight: 500 }}>
+          <p style={{ color: 'var(--color-danger)', background: 'var(--color-danger-bg)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.8rem', fontWeight: 500 }}>
             {error}
           </p>
         )}
 
-        <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflowX: 'auto', border: '1px solid #e2e8f0' }}>
+        <div style={{ background: 'var(--color-bg-elevated)', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflowX: 'auto', border: '1px solid var(--color-border)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed', minWidth: '1100px' }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>対象タイプ</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '280px' }}>通報対象の内容</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '140px' }}>通報理由</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: 'auto' }}>詳細説明</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '130px', textAlign: 'center' }}>状態</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>日時</th>
+              <tr style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
+                <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text)', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>対象タイプ</th>
+                <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text)', fontWeight: 600, fontSize: '0.8rem', width: '280px' }}>通報対象の内容</th>
+                <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text)', fontWeight: 600, fontSize: '0.8rem', width: '140px' }}>通報理由</th>
+                <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text)', fontWeight: 600, fontSize: '0.8rem', width: 'auto' }}>詳細説明</th>
+                <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text)', fontWeight: 600, fontSize: '0.8rem', width: '130px', textAlign: 'center' }}>状態</th>
+                <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text)', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>日時</th>
               </tr>
             </thead>
             <tbody>
@@ -259,7 +259,7 @@ export const ReportsPage: React.FC = () => {
                 const targetUrl = getTargetUrl(report.targetID, report.targetType);
                 const currentStatus = report.status?.toUpperCase();
                 return (
-                  <tr key={report.ID} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.1s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}>
+                  <tr key={report.ID} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background 0.1s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-surface)'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)'}>
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
                       <span style={{ 
                         padding: '0.2rem 0.5rem', 
@@ -279,7 +279,7 @@ export const ReportsPage: React.FC = () => {
                       <Link 
                       to={targetUrl} 
                       style={{ 
-                        color: '#2563eb', 
+                        color: 'var(--color-link)', 
                         textDecoration: 'none', 
                         fontWeight: 600, 
                         fontSize: '0.85rem',
@@ -295,11 +295,11 @@ export const ReportsPage: React.FC = () => {
                       {report.targetType === 'POST' && report.content && (
                         <div style={{
                           fontSize: '0.75rem',
-                          color: '#334155',
-                          background: '#f1f5f9',
+                          color: 'var(--color-text)',
+                          background: 'var(--color-surface)',
                           padding: '0.5rem 0.7rem',
                           borderRadius: '6px',
-                          border: '1px solid #e2e8f0',
+                          border: '1px solid var(--color-border)',
                           wordBreak: 'break-all',
                           maxHeight: '4.5rem',
                           overflowY: 'auto',
@@ -307,7 +307,7 @@ export const ReportsPage: React.FC = () => {
                           textAlign: 'left',
                           marginTop: '0.25rem'
                       }}>
-                        <span style={{ fontWeight: 600, color: '#64748b', fontSize: '0.7rem', display: 'block', marginBottom: '0.2rem' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.7rem', display: 'block', marginBottom: '0.2rem' }}>
                           通報時の投稿本文:
                         </span>
                           {report.content}
@@ -319,8 +319,8 @@ export const ReportsPage: React.FC = () => {
                       <span style={{ 
                         padding: '0.2rem 0.4rem', 
                         borderRadius: '4px', 
-                        background: '#fee2e2', 
-                        color: '#991b1b', 
+                        background: 'var(--color-danger-bg)', 
+                        color: 'var(--color-danger)', 
                         fontWeight: 600, 
                         fontSize: '0.75rem',
                         display: 'inline-block',
@@ -331,8 +331,8 @@ export const ReportsPage: React.FC = () => {
                       </span>
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', fontSize: '0.75rem', color: '#475569', wordBreak: 'break-all', lineHeight: '1.4' }}>
-                      {report.customReason || <span style={{ color: '#cbd5e1' }}>(入力なし)</span>}
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', fontSize: '0.75rem', color: 'var(--color-text)', wordBreak: 'break-all', lineHeight: '1.4' }}>
+                      {report.customReason || <span style={{ color: 'var(--color-text-muted)' }}>(入力なし)</span>}
                     </td>
 
                     <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', textAlign: 'center' }}>
@@ -356,8 +356,8 @@ export const ReportsPage: React.FC = () => {
                           WebkitAppearance: 'none',
                           MozAppearance: 'none',
                           appearance: 'none',
-                          background: currentStatus === 'RESOLVED' ? '#dcfce7' : currentStatus === 'REVIEWING' ? '#fef9c3' : '#fee2e2',
-                          color: currentStatus === 'RESOLVED' ? '#15803d' : currentStatus === 'REVIEWING' ? '#854d0e' : '#991b1b',
+                          background: currentStatus === 'RESOLVED' ? 'var(--color-success-bg)' : currentStatus === 'REVIEWING' ? 'var(--color-warning-bg)' : 'var(--color-danger-bg)',
+                          color: currentStatus === 'RESOLVED' ? 'var(--color-success)' : currentStatus === 'REVIEWING' ? 'var(--color-warning)' : 'var(--color-danger)',
                         }}
                       >
                         <option value="UNRESOLVED">未対応</option>
@@ -366,7 +366,7 @@ export const ReportsPage: React.FC = () => {
                       </select>
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', color: 'var(--color-text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                       {report.createdAt ? new Date(report.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---'}
                     </td>
                   </tr>
@@ -377,7 +377,7 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {reports.length === 0 && !error && (
-          <div style={{ color: '#94a3b8', padding: '3rem', textAlign: 'center', fontSize: '0.85rem' }}>
+          <div style={{ color: 'var(--color-text-muted)', padding: '3rem', textAlign: 'center', fontSize: '0.85rem' }}>
             指定された条件の通報は見つかりませんでした
           </div>
         )}
@@ -387,15 +387,15 @@ export const ReportsPage: React.FC = () => {
             <button
               onClick={() => loadPage(page - 1)}
               disabled={page === 0}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page === 0 ? 'not-allowed' : 'pointer', background: '#fff' }}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid var(--color-border)', cursor: page === 0 ? 'not-allowed' : 'pointer', background: 'var(--color-bg-elevated)' }}
             >
               前へ
             </button>
-            <span style={{ color: '#475569' }}>{page + 1} / {totalPages}</span>
+            <span style={{ color: 'var(--color-text)' }}>{page + 1} / {totalPages}</span>
             <button
               onClick={() => loadPage(page + 1)}
               disabled={page >= totalPages - 1}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', background: '#fff' }}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid var(--color-border)', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', background: 'var(--color-bg-elevated)' }}
             >
               次へ
             </button>

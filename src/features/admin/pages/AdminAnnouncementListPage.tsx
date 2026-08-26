@@ -37,13 +37,13 @@ export const AdminAnnouncementListPage: React.FC = () => {
           <div>
             <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>お知らせ管理</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem' }}>
-              <span style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
+              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>全 {total} 件</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text)' }}>
                 表示件数
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                  style={{ border: '1px solid var(--color-border)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
                 >
                   {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
                 </select>
@@ -54,7 +54,7 @@ export const AdminAnnouncementListPage: React.FC = () => {
             onClick={() => navigate('/admin/announcements/new')}
             style={{
               padding: '0.5rem 1.25rem',
-              background: '#3b82f6',
+              background: 'var(--color-primary)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
@@ -67,10 +67,10 @@ export const AdminAnnouncementListPage: React.FC = () => {
           </button>
         </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
 
         {announcements.length === 0 && !error ? (
-          <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>お知らせはありません</p>
+          <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>お知らせはありません</p>
         ) : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {announcements.map((a) => (
@@ -79,15 +79,15 @@ export const AdminAnnouncementListPage: React.FC = () => {
                 onClick={() => navigate(`/admin/announcements/${a.ID}`)}
                 style={{
                   padding: '1rem',
-                  borderBottom: '1px solid #e2e8f0',
+                  borderBottom: '1px solid var(--color-border)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.25rem',
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ fontWeight: 600, color: '#1e293b' }}>{a.title}</span>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{a.title}</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                   {new Date(a.createdAt).toLocaleString('ja-JP')}
                 </span>
               </li>

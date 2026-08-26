@@ -1,0 +1,192 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--color-bg-elevated);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabButton {
+  flex: 1;
+  padding: 0.6rem;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.tabButtonActive {
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.errorText {
+  color: var(--color-danger);
+  margin: 0;
+}
+
+.successText {
+  color: var(--color-success);
+  margin: 0;
+}
+
+.avatarWrap {
+  border: 1px solid var(--color-border);
+}
+
+.deleteImageButton {
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+}
+
+.textInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  box-sizing: border-box;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+.saveButton {
+  align-self: flex-end;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+
+.saveButtonActive {
+  background: var(--color-primary);
+  cursor: pointer;
+}
+
+.saveButtonDisabled {
+  background: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.membersHeaderDivider {
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.membersHeaderLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.memberCountBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-link);
+  background: var(--color-surface);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.emptyText {
+  color: var(--color-text-muted);
+}
+
+.memberItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.memberName {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberAccountId {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demoteButton {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+/* オーナー昇格ボタンは意図的な機能アクセントカラー（紫）としてテーマに依らず固定 */
+.promoteButton {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #a78bfa;
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  color: #7c3aed;
+}
+
+.kickButton {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-danger);
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  color: var(--color-danger);
+}
