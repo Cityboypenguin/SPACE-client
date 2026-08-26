@@ -14,7 +14,7 @@
       }
 
       .st1 {
-        fill: #fff;
+        fill: none;
       }
     </style>
   </defs>

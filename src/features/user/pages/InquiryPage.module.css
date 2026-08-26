@@ -114,7 +114,7 @@
 }
 
 .radioInput:checked {
-  border-color: #7c6fcd;
+  border-color: var(--color-primary);
 }
 
 .radioInput:checked::after {
@@ -126,7 +126,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: #7c6fcd;
+  background: var(--color-primary);
 }
 
 .radioLabel {
