@@ -1,3 +1,5 @@
+import styles from './RoleBadge.module.css';
+
 type Props = {
   role: string;
   onClick?: () => void;
@@ -8,16 +10,8 @@ export const RoleBadge = ({ role, onClick }: Props) => {
   return (
     <span
       onClick={onClick}
-      style={{
-        fontSize: '0.72rem',
-        padding: '2px 8px',
-        borderRadius: 20,
-        background: isOwner ? '#ede9fe' : '#f1f5f9',
-        color: isOwner ? '#7c3aed' : '#64748b',
-        fontWeight: 600,
-        flexShrink: 0,
-        cursor: onClick ? 'pointer' : undefined,
-      }}
+      className={`${styles.badge} ${isOwner ? styles.badgeOwner : styles.badgeMember}`}
+      style={{ cursor: onClick ? 'pointer' : undefined }}
     >
       {isOwner ? 'オーナー' : 'メンバー'}
     </span>

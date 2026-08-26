@@ -1,0 +1,18 @@
+.badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* オーナーバッジは意図的な機能アクセントカラー（紫）としてテーマに依らず固定 */
+.badgeOwner {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.badgeMember {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}

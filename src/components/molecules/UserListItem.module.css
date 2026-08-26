@@ -1,0 +1,11 @@
+.item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.avatarPlaceholder {
+  background-color: var(--color-surface);
+}
+
+.handle {
+  color: var(--color-text-muted);
+}

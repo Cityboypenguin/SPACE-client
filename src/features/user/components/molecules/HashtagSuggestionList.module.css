@@ -2,8 +2,8 @@
   list-style: none;
   margin: 0;
   padding: 4px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   max-height: 260px;
@@ -22,7 +22,7 @@
 }
 
 .itemActive {
-  background: #f1f5f9;
+  background: var(--color-surface);
 }
 
 .tag {
@@ -35,7 +35,7 @@
 }
 
 .count {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-size: 0.8rem;
   flex-shrink: 0;
 }

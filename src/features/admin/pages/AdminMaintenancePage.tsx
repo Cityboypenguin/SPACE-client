@@ -48,23 +48,23 @@ export const AdminMaintenancePage = () => {
           <div style={{
             marginTop: '1.5rem',
             padding: '1.5rem',
-            border: '1px solid #ddd',
+            border: '1px solid var(--color-border)',
             borderRadius: '8px',
             maxWidth: '480px',
           }}>
             <p style={{ marginBottom: '1rem' }}>
               現在の状態：
-              <strong style={{ color: maintenanceEnabled ? '#c0392b' : '#27ae60' }}>
+              <strong style={{ color: maintenanceEnabled ? 'var(--color-danger)' : 'var(--color-success)' }}>
                 {maintenanceEnabled ? ' メンテナンス中' : ' 稼働中'}
               </strong>
             </p>
-            {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
+            {error && <p style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>{error}</p>}
             <button
               onClick={() => setShowConfirm(true)}
               disabled={toggling}
               style={{
                 padding: '0.6rem 1.4rem',
-                backgroundColor: maintenanceEnabled ? '#27ae60' : '#c0392b',
+                backgroundColor: maintenanceEnabled ? 'var(--color-success)' : 'var(--color-danger)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '4px',
@@ -80,7 +80,7 @@ export const AdminMaintenancePage = () => {
                 : 'サーバーを停止する'}
             </button>
             {maintenanceEnabled && (
-              <p style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: '#888' }}>
+              <p style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
                 メンテナンス中はユーザーのログイン・操作がすべてブロックされます。
               </p>
             )}
@@ -98,15 +98,15 @@ export const AdminMaintenancePage = () => {
         >
           <div
             style={{
-              background: '#fff', borderRadius: 12, padding: '2rem',
+              background: 'var(--color-bg-elevated)', borderRadius: 12, padding: '2rem',
               width: '90%', maxWidth: 380, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
               textAlign: 'center',
             }}
           >
-            <p style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 600, color: '#1e293b' }}>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>
               {maintenanceEnabled ? 'サーバーを再開しますか？' : 'サーバーを停止しますか？'}
             </p>
-            <p style={{ margin: '0 0 1.5rem', fontSize: '0.875rem', color: '#64748b' }}>
+            <p style={{ margin: '0 0 1.5rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
               {maintenanceEnabled
                 ? 'ユーザーが通常通りアクセスできるようになります。'
                 : 'ユーザーのログイン・操作がすべてブロックされます。'}
@@ -116,8 +116,8 @@ export const AdminMaintenancePage = () => {
                 onClick={() => setShowConfirm(false)}
                 style={{
                   padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: '1px solid #cbd5e1', background: '#fff',
-                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
+                  border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)',
+                  cursor: 'pointer', fontWeight: 500, color: 'var(--color-text-muted)',
                 }}
               >
                 キャンセル
@@ -127,7 +127,7 @@ export const AdminMaintenancePage = () => {
                 style={{
                   padding: '0.5rem 1.5rem', borderRadius: 8,
                   border: 'none',
-                  background: maintenanceEnabled ? '#27ae60' : '#c0392b',
+                  background: maintenanceEnabled ? 'var(--color-success)' : 'var(--color-danger)',
                   cursor: 'pointer', fontWeight: 500, color: '#fff',
                 }}
               >

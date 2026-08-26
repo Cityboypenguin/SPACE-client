@@ -65,40 +65,23 @@ export const AdminHeader = () => {
 
       {showConfirm && (
         <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-          }}
+          className={styles.modalOverlay}
           onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
         >
-          <div
-            style={{
-              background: '#fff', borderRadius: 12, padding: '2rem',
-              width: '90%', maxWidth: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              textAlign: 'center',
-            }}
-          >
-            <p style={{ margin: '0 0 1.5rem', fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>
+          <div className={styles.modalCard}>
+            <p className={styles.modalTitle}>
               ログアウトしますか？
             </p>
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            <div className={styles.modalActions}>
               <button
                 onClick={() => setShowConfirm(false)}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: '1px solid #cbd5e1', background: '#fff',
-                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
-                }}
+                className={styles.modalCancelBtn}
               >
                 キャンセル
               </button>
               <button
                 onClick={() => { setShowConfirm(false); void handleLogout(); }}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: 'none', background: '#ef4444',
-                  cursor: 'pointer', fontWeight: 500, color: '#fff',
-                }}
+                className={styles.modalDangerBtn}
               >
                 ログアウト
               </button>

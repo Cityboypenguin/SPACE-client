@@ -1,0 +1,9 @@
+.loadingText {
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.errorText {
+  color: var(--color-danger);
+  text-align: center;
+}

@@ -17,10 +17,10 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
-  background: #fff;
+  background: var(--color-bg-elevated);
   z-index: 10;
   flex-shrink: 0;
 }
@@ -46,11 +46,11 @@
 }
 
 .wsConnected {
-  background-color: #22c55e;
+  background-color: var(--color-success);
 }
 
 .wsDisconnected {
-  background-color: #9ca3af;
+  background-color: var(--color-text-muted);
 }
 
 .messageList {
@@ -89,7 +89,7 @@
 
 .senderName {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--color-text-muted);
   margin-bottom: 2px;
   display: block;
   max-width: 100%;
@@ -107,18 +107,18 @@
 }
 
 .bubbleMine {
-  background-color: #646cff;
+  background-color: var(--color-primary);
   color: #fff;
 }
 
 .bubbleTheirs {
-  background-color: #e5e7eb;
-  color: #111;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
 }
 
 .timestamp {
   font-size: 0.7rem;
-  color: #aaa;
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
@@ -126,9 +126,9 @@
   display: flex;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid var(--color-border);
   flex-shrink: 0;
-  background: #fff;
+  background: var(--color-bg-elevated);
 }
 
 .inputField {
@@ -176,7 +176,7 @@
   padding: 2px 5px;
   border-radius: 4px;
   font-size: 0.8rem;
-  color: #bbb;
+  color: var(--color-text-muted);
   line-height: 1;
   transition: background 0.15s, color 0.15s;
 }
@@ -189,8 +189,8 @@
 }
 
 .actionBtn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #555;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .actionIcon {
@@ -214,7 +214,7 @@
     min-width: 36px;
     min-height: 36px;
     font-size: 1.1rem;
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--color-surface);
   }
 
   .actionBtnEdit {
@@ -235,7 +235,7 @@
 
 .editInput {
   border-radius: 12px;
-  border: 2px solid #646cff;
+  border: 2px solid var(--color-primary);
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
   outline: none;
@@ -257,7 +257,7 @@
   padding: 3px 10px;
   border-radius: 6px;
   border: none;
-  background: #646cff;
+  background: var(--color-primary);
   color: white;
   cursor: pointer;
 }
@@ -266,9 +266,9 @@
   font-size: 0.75rem;
   padding: 3px 10px;
   border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
-  color: #666;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 
@@ -276,7 +276,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.72rem;
   font-weight: 600;
   padding: 4px 0;
@@ -287,12 +287,12 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #ef4444;
+  background: var(--color-danger);
 }
 
 .readReceipt {
   font-size: 0.65rem;
-  color: #646cff;
+  color: var(--color-primary);
   margin-top: 1px;
   text-align: right;
 }
@@ -311,7 +311,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background: #646cff;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 20px;
@@ -320,4 +320,54 @@
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
+}
+
+/* 以下は ChatInput / ChatMessageBubble のインラインスタイルから抽出したクラス */
+
+.dragOverlayBorder {
+  border: 2px dashed var(--color-text-muted);
+  background: rgba(107, 114, 128, 0.08);
+}
+
+.dragOverlayText {
+  color: var(--color-text-muted);
+}
+
+.filePreviewImgBorder {
+  border: 1px solid var(--color-border);
+}
+
+.fileRemoveBtn {
+  background: var(--color-text-muted);
+  color: #fff;
+}
+
+.fileChip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.fileChipRemoveBtn {
+  color: var(--color-text-muted);
+}
+
+.attachBtnEnabled {
+  color: var(--color-text-muted);
+}
+
+.attachBtnDisabled {
+  color: var(--color-border);
+}
+
+.mediaFileChipMine {
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  color: var(--color-text);
+}
+
+.mediaFileChipTheirs {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }

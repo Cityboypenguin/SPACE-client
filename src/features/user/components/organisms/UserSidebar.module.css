@@ -4,8 +4,8 @@
   top: 0;
   height: 100vh;
   width: 56px;
-  background-color: #ffffff;
-  border-right: 1px solid #e2e8f0;
+  background-color: var(--color-bg-elevated);
+  border-right: 1px solid var(--color-border);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -78,7 +78,7 @@
   border: none;
   border-radius: 0;
   cursor: pointer;
-  color: #374151;
+  color: var(--color-text);
   font-size: 0.95rem;
   font-weight: 500;
   text-align: left;
@@ -87,7 +87,7 @@
 }
 
 .navItem:hover {
-  background-color: #f1f5f9;
+  background-color: var(--color-surface);
   border-color: transparent;
 }
 
@@ -123,7 +123,7 @@
   position: absolute;
   top: -5px;
   right: -6px;
-  background: #ef4444;
+  background: var(--color-danger);
   color: #fff;
   font-size: 0.68rem;
   font-weight: 700;
@@ -145,7 +145,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  color: #374151;
+  color: var(--color-text);
 }
 
 .active .label {
@@ -161,7 +161,7 @@
 /* ボトム（ユーザー） */
 .bottom {
   flex-shrink: 0;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .userItem {
@@ -175,7 +175,7 @@
   border: none;
   border-radius: 0;
   cursor: pointer;
-  color: #374151;
+  color: var(--color-text);
   font-size: 0.9rem;
   font-weight: 500;
   text-align: left;
@@ -184,7 +184,7 @@
 }
 
 .userItem:hover {
-  background-color: #f1f5f9;
+  background-color: var(--color-surface);
   border-color: transparent;
 }
 
@@ -197,7 +197,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: var(--color-border);
   flex-shrink: 0;
 }
 
@@ -212,7 +212,7 @@
     height: 56px;
     flex-direction: row;
     border-right: none;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--color-border);
     padding-bottom: env(safe-area-inset-bottom);
   }
 

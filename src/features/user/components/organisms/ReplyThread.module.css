@@ -7,12 +7,12 @@
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   cursor: pointer;
-  background: #fff;
+  background: var(--color-bg-elevated);
   transition: background 0.1s;
 }
 
 .item:hover {
-  background: #f8faff;
+  background: var(--color-surface);
 }
 
 /* 子がいる場合は padding-bottom を消してスレッドラインを途切れなく繋げる */
@@ -33,7 +33,7 @@
 .threadLine {
   width: 2px;
   flex: 1;
-  background: #e2e8f0;
+  background: var(--color-border);
   margin-top: 4px;
   min-height: 12px;
 }
@@ -45,7 +45,7 @@
 
 .content {
   margin: 0 0 0.4rem;
-  color: #1e293b;
+  color: var(--color-text);
   line-height: 1.6;
   word-break: break-word;
   white-space: pre-wrap;
@@ -66,7 +66,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -98,7 +98,7 @@
   top: 0;
   width: 2px;
   height: 100%;
-  background: #e2e8f0;
+  background: var(--color-border);
   pointer-events: none;
 }
 
@@ -127,13 +127,13 @@
   width: calc(1rem + 20px);
   height: calc(0.75rem + 18px);
   background: inherit;
-  border-left: 2px solid #e2e8f0;
-  border-bottom: 2px solid #e2e8f0;
+  border-left: 2px solid var(--color-border);
+  border-bottom: 2px solid var(--color-border);
   border-bottom-left-radius: 12px;
   pointer-events: none;
   z-index: 0;
 }
 
 .separator {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }

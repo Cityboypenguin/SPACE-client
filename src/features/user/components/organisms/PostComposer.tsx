@@ -280,12 +280,11 @@ export const PostComposer = ({
       {/* ▼ 追加: ドラッグ中のオーバーレイUI */}
       {isDragging && (
         <div
+          className={styles.dragOverlay}
           style={{
             position: 'absolute',
             inset: 0,
-            border: '2px dashed #6b7280',
             borderRadius: 8,
-            background: 'rgba(107, 114, 128, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

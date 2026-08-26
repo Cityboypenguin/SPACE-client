@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type TouchEvent, type MouseEvent, type WheelEvent } from 'react';
 import { storageUrl } from '../../lib/storage';
+import styles from './PostMediaGrid.module.css';
 
 type MediaItem = {
   ID: string;
@@ -452,11 +453,11 @@ export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; la
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
+              className={styles.fileChip}
               style={{
-                display: 'flex', alignItems: 'center', gap: large ? 6 : 5,
-                padding: large ? '6px 12px' : '4px 10px', background: '#f3f4f6',
-                border: '1px solid #e5e7eb', borderRadius: 8,
-                fontSize: large ? '0.85rem' : '0.78rem', color: '#374151', textDecoration: 'none',
+                gap: large ? 6 : 5,
+                padding: large ? '6px 12px' : '4px 10px',
+                fontSize: large ? '0.85rem' : '0.78rem',
               }}
             >
               📎 {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}

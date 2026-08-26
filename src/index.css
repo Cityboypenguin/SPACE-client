@@ -3,9 +3,26 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light; /*とりあえずダークモード消しとく*/
-  color: #213547;
-  background-color: #ffffff;
+  --color-bg: #ffffff;
+  --color-bg-elevated: #f8faff;
+  --color-surface: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-text: #1e293b;
+  --color-text-muted: #94a3b8;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-link: #646cff;
+  --color-link-hover: #535bf2;
+  --color-danger: #ef4444;
+  --color-danger-bg: #fef2f2;
+  --color-warning: #92400e;
+  --color-warning-bg: #fef3c7;
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+
+  color-scheme: light;
+  color: var(--color-text);
+  background-color: var(--color-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,14 +30,83 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* OS がダークモードで、かつ利用者がまだ明示的な選択をしていない（data-theme
+   未設定の）場合のフォールバック。実際の切り替えは index.html のブートストラップ
+   スクリプトと ThemeContext が data-theme 属性を通じて行う。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-bg: #0f172a;
+    --color-bg-elevated: #1e293b;
+    --color-surface: #1e293b;
+    --color-border: #334155;
+    --color-text: #e2e8f0;
+    --color-text-muted: #94a3b8;
+    --color-primary: #60a5fa;
+    --color-primary-hover: #3b82f6;
+    --color-link: #8b93ff;
+    --color-link-hover: #aab0ff;
+    --color-danger: #f87171;
+    --color-danger-bg: #3f1d1d;
+    --color-warning: #fbbf24;
+    --color-warning-bg: #453411;
+    --color-success: #4ade80;
+    --color-success-bg: #14291c;
+
+    color-scheme: dark;
+  }
+}
+
+/* 明示的な選択（localStorage 経由で data-theme に反映済み）は常に優先する。 */
+:root[data-theme='dark'] {
+  --color-bg: #0f172a;
+  --color-bg-elevated: #1e293b;
+  --color-surface: #1e293b;
+  --color-border: #334155;
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-primary: #60a5fa;
+  --color-primary-hover: #3b82f6;
+  --color-link: #8b93ff;
+  --color-link-hover: #aab0ff;
+  --color-danger: #f87171;
+  --color-danger-bg: #3f1d1d;
+  --color-warning: #fbbf24;
+  --color-warning-bg: #453411;
+  --color-success: #4ade80;
+  --color-success-bg: #14291c;
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --color-bg: #ffffff;
+  --color-bg-elevated: #f8faff;
+  --color-surface: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-text: #1e293b;
+  --color-text-muted: #94a3b8;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-link: #646cff;
+  --color-link-hover: #535bf2;
+  --color-danger: #ef4444;
+  --color-danger-bg: #fef2f2;
+  --color-warning: #92400e;
+  --color-warning-bg: #fef3c7;
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+
+  color-scheme: light;
+}
+
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--color-link);
   text-decoration: inherit;
 }
 
 a:hover {
-  color: #535bf2;
+  color: var(--color-link-hover);
 }
 
 body {
@@ -28,6 +114,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 body.has-sidebar {
@@ -63,14 +151,17 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
-  background-color: #f9f9f9;
+  background-color: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition:
+    border-color 0.25s,
+    background-color 0.25s,
+    color 0.25s;
 }
 
 button:hover {
-  border-color: #646cff;
+  border-color: var(--color-link);
 }
 
 button:focus,
@@ -79,10 +170,10 @@ button:focus-visible {
 }
 
 button,
-input[type="button"],
-input[type="submit"],
-input[type="reset"] {
+input[type='button'],
+input[type='submit'],
+input[type='reset'] {
   -webkit-appearance: none;
   appearance: none;
-  color: #000000;
+  color: var(--color-text);
 }

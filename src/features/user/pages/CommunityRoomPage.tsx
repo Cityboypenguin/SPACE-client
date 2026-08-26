@@ -18,6 +18,7 @@ import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import styles from '../components/ChatRoom.module.css';
+import pageStyles from './CommunityRoomPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
 
@@ -186,9 +187,9 @@ export const CommunityRoomPage = () => {
         <div className={styles.messageList} ref={messageListRef}>
           <div ref={topSentinelRef} style={{ height: '1px' }} />
           {loadingOlder && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
-          {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
+          {(error || sendError) && <p className={pageStyles.errorText}>{error || sendError}</p>}
 
           {messages.map((msg, index) => {
             const isMine = msg.user.ID === currentUserID;
@@ -227,7 +228,7 @@ export const CommunityRoomPage = () => {
           })}
           <div ref={bottomSentinelRef} style={{ height: '1px' }} />
           {loadingNewer && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
           <div ref={bottomRef} />
         </div>

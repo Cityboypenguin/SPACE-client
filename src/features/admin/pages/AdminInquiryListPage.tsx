@@ -23,9 +23,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  PENDING: { bg: '#fef9c3', color: '#a16207' },
+  PENDING: { bg: 'var(--color-warning-bg)', color: 'var(--color-warning)' },
   IN_PROGRESS: { bg: '#dbeafe', color: '#1d4ed8' },
-  RESOLVED: { bg: '#dcfce7', color: '#15803d' },
+  RESOLVED: { bg: 'var(--color-success-bg)', color: 'var(--color-success)' },
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -74,21 +74,21 @@ export const AdminInquiryListPage: React.FC = () => {
     <div>
       <AdminHeader />
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-        <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 600, color: '#1e293b' }}>
+        <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 600, color: 'var(--color-text)' }}>
             問い合わせ管理
           </h1>
         </div>
 
         <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <label style={{ fontWeight: 500, marginRight: '0.5rem', color: '#475569' }}>
+            <label style={{ fontWeight: 500, marginRight: '0.5rem', color: 'var(--color-text)' }}>
               ステータス絞り込み：
             </label>
             <select
               value={filterStatus}
               onChange={(e) => handleFilterChange(e.target.value)}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', cursor: 'pointer' }}
             >
               <option value="ALL">すべて</option>
               <option value="PENDING">未対応</option>
@@ -97,13 +97,13 @@ export const AdminInquiryListPage: React.FC = () => {
             </select>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ color: '#64748b', fontSize: '0.9rem' }}>全 {total} 件</span>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>全 {total} 件</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text)' }}>
               表示件数
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                style={{ padding: '0.4rem 0.5rem', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                style={{ padding: '0.4rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', cursor: 'pointer', fontSize: '0.85rem' }}
               >
                 {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
               </select>
@@ -111,12 +111,12 @@ export const AdminInquiryListPage: React.FC = () => {
           </div>
         </div>
 
-        {error && <p style={{ color: 'red', textAlign: 'center', padding: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)', textAlign: 'center', padding: '1rem' }}>{error}</p>}
 
-        <div style={{ overflowX: 'auto', background: '#fff', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <div style={{ overflowX: 'auto', background: 'var(--color-bg-elevated)', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <tr style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
                 <th style={{ padding: '1rem' }}>件名</th>
                 <th style={{ padding: '1rem' }}>氏名</th>
                 <th style={{ padding: '1rem' }}>メールアドレス</th>
@@ -128,12 +128,12 @@ export const AdminInquiryListPage: React.FC = () => {
             </thead>
             <tbody>
               {inquiries.map((inquiry) => {
-                const sc = STATUS_COLOR[inquiry.status] ?? { bg: '#f1f5f9', color: '#475569' };
+                const sc = STATUS_COLOR[inquiry.status] ?? { bg: 'var(--color-surface)', color: 'var(--color-text)' };
                 return (
-                  <tr key={inquiry.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr key={inquiry.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '1rem' }}>{inquiry.subject || '---'}</td>
                     <td style={{ padding: '1rem' }}>{inquiry.name}</td>
-                    <td style={{ padding: '1rem', color: '#475569' }}>{inquiry.email}</td>
+                    <td style={{ padding: '1rem', color: 'var(--color-text)' }}>{inquiry.email}</td>
                     <td style={{ padding: '1rem' }}>{CATEGORY_LABEL[inquiry.category] ?? inquiry.category}</td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{
@@ -143,13 +143,13 @@ export const AdminInquiryListPage: React.FC = () => {
                         {STATUS_LABEL[inquiry.status] ?? inquiry.status}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+                    <td style={{ padding: '1rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                       {inquiry.createdAt ? new Date(inquiry.createdAt).toLocaleString('ja-JP') : '---'}
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <button
                         onClick={() => navigate(`/admin/inquiries/${inquiry.id}`)}
-                        style={{ padding: '0.35rem 0.7rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                        style={{ padding: '0.35rem 0.7rem', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
                       >
                         詳細
                       </button>
@@ -162,7 +162,7 @@ export const AdminInquiryListPage: React.FC = () => {
         </div>
 
         {inquiries.length === 0 && !error && (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>問い合わせが見つかりませんでした</p>
+          <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>問い合わせが見つかりませんでした</p>
         )}
 
         {totalPages > 1 && (
@@ -170,15 +170,15 @@ export const AdminInquiryListPage: React.FC = () => {
             <button
               onClick={() => loadPage(page - 1, filterStatus)}
               disabled={page === 0}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page === 0 ? 'not-allowed' : 'pointer', background: '#fff' }}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid var(--color-border)', cursor: page === 0 ? 'not-allowed' : 'pointer', background: 'var(--color-bg-elevated)' }}
             >
               前へ
             </button>
-            <span style={{ color: '#475569' }}>{page + 1} / {totalPages}</span>
+            <span style={{ color: 'var(--color-text)' }}>{page + 1} / {totalPages}</span>
             <button
               onClick={() => loadPage(page + 1, filterStatus)}
               disabled={page >= totalPages - 1}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', background: '#fff' }}
+              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid var(--color-border)', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', background: 'var(--color-bg-elevated)' }}
             >
               次へ
             </button>

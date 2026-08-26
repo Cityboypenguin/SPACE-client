@@ -1,0 +1,8 @@
+.emptyText {
+  color: var(--color-text-muted);
+}
+
+.loadingMoreText {
+  text-align: center;
+  color: var(--color-text-muted);
+}

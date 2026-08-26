@@ -11,6 +11,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { UserListItem } from '../components/molecules/UserListItem';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { useToast } from '../../../context/ToastContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postListCache';
 import { staticCacheOptions } from '../cache/swrOptions';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -159,9 +160,9 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
         ブロックリスト
       </h2>
       {initialLoading ? (
-        <p style={{ color: '#94a3b8' }}>読み込み中...</p>
+        <p className={styles.mutedText}>読み込み中...</p>
       ) : users.length === 0 ? (
-        <p style={{ color: '#94a3b8' }}>ブロックしているユーザーはいません。</p>
+        <p className={styles.mutedText}>ブロックしているユーザーはいません。</p>
       ) : (
         <>
           <ul className={styles.blockList}>
@@ -176,7 +177,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
             ))}
           </ul>
           <div ref={sentinelRef} style={{ height: 1 }} />
-          {loadingMore && <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>}
+          {loadingMore && <p className={styles.mutedTextCenter}>読み込み中...</p>}
         </>
       )}
     </>
@@ -186,7 +187,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
 const TermsView = () => {
   const { data: terms } = useSWR('currentTerms', getCurrentTerms, staticCacheOptions);
 
-  if (!terms) return <p style={{ color: '#94a3b8' }}>読み込み中...</p>;
+  if (!terms) return <p className={styles.mutedText}>読み込み中...</p>;
 
   return (
     <div className={styles.termsWrap}>
@@ -205,6 +206,7 @@ const GeneralView = ({
 }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { mutate: globalMutate } = useSWRConfig();
   const [cacheCleared, setCacheCleared] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -259,6 +261,17 @@ const GeneralView = ({
         </button>
       </div>
 
+      <div className={styles.toggleRow}>
+        <span className={styles.toggleLabel}>ダークモード</span>
+        <input
+          type="checkbox"
+          role="switch"
+          className={styles.switch}
+          checked={theme === 'dark'}
+          onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
+        />
+      </div>
+
       <div className={styles.actionGroup}>
         {cacheCleared && <p className={styles.successMsg}>キャッシュをクリアしました</p>}
         <button type="button" className={styles.actionBtn} onClick={handleClearCache}>
@@ -274,47 +287,29 @@ const GeneralView = ({
 
       {showDeleteConfirm && (
         <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-          }}
+          className={styles.modalOverlay}
           onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
         >
-          <div
-            style={{
-              background: '#fff', borderRadius: 12, padding: '2rem',
-              width: '90%', maxWidth: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              textAlign: 'center',
-            }}
-          >
-            <p style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: 600, color: '#1e293b' }}>
+          <div className={styles.modalCard}>
+            <p className={styles.modalTitle}>
               アカウントを削除しますか？
             </p>
-            <p style={{ margin: '0 0 1.5rem', fontSize: '0.85rem', color: '#64748b' }}>
+            <p className={styles.modalBody}>
               この操作は取り消せません。投稿・メッセージなどすべてのデータが削除されます。
             </p>
-            {deleteError && <p style={{ margin: '0 0 1rem', color: '#ef4444', fontSize: '0.85rem' }}>{deleteError}</p>}
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            {deleteError && <p className={styles.errorMsg} style={{ marginBottom: '1rem' }}>{deleteError}</p>}
+            <div className={styles.modalActions}>
               <button
                 onClick={() => { setShowDeleteConfirm(false); setDeleteError(''); }}
                 disabled={deleting}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: '1px solid #cbd5e1', background: '#fff',
-                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
-                }}
+                className={styles.modalCancelBtn}
               >
                 キャンセル
               </button>
               <button
                 onClick={() => void handleDeleteAccount()}
                 disabled={deleting}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: 'none', background: '#ef4444',
-                  cursor: deleting ? 'default' : 'pointer', fontWeight: 500, color: '#fff',
-                  opacity: deleting ? 0.6 : 1,
-                }}
+                className={styles.modalDangerBtn}
               >
                 {deleting ? '削除中...' : '削除する'}
               </button>
@@ -325,40 +320,20 @@ const GeneralView = ({
 
       {showLogoutConfirm && (
         <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-          }}
+          className={styles.modalOverlay}
           onClick={(e) => { if (e.target === e.currentTarget) setShowLogoutConfirm(false); }}
         >
-          <div
-            style={{
-              background: '#fff', borderRadius: 12, padding: '2rem',
-              width: '90%', maxWidth: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              textAlign: 'center',
-            }}
-          >
-            <p style={{ margin: '0 0 1.5rem', fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>
+          <div className={styles.modalCard}>
+            <p className={styles.modalTitle}>
               ログアウトしますか？
             </p>
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: '1px solid #cbd5e1', background: '#fff',
-                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
-                }}
-              >
+            <div className={styles.modalActions}>
+              <button onClick={() => setShowLogoutConfirm(false)} className={styles.modalCancelBtn}>
                 キャンセル
               </button>
               <button
                 onClick={() => { setShowLogoutConfirm(false); void doLogout(); }}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: 'none', background: '#ef4444',
-                  cursor: 'pointer', fontWeight: 500, color: '#fff',
-                }}
+                className={styles.modalDangerBtn}
               >
                 ログアウト
               </button>

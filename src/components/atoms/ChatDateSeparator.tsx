@@ -30,11 +30,11 @@ export const ChatDateSeparator = ({ currentCreatedAt, prevCreatedAt }: Props) =>
       }}
     >
       <span 
-        style={{ 
-          fontSize: '0.78rem', 
-          color: '#94a3b8',
-          background: 'rgba(255,255,255,0.06)',
-          padding: '4px 14px', 
+        style={{
+          fontSize: '0.78rem',
+          color: 'var(--color-text-muted)',
+          background: 'var(--color-surface)',
+          padding: '4px 14px',
           borderRadius: 20,
           fontWeight: 500,
           letterSpacing: '0.05em'

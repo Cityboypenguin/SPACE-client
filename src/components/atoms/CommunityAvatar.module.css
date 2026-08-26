@@ -1,0 +1,15 @@
+.wrap {
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.initial {
+  font-weight: 700;
+  color: var(--color-text-muted);
+  user-select: none;
+}

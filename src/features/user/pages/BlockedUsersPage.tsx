@@ -8,6 +8,7 @@ import { useToast } from '../../../context/ToastContext';
 import { useRef } from 'react';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
+import styles from './BlockedUsersPage.module.css';
 
 const LIMIT = 20;
 
@@ -78,7 +79,7 @@ export const BlockedUsersPage = () => {
         {initialLoading ? (
           <p>読み込み中...</p>
         ) : users.length === 0 ? (
-          <p style={{ color: 'gray' }}>ブロックしているユーザーはいません。</p>
+          <p className={styles.emptyText}>ブロックしているユーザーはいません。</p>
         ) : (
           <>
             <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -93,7 +94,7 @@ export const BlockedUsersPage = () => {
               ))}
             </ul>
             <div ref={sentinelRef} style={{ height: '1px' }} />
-            {loadingMore && <p style={{ textAlign: 'center', color: '#94a3b8' }}>読み込み中...</p>}
+            {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
           </>
         )}
       </main>

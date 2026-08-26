@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ErrorCard } from '../molecules/ErrorCard';
 import type { ErrorIconType } from '../atoms/ErrorIcon';
+import styles from './ErrorPage.module.css';
 
 export type ErrorPageType = '403' | '500' | '503';
 
@@ -67,7 +68,7 @@ export const ErrorPage = ({ type, errorId, onRetry }: Props) => {
         actions={actions}
       />
       {errorId && (
-        <p style={{ marginTop: '0.5rem', color: '#64748b', fontSize: '0.75rem' }}>
+        <p className={styles.errorId}>
           エラーID: {errorId}
         </p>
       )}

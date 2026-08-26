@@ -12,6 +12,7 @@ import {
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useToast } from '../../../context/ToastContext';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import styles from './FavoriteUsersPage.module.css';
 
 const LIMIT = 20;
 
@@ -95,7 +96,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
         {initialLoading ? (
           <p>読み込み中...</p>
         ) : users.length === 0 ? (
-          <p style={{ color: 'gray' }}>
+          <p className={styles.emptyText}>
             {isFollowersMode ? 'フォロワーはいません。' : 'お気に入り登録しているユーザーはいません。'}
           </p>
         ) : (
@@ -116,7 +117,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
               })}
             </ul>
             <div ref={sentinelRef} style={{ height: '1px' }} />
-            {loadingMore && <p style={{ textAlign: 'center', color: '#94a3b8' }}>読み込み中...</p>}
+            {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
           </>
         )}
       </main>

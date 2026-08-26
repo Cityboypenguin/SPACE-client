@@ -11,6 +11,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
+import styles from './CommunityBoardListPage.module.css';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
@@ -162,15 +163,15 @@ export const CommunityBoardListPage = () => {
           />
         </div>
 
-        {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
 
         {!searched && (
           <div>
-            <h2 style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '0.75rem' }}>おすすめのコミュニティ</h2>
+            <h2 className={styles.sectionTitle}>おすすめのコミュニティ</h2>
             {loadingRandom ? (
-              <p style={{ color: '#94a3b8' }}>読み込み中...</p>
+              <p className={styles.mutedText}>読み込み中...</p>
             ) : randomResults.length === 0 ? (
-              <p style={{ color: '#94a3b8' }}>おすすめのコミュニティはありません</p>
+              <p className={styles.mutedText}>おすすめのコミュニティはありません</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {randomResults.map((c) => (
@@ -189,14 +190,14 @@ export const CommunityBoardListPage = () => {
         )}
 
         {searched && results.length === 0 && (
-          <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem 0' }}>
+          <p className={styles.emptyResultsText}>
             該当するコミュニティが見つかりませんでした
           </p>
         )}
 
         {searched && results.length > 0 && (
           <div>
-            <h2 style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '0.75rem' }}>検索結果</h2>
+            <h2 className={styles.sectionTitle}>検索結果</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {results.map((c) => (
                 <CommunityBoard
@@ -211,7 +212,7 @@ export const CommunityBoardListPage = () => {
             </div>
             <div ref={sentinelRef} style={{ height: '1px' }} />
             {loadingMore && (
-              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '0.5rem' }}>読み込み中...</p>
+              <p className={styles.loadingMoreText}>読み込み中...</p>
             )}
           </div>
         )}

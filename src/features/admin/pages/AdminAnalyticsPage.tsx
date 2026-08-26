@@ -6,7 +6,7 @@ import type { AnalyticsSummary, CommunityStatItem } from '../api/analytics';
 import { downloadCsv } from '../lib/exportCsv';
 
 const card: React.CSSProperties = {
-  background: '#fff', borderRadius: 10, padding: '1.2rem 1.5rem',
+  background: 'var(--color-bg-elevated)', borderRadius: 10, padding: '1.2rem 1.5rem',
   boxShadow: '0 1px 4px rgba(0,0,0,.08)', marginBottom: '0.75rem',
 };
 const grid = (cols: number): React.CSSProperties => ({
@@ -14,11 +14,11 @@ const grid = (cols: number): React.CSSProperties => ({
 });
 const section: React.CSSProperties = { marginBottom: '2rem' };
 const sectionTitle: React.CSSProperties = {
-  fontSize: '1rem', fontWeight: 700, color: '#334155', marginBottom: '0.75rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.4rem',
+  fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '0.75rem', borderBottom: '2px solid var(--color-border)', paddingBottom: '0.4rem',
 };
-const label: React.CSSProperties = { fontSize: '0.78rem', color: '#64748b', marginBottom: 4 };
-const value: React.CSSProperties = { fontSize: '1.6rem', fontWeight: 700, color: '#0f172a' };
-const subValue: React.CSSProperties = { fontSize: '0.85rem', color: '#475569' };
+const label: React.CSSProperties = { fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 4 };
+const value: React.CSSProperties = { fontSize: '1.6rem', fontWeight: 700, color: 'var(--color-text)' };
+const subValue: React.CSSProperties = { fontSize: '0.85rem', color: 'var(--color-text)' };
 
 function Stat({ label: l, value: v, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -131,7 +131,7 @@ export const AdminAnalyticsPage = () => {
   }, []);
 
   if (loading) return <><AdminHeader /><main style={{ padding: '2rem' }}><p>読み込み中...</p></main></>;
-  if (error) return <><AdminHeader /><main style={{ padding: '2rem' }}><p style={{ color: 'red' }}>{error}</p></main></>;
+  if (error) return <><AdminHeader /><main style={{ padding: '2rem' }}><p style={{ color: 'var(--color-danger)' }}>{error}</p></main></>;
   if (!data) return null;
 
   return (
@@ -144,7 +144,7 @@ export const AdminAnalyticsPage = () => {
             onClick={() => exportSummaryCsv(data)}
             style={{
               padding: '0.5rem 1.2rem', borderRadius: 8, fontSize: '0.88rem', fontWeight: 600,
-              border: '1px solid #cbd5e1', background: '#fff', color: '#475569', cursor: 'pointer',
+              border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', cursor: 'pointer',
             }}
           >
             ↓ サマリーをCSV出力
@@ -201,21 +201,21 @@ export const AdminAnalyticsPage = () => {
                 <span style={{ fontWeight: 600 }}>画面別滞在時間（上位{data.pageViewStats.length}ページ）</span>
                 <button
                   onClick={() => exportPageViewsCsv(data.pageViewStats)}
-                  style={{ padding: '0.25rem 0.75rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500, border: '1px solid #cbd5e1', background: '#fff', color: '#475569', cursor: 'pointer' }}
+                  style={{ padding: '0.25rem 0.75rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', cursor: 'pointer' }}
                 >↓ CSV</button>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
-                    <th style={{ padding: '0.5rem', color: '#64748b' }}>ページ</th>
-                    <th style={{ padding: '0.5rem', color: '#64748b' }}>平均滞在時間</th>
-                    <th style={{ padding: '0.5rem', color: '#64748b' }}>平均スクロール深度</th>
-                    <th style={{ padding: '0.5rem', color: '#64748b' }}>表示回数</th>
+                  <tr style={{ background: 'var(--color-surface)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>ページ</th>
+                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>平均滞在時間</th>
+                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>平均スクロール深度</th>
+                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>表示回数</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.pageViewStats.map((pv) => (
-                    <tr key={pv.pagePath} style={{ borderTop: '1px solid #e2e8f0' }}>
+                    <tr key={pv.pagePath} style={{ borderTop: '1px solid var(--color-border)' }}>
                       <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{pv.pagePath}</td>
                       <td style={{ padding: '0.5rem' }}>{fmtSec(pv.avgDurationSeconds)}</td>
                       <td style={{ padding: '0.5rem' }}>{fmt(pv.avgMaxScrollDepth)}%</td>
@@ -258,20 +258,20 @@ export const AdminAnalyticsPage = () => {
                 <span style={{ fontWeight: 600 }}>コミュニティ別アクティビティ（上位{communities.length}件）</span>
                 <button
                   onClick={() => exportCommunitiesCsv(communities)}
-                  style={{ padding: '0.25rem 0.75rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500, border: '1px solid #cbd5e1', background: '#fff', color: '#475569', cursor: 'pointer' }}
+                  style={{ padding: '0.25rem 0.75rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', cursor: 'pointer' }}
                 >↓ CSV</button>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
-                    <th style={{ padding: '0.5rem', color: '#64748b' }}>コミュニティ名</th>
-                    <th style={{ padding: '0.5rem', color: '#64748b' }}>メンバー数</th>
-                    <th style={{ padding: '0.5rem', color: '#64748b' }}>メッセージ数</th>
+                  <tr style={{ background: 'var(--color-surface)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>コミュニティ名</th>
+                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>メンバー数</th>
+                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>メッセージ数</th>
                   </tr>
                 </thead>
                 <tbody>
                   {communities.map((c) => (
-                    <tr key={c.communityID} style={{ borderTop: '1px solid #e2e8f0' }}>
+                    <tr key={c.communityID} style={{ borderTop: '1px solid var(--color-border)' }}>
                       <td style={{ padding: '0.5rem' }}>{c.name}</td>
                       <td style={{ padding: '0.5rem' }}>{fmtInt(c.memberCount)}</td>
                       <td style={{ padding: '0.5rem' }}>{fmtInt(c.messageCount)}</td>

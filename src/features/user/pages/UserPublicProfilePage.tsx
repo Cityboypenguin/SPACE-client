@@ -372,8 +372,8 @@ export const UserPublicProfilePage = () => {
           )}
         </div>
 
-        {error && <p style={{ color: 'red', padding: '0 1rem' }}>{error}</p>}
-        {loading && <p style={{ color: '#94a3b8', padding: '1rem' }}>読み込み中...</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
+        {loading && <p className={styles.loadingText}>読み込み中...</p>}
 
         {profile && (
           <>

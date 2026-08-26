@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { TermsConsentModal } from '../components/organisms/TermsConsentModal';
 import { UnreadRoomCountsProvider } from '../context/UnreadRoomCountsContext';
+import styles from './UserProtectedRoute.module.css';
 
 export const UserProtectedRoute = () => {
   const { token } = useAuth();
@@ -13,7 +14,7 @@ export const UserProtectedRoute = () => {
   }
 
   if (consentChecking) {
-    return <p style={{ textAlign: 'center', marginTop: '4rem', color: '#94a3b8' }}>読み込み中...</p>;
+    return <p className={styles.loadingText}>読み込み中...</p>;
   }
 
   return (

@@ -1,0 +1,26 @@
+.errorText {
+  color: var(--color-danger);
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.mutedText {
+  color: var(--color-text-muted);
+}
+
+.emptyResultsText {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.loadingMoreText {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 0.5rem;
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCommunityMembers, type Community } from '../../api/community';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { toUserMessage } from '../../../../lib/errorMessages';
+import styles from './CommunityBoard.module.css';
 
 const URL_SPLIT_REGEX = /(https?:\/\/[^\s　。、！？「」（）【】『』〔〕…‥・]+)/g;
 const URL_TEST_REGEX = /^https?:\/\//;
@@ -15,7 +16,7 @@ const renderTextWithLinks = (text: string) =>
         href={part}
         target="_blank"
         rel="noopener noreferrer"
-        style={{ color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all' }}
+        className={styles.link}
         onClick={(e) => e.stopPropagation()}
       >
         {part}
@@ -81,13 +82,8 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
   return (
     <div
       onClick={() => setExpanded((v) => !v)}
+      className={`${styles.card} ${expanded ? styles.cardExpanded : styles.cardCollapsed}`}
       style={{
-        border: '1px solid #e2e8f0',
-        borderRadius: '10px',
-        padding: '1rem 1.25rem',
-        cursor: 'pointer',
-        background: expanded ? '#f8faff' : '#fff',
-        transition: 'box-shadow 0.15s',
         boxShadow: expanded ? '0 2px 12px rgba(100,108,255,0.10)' : '0 1px 4px rgba(0,0,0,0.06)',
       }}
     >
@@ -98,88 +94,40 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
           size={40} 
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: '1rem',
-              color: '#1e293b',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
+          <div className={styles.title}>
             {community.name}
           </div>
           {!expanded && (
-            <div
-              style={{
-                fontSize: '0.82rem',
-                color: '#64748b',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <div className={styles.subtitle}>
               {community.description}
             </div>
           )}
         </div>
-        <span
-          style={{
-            display: 'inline-block',
-            width: 0,
-            height: 0,
-            flexShrink: 0,
-            borderLeft: '5px solid transparent',
-            borderRight: '5px solid transparent',
-            ...(expanded
-              ? { borderBottom: '6px solid #94a3b8' }
-              : { borderTop: '6px solid #94a3b8' }),
-          }}
-        />
+        <span className={`${styles.caret} ${expanded ? styles.caretUp : styles.caretDown}`} />
       </div>
 
       {expanded && (
         <div
           onClick={(e) => e.stopPropagation()}
-          style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}
+          className={styles.expandedSection}
         >
           {shownMemberCount !== null && (
             <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.82rem', color: '#64748b' }}>メンバー数:</span>
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#646cff',
-                  background: '#f0f2ff',
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                }}
-              >
+              <span className={styles.memberCountLabel}>メンバー数:</span>
+              <span className={styles.memberCountBadge}>
                 {shownMemberCount} 人
               </span>
             </div>
           )}
-          <p style={{ margin: '0 0 1rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+          <p className={styles.description}>
             {renderTextWithLinks(community.description)}
           </p>
-          {error && <p style={{ color: 'red', margin: '0 0 0.5rem', fontSize: '0.85rem' }}>{error}</p>}
+          {error && <p className={styles.errorText}>{error}</p>}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            
+
             {joinedState ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    padding: '0.35rem 0.9rem',
-                    borderRadius: '20px',
-                    background: '#dcfce7',
-                    color: '#16a34a',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                  }}
-                >
+                <span className={styles.joinedBadge}>
                   参加済み
                 </span>
                 <button
@@ -187,16 +135,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
                     e.stopPropagation();
                     navigate(`/community/chat/${community.roomID}`, { state: { communityID: community.ID, community } });
                   }}
-                  style={{
-                    padding: '0.45rem 1.2rem',
-                    borderRadius: '20px',
-                    background: '#646cff',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '0.9rem',
-                  }}
+                  className={styles.chatButton}
                 >
                   チャットルームへ
                 </button>
@@ -205,16 +144,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
               <button
                 onClick={handleJoin}
                 disabled={joining}
-                style={{
-                  padding: '0.45rem 1.2rem',
-                  borderRadius: '20px',
-                  background: joining ? '#94a3b8' : '#646cff',
-                  color: '#fff',
-                  border: 'none',
-                  cursor: joining ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                }}
+                className={`${styles.joinButton} ${joining ? styles.joinButtonDisabled : styles.joinButtonActive}`}
               >
                 {joining ? '参加中...' : 'コミュニティに参加'}
               </button>
@@ -223,19 +153,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
             {onReport && (
               <button
                 onClick={handleReportClick}
-                style={{
-                  padding: '0.4rem 0.9rem',
-                  background: '#fff',
-                  color: '#ef4444',
-                  border: '1px solid #fca5a5',
-                  borderRadius: '20px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontSize: '0.82rem',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#fef2f2')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                className={styles.reportButton}
               >
                 ⚠️ コミュニティ通報
               </button>

@@ -74,7 +74,7 @@ export const AdminTermsCreatePage: React.FC = () => {
           利用規約バージョン登録
         </h1>
 
-        {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>{error}</p>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
@@ -90,7 +90,7 @@ export const AdminTermsCreatePage: React.FC = () => {
               style={{
                 width: '100%',
                 padding: '0.6rem 0.75rem',
-                border: '1px solid #cbd5e1',
+                border: '1px solid var(--color-border)',
                 borderRadius: 8,
                 fontSize: '0.95rem',
                 boxSizing: 'border-box',
@@ -115,7 +115,7 @@ export const AdminTermsCreatePage: React.FC = () => {
                 disabled={!file || uploadState === 'uploading'}
                 style={{
                   padding: '0.5rem 1rem',
-                  background: uploadState === 'done' ? '#10b981' : '#3b82f6',
+                  background: uploadState === 'done' ? 'var(--color-success)' : 'var(--color-primary)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 8,
@@ -130,12 +130,12 @@ export const AdminTermsCreatePage: React.FC = () => {
               </button>
             </div>
             {uploadState === 'done' && (
-              <p style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '0.4rem' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-success)', marginTop: '0.4rem' }}>
                 アップロード完了: {objectKey}
               </p>
             )}
             {uploadState === 'error' && (
-              <p style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '0.4rem' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-danger)', marginTop: '0.4rem' }}>
                 アップロードに失敗しました。再度お試しください。
               </p>
             )}
@@ -154,13 +154,13 @@ export const AdminTermsCreatePage: React.FC = () => {
               style={{
                 width: '100%',
                 padding: '0.6rem 0.75rem',
-                border: '1px solid #cbd5e1',
+                border: '1px solid var(--color-border)',
                 borderRadius: 8,
                 fontSize: '0.95rem',
                 boxSizing: 'border-box',
               }}
             />
-            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.25rem 0 0' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '0.25rem 0 0' }}>
               指定日時以降、このバージョンが有効な最新規約として自動的に適用されます
             </p>
           </div>
@@ -171,7 +171,7 @@ export const AdminTermsCreatePage: React.FC = () => {
               disabled={submitting || uploadState !== 'done'}
               style={{
                 padding: '0.6rem 1.5rem',
-                background: submitting || uploadState !== 'done' ? '#93c5fd' : '#3b82f6',
+                background: submitting || uploadState !== 'done' ? '#93c5fd' : 'var(--color-primary)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,
@@ -187,9 +187,9 @@ export const AdminTermsCreatePage: React.FC = () => {
               onClick={() => navigate('/admin')}
               style={{
                 padding: '0.6rem 1.5rem',
-                background: '#fff',
-                color: '#475569',
-                border: '1px solid #cbd5e1',
+                background: 'var(--color-bg-elevated)',
+                color: 'var(--color-text-muted)',
+                border: '1px solid var(--color-border)',
                 borderRadius: 8,
                 cursor: 'pointer',
                 fontSize: '0.95rem',

@@ -12,7 +12,7 @@
 }
 
 .modal {
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   padding: 24px;
   border-radius: 8px;
   width: 90%;
@@ -24,7 +24,7 @@
   margin: 0 0 16px 0;
   font-size: 18px;
   font-weight: bold;
-  color: #333;
+  color: var(--color-text);
 }
 
 .formGroup {
@@ -35,7 +35,7 @@
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #444;
+  color: var(--color-text);
 }
 
 .radioGroup {
@@ -55,11 +55,13 @@
 .textarea {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 14px;
   resize: vertical;
   box-sizing: border-box;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
 }
 
 .buttonGroup {
@@ -71,7 +73,8 @@
 
 .cancelButton {
   padding: 10px 18px;
-  background-color: #f0f0f0;
+  background-color: var(--color-surface);
+  color: var(--color-text);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -80,12 +83,12 @@
 }
 
 .cancelButton:hover {
-  background-color: #e5e5e5;
+  background-color: var(--color-border);
 }
 
 .submitButton {
   padding: 10px 18px;
-  background-color: #df4747;
+  background-color: var(--color-danger);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -104,7 +107,41 @@
 }
 
 .errorText {
-  color: #df4747;
+  color: var(--color-danger);
   font-size: 14px;
   margin-top: 8px;
+}
+
+/* 対象投稿プレビュー（インラインスタイルから抽出） */
+.postPreview {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.postPreviewLabel {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.selectInput {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  outline: none;
+  font-size: 0.95rem;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
 }

@@ -469,15 +469,16 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
               rel="noopener noreferrer"
               style={{ textDecoration: 'none' }}
             >
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '5px 10px',
-                background: isMine ? '#dbeafe' : '#f3f4f6',
-                border: `1px solid ${isMine ? '#bfdbfe' : '#e5e7eb'}`,
-                borderRadius: 8,
-                fontSize: '0.78rem', color: '#374151',
-                cursor: 'pointer',
-              }}>
+              <div
+                className={isMine ? styles.mediaFileChipMine : styles.mediaFileChipTheirs}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                }}
+              >
                 <span style={{ fontSize: '1rem' }}>{getFileIcon(m.contentType)}</span>
                 <span>{m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}</span>
               </div>
