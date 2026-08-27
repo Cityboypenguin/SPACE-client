@@ -351,7 +351,7 @@ export const TimetablePage = () => {
                             {slot ? (
                               <div
                                 className={styles.courseChip}
-                                style={{ '--chip-bg': swatch.bg, '--chip-border': swatch.border, '--chip-text': swatch.text } as CSSProperties}
+                                style={{ '--chip-bg': swatch.bg } as CSSProperties}
                               >
                                 <div className={styles.chipActions}>
                                   {slot.entryID && (
@@ -359,7 +359,7 @@ export const TimetablePage = () => {
                                       <button
                                         type="button"
                                         className={styles.colorSwatchButton}
-                                        style={{ background: swatch.bg, borderColor: swatch.border }}
+                                        style={{ background: swatch.bg }}
                                         title="色を変更"
                                         onClick={() => setColorPickerKey((prev) => (prev === key ? null : key))}
                                       />
@@ -370,7 +370,7 @@ export const TimetablePage = () => {
                                               key={s.key}
                                               type="button"
                                               className={styles.colorDot}
-                                              style={{ background: s.bg, borderColor: s.border }}
+                                              style={{ background: s.bg }}
                                               title={s.label}
                                               onClick={() => { void handleSetDraftColor(key, s.key); }}
                                             />
@@ -409,7 +409,7 @@ export const TimetablePage = () => {
                           {entry ? (
                             <div
                               className={`${styles.courseChip} ${styles.courseChipClickable} ${!isEditable ? styles.courseChipReadOnly : ''}`}
-                              style={{ '--chip-bg': viewSwatch!.bg, '--chip-border': viewSwatch!.border, '--chip-text': viewSwatch!.text, '--chip-hover-bg': viewSwatch!.hoverBg } as CSSProperties}
+                              style={{ '--chip-bg': viewSwatch!.bg } as CSSProperties}
                               onClick={() => navigate(`/courses/chat/${entry.course.roomID}`, { state: { course: entry.course, year: viewYear, semester: viewSemester } })}
                             >
                               {entry.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}

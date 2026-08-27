@@ -183,8 +183,8 @@
 .courseChip {
   height: 100%;
   border-radius: 8px;
-  background: var(--chip-bg, #eef0ff);
-  border: 1px solid var(--chip-border, #dfe1fb);
+  background: var(--chip-bg, #3e63dd);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   padding: 6px 6px 4px;
   display: flex;
   flex-direction: column;
@@ -196,7 +196,7 @@
 }
 
 .courseChipClickable:hover {
-  background: var(--chip-hover-bg, #e4e6ff);
+  filter: brightness(0.93);
 }
 
 .courseChipReadOnly {
@@ -206,16 +206,21 @@
 
 .courseChipReadOnly:hover {
   background: #ececf0;
+  filter: none;
 }
 
 .courseChipReadOnly .courseName {
   color: #6b7280;
 }
 
+.courseChipReadOnly .teacherName {
+  color: #6b7280;
+}
+
 .courseName {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--chip-text, #373ec4);
+  color: #ffffff;
   line-height: 1.25;
   overflow: hidden;
   display: -webkit-box;
@@ -225,7 +230,7 @@
 
 .teacherName {
   font-size: 0.68rem;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.85);
   margin-top: 2px;
 }
 
@@ -276,14 +281,14 @@
   border-radius: 8px;
   padding: 6px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .colorDot {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.15);
   cursor: pointer;
@@ -301,7 +306,8 @@
   left: 4px;
   font-size: 0.55rem;
   font-weight: 700;
-  color: #16a34a;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   letter-spacing: 0.03em;
 }
 
@@ -311,7 +317,8 @@
   right: 4px;
   font-size: 0.55rem;
   font-weight: 700;
-  color: #7c3aed;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   letter-spacing: 0.03em;
 }
 
