@@ -4,13 +4,23 @@
   top: 0;
   height: 100vh;
   width: 56px;
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg);
   border-right: 1px solid var(--color-border);
   z-index: 100;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   transition: width 0.25s ease;
+}
+
+:global(:root[data-theme='dark']) .sidebar {
+  background-color: var(--color-bg-elevated);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .sidebar {
+    background-color: var(--color-bg-elevated);
+  }
 }
 
 @media (min-width: 769px) {
@@ -82,13 +92,43 @@
   font-size: 0.95rem;
   font-weight: 500;
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   white-space: nowrap;
 }
 
 .navItem:hover {
-  background-color: var(--color-surface);
+  background-color: var(--color-sidebar-hover);
   border-color: transparent;
+}
+
+:global(:root[data-theme='dark']) .navItem .icon {
+  filter: invert(1) brightness(0.94);
+}
+
+:global(:root[data-theme='dark']) .navItem:hover .icon {
+  filter: invert(1) brightness(1.08);
+}
+
+:global(:root[data-theme='dark']) .active .icon,
+:global(:root[data-theme='dark']) .active:hover .icon {
+  filter: brightness(0) saturate(100%) invert(79%) sepia(21%) saturate(985%) hue-rotate(193deg) brightness(102%) contrast(101%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .navItem .icon {
+    filter: invert(1) brightness(0.94);
+  }
+
+  :global(:root:not([data-theme])) .navItem:hover .icon {
+    filter: invert(1) brightness(1.08);
+  }
+
+  :global(:root:not([data-theme])) .active .icon,
+  :global(:root:not([data-theme])) .active:hover .icon {
+    filter: brightness(0) saturate(100%) invert(79%) sepia(21%) saturate(985%) hue-rotate(193deg) brightness(102%) contrast(101%);
+  }
 }
 
 .navItem:focus,
@@ -97,8 +137,17 @@
 }
 
 .active {
-  background-color: #fff7ed;
-  color: #f97316;
+  background-color: var(--color-sidebar-active-bg);
+  color: var(--color-sidebar-active-text);
+}
+
+.active:hover {
+  background-color: var(--color-sidebar-active-bg);
+  color: var(--color-sidebar-active-text);
+}
+
+.active:hover .label {
+  color: var(--color-sidebar-active-text);
 }
 
 /* アイコン */
@@ -116,6 +165,7 @@
   width: 28px;
   height: 28px;
   object-fit: contain;
+  transition: filter 0.15s ease;
 }
 
 /* バッジ */
@@ -149,7 +199,7 @@
 }
 
 .active .label {
-  color: #f97316;
+  color: var(--color-sidebar-active-text);
 }
 
 @media (min-width: 769px) {
@@ -179,12 +229,14 @@
   font-size: 0.9rem;
   font-weight: 500;
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   white-space: nowrap;
 }
 
 .userItem:hover {
-  background-color: var(--color-surface);
+  background-color: var(--color-sidebar-hover);
   border-color: transparent;
 }
 

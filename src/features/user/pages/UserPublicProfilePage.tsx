@@ -316,7 +316,7 @@ export const UserPublicProfilePage = () => {
           <img
             src={isFavorited ? favoeirteIconOn : favoriteIconOff}
             alt=""
-            className={`${styles.profileActionIcon}${isFavorited ? ` ${styles.profileActionIconFavorited}` : ''}`}
+            className={`${styles.profileActionIcon}${isFavorited ? ` ${styles.profileActionIconFavorited}` : ' themed-icon'}`}
           />
           {isFavorited ? 'お気に入り解除' : 'お気に入り'}
         </button>
@@ -326,7 +326,7 @@ export const UserPublicProfilePage = () => {
         onClick={handleDM}
         disabled={dmLoading}
       >
-        <img src={dmIcon} alt="" className={styles.profileActionIcon} />
+        <img src={dmIcon} alt="" className={`${styles.profileActionIcon} themed-icon`} />
         DMを開始
       </button>
     </div>
@@ -356,14 +356,14 @@ export const UserPublicProfilePage = () => {
                     onClick={handleBlockToggle}
                     disabled={actionLoading}
                   >
-                    <img src={isBlocked ? blockIcon : redblockIcon} alt="" className={styles.dropdownIcon} />
+                    <img src={isBlocked ? blockIcon : redblockIcon} alt="" className={`${styles.dropdownIcon}${isBlocked ? ' themed-icon' : ''}`} />
                     {isBlocked ? 'ブロック解除' : 'ブロック'}
                   </button>
                   <button
                     className={styles.dropdownItem}
                     onClick={handleReportUser}
                   >
-                    <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                    <img src={reportIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
                     通報
                   </button>
                 </div>

@@ -36,37 +36,37 @@ type ViewingActor = { actor: NotificationActor; type: string };
 
 function HeartIcon() {
   return (
-    <img src={favorite} alt="Favorite" width="20" height="20" />
+    <img src={favorite} alt="Favorite" width="20" height="20" className="themed-icon" />
   );
 }
 
 function ChatIcon() {
   return (
-    <img src={mail} alt="Mail" width="20" height="20" />
+    <img src={mail} alt="Mail" width="20" height="20" className="themed-icon" />
   );
 }
 
 function ReplyIcon() {
   return (
-    <img src={reply} alt="Reply" width="20" height="20" />
+    <img src={reply} alt="Reply" width="20" height="20" className="themed-icon" />
   );
 }
 
 function GroupIcon() {
   return (
-    <img src={community} alt="Community" width="20" height="20" />
+    <img src={community} alt="Community" width="20" height="20" className="themed-icon" />
   );
 }
 
 function BellIcon() {
   return (
-    <img src={notification} alt="Notification" width="20" height="20" />
+    <img src={notification} alt="Notification" width="20" height="20" className="themed-icon" />
   );
 }
 
 function PersonIcon() {
   return (
-    <img src={person} alt="Follow" width="20" height="20" />
+    <img src={person} alt="Follow" width="20" height="20" className="themed-icon" />
   );
 }
 

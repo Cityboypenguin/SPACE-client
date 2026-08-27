@@ -12,7 +12,7 @@ type Props = {
 export const IconSearchBar = ({ value, onChange, onSubmit, placeholder = 'Search', disabled = false }: Props) => {
   const inner = (
     <div className={styles.searchWrap}>
-      <img src={searchIconSvg} alt="" className={styles.searchIcon} />
+      <img src={searchIconSvg} alt="" className={`${styles.searchIcon} themed-icon`} />
       <input
         className={styles.searchInput}
         type="text"

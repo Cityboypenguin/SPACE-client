@@ -106,7 +106,7 @@ export const CommunityCreatePage = () => {
               ) : name.trim() ? (
                 <span className={styles.iconInitial}>{[...name.trim()][0]}</span>
               ) : (
-                <img src={cameraIconSvg} alt="画像を選択" className={styles.cameraIcon} />
+                <img src={cameraIconSvg} alt="画像を選択" className={`${styles.cameraIcon} themed-icon`} />
               )}
             </button>
             {selectedFile && (

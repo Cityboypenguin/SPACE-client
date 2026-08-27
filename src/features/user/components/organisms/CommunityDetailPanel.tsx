@@ -64,7 +64,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                     className={styles.menuItem} 
                     onClick={() => { setShowMenu(false); onReport();}}
                   >
-                  <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                  <img src={reportIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
                   通報
                   </button>
                   <button

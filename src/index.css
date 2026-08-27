@@ -4,8 +4,8 @@
   font-weight: 400;
 
   --color-bg: #ffffff;
-  --color-bg-elevated: #f8faff;
-  --color-surface: #f1f5f9;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
   --color-border: #e2e8f0;
   --color-text: #1e293b;
   --color-text-muted: #94a3b8;
@@ -19,6 +19,9 @@
   --color-warning-bg: #fef3c7;
   --color-success: #16a34a;
   --color-success-bg: #f0fdf4;
+  --color-sidebar-hover: #ffffff;
+  --color-sidebar-active-bg: #fff7ed;
+  --color-sidebar-active-text: #f97316;
 
   color-scheme: light;
   color: var(--color-text);
@@ -45,12 +48,15 @@
     --color-primary-hover: #3b82f6;
     --color-link: #8b93ff;
     --color-link-hover: #aab0ff;
-    --color-danger: #f87171;
-    --color-danger-bg: #3f1d1d;
-    --color-warning: #fbbf24;
-    --color-warning-bg: #453411;
-    --color-success: #4ade80;
-    --color-success-bg: #14291c;
+    --color-danger: #fb7185;
+    --color-danger-bg: #3b2027;
+    --color-warning: #facc6b;
+    --color-warning-bg: #3a2c16;
+    --color-success: #5ee0a0;
+    --color-success-bg: #173326;
+    --color-sidebar-hover: #1e293b;
+    --color-sidebar-active-bg: #20263a;
+    --color-sidebar-active-text: #aab8ff;
 
     color-scheme: dark;
   }
@@ -68,20 +74,23 @@
   --color-primary-hover: #3b82f6;
   --color-link: #8b93ff;
   --color-link-hover: #aab0ff;
-  --color-danger: #f87171;
-  --color-danger-bg: #3f1d1d;
-  --color-warning: #fbbf24;
-  --color-warning-bg: #453411;
-  --color-success: #4ade80;
-  --color-success-bg: #14291c;
+  --color-danger: #fb7185;
+  --color-danger-bg: #3b2027;
+  --color-warning: #facc6b;
+  --color-warning-bg: #3a2c16;
+  --color-success: #5ee0a0;
+  --color-success-bg: #173326;
+  --color-sidebar-hover: #1e293b;
+  --color-sidebar-active-bg: #20263a;
+  --color-sidebar-active-text: #aab8ff;
 
   color-scheme: dark;
 }
 
 :root[data-theme='light'] {
   --color-bg: #ffffff;
-  --color-bg-elevated: #f8faff;
-  --color-surface: #f1f5f9;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
   --color-border: #e2e8f0;
   --color-text: #1e293b;
   --color-text-muted: #94a3b8;
@@ -95,6 +104,9 @@
   --color-warning-bg: #fef3c7;
   --color-success: #16a34a;
   --color-success-bg: #f0fdf4;
+  --color-sidebar-hover: #ffffff;
+  --color-sidebar-active-bg: #fff7ed;
+  --color-sidebar-active-text: #f97316;
 
   color-scheme: light;
 }
@@ -176,4 +188,18 @@ input[type='reset'] {
   -webkit-appearance: none;
   appearance: none;
   color: var(--color-text);
+}
+
+/* src/assets 内の黒線+白のモノクロ svg アイコンは <img src> で読み込んでいるため、
+   ファイル内部の色は CSS の color/currentColor では変更できない。黒/白のみの
+   配色なので invert(1) で色相をずらさずに白線へ反転できる。ブランドロゴや
+   赤/ピンク/黄色など色付きのアイコン画像には .themed-icon を付けないこと。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) img.themed-icon {
+    filter: invert(1);
+  }
+}
+
+:root[data-theme='dark'] img.themed-icon {
+  filter: invert(1);
 }

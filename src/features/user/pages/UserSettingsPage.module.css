@@ -3,6 +3,29 @@
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  --settings-accent: #f97316;
+  --settings-accent-hover: #ea6c0a;
+  --settings-accent-disabled: #fdba74;
+  --settings-danger: #ef4444;
+  --settings-danger-hover: #dc2626;
+}
+
+:global(:root[data-theme='dark']) .page {
+  --settings-accent: var(--color-primary);
+  --settings-accent-hover: var(--color-primary-hover);
+  --settings-accent-disabled: var(--color-border);
+  --settings-danger: #e11d48;
+  --settings-danger-hover: #be123c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .page {
+    --settings-accent: var(--color-primary);
+    --settings-accent-hover: var(--color-primary-hover);
+    --settings-accent-disabled: var(--color-border);
+    --settings-danger: #e11d48;
+    --settings-danger-hover: #be123c;
+  }
 }
 
 .leftPanel {
@@ -61,7 +84,9 @@
   font-size: 0.95rem;
   color: var(--color-text);
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .menuItem:hover {
@@ -75,10 +100,10 @@
 }
 
 .menuItemActive {
-  background-color: #fff7ed;
-  color: #f97316;
+  background-color: var(--color-sidebar-active-bg);
+  color: var(--color-sidebar-active-text);
   font-weight: 600;
-  border-right: 3px solid #f97316;
+  border-right: 3px solid var(--color-sidebar-active-text);
 }
 
 .menuArrow {
@@ -87,7 +112,7 @@
 }
 
 .menuItemActive .menuArrow {
-  color: #f97316;
+  color: var(--color-sidebar-active-text);
 }
 
 /* 右パネル */
@@ -118,7 +143,7 @@
   justify-content: space-between;
   width: 100%;
   padding: 1rem 1.25rem;
-  background: var(--color-bg-elevated);
+  background: var(--color-bg);
   border: none;
   border-radius: 0;
   border-bottom: 1px solid var(--color-border);
@@ -216,12 +241,24 @@
   padding: 0.75rem 1rem;
   border-radius: 8px;
   border: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
+  background: var(--color-bg);
   cursor: pointer;
   font-size: 0.9rem;
   color: var(--color-text);
   font-weight: 500;
   transition: background-color 0.15s ease;
+}
+
+:global(:root[data-theme='dark']) .subMenuItem,
+:global(:root[data-theme='dark']) .actionBtn {
+  background: var(--color-bg-elevated);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .subMenuItem,
+  :global(:root:not([data-theme])) .actionBtn {
+    background: var(--color-bg-elevated);
+  }
 }
 
 .actionBtn:hover {
@@ -240,17 +277,66 @@
 }
 
 .deleteBtn {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger);
+  background-color: var(--settings-danger);
+  border-color: var(--settings-danger);
   color: #fff;
   font-weight: 700;
   font-size: 1rem;
   padding: 0.85rem 1rem;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.actionBtn.deleteBtn {
+  background: var(--settings-danger);
+  background-color: var(--settings-danger);
+  border-color: var(--settings-danger);
+  color: #fff;
+}
+
+:global(:root[data-theme='dark']) .actionBtn.deleteBtn {
+  background: var(--settings-danger);
+  background-color: var(--settings-danger);
+  border-color: var(--settings-danger);
+  color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .actionBtn.deleteBtn {
+    background: var(--settings-danger);
+    background-color: var(--settings-danger);
+    border-color: var(--settings-danger);
+    color: #fff;
+  }
 }
 
 .deleteBtn:hover {
-  background-color: #dc2626;
-  border-color: #dc2626;
+  background-color: var(--settings-danger-hover);
+  border-color: var(--settings-danger-hover);
+}
+
+.actionBtn.deleteBtn:hover {
+  background: var(--settings-danger-hover);
+  background-color: var(--settings-danger-hover);
+  border-color: var(--settings-danger-hover);
+  color: #fff;
+}
+
+:global(:root[data-theme='dark']) .actionBtn.deleteBtn:hover {
+  background: var(--settings-danger-hover);
+  background-color: var(--settings-danger-hover);
+  border-color: var(--settings-danger-hover);
+  color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .actionBtn.deleteBtn:hover {
+    background: var(--settings-danger-hover);
+    background-color: var(--settings-danger-hover);
+    border-color: var(--settings-danger-hover);
+    color: #fff;
+  }
 }
 
 /* パスワード変更 */
@@ -315,13 +401,13 @@
 }
 
 .input:focus {
-  border-color: #f97316;
+  border-color: var(--settings-accent);
 }
 
 .submitBtn {
   width: 100%;
   padding: 0.8rem 1rem;
-  background: #f97316;
+  background: var(--settings-accent);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -333,12 +419,12 @@
 }
 
 .submitBtn:hover {
-  background: #ea6c0a;
+  background: var(--settings-accent-hover);
   border-color: transparent;
 }
 
 .submitBtn:disabled {
-  background: #fdba74;
+  background: var(--settings-accent-disabled);
   cursor: not-allowed;
 }
 
@@ -487,7 +573,7 @@
 }
 
 .radioInput:checked {
-  border-color: #7c6fcd;
+  border-color: var(--settings-accent);
 }
 
 .radioInput:checked::after {
@@ -499,7 +585,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: #7c6fcd;
+  background: var(--settings-accent);
 }
 
 .radioLabel {
@@ -523,7 +609,7 @@
 }
 
 .textarea:focus {
-  border-color: #f97316;
+  border-color: var(--settings-accent);
 }
 
 .textarea::placeholder {

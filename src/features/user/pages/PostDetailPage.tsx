@@ -365,14 +365,14 @@ export const PostDetailPage = () => {
                                   setUpdateError('');
                                 }}
                               >
-                                <img src={editIcon} alt="" className={styles.dropdownIcon} />
+                                <img src={editIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
                                 編集
                               </button>
                               <button
                                 className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
                                 onClick={() => { setMenuOpen(false); handleDelete(); }}
                               >
-                                <img src={deleteIcon} alt="" className={styles.dropdownIconDelete} />
+                                <img src={deleteIcon} alt="" className={`${styles.dropdownIconDelete} themed-icon`} />
                                 削除
                               </button>
                             </>
@@ -389,7 +389,7 @@ export const PostDetailPage = () => {
                                 className={styles.dropdownItem}
                                 onClick={() => { setMenuOpen(false); setReportTarget(post); }}
                               >
-                                <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                                <img src={reportIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
                                 通報
                               </button>
                             </>
@@ -442,7 +442,7 @@ export const PostDetailPage = () => {
 
                 <div className={styles.postStats}>
                   <span className={styles.replyCount}>
-                    <img src={commentIcon} alt="返信" className={styles.commentIcon} />
+                    <img src={commentIcon} alt="返信" className={`${styles.commentIcon} themed-icon`} />
                     <strong>{post.replyCount}</strong> 件の返信
                   </span>
                   <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
