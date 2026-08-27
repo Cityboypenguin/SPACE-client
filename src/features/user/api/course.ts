@@ -1,6 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
+import type { TimetableEntryColor } from '../lib/timetableColors';
 
 export type Course = {
   ID: string;
@@ -17,7 +18,7 @@ export type Course = {
 export type TimetableEntry = {
   ID: string;
   course: Course;
-  isProfileVisible: boolean;
+  color: TimetableEntryColor;
   createdAt: string;
 };
 
@@ -49,7 +50,7 @@ const MyTimetableDocument = graphql(`
   query MyTimetable($year: Int, $semester: String) {
     myTimetable(year: $year, semester: $semester) {
       ID
-      isProfileVisible
+      color
       createdAt
       course {
         ID
@@ -81,11 +82,11 @@ const CourseYearsDocument = graphql(`
   }
 `);
 
-const SetTimetableProfileVisibilityDocument = graphql(`
-  mutation SetTimetableProfileVisibility($id: ID!, $visible: Boolean!) {
-    setTimetableProfileVisibility(id: $id, visible: $visible) {
+const SetTimetableEntryColorDocument = graphql(`
+  mutation SetTimetableEntryColor($id: ID!, $color: TimetableEntryColor!) {
+    setTimetableEntryColor(id: $id, color: $color) {
       ID
-      isProfileVisible
+      color
       createdAt
       course {
         ID
@@ -106,7 +107,7 @@ const SetMyTimetableDocument = graphql(`
   mutation SetMyTimetable($year: Int!, $semester: String!, $baselineEntryIDs: [ID!]!, $courseIDs: [ID!]!) {
     setMyTimetable(year: $year, semester: $semester, baselineEntryIDs: $baselineEntryIDs, courseIDs: $courseIDs) {
       ID
-      isProfileVisible
+      color
       createdAt
       course {
         ID
@@ -155,9 +156,9 @@ export const getCourseYears = async (): Promise<number[]> => {
   return data.courseYears;
 };
 
-export const setTimetableProfileVisibility = async (id: string, visible: boolean): Promise<TimetableEntry> => {
-  const data = await requestDoc(SetTimetableProfileVisibilityDocument, { id, visible }, getUserToken());
-  return data.setTimetableProfileVisibility;
+export const setTimetableEntryColor = async (id: string, color: TimetableEntryColor): Promise<TimetableEntry> => {
+  const data = await requestDoc(SetTimetableEntryColorDocument, { id, color }, getUserToken());
+  return data.setTimetableEntryColor;
 };
 
 export const setMyTimetable = async (

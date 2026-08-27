@@ -1,7 +1,8 @@
 import type { Course } from '../api/course';
 import { USER_ID_KEY } from '../../../lib/authStorage';
+import type { TimetableEntryColor } from './timetableColors';
 
-export type DraftSlot = { course: Course; entryID?: string; isProfileVisible?: boolean };
+export type DraftSlot = { course: Course; entryID?: string; color?: TimetableEntryColor };
 export type TimetableDraft = Record<string, DraftSlot>;
 
 export type StoredTimetableDraft = {

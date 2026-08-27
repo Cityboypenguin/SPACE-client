@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -7,7 +7,7 @@ import {
   getCurrentSemester,
   getCourseYears,
   setMyTimetable,
-  setTimetableProfileVisibility,
+  setTimetableEntryColor,
   type TimetableEntry,
   type Course,
 } from '../api/course';
@@ -20,6 +20,7 @@ import {
   slotKey,
   type TimetableDraft,
 } from '../lib/timetableDraft';
+import { TIMETABLE_COLOR_PALETTE, getTimetableColorSwatch, type TimetableEntryColor } from '../lib/timetableColors';
 import styles from '../components/Timetable.module.css';
 
 const DAYS = ['月', '火', '水', '木', '金', '土'];
@@ -31,7 +32,7 @@ const buildDraftFromEntries = (entries: TimetableEntry[]): TimetableDraft => {
     draft[slotKey(e.course.dayOfWeek, e.course.period)] = {
       course: e.course,
       entryID: e.ID,
-      isProfileVisible: e.isProfileVisible,
+      color: e.color,
     };
   });
   return draft;
@@ -94,6 +95,7 @@ export const TimetablePage = () => {
   const [baselineEntryIDs, setBaselineEntryIDs] = useState<string[]>([]);
   const [committing, setCommitting] = useState(false);
   const [commitError, setCommitError] = useState('');
+  const [colorPickerKey, setColorPickerKey] = useState<string | null>(null);
 
   const hasChanges = useMemo(() => {
     if (!editMode) return false;
@@ -163,13 +165,13 @@ export const TimetablePage = () => {
     });
   };
 
-  const handleToggleDraftVisibility = async (key: string) => {
+  const handleSetDraftColor = async (key: string, color: TimetableEntryColor) => {
     const slotEntry = draft[key];
+    setColorPickerKey(null);
     if (!slotEntry?.entryID) return;
-    const nextVisible = !slotEntry.isProfileVisible;
-    await setTimetableProfileVisibility(slotEntry.entryID, nextVisible);
+    await setTimetableEntryColor(slotEntry.entryID, color);
     setDraft((prev) => {
-      const next = { ...prev, [key]: { ...prev[key], isProfileVisible: nextVisible } };
+      const next = { ...prev, [key]: { ...prev[key], color } };
       persistDraft(next, baselineEntryIDs);
       return next;
     });
@@ -229,6 +231,19 @@ export const TimetablePage = () => {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, viewYear, viewSemester, entries]);
+
+  // 色選択ポップオーバーの外側をクリックしたら閉じる。
+  useEffect(() => {
+    if (!colorPickerKey) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-color-picker-key]')) {
+        setColorPickerKey(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [colorPickerKey]);
 
   // ブラウザのリロード・タブ閉じによる下書き消失を警告する。
   useEffect(() => {
@@ -330,20 +345,39 @@ export const TimetablePage = () => {
                       const key = slotKey(day, period);
                       if (editMode) {
                         const slot = draft[key];
+                        const swatch = getTimetableColorSwatch(slot?.color);
                         return (
                           <td key={day} className={styles.cell}>
                             {slot ? (
-                              <div className={styles.courseChip}>
+                              <div
+                                className={styles.courseChip}
+                                style={{ '--chip-bg': swatch.bg, '--chip-border': swatch.border, '--chip-text': swatch.text } as CSSProperties}
+                              >
                                 <div className={styles.chipActions}>
                                   {slot.entryID && (
-                                    <button
-                                      type="button"
-                                      className={`${styles.chipActionButton} ${slot.isProfileVisible ? styles.chipActionButtonActive : ''}`}
-                                      title={slot.isProfileVisible ? 'プロフィールに公開中（クリックで非公開に）' : 'プロフィールに非公開（クリックで公開に）'}
-                                      onClick={() => { void handleToggleDraftVisibility(key); }}
-                                    >
-                                      ●
-                                    </button>
+                                    <div className={styles.colorPickerWrap} data-color-picker-key={key}>
+                                      <button
+                                        type="button"
+                                        className={styles.colorSwatchButton}
+                                        style={{ background: swatch.bg, borderColor: swatch.border }}
+                                        title="色を変更"
+                                        onClick={() => setColorPickerKey((prev) => (prev === key ? null : key))}
+                                      />
+                                      {colorPickerKey === key && (
+                                        <div className={styles.colorPickerPopover}>
+                                          {TIMETABLE_COLOR_PALETTE.map((s) => (
+                                            <button
+                                              key={s.key}
+                                              type="button"
+                                              className={styles.colorDot}
+                                              style={{ background: s.bg, borderColor: s.border }}
+                                              title={s.label}
+                                              onClick={() => { void handleSetDraftColor(key, s.key); }}
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   )}
                                   <button
                                     type="button"
@@ -369,11 +403,13 @@ export const TimetablePage = () => {
                       }
 
                       const entry = entryMap.get(key);
+                      const viewSwatch = entry ? getTimetableColorSwatch(entry.color) : null;
                       return (
                         <td key={day} className={styles.cell}>
                           {entry ? (
                             <div
                               className={`${styles.courseChip} ${styles.courseChipClickable} ${!isEditable ? styles.courseChipReadOnly : ''}`}
+                              style={{ '--chip-bg': viewSwatch!.bg, '--chip-border': viewSwatch!.border, '--chip-text': viewSwatch!.text, '--chip-hover-bg': viewSwatch!.hoverBg } as CSSProperties}
                               onClick={() => navigate(`/courses/chat/${entry.course.roomID}`, { state: { course: entry.course, year: viewYear, semester: viewSemester } })}
                             >
                               {entry.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}

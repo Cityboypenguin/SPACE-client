@@ -183,8 +183,8 @@
 .courseChip {
   height: 100%;
   border-radius: 8px;
-  background: #eef0ff;
-  border: 1px solid #dfe1fb;
+  background: var(--chip-bg, #eef0ff);
+  border: 1px solid var(--chip-border, #dfe1fb);
   padding: 6px 6px 4px;
   display: flex;
   flex-direction: column;
@@ -196,7 +196,7 @@
 }
 
 .courseChipClickable:hover {
-  background: #e4e6ff;
+  background: var(--chip-hover-bg, #e4e6ff);
 }
 
 .courseChipReadOnly {
@@ -215,7 +215,7 @@
 .courseName {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #373ec4;
+  color: var(--chip-text, #373ec4);
   line-height: 1.25;
   overflow: hidden;
   display: -webkit-box;
@@ -253,8 +253,46 @@
   padding: 0;
 }
 
-.chipActionButtonActive {
-  color: #646cff;
+.colorPickerWrap {
+  position: relative;
+}
+
+.colorSwatchButton {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  padding: 0;
+}
+
+.colorPickerPopover {
+  position: absolute;
+  top: 20px;
+  right: 0;
+  z-index: 10;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.colorDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease;
+}
+
+.colorDot:hover {
+  transform: scale(1.15);
 }
 
 .newBadge {
