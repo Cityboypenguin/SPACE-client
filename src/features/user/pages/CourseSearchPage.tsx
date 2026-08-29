@@ -67,11 +67,15 @@ export const CourseSearchPage = () => {
     <div>
       <UserSidebar />
       <main className={styles.main}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
-          <button onClick={() => navigate('/timetable', { state: { resumeEditMode: true } })}>
+        <div className={styles.header}>
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => navigate('/timetable', { state: { resumeEditMode: true } })}
+          >
             <ChevronLeft /> 戻る
           </button>
-          <h1 style={{ margin: 0, fontSize: '1.3rem' }}>授業を選択</h1>
+          <h1 className={styles.title}>授業を選択</h1>
         </div>
 
         <form className={styles.filters} onSubmit={handleSearchSubmit}>

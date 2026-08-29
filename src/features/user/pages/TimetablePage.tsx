@@ -25,6 +25,15 @@ import styles from '../components/Timetable.module.css';
 
 const DAYS = ['月', '火', '水', '木', '金', '土'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7];
+const PERIOD_TIMES: Record<number, string[]> = {
+  1: ['9:00', '10:30'],
+  2: ['10:45', '12:15'],
+  3: ['13:05', '14:35'],
+  4: ['14:50', '16:20'],
+  5: ['16:35', '18:05'],
+  6: ['18:35', '19:45'],
+  7: ['19:55', '21:25'],
+};
 
 const buildDraftFromEntries = (entries: TimetableEntry[]): TimetableDraft => {
   const draft: TimetableDraft = {};
@@ -104,8 +113,12 @@ export const TimetablePage = () => {
     for (const id of draftCourseIDs) {
       if (!baselineCourseIDs.has(id)) return true;
     }
+    for (const [key, slot] of Object.entries(draft)) {
+      const baselineEntry = entryMap.get(key);
+      if (baselineEntry && slot.color !== baselineEntry.color) return true;
+    }
     return false;
-  }, [editMode, draft, baselineCourseIDs]);
+  }, [editMode, draft, baselineCourseIDs, entryMap]);
 
   const persistDraft = (nextDraft: TimetableDraft, entryIDs: string[]) => {
     if (viewYear == null || !viewSemester) return;
@@ -166,11 +179,9 @@ export const TimetablePage = () => {
   };
 
   const handleSetDraftColor = async (key: string, color: TimetableEntryColor) => {
-    const slotEntry = draft[key];
     setColorPickerKey(null);
-    if (!slotEntry?.entryID) return;
-    await setTimetableEntryColor(slotEntry.entryID, color);
     setDraft((prev) => {
+      if (!prev[key]) return prev;
       const next = { ...prev, [key]: { ...prev[key], color } };
       persistDraft(next, baselineEntryIDs);
       return next;
@@ -183,7 +194,17 @@ export const TimetablePage = () => {
     setCommitError('');
     try {
       const courseIDs = Object.values(draft).map((s) => s.course.ID);
-      await setMyTimetable(viewYear, viewSemester, baselineEntryIDs, courseIDs);
+      const savedEntries = await setMyTimetable(viewYear, viewSemester, baselineEntryIDs, courseIDs);
+      await Promise.all(
+        savedEntries
+          .map((entry) => {
+            const draftSlot = draft[slotKey(entry.course.dayOfWeek, entry.course.period)];
+            return draftSlot?.color && draftSlot.color !== entry.color
+              ? setTimetableEntryColor(entry.ID, draftSlot.color)
+              : null;
+          })
+          .filter((request): request is Promise<TimetableEntry> => request !== null),
+      );
       clearTimetableDraft(viewYear, viewSemester);
       setEditMode(false);
       void mutate();
@@ -262,59 +283,61 @@ export const TimetablePage = () => {
 
   return (
     <div>
-      {!editMode && <UserSidebar />}
+      <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topActions}>
-          <div className={styles.semesterSelector}>
-            {/* 学期セレクタを操作するたびに「現在の学期」を明示的に再検証する。管理者が
-                別タブ等で学期を切り替えた直後でも、ここでの選択が正しく「編集可能」
-                かどうかを古いキャッシュ値で誤判定しないようにするため。 */}
-            <select
-              className={styles.yearSelect}
-              value={viewYear ?? ''}
-              disabled={editMode}
-              onChange={(e) => {
-                setSelectedYear(e.target.value ? Number(e.target.value) : undefined);
-              }}
-            >
-              {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <span>年</span>
-            <select
-              className={styles.semesterSelect}
-              value={viewSemester ?? ''}
-              disabled={editMode}
-              onChange={(e) => {
-                setSelectedSemester(e.target.value);
-              }}
-            >
-              <option value="前期">前期</option>
-              <option value="後期">後期</option>
-            </select>
-            {!isEditable && <span className={styles.readOnlyBadge}>閲覧のみ</span>}
+          <h1 className={styles.title}>時間割</h1>
+          <div className={styles.topControls}>
+            {!editMode && (
+              <>
+                <div className={styles.semesterSelector}>
+                  {/* 学期セレクタを操作するたびに「現在の学期」を明示的に再検証する。管理者が
+                      別タブ等で学期を切り替えた直後でも、ここでの選択が正しく「編集可能」
+                      かどうかを古いキャッシュ値で誤判定しないようにするため。 */}
+                  <select
+                    className={styles.yearSelect}
+                    value={viewYear ?? ''}
+                    onChange={(e) => {
+                      setSelectedYear(e.target.value ? Number(e.target.value) : undefined);
+                    }}
+                  >
+                    {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <div className={styles.semesterSlider} data-semester={viewSemester === '後期' ? 'late' : 'early'}>
+                    {(['前期', '後期'] as const).map((semester) => (
+                      <button
+                        key={semester}
+                        type="button"
+                        className={`${styles.semesterOption} ${viewSemester === semester ? styles.semesterOptionActive : ''}`}
+                        onClick={() => setSelectedSemester(semester)}
+                      >
+                        {semester}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.viewStateAction}>
+                  {!isEditable ? (
+                    <span className={styles.readOnlyBadge}>閲覧のみ</span>
+                  ) : (
+                    <button className={styles.searchButton} onClick={() => { void handleEnterEditMode(); }}>
+                      時間割を編集
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+            {editMode && (
+              <div className={styles.editActions}>
+                <button type="button" className={styles.cancelButton} onClick={() => { void handleCancelEdit(); }} disabled={committing}>
+                  キャンセル
+                </button>
+                <button type="button" className={styles.commitButton} onClick={() => { void handleCommit(); }} disabled={committing}>
+                  {committing ? '保存中...' : '保存'}
+                </button>
+              </div>
+            )}
           </div>
-          {isEditable && !editMode && (
-            <button className={styles.searchButton} onClick={() => { void handleEnterEditMode(); }}>
-              時間割を編集
-            </button>
-          )}
-          {editMode && (
-            <div className={styles.editActions}>
-              <button
-                type="button"
-                className={styles.pickButton}
-                onClick={() => navigate('/timetable/search', { state: { pickerMode: true } })}
-              >
-                授業を探す
-              </button>
-              <button type="button" className={styles.cancelButton} onClick={() => { void handleCancelEdit(); }} disabled={committing}>
-                キャンセル
-              </button>
-              <button type="button" className={styles.commitButton} onClick={() => { void handleCommit(); }} disabled={committing}>
-                {committing ? '保存中...' : '完了'}
-              </button>
-            </div>
-          )}
         </div>
 
         {editMode && commitError && (
@@ -340,7 +363,12 @@ export const TimetablePage = () => {
               <tbody>
                 {PERIODS.map((period) => (
                   <tr key={period}>
-                    <td className={styles.periodCell}>{period}限</td>
+                    <td className={styles.periodCell}>
+                      <span className={styles.periodNumber}>{period}</span>
+                      <span className={styles.periodTime}>
+                        {PERIOD_TIMES[period].map((time) => <span key={time}>{time}</span>)}
+                      </span>
+                    </td>
                     {DAYS.map((day) => {
                       const key = slotKey(day, period);
                       if (editMode) {
@@ -354,31 +382,32 @@ export const TimetablePage = () => {
                                 style={{ '--chip-bg': swatch.bg } as CSSProperties}
                               >
                                 <div className={styles.chipActions}>
-                                  {slot.entryID && (
-                                    <div className={styles.colorPickerWrap} data-color-picker-key={key}>
-                                      <button
-                                        type="button"
-                                        className={styles.colorSwatchButton}
-                                        style={{ background: swatch.bg }}
-                                        title="色を変更"
-                                        onClick={() => setColorPickerKey((prev) => (prev === key ? null : key))}
-                                      />
-                                      {colorPickerKey === key && (
-                                        <div className={styles.colorPickerPopover}>
-                                          {TIMETABLE_COLOR_PALETTE.map((s) => (
-                                            <button
-                                              key={s.key}
-                                              type="button"
-                                              className={styles.colorDot}
-                                              style={{ background: s.bg }}
-                                              title={s.label}
-                                              onClick={() => { void handleSetDraftColor(key, s.key); }}
-                                            />
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
+                                  <div
+                                    className={`${styles.colorPickerWrap} ${day === '土' ? styles.colorPickerWrapEdge : ''}`}
+                                    data-color-picker-key={key}
+                                  >
+                                    <button
+                                      type="button"
+                                      className={styles.colorSwatchButton}
+                                      style={{ '--selected-color': swatch.bg } as CSSProperties}
+                                      title="色を変更"
+                                      onClick={() => setColorPickerKey((prev) => (prev === key ? null : key))}
+                                    />
+                                    {colorPickerKey === key && (
+                                      <div className={styles.colorPickerPopover}>
+                                        {TIMETABLE_COLOR_PALETTE.map((s) => (
+                                          <button
+                                            key={s.key}
+                                            type="button"
+                                            className={styles.colorDot}
+                                            style={{ background: s.bg }}
+                                            title={s.label}
+                                            onClick={() => { void handleSetDraftColor(key, s.key); }}
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
                                   <button
                                     type="button"
                                     className={styles.chipActionButton}
@@ -416,7 +445,9 @@ export const TimetablePage = () => {
                               <span className={styles.courseName}>{entry.course.courseName}</span>
                               <span className={styles.teacherName}>{entry.course.teacherName}</span>
                             </div>
-                          ) : null}
+                          ) : (
+                            <div className={styles.emptySlot} />
+                          )}
                         </td>
                       );
                     })}
