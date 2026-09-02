@@ -78,6 +78,7 @@ const PollsDocument = graphql(`
         isMine
       }
       total
+      unvotedTotal
     }
   }
 `);
@@ -131,7 +132,7 @@ const DeletePollDocument = graphql(`
   }
 `);
 
-export type PollPage = { items: Poll[]; total: number };
+export type PollPage = { items: Poll[]; total: number; unvotedTotal: number };
 
 // votePoll/pollUpdated の応答は options(得票数)だけを含む部分オブジェクト。
 // 呼び出し側は既存の Poll に上書きマージして使う。

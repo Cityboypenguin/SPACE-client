@@ -40,16 +40,24 @@ type PollUpdatedData = { pollUpdated: PollVoteUpdate };
 type PollDeletedData = { pollDeleted: Pick<Poll, 'ID'> };
 
 const PAGE_SIZE = 50;
+const isPollUnvoted = (poll: Pick<Poll, 'options'>) => poll.options.every((o) => !o.votedByMe);
+const unvotedDelta = (before: Pick<Poll, 'options'>, after: Pick<Poll, 'options'>) => {
+  const wasUnvoted = isPollUnvoted(before);
+  const isUnvoted = isPollUnvoted(after);
+  if (wasUnvoted === isUnvoted) return 0;
+  return isUnvoted ? 1 : -1;
+};
 
 type State = {
   polls: Poll[];
   total: number;
+  unvotedTotal: number;
   loading: boolean;
   error: string;
 };
 
 export const useCoursePolls = (roomId: string | undefined) => {
-  const [state, setState] = useState<State>({ polls: [], total: 0, loading: true, error: '' });
+  const [state, setState] = useState<State>({ polls: [], total: 0, unvotedTotal: 0, loading: true, error: '' });
   const [loadingMore, setLoadingMore] = useState(false);
   const offsetRef = useRef(0);
 
@@ -57,14 +65,14 @@ export const useCoursePolls = (roomId: string | undefined) => {
     if (!roomId) return;
     let active = true;
     offsetRef.current = 0;
-    setState({ polls: [], total: 0, loading: true, error: '' });
+    setState({ polls: [], total: 0, unvotedTotal: 0, loading: true, error: '' });
 
     (async () => {
       try {
         const page = await listPolls(roomId, PAGE_SIZE, 0);
         if (!active) return;
         offsetRef.current = page.items.length;
-        setState({ polls: page.items, total: page.total, loading: false, error: '' });
+        setState({ polls: page.items, total: page.total, unvotedTotal: page.unvotedTotal, loading: false, error: '' });
       } catch (err) {
         if (!active) return;
         setState((prev) => ({
@@ -88,6 +96,7 @@ export const useCoursePolls = (roomId: string | undefined) => {
         ...prev,
         polls: [...prev.polls, ...page.items.filter((p) => !prev.polls.some((e) => e.ID === p.ID))],
         total: page.total,
+        unvotedTotal: page.unvotedTotal,
       }));
     } finally {
       setLoadingMore(false);
@@ -105,7 +114,12 @@ export const useCoursePolls = (roomId: string | undefined) => {
         setState((prev) => {
           if (prev.polls.some((e) => e.ID === p.ID)) return prev;
           offsetRef.current += 1;
-          return { ...prev, polls: [p, ...prev.polls], total: prev.total + 1 };
+          return {
+            ...prev,
+            polls: [p, ...prev.polls],
+            total: prev.total + 1,
+            unvotedTotal: prev.unvotedTotal + (isPollUnvoted(p) ? 1 : 0),
+          };
         });
       },
       (err) => console.error('[useCoursePolls] pollAdded subscription error:', err),
@@ -122,9 +136,15 @@ export const useCoursePolls = (roomId: string | undefined) => {
         const deletedID = data.pollDeleted?.ID;
         if (!deletedID) return;
         setState((prev) => {
-          if (!prev.polls.some((e) => e.ID === deletedID)) return prev;
+          const deleted = prev.polls.find((e) => e.ID === deletedID);
+          if (!deleted) return prev;
           offsetRef.current -= 1;
-          return { ...prev, polls: prev.polls.filter((e) => e.ID !== deletedID), total: prev.total - 1 };
+          return {
+            ...prev,
+            polls: prev.polls.filter((e) => e.ID !== deletedID),
+            total: prev.total - 1,
+            unvotedTotal: Math.max(0, prev.unvotedTotal - (isPollUnvoted(deleted) ? 1 : 0)),
+          };
         });
       },
       (err) => console.error('[useCoursePolls] pollDeleted subscription error:', err),
@@ -141,10 +161,16 @@ export const useCoursePolls = (roomId: string | undefined) => {
       (data) => {
         const p = data.pollUpdated;
         if (!p) return;
-        setState((prev) => ({
-          ...prev,
-          polls: prev.polls.map((e) => (e.ID === p.ID ? { ...e, ...p } : e)),
-        }));
+        setState((prev) => {
+          const existing = prev.polls.find((e) => e.ID === p.ID);
+          if (!existing) return prev;
+          const next = { ...existing, ...p };
+          return {
+            ...prev,
+            polls: prev.polls.map((e) => (e.ID === p.ID ? next : e)),
+            unvotedTotal: prev.unvotedTotal + unvotedDelta(existing, next),
+          };
+        });
       },
       (err) => console.error('[useCoursePolls] pollUpdated subscription error:', err),
     );
@@ -154,24 +180,41 @@ export const useCoursePolls = (roomId: string | undefined) => {
     setState((prev) => {
       if (prev.polls.some((e) => e.ID === p.ID)) return prev;
       offsetRef.current += 1;
-      return { ...prev, polls: [p, ...prev.polls], total: prev.total + 1 };
+      return {
+        ...prev,
+        polls: [p, ...prev.polls],
+        total: prev.total + 1,
+        unvotedTotal: prev.unvotedTotal + (isPollUnvoted(p) ? 1 : 0),
+      };
     });
   }, []);
 
   // p は votePoll の応答(options だけを含む部分オブジェクト)を受け取り、
   // 既存の Poll に上書きマージする(user 等は再取得しない)。
   const updatePoll = useCallback((p: Poll | PollVoteUpdate) => {
-    setState((prev) => ({
-      ...prev,
-      polls: prev.polls.map((e) => (e.ID === p.ID ? { ...e, ...p } : e)),
-    }));
+    setState((prev) => {
+      const existing = prev.polls.find((e) => e.ID === p.ID);
+      if (!existing) return prev;
+      const next = { ...existing, ...p };
+      return {
+        ...prev,
+        polls: prev.polls.map((e) => (e.ID === p.ID ? next : e)),
+        unvotedTotal: prev.unvotedTotal + unvotedDelta(existing, next),
+      };
+    });
   }, []);
 
   const removePoll = useCallback((pollID: string) => {
     setState((prev) => {
-      if (!prev.polls.some((e) => e.ID === pollID)) return prev;
+      const removed = prev.polls.find((e) => e.ID === pollID);
+      if (!removed) return prev;
       offsetRef.current -= 1;
-      return { ...prev, polls: prev.polls.filter((e) => e.ID !== pollID), total: prev.total - 1 };
+      return {
+        ...prev,
+        polls: prev.polls.filter((e) => e.ID !== pollID),
+        total: prev.total - 1,
+        unvotedTotal: Math.max(0, prev.unvotedTotal - (isPollUnvoted(removed) ? 1 : 0)),
+      };
     });
   }, []);
 

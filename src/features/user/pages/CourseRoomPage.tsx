@@ -31,7 +31,10 @@ export const CourseRoomPage = () => {
   const [isPollView, setIsPollView] = useState(false);
 
   const pollsState = useCoursePolls(roomId);
-  const unvotedPollCount = pollsState.polls.filter((p) => p.options.every((o) => !o.votedByMe)).length;
+  const unvotedPollCount = pollsState.unvotedTotal;
+  const pollButtonLabel = unvotedPollCount > 0
+    ? `投票画面へ移動（未投票 ${unvotedPollCount}件）`
+    : '投票画面へ移動';
 
   const { data: room } = useSWR<Room | null>(
     roomId ? ['course-room', roomId] : null,
@@ -103,7 +106,13 @@ export const CourseRoomPage = () => {
                 </div>
               )}
             </div>
-            <button type="button" className={styles.pollButton} onClick={() => setIsPollView(true)}>
+            <button
+              type="button"
+              className={styles.pollButton}
+              onClick={() => setIsPollView(true)}
+              aria-label={pollButtonLabel}
+              title={pollButtonLabel}
+            >
               {unvotedPollCount > 0 && (
                 <span className={styles.pollButtonBadge}>
                   <UnreadCountBadge count={unvotedPollCount} />
