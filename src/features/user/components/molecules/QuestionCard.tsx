@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { type Question } from '../../api/question';
+import { AnswerItem } from './AnswerItem';
 import styles from '../QuestionBox.module.css';
 
 type Props = {
@@ -8,13 +9,20 @@ type Props = {
   subscribeAnswers: (questionID: string) => () => void;
   onAnswerSubmit: (questionID: string, body: string) => Promise<void>;
   onSelectBestAnswer: (questionID: string, answerID: string) => Promise<void>;
+  onCancelBestAnswer: (questionID: string) => Promise<void>;
+  onUpdateAnswer: (questionID: string, answerID: string, body: string) => Promise<void>;
+  onDeleteAnswer: (questionID: string, answerID: string) => Promise<void>;
+  onLikeAnswer: (questionID: string, answerID: string) => Promise<void>;
+  onUnlikeAnswer: (questionID: string, answerID: string) => Promise<void>;
 };
 
-export const QuestionCard = ({ question, roomWritable, subscribeAnswers, onAnswerSubmit, onSelectBestAnswer }: Props) => {
+export const QuestionCard = ({
+  question, roomWritable, subscribeAnswers, onAnswerSubmit,
+  onSelectBestAnswer, onCancelBestAnswer, onUpdateAnswer, onDeleteAnswer, onLikeAnswer, onUnlikeAnswer,
+}: Props) => {
   const [expanded, setExpanded] = useState(false);
   const [answerBody, setAnswerBody] = useState('');
   const [answering, setAnswering] = useState(false);
-  const [selectingID, setSelectingID] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -39,19 +47,8 @@ export const QuestionCard = ({ question, roomWritable, subscribeAnswers, onAnswe
     }
   };
 
-  const handleSelectBestAnswer = async (answerID: string) => {
-    setSelectingID(answerID);
-    setError('');
-    try {
-      await onSelectBestAnswer(question.ID, answerID);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ベストアンサーの選択に失敗しました。');
-    } finally {
-      setSelectingID(null);
-    }
-  };
-
   const canSelectBestAnswer = question.isMine && !question.isAnswered;
+  const canCancelBestAnswer = question.isMine && question.isAnswered;
 
   return (
     <div className={styles.card}>
@@ -76,23 +73,19 @@ export const QuestionCard = ({ question, roomWritable, subscribeAnswers, onAnswe
           {question.answers.map((answer) => {
             const isBest = question.bestAnswer?.ID === answer.ID;
             return (
-              <div key={answer.ID} className={`${styles.answerItem} ${isBest ? styles.answerItemBest : ''}`}>
-                <div className={styles.answerHeader}>
-                  <span className={styles.senderName}>{answer.user.name}</span>
-                  {isBest && <span className={styles.bestAnswerLabel}>ベストアンサー</span>}
-                  {canSelectBestAnswer && !isBest && (
-                    <button
-                      type="button"
-                      className={styles.selectBestButton}
-                      disabled={selectingID === answer.ID}
-                      onClick={() => handleSelectBestAnswer(answer.ID)}
-                    >
-                      ベストアンサーに選ぶ
-                    </button>
-                  )}
-                </div>
-                <p className={styles.body} style={{ margin: 0 }}>{answer.body}</p>
-              </div>
+              <AnswerItem
+                key={answer.ID}
+                answer={answer}
+                isBest={isBest}
+                canSelectBest={canSelectBestAnswer}
+                canCancelBest={canCancelBestAnswer}
+                onSelectBest={() => onSelectBestAnswer(question.ID, answer.ID)}
+                onCancelBest={() => onCancelBestAnswer(question.ID)}
+                onUpdate={(body) => onUpdateAnswer(question.ID, answer.ID, body)}
+                onDelete={() => onDeleteAnswer(question.ID, answer.ID)}
+                onLike={() => onLikeAnswer(question.ID, answer.ID)}
+                onUnlike={() => onUnlikeAnswer(question.ID, answer.ID)}
+              />
             );
           })}
 

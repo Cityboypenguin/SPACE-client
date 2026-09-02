@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { listPolls, type Poll, POLL_FIELDS } from '../api/poll';
+import { listPolls, type Poll, type PollVoteUpdate, POLL_FIELDS } from '../api/poll';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 import { toUserMessage } from '../../../lib/errorMessages';
 
@@ -11,16 +11,33 @@ const POLL_ADDED_SUBSCRIPTION = `
   }
 `;
 
+// 投票のたびに全閲覧者へ配信されるため、変わる options だけに絞り、変わらない
+// user/question 等は再送しない。
 const POLL_UPDATED_SUBSCRIPTION = `
   subscription PollUpdated($pollID: ID!) {
     pollUpdated(pollID: $pollID) {
-      ${POLL_FIELDS}
+      ID
+      options {
+        ID
+        label
+        voteCount
+        votedByMe
+      }
+    }
+  }
+`;
+
+const POLL_DELETED_SUBSCRIPTION = `
+  subscription PollDeleted($roomID: ID!) {
+    pollDeleted(roomID: $roomID) {
+      ID
     }
   }
 `;
 
 type PollAddedData = { pollAdded: Poll };
-type PollUpdatedData = { pollUpdated: Poll };
+type PollUpdatedData = { pollUpdated: PollVoteUpdate };
+type PollDeletedData = { pollDeleted: Pick<Poll, 'ID'> };
 
 const PAGE_SIZE = 50;
 
@@ -96,6 +113,25 @@ export const useCoursePolls = (roomId: string | undefined) => {
     return () => unsubscribe();
   }, [roomId]);
 
+  useEffect(() => {
+    if (!roomId) return;
+    const unsubscribe = subscribeToGraphQL<PollDeletedData>(
+      POLL_DELETED_SUBSCRIPTION,
+      { roomID: roomId },
+      (data) => {
+        const deletedID = data.pollDeleted?.ID;
+        if (!deletedID) return;
+        setState((prev) => {
+          if (!prev.polls.some((e) => e.ID === deletedID)) return prev;
+          offsetRef.current -= 1;
+          return { ...prev, polls: prev.polls.filter((e) => e.ID !== deletedID), total: prev.total - 1 };
+        });
+      },
+      (err) => console.error('[useCoursePolls] pollDeleted subscription error:', err),
+    );
+    return () => unsubscribe();
+  }, [roomId]);
+
   // 投票結果の更新(pollUpdated)は pollID 単位のサブスクリプションのため、
   // 現在表示中の各投票ごとに個別購読する関数として公開する。
   const subscribePollUpdates = useCallback((pollID: string) => {
@@ -107,7 +143,7 @@ export const useCoursePolls = (roomId: string | undefined) => {
         if (!p) return;
         setState((prev) => ({
           ...prev,
-          polls: prev.polls.map((e) => (e.ID === p.ID ? p : e)),
+          polls: prev.polls.map((e) => (e.ID === p.ID ? { ...e, ...p } : e)),
         }));
       },
       (err) => console.error('[useCoursePolls] pollUpdated subscription error:', err),
@@ -122,11 +158,21 @@ export const useCoursePolls = (roomId: string | undefined) => {
     });
   }, []);
 
-  const updatePoll = useCallback((p: Poll) => {
+  // p は votePoll の応答(options だけを含む部分オブジェクト)を受け取り、
+  // 既存の Poll に上書きマージする(user 等は再取得しない)。
+  const updatePoll = useCallback((p: Poll | PollVoteUpdate) => {
     setState((prev) => ({
       ...prev,
-      polls: prev.polls.map((e) => (e.ID === p.ID ? p : e)),
+      polls: prev.polls.map((e) => (e.ID === p.ID ? { ...e, ...p } : e)),
     }));
+  }, []);
+
+  const removePoll = useCallback((pollID: string) => {
+    setState((prev) => {
+      if (!prev.polls.some((e) => e.ID === pollID)) return prev;
+      offsetRef.current -= 1;
+      return { ...prev, polls: prev.polls.filter((e) => e.ID !== pollID), total: prev.total - 1 };
+    });
   }, []);
 
   return {
@@ -137,5 +183,6 @@ export const useCoursePolls = (roomId: string | undefined) => {
     subscribePollUpdates,
     addPoll,
     updatePoll,
+    removePoll,
   };
 };

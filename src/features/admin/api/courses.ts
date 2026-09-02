@@ -114,6 +114,27 @@ export const listCourseYears = async (): Promise<number[]> => {
   return data.adminListCourseYears;
 };
 
+const AdminGetCourseDocument = graphql(`
+  query AdminGetCourse($id: ID!) {
+    adminGetCourse(id: $id) {
+      ID
+      roomID
+      dayOfWeek
+      period
+      teacherName
+      courseName
+      year
+      semester
+      createdAt
+    }
+  }
+`);
+
+export const getCourse = async (id: string): Promise<Course | null> => {
+  const data = await requestDoc(AdminGetCourseDocument, { id }, getAdminToken());
+  return data.adminGetCourse ?? null;
+};
+
 export const listCourses = async (
   filter: { year?: number; semester?: string; dayOfWeek?: string; keyword?: string },
   limit = 20,
@@ -145,4 +166,136 @@ export const getCourseImportStatus = async (): Promise<CourseImportStatus> => {
 export const triggerCourseImport = async (year: number): Promise<CourseImportStatus> => {
   const data = await requestDoc(AdminTriggerCourseImportDocument, { year }, getAdminToken());
   return data.adminTriggerCourseImport;
+};
+
+export type ChatUser = {
+  ID: string;
+  name: string;
+  accountID: string;
+  avatarUrl?: string | null;
+};
+
+export type Answer = {
+  ID: string;
+  questionID: string;
+  user: ChatUser;
+  body: string;
+  createdAt: string;
+};
+
+export type Question = {
+  ID: string;
+  roomID: string;
+  user: ChatUser;
+  body: string;
+  isAnswered: boolean;
+  answers: Answer[];
+  createdAt: string;
+};
+
+export type PollOption = {
+  ID: string;
+  label: string;
+  voteCount: number;
+};
+
+export type Poll = {
+  ID: string;
+  roomID: string;
+  user: ChatUser;
+  question: string;
+  allowMultipleChoice: boolean;
+  options: PollOption[];
+  createdAt: string;
+};
+
+const AdminGetCourseQuestionsDocument = graphql(`
+  query AdminGetCourseQuestions($roomID: ID!, $limit: Int) {
+    questions(roomID: $roomID, limit: $limit) {
+      items {
+        ID
+        roomID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        body
+        isAnswered
+        answers {
+          ID
+          questionID
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          body
+          createdAt
+        }
+        createdAt
+      }
+      total
+    }
+  }
+`);
+
+export const getCourseQuestions = async (roomID: string, limit = 200): Promise<{ items: Question[]; total: number }> => {
+  const data = await requestDoc(AdminGetCourseQuestionsDocument, { roomID, limit }, getAdminToken());
+  return data.questions as { items: Question[]; total: number };
+};
+
+const AdminDeleteQuestionDocument = graphql(`
+  mutation AdminDeleteQuestion($id: ID!) {
+    adminDeleteQuestion(id: $id)
+  }
+`);
+
+export const adminDeleteQuestion = async (id: string): Promise<boolean> => {
+  const data = await requestDoc(AdminDeleteQuestionDocument, { id }, getAdminToken());
+  return data.adminDeleteQuestion;
+};
+
+const AdminGetCoursePollsDocument = graphql(`
+  query AdminGetCoursePolls($roomID: ID!, $limit: Int) {
+    polls(roomID: $roomID, limit: $limit) {
+      items {
+        ID
+        roomID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        question
+        allowMultipleChoice
+        options {
+          ID
+          label
+          voteCount
+        }
+        createdAt
+      }
+      total
+    }
+  }
+`);
+
+export const getCoursePolls = async (roomID: string, limit = 200): Promise<{ items: Poll[]; total: number }> => {
+  const data = await requestDoc(AdminGetCoursePollsDocument, { roomID, limit }, getAdminToken());
+  return data.polls as { items: Poll[]; total: number };
+};
+
+const AdminDeletePollDocument = graphql(`
+  mutation AdminDeletePoll($pollID: ID!) {
+    deletePoll(pollID: $pollID)
+  }
+`);
+
+export const adminDeletePoll = async (pollID: string): Promise<boolean> => {
+  const data = await requestDoc(AdminDeletePollDocument, { pollID }, getAdminToken());
+  return data.deletePoll;
 };

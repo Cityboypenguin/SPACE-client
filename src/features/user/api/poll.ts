@@ -18,6 +18,7 @@ export type Poll = {
   allowMultipleChoice: boolean;
   options: PollOption[];
   createdAt: string;
+  isMine: boolean;
 };
 
 // useCoursePolls.ts の WebSocket サブスクリプション（codegen 対象外の
@@ -41,6 +42,7 @@ export const POLL_FIELDS = `
     votedByMe
   }
   createdAt
+  isMine
 `;
 
 const PollsDocument = graphql(`
@@ -64,6 +66,7 @@ const PollsDocument = graphql(`
           votedByMe
         }
         createdAt
+        isMine
       }
       total
     }
@@ -90,35 +93,38 @@ const CreatePollDocument = graphql(`
         votedByMe
       }
       createdAt
+      isMine
     }
   }
 `);
 
+// 投票では options(得票数/自分の投票状況)しか変わらないため、変わらない
+// user/question/allowMultipleChoice 等は再取得しない。
 const VotePollDocument = graphql(`
   mutation VotePoll($pollID: ID!, $optionIDs: [ID!]!) {
     votePoll(pollID: $pollID, optionIDs: $optionIDs) {
       ID
-      roomID
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
-      question
-      allowMultipleChoice
       options {
         ID
         label
         voteCount
         votedByMe
       }
-      createdAt
     }
   }
 `);
 
+const DeletePollDocument = graphql(`
+  mutation DeletePoll($pollID: ID!) {
+    deletePoll(pollID: $pollID)
+  }
+`);
+
 export type PollPage = { items: Poll[]; total: number };
+
+// votePoll/pollUpdated の応答は options(得票数)だけを含む部分オブジェクト。
+// 呼び出し側は既存の Poll に上書きマージして使う。
+export type PollVoteUpdate = Pick<Poll, 'ID' | 'options'>;
 
 export const listPolls = async (roomID: string, limit = 50, offset = 0): Promise<PollPage> => {
   const data = await requestDoc(PollsDocument, { roomID, limit, offset }, getUserToken());
@@ -135,7 +141,12 @@ export const createPoll = async (
   return data.createPoll;
 };
 
-export const votePoll = async (pollID: string, optionIDs: string[]): Promise<Poll> => {
+export const votePoll = async (pollID: string, optionIDs: string[]): Promise<PollVoteUpdate> => {
   const data = await requestDoc(VotePollDocument, { pollID, optionIDs }, getUserToken());
   return data.votePoll;
+};
+
+export const deletePoll = async (pollID: string): Promise<boolean> => {
+  const data = await requestDoc(DeletePollDocument, { pollID }, getUserToken());
+  return data.deletePoll;
 };

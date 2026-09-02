@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { useToast } from '../../../context/ToastContext';
 import {
@@ -33,6 +34,7 @@ const POLL_INTERVAL_MS = 3000;
 
 export const AdminCourseManagementPage = () => {
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -312,7 +314,7 @@ export const AdminCourseManagementPage = () => {
               ) : (
                 <>
                   <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 0.5rem' }}>
-                    全{courseTotal}件中 {listOffset + 1}〜{listOffset + courseItems.length}件を表示
+                    全{courseTotal}件中 {listOffset + 1}〜{listOffset + courseItems.length}件を表示（行をクリックするとチャット内容を確認できます）
                   </p>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -327,7 +329,11 @@ export const AdminCourseManagementPage = () => {
                       </thead>
                       <tbody>
                         {courseItems.map((course) => (
-                          <tr key={course.ID} style={{ borderBottom: '1px solid #eee' }}>
+                          <tr
+                            key={course.ID}
+                            onClick={() => navigate(`/admin/courses/${course.ID}`, { state: { course } })}
+                            style={{ borderBottom: '1px solid #eee', cursor: 'pointer' }}
+                          >
                             <td style={{ padding: '0.5rem' }}>{course.courseName}</td>
                             <td style={{ padding: '0.5rem' }}>{course.teacherName}</td>
                             <td style={{ padding: '0.5rem' }}>{course.dayOfWeek}曜{course.period}限</td>

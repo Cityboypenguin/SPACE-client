@@ -10,6 +10,8 @@ export type Answer = {
   body: string;
   createdAt: string;
   isMine: boolean;
+  likeCount: number;
+  likedByMe: boolean;
 };
 
 export type Question = {
@@ -18,7 +20,9 @@ export type Question = {
   user: MessageUser;
   body: string;
   isAnswered: boolean;
-  bestAnswer: Answer | null;
+  // ID only: 画面では question.bestAnswer?.ID との一致判定にしか使わないため、
+  // 回答本体(user/body/likeCount 等)は取得しない。
+  bestAnswer: { ID: string } | null;
   answers: Answer[];
   createdAt: string;
   updatedAt: string;
@@ -42,16 +46,6 @@ export const QUESTION_FIELDS = `
   isMine
   bestAnswer {
     ID
-    questionID
-    user {
-      ID
-      name
-      accountID
-      avatarUrl
-    }
-    body
-    createdAt
-    isMine
   }
   answers {
     ID
@@ -65,6 +59,8 @@ export const QUESTION_FIELDS = `
     body
     createdAt
     isMine
+    likeCount
+    likedByMe
   }
   createdAt
   updatedAt
@@ -82,6 +78,8 @@ export const ANSWER_FIELDS = `
   body
   createdAt
   isMine
+  likeCount
+  likedByMe
 `;
 
 const QuestionsDocument = graphql(`
@@ -101,16 +99,6 @@ const QuestionsDocument = graphql(`
         isMine
         bestAnswer {
           ID
-          questionID
-          user {
-            ID
-            name
-            accountID
-            avatarUrl
-          }
-          body
-          createdAt
-          isMine
         }
         answers {
           ID
@@ -124,6 +112,8 @@ const QuestionsDocument = graphql(`
           body
           createdAt
           isMine
+          likeCount
+          likedByMe
         }
         createdAt
         updatedAt
@@ -149,16 +139,6 @@ const CreateQuestionDocument = graphql(`
       isMine
       bestAnswer {
         ID
-        questionID
-        user {
-          ID
-          name
-          accountID
-          avatarUrl
-        }
-        body
-        createdAt
-        isMine
       }
       answers {
         ID
@@ -172,6 +152,8 @@ const CreateQuestionDocument = graphql(`
         body
         createdAt
         isMine
+        likeCount
+        likedByMe
       }
       createdAt
       updatedAt
@@ -193,57 +175,82 @@ const AnswerQuestionDocument = graphql(`
       body
       createdAt
       isMine
+      likeCount
+      likedByMe
     }
   }
 `);
 
+// ベストアンサーの選択/取り消しは isAnswered と bestAnswer だけが変わる操作なので、
+// answers 配列は返さない(クライアントは既存の回答一覧をそのまま保持する)。
 const SelectBestAnswerDocument = graphql(`
   mutation SelectBestAnswer($questionID: ID!, $answerID: ID!) {
     selectBestAnswer(questionID: $questionID, answerID: $answerID) {
       ID
-      roomID
-      user {
-        ID
-        name
-        accountID
-        avatarUrl
-      }
-      body
       isAnswered
-      isMine
       bestAnswer {
         ID
-        questionID
-        user {
-          ID
-          name
-          accountID
-          avatarUrl
-        }
-        body
-        createdAt
-        isMine
       }
-      answers {
-        ID
-        questionID
-        user {
-          ID
-          name
-          accountID
-          avatarUrl
-        }
-        body
-        createdAt
-        isMine
-      }
-      createdAt
       updatedAt
     }
   }
 `);
 
+const CancelBestAnswerDocument = graphql(`
+  mutation CancelBestAnswer($questionID: ID!) {
+    cancelBestAnswer(questionID: $questionID) {
+      ID
+      isAnswered
+      bestAnswer {
+        ID
+      }
+      updatedAt
+    }
+  }
+`);
+
+const UpdateAnswerDocument = graphql(`
+  mutation UpdateAnswer($id: ID!, $body: String!) {
+    updateAnswer(id: $id, body: $body) {
+      ID
+      body
+    }
+  }
+`);
+
+const DeleteAnswerDocument = graphql(`
+  mutation DeleteAnswer($id: ID!) {
+    deleteAnswer(id: $id)
+  }
+`);
+
+const LikeAnswerDocument = graphql(`
+  mutation LikeAnswer($id: ID!) {
+    likeAnswer(id: $id) {
+      ID
+      likeCount
+      likedByMe
+    }
+  }
+`);
+
+const UnlikeAnswerDocument = graphql(`
+  mutation UnlikeAnswer($id: ID!) {
+    unlikeAnswer(id: $id) {
+      ID
+      likeCount
+      likedByMe
+    }
+  }
+`);
+
 export type QuestionPage = { items: Question[]; total: number };
+
+// selectBestAnswer/cancelBestAnswer の応答は Question の一部フィールドのみ
+// (answers を含まない)。呼び出し側は既存の Question に上書きマージして使う。
+export type QuestionBestAnswerUpdate = Pick<Question, 'ID' | 'isAnswered' | 'bestAnswer' | 'updatedAt'>;
+export type AnswerLikeUpdate = Pick<Answer, 'ID' | 'likeCount' | 'likedByMe'>;
+export type AnswerBodyUpdate = Pick<Answer, 'ID' | 'body'>;
 
 export const listQuestions = async (roomID: string, limit = 50, offset = 0): Promise<QuestionPage> => {
   const data = await requestDoc(QuestionsDocument, { roomID, limit, offset }, getUserToken());
@@ -260,7 +267,32 @@ export const answerQuestion = async (questionID: string, body: string): Promise<
   return data.answerQuestion;
 };
 
-export const selectBestAnswer = async (questionID: string, answerID: string): Promise<Question> => {
+export const selectBestAnswer = async (questionID: string, answerID: string): Promise<QuestionBestAnswerUpdate> => {
   const data = await requestDoc(SelectBestAnswerDocument, { questionID, answerID }, getUserToken());
   return data.selectBestAnswer;
+};
+
+export const cancelBestAnswer = async (questionID: string): Promise<QuestionBestAnswerUpdate> => {
+  const data = await requestDoc(CancelBestAnswerDocument, { questionID }, getUserToken());
+  return data.cancelBestAnswer;
+};
+
+export const updateAnswer = async (id: string, body: string): Promise<AnswerBodyUpdate> => {
+  const data = await requestDoc(UpdateAnswerDocument, { id, body }, getUserToken());
+  return data.updateAnswer;
+};
+
+export const deleteAnswer = async (id: string): Promise<boolean> => {
+  const data = await requestDoc(DeleteAnswerDocument, { id }, getUserToken());
+  return data.deleteAnswer;
+};
+
+export const likeAnswer = async (id: string): Promise<AnswerLikeUpdate> => {
+  const data = await requestDoc(LikeAnswerDocument, { id }, getUserToken());
+  return data.likeAnswer;
+};
+
+export const unlikeAnswer = async (id: string): Promise<AnswerLikeUpdate> => {
+  const data = await requestDoc(UnlikeAnswerDocument, { id }, getUserToken());
+  return data.unlikeAnswer;
 };

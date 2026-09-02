@@ -25,6 +25,7 @@ import { AdminTermsDetailPage } from '../pages/AdminTermsDetailPage';
 import { AdminMaintenancePage } from '../pages/AdminMaintenancePage';
 import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
 import { AdminCourseManagementPage } from '../pages/AdminCourseManagementPage';
+import { AdminCourseChatDetailPage } from '../pages/AdminCourseChatDetailPage';
 
 export const AdminRoutes = () => {
   return (
@@ -220,6 +221,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminCourseManagementPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="courses/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminCourseChatDetailPage />
           </AdminProtectedRoute>
         }
       />

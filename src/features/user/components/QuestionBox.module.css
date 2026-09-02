@@ -124,6 +124,16 @@
   font-weight: 600;
 }
 
+.cancelBestButton {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #ef4444;
+  cursor: pointer;
+}
+
 .formRow {
   display: flex;
   gap: 0.5rem;
@@ -153,4 +163,47 @@
 .submitButton:disabled {
   background: #c7c9f7;
   cursor: default;
+}
+
+.answerFooter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.likeButton {
+  font-size: 0.75rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.likeButtonActive {
+  border-color: #f87171;
+  color: #ef4444;
+}
+
+.editButton {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #646cff;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.deleteAnswerButton {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #ef4444;
+  cursor: pointer;
 }

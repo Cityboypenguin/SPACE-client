@@ -7,13 +7,15 @@ type Props = {
   roomWritable: boolean;
   subscribePollUpdates: (pollID: string) => () => void;
   onVote: (pollID: string, optionIDs: string[]) => Promise<void>;
+  onDelete: (pollID: string) => Promise<void>;
 };
 
 const votedOptionIDs = (poll: Poll) => poll.options.filter((o) => o.votedByMe).map((o) => o.ID);
 
-export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote }: Props) => {
+export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onDelete }: Props) => {
   const [selected, setSelected] = useState<string[]>(() => votedOptionIDs(poll));
   const [voting, setVoting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   // サーバーから最新の投票結果(poll.options)が届いたら選択状態も同期する。
@@ -55,11 +57,28 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote }: P
     }
   };
 
+  const handleDelete = async () => {
+    if (deleting || !window.confirm('この投票を削除しますか?')) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await onDelete(poll.ID);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '投票の削除に失敗しました。');
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
         <span className={styles.senderName}>{poll.user.name}</span>
         {poll.allowMultipleChoice && <span className={styles.multiTag}>複数選択可</span>}
+        {poll.isMine && (
+          <button type="button" className={styles.deleteButton} disabled={deleting} onClick={handleDelete}>
+            削除
+          </button>
+        )}
       </div>
 
       <p className={styles.question}>{poll.question}</p>

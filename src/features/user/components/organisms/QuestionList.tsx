@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useCourseQuestions } from '../../hooks/useCourseQuestions';
-import { createQuestion, answerQuestion, selectBestAnswer } from '../../api/question';
+import {
+  createQuestion, answerQuestion, selectBestAnswer, cancelBestAnswer,
+  updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
+} from '../../api/question';
 import { CreateQuestionForm } from '../molecules/CreateQuestionForm';
 import { QuestionCard } from '../molecules/QuestionCard';
 import styles from '../QuestionBox.module.css';
@@ -13,7 +16,7 @@ type Props = {
 export const QuestionList = ({ roomId, roomWritable }: Props) => {
   const {
     questions, loading, error, hasMore, loadingMore, loadMore,
-    subscribeAnswers, addQuestion, addAnswer, updateQuestion,
+    subscribeAnswers, addQuestion, addAnswer, updateAnswerInList, removeAnswer, updateQuestion,
   } = useCourseQuestions(roomId);
 
   const [body, setBody] = useState('');
@@ -46,6 +49,31 @@ export const QuestionList = ({ roomId, roomWritable }: Props) => {
     updateQuestion(updated);
   };
 
+  const handleCancelBestAnswer = async (questionID: string) => {
+    const updated = await cancelBestAnswer(questionID);
+    updateQuestion(updated);
+  };
+
+  const handleUpdateAnswer = async (questionID: string, answerID: string, body: string) => {
+    const updated = await updateAnswer(answerID, body);
+    updateAnswerInList(questionID, updated);
+  };
+
+  const handleDeleteAnswer = async (questionID: string, answerID: string) => {
+    await deleteAnswer(answerID);
+    removeAnswer(questionID, answerID);
+  };
+
+  const handleLikeAnswer = async (questionID: string, answerID: string) => {
+    const updated = await likeAnswer(answerID);
+    updateAnswerInList(questionID, updated);
+  };
+
+  const handleUnlikeAnswer = async (questionID: string, answerID: string) => {
+    const updated = await unlikeAnswer(answerID);
+    updateAnswerInList(questionID, updated);
+  };
+
   return (
     <div className={styles.tabContent}>
       {roomWritable && (
@@ -69,6 +97,11 @@ export const QuestionList = ({ roomId, roomWritable }: Props) => {
           subscribeAnswers={subscribeAnswers}
           onAnswerSubmit={handleAnswerSubmit}
           onSelectBestAnswer={handleSelectBestAnswer}
+          onCancelBestAnswer={handleCancelBestAnswer}
+          onUpdateAnswer={handleUpdateAnswer}
+          onDeleteAnswer={handleDeleteAnswer}
+          onLikeAnswer={handleLikeAnswer}
+          onUnlikeAnswer={handleUnlikeAnswer}
         />
       ))}
 

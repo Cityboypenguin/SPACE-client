@@ -1,5 +1,5 @@
 import { useCoursePolls } from '../../hooks/useCoursePolls';
-import { createPoll, votePoll } from '../../api/poll';
+import { createPoll, votePoll, deletePoll } from '../../api/poll';
 import { CreatePollForm } from '../molecules/CreatePollForm';
 import { PollCard } from '../molecules/PollCard';
 import styles from '../PollBox.module.css';
@@ -12,7 +12,7 @@ type Props = {
 export const PollList = ({ roomId, roomWritable }: Props) => {
   const {
     polls, loading, error, hasMore, loadingMore, loadMore,
-    subscribePollUpdates, addPoll, updatePoll,
+    subscribePollUpdates, addPoll, updatePoll, removePoll,
   } = useCoursePolls(roomId);
 
   const handleCreate = async (question: string, options: string[], allowMultipleChoice: boolean) => {
@@ -23,6 +23,11 @@ export const PollList = ({ roomId, roomWritable }: Props) => {
   const handleVote = async (pollID: string, optionIDs: string[]) => {
     const updated = await votePoll(pollID, optionIDs);
     updatePoll(updated);
+  };
+
+  const handleDelete = async (pollID: string) => {
+    await deletePoll(pollID);
+    removePoll(pollID);
   };
 
   return (
@@ -42,6 +47,7 @@ export const PollList = ({ roomId, roomWritable }: Props) => {
           roomWritable={roomWritable}
           subscribePollUpdates={subscribePollUpdates}
           onVote={handleVote}
+          onDelete={handleDelete}
         />
       ))}
 

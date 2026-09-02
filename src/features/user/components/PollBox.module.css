@@ -53,6 +53,17 @@
   margin-left: auto;
 }
 
+.deleteButton {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #ef4444;
+  cursor: pointer;
+  margin-left: auto;
+}
+
 .question {
   font-size: 0.9rem;
   color: #111;
