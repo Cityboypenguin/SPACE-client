@@ -10,13 +10,18 @@ export type PollOption = {
   votedByMe: boolean;
 };
 
+export type PollUser = MessageUser & {
+  role: string;
+};
+
 export type Poll = {
   ID: string;
   roomID: string;
-  user: MessageUser;
+  user: PollUser;
   question: string;
   allowMultipleChoice: boolean;
   options: PollOption[];
+  deadline?: string | null;
   createdAt: string;
   isMine: boolean;
 };
@@ -32,6 +37,7 @@ export const POLL_FIELDS = `
     name
     accountID
     avatarUrl
+    role
   }
   question
   allowMultipleChoice
@@ -41,6 +47,7 @@ export const POLL_FIELDS = `
     voteCount
     votedByMe
   }
+  deadline
   createdAt
   isMine
 `;
@@ -56,6 +63,7 @@ const PollsDocument = graphql(`
           name
           accountID
           avatarUrl
+          role
         }
         question
         allowMultipleChoice
@@ -65,6 +73,7 @@ const PollsDocument = graphql(`
           voteCount
           votedByMe
         }
+        deadline
         createdAt
         isMine
       }
@@ -74,8 +83,8 @@ const PollsDocument = graphql(`
 `);
 
 const CreatePollDocument = graphql(`
-  mutation CreatePoll($roomID: ID!, $question: String!, $options: [String!]!, $allowMultipleChoice: Boolean) {
-    createPoll(roomID: $roomID, question: $question, options: $options, allowMultipleChoice: $allowMultipleChoice) {
+  mutation CreatePoll($roomID: ID!, $question: String!, $options: [String!]!, $allowMultipleChoice: Boolean, $deadline: String) {
+    createPoll(roomID: $roomID, question: $question, options: $options, allowMultipleChoice: $allowMultipleChoice, deadline: $deadline) {
       ID
       roomID
       user {
@@ -83,6 +92,7 @@ const CreatePollDocument = graphql(`
         name
         accountID
         avatarUrl
+        role
       }
       question
       allowMultipleChoice
@@ -92,6 +102,7 @@ const CreatePollDocument = graphql(`
         voteCount
         votedByMe
       }
+      deadline
       createdAt
       isMine
     }
@@ -136,8 +147,9 @@ export const createPoll = async (
   question: string,
   options: string[],
   allowMultipleChoice = false,
+  deadline?: string,
 ): Promise<Poll> => {
-  const data = await requestDoc(CreatePollDocument, { roomID, question, options, allowMultipleChoice }, getUserToken());
+  const data = await requestDoc(CreatePollDocument, { roomID, question, options, allowMultipleChoice, deadline }, getUserToken());
   return data.createPoll;
 };
 

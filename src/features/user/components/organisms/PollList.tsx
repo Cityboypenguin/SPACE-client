@@ -1,4 +1,4 @@
-import { useCoursePolls } from '../../hooks/useCoursePolls';
+import { type useCoursePolls } from '../../hooks/useCoursePolls';
 import { createPoll, votePoll, deletePoll } from '../../api/poll';
 import { CreatePollForm } from '../molecules/CreatePollForm';
 import { PollCard } from '../molecules/PollCard';
@@ -7,16 +7,17 @@ import styles from '../PollBox.module.css';
 type Props = {
   roomId: string;
   roomWritable: boolean;
+  pollsState: ReturnType<typeof useCoursePolls>;
 };
 
-export const PollList = ({ roomId, roomWritable }: Props) => {
+export const PollList = ({ roomId, roomWritable, pollsState }: Props) => {
   const {
     polls, loading, error, hasMore, loadingMore, loadMore,
     subscribePollUpdates, addPoll, updatePoll, removePoll,
-  } = useCoursePolls(roomId);
+  } = pollsState;
 
-  const handleCreate = async (question: string, options: string[], allowMultipleChoice: boolean) => {
-    const created = await createPoll(roomId, question, options, allowMultipleChoice);
+  const handleCreate = async (question: string, options: string[], allowMultipleChoice: boolean, deadline?: string) => {
+    const created = await createPoll(roomId, question, options, allowMultipleChoice, deadline);
     addPoll(created);
   };
 

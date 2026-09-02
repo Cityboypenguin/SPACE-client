@@ -7,17 +7,19 @@ import { QuestionList } from '../components/organisms/QuestionList';
 import { PollList } from '../components/organisms/PollList';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { BarChartIcon } from '../../../components/atoms/BarChartIcon';
+import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
+import { useCoursePolls } from '../hooks/useCoursePolls';
 import { getRoom, type Room } from '../api/message';
 import { getMyTimetable, getCurrentSemester, type Course } from '../api/course';
 import { stableCacheOptions, semesterCacheOptions } from '../cache/swrOptions';
 import styles from '../components/ChatRoom.module.css';
 
-type TabKey = 'chat' | 'question' | 'poll';
+type TabKey = 'chat' | 'question';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'chat', label: 'チャット' },
   { key: 'question', label: '質問箱' },
-  { key: 'poll', label: '投票' },
 ];
 
 export const CourseRoomPage = () => {
@@ -26,6 +28,10 @@ export const CourseRoomPage = () => {
   const location = useLocation();
   const locationState = location.state as { course?: Course; year?: number; semester?: string } | null;
   const [activeTab, setActiveTab] = useState<TabKey>('chat');
+  const [isPollView, setIsPollView] = useState(false);
+
+  const pollsState = useCoursePolls(roomId);
+  const unvotedPollCount = pollsState.polls.filter((p) => p.options.every((o) => !o.votedByMe)).length;
 
   const { data: room } = useSWR<Room | null>(
     roomId ? ['course-room', roomId] : null,
@@ -75,38 +81,64 @@ export const CourseRoomPage = () => {
 
       <div className={styles.roomHeader}>
         <button
-          onClick={() => navigate('/timetable', { state: backYear != null && backSemester ? { year: backYear, semester: backSemester } : undefined })}
+          onClick={() => {
+            if (isPollView) {
+              setIsPollView(false);
+              return;
+            }
+            navigate('/timetable', { state: backYear != null && backSemester ? { year: backYear, semester: backSemester } : undefined });
+          }}
         >
           <ChevronLeft />
         </button>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <strong className={styles.roomTitle}>{course?.courseName ?? room?.name ?? '...'}</strong>
-          {course && (
-            <div style={{ fontSize: '0.75rem', color: '#888' }}>
-              {course.teacherName} ・ {course.dayOfWeek}曜{course.period}限
+        {isPollView ? (
+          <strong className={styles.roomTitle} style={{ flex: 1 }}>投票</strong>
+        ) : (
+          <>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <strong className={styles.roomTitle}>{course?.courseName ?? room?.name ?? '...'}</strong>
+              {course && (
+                <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                  {course.teacherName} ・ {course.dayOfWeek}曜{course.period}限
+                </div>
+              )}
+            </div>
+            <button type="button" className={styles.pollButton} onClick={() => setIsPollView(true)}>
+              {unvotedPollCount > 0 && (
+                <span className={styles.pollButtonBadge}>
+                  <UnreadCountBadge count={unvotedPollCount} />
+                </span>
+              )}
+              <BarChartIcon />
+              投票
+            </button>
+          </>
+        )}
+      </div>
+
+      {isPollView ? (
+        <PollList roomId={roomId} roomWritable={isWritable} pollsState={pollsState} />
+      ) : (
+        <>
+          <div style={{ padding: '0.5rem 1.5rem 0', borderBottom: '1px solid #ccc', flexShrink: 0 }}>
+            <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+          </div>
+
+          {isArchived && (
+            <div style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.8rem', padding: '0.5rem 1.5rem', flexShrink: 0 }}>
+              この学期は終了したため閲覧のみです。
             </div>
           )}
-        </div>
-      </div>
+          {!isArchived && !isRegistered && (
+            <div style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.8rem', padding: '0.5rem 1.5rem', flexShrink: 0 }}>
+              この授業を時間割に登録していないため、書き込みできません。
+            </div>
+          )}
 
-      <div style={{ padding: '0.5rem 1.5rem 0', borderBottom: '1px solid #ccc', flexShrink: 0 }}>
-        <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
-      </div>
-
-      {isArchived && (
-        <div style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.8rem', padding: '0.5rem 1.5rem', flexShrink: 0 }}>
-          この学期は終了したため閲覧のみです。
-        </div>
+          {activeTab === 'chat' && <CourseChatTab roomId={roomId} roomWritable={isWritable} />}
+          {activeTab === 'question' && <QuestionList roomId={roomId} roomWritable={isWritable} />}
+        </>
       )}
-      {!isArchived && !isRegistered && (
-        <div style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.8rem', padding: '0.5rem 1.5rem', flexShrink: 0 }}>
-          この授業を時間割に登録していないため、書き込みできません。
-        </div>
-      )}
-
-      {activeTab === 'chat' && <CourseChatTab roomId={roomId} roomWritable={isWritable} />}
-      {activeTab === 'question' && <QuestionList roomId={roomId} roomWritable={isWritable} />}
-      {activeTab === 'poll' && <PollList roomId={roomId} roomWritable={isWritable} />}
     </div>
   );
 };

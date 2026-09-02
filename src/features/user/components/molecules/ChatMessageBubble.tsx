@@ -524,8 +524,9 @@ export const ChatMessageBubble = ({
 
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
-  const canEdit = isMine && msg.content.trim() !== ''; 
+  const canEdit = isMine && msg.content.trim() !== '';
   const canShowActions = (canEdit || canDelete) && !isEditing;
+  const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 
   const [showActions, setShowActions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -653,6 +654,9 @@ export const ChatMessageBubble = ({
         )}
       </div>
 
+      {isEdited && !isEditing && (
+        <span className={styles.editedLabel}>編集済み</span>
+      )}
       <span className={styles.timestamp}>
         {new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
       </span>
