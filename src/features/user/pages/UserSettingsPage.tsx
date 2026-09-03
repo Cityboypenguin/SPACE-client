@@ -346,6 +346,7 @@ const GeneralView = ({
 };
 
 export const UserSettingsPage = () => {
+  const navigate = useNavigate();
   const [view, setView] = useState<View>(null);
 
   return (
@@ -354,7 +355,12 @@ export const UserSettingsPage = () => {
       <div className={styles.page}>
         {/* 左パネル */}
         <aside className={styles.leftPanel}>
-          <h1 className={styles.panelTitle}>設定</h1>
+          <div className={styles.panelHeader}>
+            <button type="button" className={styles.pageBackButton} onClick={() => navigate(-1)} aria-label="前のページに戻る">
+              <ChevronLeft />
+            </button>
+            <h1 className={styles.panelTitle}>設定</h1>
+          </div>
           <button
             className={`${styles.menuItem} ${view === 'general' || view === 'password' || view === 'blocks' ? styles.menuItemActive : ''}`}
             onClick={() => setView('general')}

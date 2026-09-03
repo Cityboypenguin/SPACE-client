@@ -33,6 +33,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useFollowFeed } from '../hooks/useFollowFeed';
 import { useHashtagSuggestions } from '../hooks/useHashtagSuggestions';
 import { HashtagSuggestionList } from '../components/molecules/HashtagSuggestionList';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { Footer } from '../../../components/organisms/Footer';
 
 const LIMIT = 20;
@@ -588,18 +589,14 @@ export const PostListPage = () => {
         )}
 
         <div style={{ position: 'relative' }}>
-          <div className={styles.searchBar}>
-            <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
-            <input
-              className={styles.searchInput}
-              type="text"
-              placeholder="search"
+          <div className={styles.searchBarArea}>
+            <IconSearchBar
               value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
+              placeholder="search"
+              onChange={(value) => { setSearchQuery(value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
               onFocus={() => { setSearchFocused(true); setSuggestDismissed(false); }}
               onBlur={() => setSearchFocused(false)}
+              onClear={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); setSuggestDismissed(true); }}
               onKeyDown={e => {
                 // IME変換中の Enter 等は確定操作なので横取りしない。
                 if (e.nativeEvent.isComposing) return;
@@ -623,13 +620,6 @@ export const PostListPage = () => {
                 }
               }}
             />
-            {searchQuery && (
-              <button
-                className={styles.searchClear}
-                onClick={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); setSuggestDismissed(true); }}
-                aria-label="クリア"
-              >✕</button>
-            )}
           </div>
           {showSuggestions && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>

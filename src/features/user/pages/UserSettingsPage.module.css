@@ -48,9 +48,12 @@
     padding: 1rem 0;
   }
 
+  .panelHeader {
+    padding: 0 0.75rem;
+  }
+
   .panelTitle {
     font-size: 1rem;
-    padding: 0 0.75rem;
   }
 
   .menuItem {
@@ -67,8 +70,38 @@
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-text);
+  margin: 0;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0 1.25rem;
   margin: 0 0 1rem;
+}
+
+.pageBackButton {
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pageBackButton:hover {
+  color: var(--color-primary);
+}
+
+.pageBackButton:focus,
+.pageBackButton:focus-visible {
+  outline: none;
 }
 
 .menuItem {

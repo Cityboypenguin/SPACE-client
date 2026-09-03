@@ -25,6 +25,7 @@ import { createBlocker } from '../api/block';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import styles from './UserDashboard.module.css';
 import { AppSwal } from '../../../lib/swal';
+import settingsIcon from '../../../assets/パーツ_設定.svg';
 
 const LIMIT = 20;
 
@@ -304,6 +305,9 @@ export const UserDashboard = () => {
       <main className={styles.main}>
         <div className={styles.pageHeader}>
           <h1 className={styles.pageTitle}>マイページ</h1>
+          <Link to="/mypage/settings" className={styles.settingsButton} aria-label="設定">
+            <img src={settingsIcon} alt="" className={`${styles.settingsIcon} themed-icon`} />
+          </Link>
         </div>
 
         {flashMessage && <p className={styles.flashMessage}>{flashMessage}</p>}
