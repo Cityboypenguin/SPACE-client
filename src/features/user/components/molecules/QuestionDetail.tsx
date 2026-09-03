@@ -49,6 +49,7 @@ export const QuestionDetail = ({
   const answerPanelRef = useRef<HTMLElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const answerElementsRef = useRef(new Map<string, HTMLDivElement>());
+  const questionMenuRef = useRef<HTMLDivElement>(null);
   const [answerBody, setAnswerBody] = useState('');
   const [answering, setAnswering] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(false);
@@ -69,6 +70,17 @@ export const QuestionDetail = ({
   useEffect(() => {
     if (editQuestionTextareaRef.current) resizeTextarea(editQuestionTextareaRef.current);
   }, [editQuestionBody, editingQuestion]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (questionMenuRef.current && !questionMenuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
 
   // 回答一覧の下端が見えたら次のページを読み込む(全件取得ではなく無限スクロール)。
   // .answerPanel は768px未満でoverflow:visibleになり実際のスクロールコンテナでは
@@ -157,7 +169,7 @@ export const QuestionDetail = ({
             <span>質問一覧へ</span>
           </button>
           {question.isMine && (
-            <div className={menuStyles.menuWrap}>
+            <div className={menuStyles.menuWrap} ref={questionMenuRef}>
               <button type="button" className={menuStyles.menuButton} onClick={() => setMenuOpen((v) => !v)} aria-label="メニュー">
                 ···
               </button>
@@ -225,6 +237,7 @@ export const QuestionDetail = ({
           </div>
         </div>
 
+        {error && <p className={styles.errorText}>{error}</p>}
         {roomWritable && (
           <form onSubmit={handleAnswerSubmit} className={styles.answerForm}>
             <textarea
@@ -250,8 +263,6 @@ export const QuestionDetail = ({
             </button>
           </form>
         )}
-
-        {error && <p className={styles.errorText}>{error}</p>}
       </section>
 
       <section className={styles.answerPanel} ref={answerPanelRef}>
