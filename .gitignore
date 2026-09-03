@@ -17,6 +17,14 @@ dist-ssr
 .env.development
 .env.production
 
+# Playwright E2E
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+e2e/.auth/
+e2e/.env.test.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -27,3 +35,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Testing
+.env*
+coverage
+*.lcov
+*.lcov.*

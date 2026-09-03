@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_レイヤー_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 350.39 319.49">
+  <!-- Generator: Adobe Illustrator 30.5.1, SVG Export Plug-In . SVG Version: 2.1.4 Build 3)  -->
+  <defs>
+    <style>
+      .st0, .st1, .st2 {
+        fill: none;
+      }
+
+      .st1 {
+        stroke-miterlimit: 10;
+        stroke-width: 9px;
+      }
+
+      .st1, .st2 {
+        stroke: #231815;
+      }
+
+      .st2 {
+        stroke-miterlimit: 10;
+        stroke-width: 8px;
+      }
+    </style>
+  </defs>
+  <polygon class="st0" points="4.82 173.06 174.59 4.82 343.81 174.82 4.82 173.06"/>
+  <rect class="st1" x="-30.23" y="88.58" width="240.1" height="2.49" rx="1.08" ry="1.08" transform="translate(-37.21 89.82) rotate(-45)"/>
+  <rect class="st1" x="259.32" y="-30.23" width="2.49" height="240.1" rx="1.08" ry="1.08" transform="translate(12.8 210.56) rotate(-45)"/>
+  <path class="st2" d="M60.51,160.12v139.4c0,8.82,7.15,15.97,15.97,15.97h197.18c8.82,0,15.97-7.15,15.97-15.97v-139.4"/>
+  <path class="st2" d="M160.55,190.62h28c15.63,0,28.33,12.69,28.33,28.33v96.54h-83.14v-98.05c0-14.8,12.01-26.81,26.81-26.81h0Z"/>
+</svg>

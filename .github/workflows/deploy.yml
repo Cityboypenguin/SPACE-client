@@ -24,6 +24,8 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: /query
+          VITE_MINIO_PUBLIC_ENDPOINT: https://s3.ap-northeast-1.amazonaws.com
+          VITE_PUBLIC_BUILDER_KEY: 2f9d1f43cdb74f338c8f31633383c211
 
       - name: Deploy to S3
         run: aws s3 sync dist/ s3://space-client-frontend/ --delete

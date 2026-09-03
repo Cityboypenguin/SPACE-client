@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { storageUrl } from '../../../lib/storage';
 import { getUserToken } from './auth';
 
@@ -23,17 +24,9 @@ export type Profile = {
   user: UserProfile;
 };
 
-type MeResponse = { me: UserProfile };
 type SearchUsersPage = { items: UserProfile[]; total: number };
-type SearchUsersResponse = { searchUsers: SearchUsersPage };
-type UpdateUserResponse = { updateUser: UserProfile };
-type GetProfileByUserIDResponse = { getProfileByUserID: Profile | null };
-type UpdateProfileResponse = { updateProfile: Profile };
-type PresignedUploadUrlResponse = { presignedAvatarUploadUrl: { uploadUrl: string; objectKey: string } };
-type SetAvatarResponse = { setAvatar: Profile };
-type DeleteAvatarResponse = { deleteAvatar: Profile };
 
-const ME_QUERY = `
+const MeDocument = graphql(`
   query Me {
     me {
       ID
@@ -46,9 +39,9 @@ const ME_QUERY = `
       updatedAt
     }
   }
-`;
+`);
 
-const SEARCH_USERS_QUERY = `
+const SearchUsersDocument = graphql(`
   query SearchUsers($keyword: String!, $limit: Int, $offset: Int) {
     searchUsers(keyword: $keyword, limit: $limit, offset: $offset) {
       items {
@@ -58,13 +51,16 @@ const SEARCH_USERS_QUERY = `
         email
         role
         status
+        avatarUrl
+        createdAt
+        updatedAt
       }
       total
     }
   }
-`;
+`);
 
-const UPDATE_USER_MUTATION = `
+const UpdateUserDocument = graphql(`
   mutation UpdateUser($input: UpdateUserInput!) {
     updateUser(input: $input) {
       ID
@@ -77,18 +73,18 @@ const UPDATE_USER_MUTATION = `
       updatedAt
     }
   }
-`;
+`);
 
-const PRESIGNED_AVATAR_UPLOAD_URL_QUERY = `
+const PresignedAvatarUploadUrlDocument = graphql(`
   query PresignedAvatarUploadUrl($contentType: String!) {
     presignedAvatarUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
     }
   }
-`;
+`);
 
-const SET_AVATAR_MUTATION = `
+const SetAvatarDocument = graphql(`
   mutation SetAvatar($objectKey: String!) {
     setAvatar(objectKey: $objectKey) {
       username
@@ -98,9 +94,9 @@ const SET_AVATAR_MUTATION = `
       updatedAt
     }
   }
-`;
+`);
 
-const DELETE_AVATAR_MUTATION = `
+const DeleteAvatarDocument = graphql(`
   mutation DeleteAvatar {
     deleteAvatar {
       username
@@ -110,9 +106,15 @@ const DELETE_AVATAR_MUTATION = `
       updatedAt
     }
   }
-`;
+`);
 
-const GET_PROFILE_BY_USER_ID_QUERY = `
+const DeleteMyAccountDocument = graphql(`
+  mutation DeleteMyAccount {
+    deleteMyAccount
+  }
+`);
+
+const GetProfileByUserIDDocument = graphql(`
   query GetProfileByUserID($userID: ID!) {
     getProfileByUserID(userID: $userID) {
       username
@@ -127,12 +129,15 @@ const GET_PROFILE_BY_USER_ID_QUERY = `
         email
         role
         status
+        avatarUrl
+        createdAt
+        updatedAt
       }
     }
   }
-`;
+`);
 
-const UPDATE_PROFILE_MUTATION = `
+const UpdateProfileDocument = graphql(`
   mutation UpdateProfile($input: UpdateProfileInput!) {
     updateProfile(input: $input) {
       username
@@ -142,14 +147,14 @@ const UPDATE_PROFILE_MUTATION = `
       updatedAt
     }
   }
-`;
+`);
 
 export const getMyProfile = async () => {
   const token = getUserToken();
   if (!token) {
     throw new Error('認証が必要です。ログインしてください。');
   }
-  return await request<MeResponse>(ME_QUERY, undefined, token);
+  return await requestDoc(MeDocument, {}, token);
 };
 
 export const updateMyProfile = async (input: {
@@ -157,38 +162,31 @@ export const updateMyProfile = async (input: {
   name?: string;
   email?: string;
   password?: string;
+  currentPassword?: string;
 }) => {
-  return await request<UpdateUserResponse>(UPDATE_USER_MUTATION, { input }, getUserToken());
+  return await requestDoc(UpdateUserDocument, { input }, getUserToken());
 };
 
 export const searchUsers = async (keyword: string, limit = 20, offset = 0): Promise<SearchUsersPage> => {
-  const data = await request<SearchUsersResponse>(SEARCH_USERS_QUERY, { keyword, limit, offset }, getUserToken());
+  const data = await requestDoc(SearchUsersDocument, { keyword, limit, offset }, getUserToken());
   return data.searchUsers;
 };
 
 export const getProfileByUserID = async (userID: string) => {
-  return await request<GetProfileByUserIDResponse>(
-    GET_PROFILE_BY_USER_ID_QUERY,
-    { userID },
-    getUserToken(),
-  );
+  return await requestDoc(GetProfileByUserIDDocument, { userID }, getUserToken());
 };
 
 export const updateProfile = async (input: {
   username?: string;
   bio?: string;
 }) => {
-  return await request<UpdateProfileResponse>(UPDATE_PROFILE_MUTATION, { input }, getUserToken());
+  return await requestDoc(UpdateProfileDocument, { input }, getUserToken());
 };
 
 export const getPresignedAvatarUploadUrl = async (contentType: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
-  return await request<PresignedUploadUrlResponse>(
-    PRESIGNED_AVATAR_UPLOAD_URL_QUERY,
-    { contentType },
-    token,
-  );
+  return await requestDoc(PresignedAvatarUploadUrlDocument, { contentType }, token);
 };
 
 export const uploadAvatarToStorage = async (uploadUrl: string, file: File): Promise<void> => {
@@ -203,11 +201,18 @@ export const uploadAvatarToStorage = async (uploadUrl: string, file: File): Prom
 export const setAvatar = async (objectKey: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
-  return await request<SetAvatarResponse>(SET_AVATAR_MUTATION, { objectKey }, token);
+  return await requestDoc(SetAvatarDocument, { objectKey }, token);
 };
 
 export const deleteAvatar = async () => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
-  return await request<DeleteAvatarResponse>(DELETE_AVATAR_MUTATION, undefined, token);
+  return await requestDoc(DeleteAvatarDocument, {}, token);
+};
+
+export const deleteMyAccount = async (): Promise<boolean> => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  const data = await requestDoc(DeleteMyAccountDocument, {}, token);
+  return data.deleteMyAccount;
 };

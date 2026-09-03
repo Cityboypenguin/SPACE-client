@@ -1,11 +1,56 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { registerUser, loginUser, sendEmailOTP } from '../api/auth';
+import { useNavigate } from 'react-router-dom';
+import { registerUser, loginUser, sendEmailOTP, verifyEmailOTP, USER_TOKEN_KEY } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
+import { toUserMessage } from '../../../lib/errorMessages';
 import { TermsContent } from '../components/molecules/TermsContent';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { OtpInputSection } from '../components/molecules/OtpInputSection';
+import styles from './UserRegisterPage.module.css';
+import { useToast } from '../../../context/ToastContext';
 
 const OTP_COOLDOWN_SECONDS = 60;
+
+const REGISTER_PROGRESS_KEY = 'space_register_progress';
+
+interface RegisterProgress {
+  step: Step;
+  agreedTermsId: string | null;
+  scrolled: boolean;
+  agreed: boolean;
+  email: string;
+  otpSent: boolean;
+  otp: string;
+  name: string;
+  accountID: string;
+  otpCooldownEndAt: number | null;
+}
+
+const loadRegisterProgress = (): Partial<RegisterProgress> => {
+  try {
+    const raw = sessionStorage.getItem(REGISTER_PROGRESS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveRegisterProgress = (progress: RegisterProgress) => {
+  try {
+    sessionStorage.setItem(REGISTER_PROGRESS_KEY, JSON.stringify(progress));
+  } catch {
+    // private mode 等でstorageが使えない場合は無視
+  }
+};
+
+const clearRegisterProgress = () => {
+  try {
+    sessionStorage.removeItem(REGISTER_PROGRESS_KEY);
+  } catch {
+    // ignore
+  }
+};
 
 const studentEmailRe = /^(EE|EL|EW|JL|JP|MA|MD|CM|CA|LB|LA|LT|LR|LK|LM|NE|HP|HS|GN|GC|E)(2[0-9]|[3-9][0-9])\d{4}@senshu-u\.jp$/i;
 
@@ -16,100 +61,142 @@ const validateEmail = (value: string): string => {
   return '';
 };
 
-const validatePassword = (value: string): string => {
-  if (value && value.length < 8) {
-    return 'パスワードは8文字以上で入力してください';
+const validateName = (value: string): string => {
+  if (!value || value.trim() === '') {
+    return '';
+  }
+  if ([...value].length > 50) {
+    return 'ユーザー名は50文字以内で入力してください';
   }
   return '';
 };
 
-type Step = 1 | 2;
-
-const STEP_LABELS: Record<Step, string> = {
-  1: '情報入力',
-  2: 'メール認証',
+const validatePassword = (value: string): string => {
+  if (!value || value.trim() === '') {
+    return ''; 
+  }
+  if (value.length < 8) {
+    return 'パスワードを8文字以上で入力してください';
+  }
+  return '';
 };
 
-const StepIndicator = ({ current }: { current: Step }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
-    {([1, 2] as Step[]).map((s, i) => (
-      <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-        {i > 0 && (
-          <div style={{
-            width: 40,
-            height: 2,
-            background: current > s ? '#3b82f6' : '#e2e8f0',
-          }} />
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            background: current === s ? '#3b82f6' : current > s ? '#93c5fd' : '#e2e8f0',
-            color: current >= s ? '#fff' : '#94a3b8',
-          }}>
+const accountIDRe = /^[a-zA-Z0-9_-]+$/;
+const MAX_NAME_LENGTH = 50;
+const MAX_ACCOUNT_ID_LENGTH = 15;
+
+const validateAccountID = (value: string): string => {
+  if (!value || value.trim() === '') {
+    return ''; 
+  }
+  if (!accountIDRe.test(value)) {
+    return 'ユーザーIDは半角英数字・_・-のみ使用できます';
+  }
+  if ([...value].length > MAX_ACCOUNT_ID_LENGTH) {
+    return `ユーザーIDは${MAX_ACCOUNT_ID_LENGTH}文字以内で入力してください`;
+  }
+  return '';
+};
+
+type Step = 1 | 2 | 3 | 4;
+
+const StepIndicator = ({ current }: { current: Step }) => {
+  const steps: Step[] = [1, 2, 3, 4];
+  return (
+    <div className={styles.stepBar}>
+      {steps.map((s, i) => (
+        <div key={s} className={styles.stepItem}>
+          {i > 0 && (
+            <div className={`${styles.stepLine}${current > s ? ` ${styles.stepLineDone}` : ''}`} />
+          )}
+          <div
+            className={`${styles.stepCircle}${
+              current === s
+                ? ` ${styles.stepCircleActive}`
+                : current > s
+                ? ` ${styles.stepCircleDone}`
+                : ''
+            }`}
+          >
             {current > s ? '✓' : s}
           </div>
-          <span style={{
-            fontSize: '0.7rem',
-            color: current === s ? '#3b82f6' : '#94a3b8',
-            whiteSpace: 'nowrap',
-          }}>
-            {STEP_LABELS[s]}
-          </span>
         </div>
-      </div>
-    ))}
-  </div>
-);
+      ))}
+    </div>
+  );
+};
 
 export const UserRegisterPage = () => {
-  const [step, setStep] = useState<Step>(1);
-
-  // Step 1
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpError, setOtpError] = useState('');
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [otpCooldown, setOtpCooldown] = useState(0);
-  const otpCooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [accountID, setAccountID] = useState('');
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [currentTerms, setCurrentTerms] = useState<TermsOfService | null>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const [agreed, setAgreed] = useState(false);
-  const [termsError, setTermsError] = useState(false);
-
-  // Step 2
-  const [otp, setOtp] = useState('');
-  const [submitError, setSubmitError] = useState('');
-
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { addToast } = useToast();
+
+  // リロード対策: 直前の進行状況を一度だけ読み込む（パスワードは保存しない）
+  const [initialProgress] = useState(() => loadRegisterProgress());
+
+  const [step, setStep] = useState<Step>(initialProgress.step ?? 1);
+
+  // Terms (step 1)
+  const [currentTerms, setCurrentTerms] = useState<TermsOfService | null>(null);
+  const [scrolled, setScrolled] = useState(initialProgress.scrolled ?? false);
+  const [agreed, setAgreed] = useState(initialProgress.agreed ?? false);
+  const [termsError, setTermsError] = useState(false);
+
+  // Email (step 2)
+  const [email, setEmail] = useState(initialProgress.email ?? '');
+  const [emailError, setEmailError] = useState('');
+  const [otpSent, setOtpSent] = useState(initialProgress.otpSent ?? false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(() => {
+    const endAt = initialProgress.otpCooldownEndAt;
+    if (!endAt) return 0;
+    const remaining = Math.ceil((endAt - Date.now()) / 1000);
+    return remaining > 0 ? remaining : 0;
+  });
+  const [otpSendError, setOtpSendError] = useState('');
+  const otpCooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const otpCooldownEndAtRef = useRef<number | null>(initialProgress.otpCooldownEndAt ?? null);
+
+  // OTP (step 3)
+  const [otp, setOtp] = useState(initialProgress.otp ?? '');
+  const [otpError, setOtpError] = useState('');
+  const [otpErrorModal, setOtpErrorModal] = useState('');
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  // Account info (step 4)
+  const [name, setName] = useState(initialProgress.name ?? '');
+  const [nameError, setNameError] = useState('');
+  const [accountID, setAccountID] = useState(initialProgress.accountID ?? '');
+  const [accountIDError, setAccountIDError] = useState('');
+  // パスワードはセキュリティ上の理由でリロード後も復元しない（再入力してもらう）
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     getCurrentTerms()
-      .then(setCurrentTerms)
+      .then((terms) => {
+        setCurrentTerms(terms);
+        // 保存されていた同意は、表示中の規約と一致する場合のみ有効とする
+        if (initialProgress.agreedTermsId && terms && initialProgress.agreedTermsId !== terms.ID) {
+          setAgreed(false);
+          setScrolled(false);
+        }
+      })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startOtpCooldown = () => {
+  // クールダウンのカウントダウンを進める（OTP再送信は行わない）
+  const tickCooldown = () => {
     if (otpCooldownRef.current) clearInterval(otpCooldownRef.current);
-    setOtpCooldown(OTP_COOLDOWN_SECONDS);
     otpCooldownRef.current = setInterval(() => {
       setOtpCooldown((prev) => {
         if (prev <= 1) {
           clearInterval(otpCooldownRef.current!);
           otpCooldownRef.current = null;
+          otpCooldownEndAtRef.current = null;
           return 0;
         }
         return prev - 1;
@@ -117,14 +204,50 @@ export const UserRegisterPage = () => {
     }, 1000);
   };
 
-  useEffect(() => () => { if (otpCooldownRef.current) clearInterval(otpCooldownRef.current); }, []);
+  useEffect(() => {
+    // リロード直後、保存されていたクールダウンが残っていれば再送信せずに継続表示する
+    if (otpCooldown > 0) tickCooldown();
+    return () => {
+      if (otpCooldownRef.current) clearInterval(otpCooldownRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 進行状況をリロードに備えて保存する（パスワードは含めない）
+  useEffect(() => {
+    saveRegisterProgress({
+      step,
+      agreedTermsId: agreed ? currentTerms?.ID ?? null : null,
+      scrolled,
+      agreed,
+      email,
+      otpSent,
+      otp,
+      name,
+      accountID,
+      otpCooldownEndAt: otpCooldownEndAtRef.current,
+    });
+  }, [step, agreed, scrolled, email, otpSent, otp, name, accountID, currentTerms]);
+
+  const startOtpCooldown = () => {
+    otpCooldownEndAtRef.current = Date.now() + OTP_COOLDOWN_SECONDS * 1000;
+    setOtpCooldown(OTP_COOLDOWN_SECONDS);
+    tickCooldown();
+  };
+
+  // ── Step handlers ──
+
+  const handleStep1Next = () => {
+    if (currentTerms && !agreed) return;
+    setStep(2);
+  };
 
   const handleEmailChange = (value: string) => {
     setEmail(value);
     setEmailError(validateEmail(value));
     if (otpSent) {
       setOtpSent(false);
-      setOtpError('');
+      setOtpSendError('');
     }
   };
 
@@ -135,215 +258,326 @@ export const UserRegisterPage = () => {
       return;
     }
     setSendingOtp(true);
-    setOtpError('');
+    setOtpSendError('');
     try {
       await sendEmailOTP(email);
+      if (otpSent) {
+        addToast('認証コードを再送信しました', 'success');
+      }
       setOtpSent(true);
       startOtpCooldown();
+      setStep(3);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.includes('1分後に再送信')) {
-        setOtpError('認証コードは1分後に再送信できます。');
+        setOtpSendError('認証コードは1分後に再送信できます。');
         startOtpCooldown();
       } else {
-        setOtpError('認証コードの送信に失敗しました。メールアドレスをご確認ください。');
+        setOtpSendError('認証コードの送信に失敗しました。メールアドレスをご確認ください。');
       }
     } finally {
       setSendingOtp(false);
     }
   };
 
-  const [step1Errors, setStep1Errors] = useState<string[]>([]);
-
-  const handleStep1Next = () => {
-    const errors: string[] = [];
-    if (!otpSent) errors.push('認証コードをメールアドレスに送信してください');
-    if (!accountID) errors.push('ユーザーIDを入力してください');
-    if (!name) errors.push('名前を入力してください');
-    if (!password) errors.push('パスワードを入力してください');
-    else if (passwordError) errors.push(passwordError);
-    if (currentTerms && !agreed) errors.push('利用規約に同意してください');
-    if (errors.length > 0) {
-      setStep1Errors(errors);
+  const handleStep3Next = async () => {
+    if (otp.length !== 6) {
+      setOtpError('6桁の認証コードを入力してください');
       return;
     }
-    setStep1Errors([]);
-    setStep(2);
+    setVerifyingOtp(true);
+    setOtpError('');
+    try {
+      await verifyEmailOTP(email, otp);
+      setStep(4);
+    } catch (err) {
+      setOtpErrorModal(toUserMessage(err, '認証コードが正しくないか、有効期限が切れています。'));
+    } finally {
+      setVerifyingOtp(false);
+    }
   };
 
   const handleSubmit = async () => {
-    if (otp.length !== 6) return;
+    let hasInputError = false;
+
+    if (!name || name.trim() === '') {
+      setNameError('ユーザー名を入力してください');
+      hasInputError = true;
+    } else {
+      const err = validateName(name);
+      if (err) {
+        setNameError(err);
+        hasInputError = true;
+      }
+    }
+
+    if (!accountID || accountID.trim() === '') {
+      setAccountIDError('ユーザーIDを入力してください');
+      hasInputError = true;
+    } else {
+      const err = validateAccountID(accountID);
+      if (err) {
+        setAccountIDError(err);
+        hasInputError = true;
+      }
+    }
+
+    if (!password || password.trim() === '') {
+      setPasswordError('パスワードを入力してください');
+      hasInputError = true;
+    } else {
+      const err = validatePassword(password);
+      if (err) {
+        setPasswordError(err);
+        hasInputError = true;
+      }
+    }
+
+    if (hasInputError) {
+      return;
+    }
+
+    setSubmitting(true);
     setSubmitError('');
+
     try {
       await registerUser(accountID, name, email, password, otp);
+      clearRegisterProgress();
+    } catch {
+      setSubmitError('ユーザーIDまたはメールアドレスが既に使用されています。変更して再度お試しください。');
+      setSubmitting(false);
+      return;
+    }
+
+    try {
       const loginData = await loginUser(email, password);
+      // consentToTerms を login() より前に実行する。
+      // login() がトークンを React state にセットすると NotificationContext が即座に
+      // getMyTermsConsentStatus() を呼ぶため、先に同意を完了させておかないと
+      // 「未同意」としてモーダルが表示されてしまう。
+      localStorage.setItem(USER_TOKEN_KEY, loginData.loginUser.token);
+      if (currentTerms) await consentToTerms(currentTerms.ID);
       login(loginData.loginUser.token, loginData.loginUser.refreshToken, loginData.loginUser.user.ID);
-      if (currentTerms) {
-        await consentToTerms(currentTerms.ID);
-      }
       navigate('/mypage');
     } catch {
-      // セキュリティ: ユーザーID・メールアドレスの登録失敗は原因を問わず同一メッセージを表示する
-      // （ユーザー列挙攻撃対策: 学籍番号から推定したメールアドレスの登録有無を判別させない）
-      setSubmitError('ユーザーIDまたはメールアドレスの登録に失敗しました。認証コードが正しいか確認してください。');
+      setSubmitError('登録は完了しましたが、自動ログインに失敗しました。ログインページからログインしてください。');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const goBack = () => {
+    if (step === 1) {
+      clearRegisterProgress();
+      navigate('/login');
+    } else {
+      setStep((prev) => (prev - 1) as Step);
     }
   };
 
   return (
-    <div>
-      <h2>新規登録</h2>
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <button onClick={goBack} type="button">
+          <ChevronLeft />
+        </button>
+        <h1 className={styles.pageTitle}>新規会員登録</h1>
+      </div>
+
       <StepIndicator current={step} />
 
-      {step === 1 && (
-        <div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-            <div style={{ flex: 1 }}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => handleEmailChange(e.target.value)}
-                placeholder="大学メールアドレス"
-                style={{ width: '100%' }}
-              />
-              {emailError && (
-                <p style={{ color: 'red', fontSize: '0.8rem', margin: '0.2rem 0' }}>{emailError}</p>
-              )}
-            </div>
+      <div className={styles.card}>
+        {/* ── Step 1: 利用規約同意 ── */}
+        {step === 1 && (
+          <div>
+            {currentTerms ? (
+              <>
+                <TermsContent
+                  documentUrl={currentTerms.documentUrl}
+                  onScrolledToBottom={() => setScrolled(true)}
+                  onError={() => setTermsError(true)}
+                  style={{
+                    height: '240px',
+                    overflowY: 'auto',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 8,
+                    padding: '1rem',
+                    lineHeight: 1.8,
+                    fontSize: '0.85rem',
+                    color: '#334155',
+                    marginBottom: '0.5rem',
+                  }}
+                />
+                {!scrolled && !termsError && (
+                  <p className={styles.termsScrollHint}>
+                    最後までスクロールして利用規約を確認してください
+                  </p>
+                )}
+                <label className={styles.termsCheckLabel}>
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    disabled={!scrolled && !termsError}
+                  />
+                  利用規約に同意する
+                </label>
+              </>
+            ) : (
+              <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
+            )}
             <button
               type="button"
+              className={styles.btnPrimary}
+              onClick={handleStep1Next}
+              disabled={currentTerms !== null && !agreed}
+            >
+              同意して次へ
+            </button>
+          </div>
+        )}
+
+        {/* ── Step 2: メアド入力 ── */}
+        {step === 2 && (
+          <div>
+            <label className={styles.fieldLabel}>専修大学メールアドレス</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => handleEmailChange(e.target.value)}
+              placeholder="学籍番号@senshu-u.jp"
+              className={styles.input}
+            />
+            {emailError && <p className={styles.fieldError}>{emailError}</p>}
+            {otpSendError && <p className={styles.fieldError}>{otpSendError}</p>}
+            {otpSent && (
+              <p className={`${styles.hint} ${styles.hintSuccess}`}>
+                認証コードを送信しました。メールをご確認ください。
+              </p>
+            )}
+            <button
+              type="button"
+              className={styles.btnPrimary}
               onClick={handleSendOTP}
               disabled={sendingOtp || !!emailError || !email || otpCooldown > 0}
-              style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
             >
-              {sendingOtp ? '送信中...' : otpCooldown > 0 ? `${otpCooldown}秒後に再送信可能` : otpSent ? '再送信' : '認証コードを送信'}
+              {sendingOtp
+                ? '送信中...'
+                : otpCooldown > 0
+                ? `${otpCooldown}秒後に再送信可能`
+                : otpSent
+                ? '再送信'
+                : '認証コード'}
             </button>
           </div>
-          {otpSent && (
-            <p style={{ fontSize: '0.8rem', color: '#22c55e', margin: '0.3rem 0 0' }}>
-              認証コードを送信しました。メールをご確認ください。
-            </p>
-          )}
-          {otpError && (
-            <p style={{ color: 'red', fontSize: '0.8rem', margin: '0.2rem 0' }}>{otpError}</p>
-          )}
+        )}
 
-          <input
-            type="text"
-            value={accountID}
-            onChange={(e) => setAccountID(e.target.value)}
-            placeholder="ユーザーID"
-            style={{ marginTop: '0.75rem' }}
-          />
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="名前"
-          />
+        {/* ── Step 3: 認証コード入力 ── */}
+        {step === 3 && (
           <div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setPasswordError(validatePassword(e.target.value));
-              }}
-              placeholder="パスワード"
+            <OtpInputSection
+              email={email}
+              otp={otp}
+              onOtpChange={(value) => { setOtp(value); setOtpError(''); }}
+              otpError={otpError}
+              onResend={handleSendOTP}
+              resending={sendingOtp}
+              cooldown={otpCooldown}
+              sendError={otpSendError}
             />
-            {passwordError && (
-              <p style={{ color: 'red', fontSize: '0.8rem', margin: '0.2rem 0' }}>{passwordError}</p>
-            )}
-          </div>
-
-          {currentTerms && (
-            <div style={{ marginTop: '1rem' }}>
-              <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0 0 0.5rem' }}>
-                利用規約（バージョン {currentTerms.version}）
-              </p>
-              <TermsContent
-                documentUrl={currentTerms.documentUrl}
-                onScrolledToBottom={() => setScrolled(true)}
-                onError={() => setTermsError(true)}
-                style={{
-                  height: '200px',
-                  overflowY: 'auto',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: 8,
-                  padding: '1rem',
-                  lineHeight: 1.8,
-                  fontSize: '0.85rem',
-                  color: '#334155',
-                }}
-              />
-              {!scrolled && !termsError && (
-                <p style={{ margin: '0.4rem 0 0.5rem', fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center' }}>
-                  最後までスクロールして利用規約を確認してください
-                </p>
-              )}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', margin: '0.5rem 0' }}>
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  disabled={!scrolled && !termsError}
-                />
-                利用規約に同意する
-              </label>
+            <div className={styles.actionRow}>
+              <button type="button" onClick={() => setStep(2)}>
+                <ChevronLeft /> 戻る
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                style={{ marginTop: 0, flex: 1 }}
+                onClick={handleStep3Next}
+                disabled={otp.length !== 6 || verifyingOtp}
+              >
+                {verifyingOtp ? '確認中...' : '次へ'}
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
-          {step1Errors.length > 0 && (
-            <ul style={{ color: 'red', fontSize: '0.85rem', margin: '0.75rem 0 0', paddingLeft: '1.2rem' }}>
-              {step1Errors.map((e) => <li key={e}>{e}</li>)}
-            </ul>
-          )}
-          <button
-            type="button"
-            onClick={handleStep1Next}
-            style={{ marginTop: '0.75rem', width: '100%' }}
-          >
-            次へ →
-          </button>
-        </div>
-      )}
+        {/* ── Step 4: アカウント情報 ── */}
+        {step === 4 && (
+          <div>
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>ユーザー名</label>
+              <input
+                type="text"
+                value={name}
+                maxLength={MAX_NAME_LENGTH}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setNameError(validateName(e.target.value));
+                }}
+                placeholder="表示名"
+                className={styles.input}
+              />
+              {nameError && <p className={styles.fieldError}>{nameError}</p>}
+            </div>
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>ユーザーID</label>
+              <input
+                type="text"
+                value={accountID}
+                maxLength={MAX_ACCOUNT_ID_LENGTH}
+                onChange={(e) => {
+                  setAccountID(e.target.value);
+                  setAccountIDError(validateAccountID(e.target.value));
+                }}
+                placeholder="半角英数字"
+                className={styles.input}
+              />
+              {accountIDError && <p className={styles.fieldError}>{accountIDError}</p>}
+            </div>
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>パスワード</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setPasswordError(validatePassword(e.target.value));
+                }}
+                placeholder="8文字以上"
+                className={styles.input}
+              />
+              {passwordError && <p className={styles.fieldError}>{passwordError}</p>}
+            </div>
+            {submitError && <p className={styles.submitError}>{submitError}</p>}
+            <div className={styles.actionRow}>
+              <button type="button" onClick={() => setStep(3)}>
+                <ChevronLeft /> 戻る
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                style={{ marginTop: 0, flex: 1 }}
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? '登録中...' : '登録する'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
-      {step === 2 && (
-        <div>
-          <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0 0 0.75rem' }}>
-            <strong>{email}</strong> に送信した6桁の認証コードを入力してください（有効期限10分）。
-          </p>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="認証コード（6桁）"
-            style={{ letterSpacing: '0.3rem', fontSize: '1.2rem', textAlign: 'center' }}
-          />
-          {submitError && <p style={{ color: 'red', margin: '0.5rem 0' }}>{submitError}</p>}
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-            <button type="button" onClick={() => { setStep(1); setOtp(''); setSubmitError(''); }} style={{ flex: 1 }}>
-              ← 戻る
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={otp.length !== 6}
-              style={{ flex: 2 }}
-            >
-              登録する
+      {otpErrorModal && (
+        <div className={styles.modalOverlay} onClick={() => setOtpErrorModal('')}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <p className={styles.modalText}>{otpErrorModal}</p>
+            <button type="button" className={styles.modalClose} onClick={() => setOtpErrorModal('')}>
+              閉じる
             </button>
           </div>
         </div>
       )}
-
-      <p style={{ marginTop: '1.5rem' }}>
-        すでにアカウントをお持ちの方は<Link to="/login">ログイン</Link>
-      </p>
-      <p>
-        <Link to="/inquiry">お問い合わせ</Link>
-      </p>
     </div>
   );
 };

@@ -1,29 +1,43 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
-import { CommunitySettingsModal } from '../components/organisms/CommunitySettingsModal';
+import { UserSidebar } from '../components/organisms/UserSidebar';
+import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
-import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, getCommunityMembers, type Community } from '../api/community';
-import { CommunityMembersModal } from '../components/organisms/CommunityMemberModal';
-import { ReportModal } from '../components/organisms/ReportMadal';
+import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
+import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
+import { ReportModal } from '../components/organisms/ReportModal';
+import { toUserMessage } from '../../../lib/errorMessages';
 import { useAuth } from '../context/AuthContext';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
-import styles from '../components/organisms/chatRoom.module.css';
-import { toUserMessage } from '../../../lib/errorMessages';
+import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
+import styles from '../components/ChatRoom.module.css';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { AppSwal } from '../../../lib/swal';
+
+// performance.getEntriesByType('navigation') はタブの実際のロード種別を返し、
+// SPA内のクライアントサイド遷移では変化しない。そのため「リロード時のみ
+// モーダルを閉じる」判定は、このタブで実際にリロードが起きた直後の
+// 最初のマウント1回だけに限定する必要がある（モジュールスコープなので
+// 実際のページリロードでのみリセットされ、SPA内の再マウントでは保持される）。
+let hardReloadPending = (() => {
+  const entry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+  return entry?.type === 'reload';
+})();
 
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const locationState = location.state as { communityID?: string; community?: Community; showDetail?: boolean } | null;
   const { userId: currentUserID } = useAuth();
-  const { room, messages, wsConnected, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -36,7 +50,6 @@ export const CommunityRoomPage = () => {
 
   const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
 
-  // 双方向スクロールページング
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
@@ -48,7 +61,6 @@ export const CommunityRoomPage = () => {
     await loadOlderMessages();
   };
 
-  // 上センチネル: 古いメッセージを取得
   useEffect(() => {
     const sentinel = topSentinelRef.current;
     const container = messageListRef.current;
@@ -62,7 +74,6 @@ export const CommunityRoomPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMoreBefore, loadOlderMessages]);
 
-  // 下センチネル: 新しいメッセージを取得（歴史閲覧中のみ active）
   useEffect(() => {
     const sentinel = bottomSentinelRef.current;
     const container = messageListRef.current;
@@ -75,50 +86,77 @@ export const CommunityRoomPage = () => {
     return () => observer.disconnect();
   }, [hasMoreAfter, loadNewerMessages]);
 
-  const [showSettings, setShowSettings] = useState(false);
-  const [showMembers, setShowMembers] = useState(false);
-  const [leaving, setLeaving] = useState(false);
+  const detailStorageKey = roomId ? `showDetail-${roomId}` : null;
+
+  const [showDetail, setShowDetail] = useState(() => {
+    // returnPath からの明示的な指定は、リロード判定より常に優先する
+    const fromState = locationState?.showDetail === true;
+    if (fromState) return true;
+
+    if (hardReloadPending) {
+      hardReloadPending = false;
+      if (detailStorageKey) sessionStorage.removeItem(detailStorageKey);
+      return false;
+    }
+    const fromStorage = detailStorageKey ? sessionStorage.getItem(detailStorageKey) === 'true' : false;
+    return fromStorage;
+  });
+  const [leaveError, setLeaveError] = useState('');
+
+  useEffect(() => {
+    if (!detailStorageKey) return;
+    if (showDetail) {
+      sessionStorage.setItem(detailStorageKey, 'true');
+    } else {
+      sessionStorage.removeItem(detailStorageKey);
+    }
+  }, [showDetail, detailStorageKey]);
+
+  const openDetail = () => setShowDetail(true);
+  const closeDetail = () => setShowDetail(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
-  const { data: communities, mutate: mutateCommunities } = useSWR('my-communities', () => listMyCommunities());
+  const stateCommunity = locationState?.community ?? null;
+  const { data: communities, mutate: mutateCommunities } = useSWR(
+    stateCommunity ? null : 'my-communities',
+    () => listMyCommunities(),
+    staticCacheOptions,
+  );
 
   const community = useMemo((): Community | null => {
+    if (stateCommunity) return stateCommunity;
     if (!communities || !roomId) return null;
-    const stateID = (location.state as { communityID?: string } | null)?.communityID;
+    const stateID = locationState?.communityID;
     if (stateID) return communities.items.find((c) => c.ID === stateID) ?? null;
     return communities.items.find((c) => c.roomID === roomId) ?? null;
-  }, [communities, roomId, location.state]);
+  }, [communities, roomId, locationState, stateCommunity]);
 
   const communityID = community?.ID ?? null;
 
   const { data: role } = useSWR(
     communityID ? ['community-role', communityID] : null,
     ([, cid]: [string, string]) => getMyRoleInCommunity(cid),
+    stableCacheOptions,
   );
   const isOwner = role === 'owner';
 
-  const { data: members } = useSWR(
-    communityID ? ['community-members', communityID] : null,
-    ([, cid]: [string, string]) => getCommunityMembers(cid),
-  );
-  const memberCount = members?.length ?? null;
-
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
-    if (!window.confirm('このコミュニティを退出しますか？')) return;
-    setLeaving(true);
+    const result = await AppSwal.fire({
+      text: 'このコミュニティを退出しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
+    setLeaveError('');
     try {
       await leaveCommunity(roomId, currentUserID);
       void mutateCommunities();
       navigate('/community', { replace: true });
-    } catch {
-      setLeaving(false);
+    } catch (err) {
+      setLeaveError(toUserMessage(err, '退出に失敗しました。'));
     }
-  };
-
-  const handleReportCommunity = () => {
-    if (!community) return;
-    setIsReportOpen(true);
   };
 
   useEffect(() => {
@@ -131,89 +169,17 @@ export const CommunityRoomPage = () => {
 
   return (
     <div className={styles.container}>
-      <UserHeader />
+      <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button className={styles.backButton} onClick={() => navigate('/community')}>← 戻る</button>
-        <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
-        {memberCount !== null && (
-          <button
-            onClick={() => setShowMembers(true)}
-            style={{
-              marginLeft: '0.6rem',
-              fontSize: '0.72rem',
-              fontWeight: 600,
-              color: '#38bdf8',
-              background: 'rgba(56, 189, 248, 0.15)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              padding: '2px 8px',
-              borderRadius: 12,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            {memberCount} 人のメンバー
-          </button>
-        )}
-        {isOwner && (
-          <button
-            onClick={() => setShowSettings(true)}
-            style={{
-              marginLeft: '0.5rem',
-              padding: '3px 10px',
-              fontSize: '0.8rem',
-              borderRadius: 6,
-              border: '1px solid #a78bfa',
-              background: '#fff',
-              color: '#7c3aed',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            ⚙ 設定
-          </button>
-        )}
-        {community && (
-          <button
-            onClick={handleReportCommunity}
-            style={{
-              marginLeft: 'auto',
-              padding: '3px 10px',
-              fontSize: '0.8rem',
-              borderRadius: 6,
-              border: '1px solid #fca5a5',
-              background: '#fff',
-              color: '#dc2626',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            🚩 通報
-          </button>
-        )}
+        <button onClick={() => navigate('/community')}><ChevronLeft /></button>
         <button
-          onClick={handleLeave}
-          disabled={leaving}
-          style={{
-            marginLeft: '0.5rem',
-            padding: '3px 10px',
-            fontSize: '0.8rem',
-            borderRadius: 6,
-            border: '1px solid #fca5a5',
-            background: '#fff',
-            color: '#ef4444',
-            cursor: leaving ? 'not-allowed' : 'pointer',
-            fontWeight: 600,
-            opacity: leaving ? 0.6 : 1,
-          }}
+          onClick={() => openDetail()}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, flex: 1, overflow: 'hidden' }}
         >
-          退出
+          <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
+          <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         </button>
-        <span
-          className={`${styles.wsIndicator} ${wsConnected ? styles.wsConnected : styles.wsDisconnected}`}
-          title={wsConnected ? '接続中' : '切断'}
-        />
       </div>
 
       <div className={styles.messageListWrapper}>
@@ -278,27 +244,14 @@ export const CommunityRoomPage = () => {
         disabled={sending}
       />
 
-      {showSettings && community && (
-        <CommunitySettingsModal
+      {showDetail && community && (
+        <CommunityDetailPanel
           community={community}
-          onClose={() => setShowSettings(false)}
-          onUpdated={(updated) => {
-            mutateCommunities(
-              (prev) => prev
-                ? {
-                    ...prev,
-                    items: prev.items.map((c) => c.ID === updated.ID ? { ...c, ...updated } : c),
-                  }
-                : prev,
-              { revalidate: true },
-            );
-          }}
-        />
-      )}
-      {showMembers && community && (
-        <CommunityMembersModal
-          community={community}
-          onClose={() => setShowMembers(false)}
+          isOwner={isOwner}
+          leaveError={leaveError}
+          onClose={() => { closeDetail(); setLeaveError(''); }}
+          onLeave={handleLeave}
+          onReport={() => { closeDetail(); setLeaveError(''); setIsReportOpen(true); }}
         />
       )}
       {community && (

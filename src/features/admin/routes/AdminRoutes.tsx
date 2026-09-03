@@ -6,7 +6,7 @@ import { AdminUserListPage } from '../pages/AdminUserListPage';
 import { AdminUserDetailPage } from '../pages/AdminUserDetailPage';
 import { AdminUserEditPage } from '../pages/AdminUserEditPage';
 import { AdminUserProfilePage } from '../pages/AdminUserProfilePage';
-import { AdminProtectedRoute } from '../components/AdminProtectedRoute';
+import { AdminProtectedRoute } from './AdminProtectedRoute';
 import { AdminAdministratorListPage } from '../pages/AdminAdministratorsListPage';
 import { AdminCommunityListPage } from '../pages/AdminCommunityListPage';
 import { AdminCommunityDetailPage } from '../pages/AdminCommunityDetailPage';
@@ -23,6 +23,7 @@ import { AdminTermsCreatePage } from '../pages/AdminTermsCreatePage';
 import { AdminTermsListPage } from '../pages/AdminTermsListPage';
 import { AdminTermsDetailPage } from '../pages/AdminTermsDetailPage';
 import { AdminMaintenancePage } from '../pages/AdminMaintenancePage';
+import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
 
 export const AdminRoutes = () => {
   return (
@@ -202,6 +203,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminMaintenancePage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="analytics"
+        element={
+          <AdminProtectedRoute>
+            <AdminAnalyticsPage />
           </AdminProtectedRoute>
         }
       />

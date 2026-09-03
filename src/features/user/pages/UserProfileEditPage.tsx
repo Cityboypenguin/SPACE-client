@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import useSWR from 'swr';
+import { useNavigate } from 'react-router-dom';
+import useSWR, { useSWRConfig } from 'swr';
 import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ImageCropModal } from '../components/organisms/ImageCropModal';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { profileCacheKey, profileCacheOptions } from '../hooks/useProfile';
 import {
   getProfileByUserID,
   updateProfile,
@@ -13,24 +17,29 @@ import {
   setAvatar,
   deleteAvatar,
 } from '../api/profile';
+import styles from './UserProfileEditPage.module.css';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export const UserProfileEditPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userId } = useAuth();
+  const { addToast } = useToast();
+  const { mutate } = useSWRConfig();
 
   const { data: profileData } = useSWR(
-    userId ? ['profile', userId] : null,
+    userId ? profileCacheKey(userId) : null,
     ([, id]: [string, string]) => getProfileByUserID(id).then((d) => d.getProfileByUserID),
+    profileCacheOptions,
   );
 
   const [bio, setBio] = useState('');
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropTarget, setCropTarget] = useState<{ imageSrc: string; file: File } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
   const [error, setError] = useState('');
@@ -55,11 +64,23 @@ export const UserProfileEditPage = () => {
     }
 
     setError('');
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+
+    if (file.type === 'image/svg+xml') {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setCropTarget({ imageSrc: URL.createObjectURL(file), file });
+    }
+    e.target.value = '';
   };
 
-  const handleSubmit = async (e: { preventDefault(): void }) => {
+  const handleCropComplete = (croppedFile: File, croppedPreviewUrl: string) => {
+    setSelectedFile(croppedFile);
+    setPreviewUrl(croppedPreviewUrl);
+    setCropTarget(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setIsUploading(true);
@@ -72,10 +93,11 @@ export const UserProfileEditPage = () => {
       }
 
       await updateProfile({ bio });
-      navigate('/mypage', { state: { message: 'プロフィールを更新しました！' } });
+      if (userId) await mutate(profileCacheKey(userId));
+      addToast('プロフィールを更新しました', 'success');
+      navigate('/mypage');
     } catch (err) {
       setError(toUserMessage(err, 'プロフィールの更新に失敗しました。時間をおいてから再度お試しください。'));
-      console.error(err);
     } finally {
       setIsUploading(false);
     }
@@ -86,6 +108,7 @@ export const UserProfileEditPage = () => {
     setIsDeletingAvatar(true);
     try {
       await deleteAvatar();
+      if (userId) await mutate(profileCacheKey(userId));
       setCurrentAvatarUrl(null);
       setPreviewUrl(null);
       setSelectedFile(null);
@@ -100,47 +123,45 @@ export const UserProfileEditPage = () => {
 
   return (
     <div>
-      <UserHeader />
-      <main style={{ padding: '2rem' }}>
-        <h1>プロフィール編集</h1>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 400 }}>
+      <UserSidebar />
+      <main className={styles.main}>
+        <div className={styles.header}>
+          <button onClick={() => navigate(-1)}>
+            <ChevronLeft />
+          </button>
+          <h1 className={styles.title}>プロフィール編集</h1>
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <div className={styles.avatarSection}>
             <div
+              className={styles.avatarCircle}
               onClick={() => fileInputRef.current?.click()}
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: '50%',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                background: '#e2e8f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px dashed #94a3b8',
-              }}
             >
               {displayAvatarUrl ? (
-                <img src={storageUrl(displayAvatarUrl) ?? undefined} alt="アバター" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img
+                  src={storageUrl(displayAvatarUrl) ?? undefined}
+                  alt="アバター"
+                  className={styles.avatarImg}
+                />
               ) : (
-                <span style={{ fontSize: '2rem', color: '#94a3b8' }}>＋</span>
+                <span className={styles.avatarPlaceholder}>＋</span>
               )}
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className={styles.avatarActions}>
               <button
                 type="button"
+                className={`${styles.avatarBtn} ${styles.avatarBtnChange}`}
                 onClick={() => fileInputRef.current?.click()}
-                style={{ fontSize: '0.875rem', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 画像を変更
               </button>
-              {(displayAvatarUrl) && (
+              {displayAvatarUrl && (
                 <button
                   type="button"
+                  className={`${styles.avatarBtn} ${styles.avatarBtnDelete}`}
                   onClick={handleDeleteAvatar}
                   disabled={isDeletingAvatar}
-                  style={{ fontSize: '0.875rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   {isDeletingAvatar ? '削除中...' : 'アイコンを削除'}
                 </button>
@@ -155,23 +176,36 @@ export const UserProfileEditPage = () => {
             />
           </div>
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            自己紹介:
+          <div className={styles.bioSection}>
+            <label className={styles.fieldLabel} htmlFor="bio">自己紹介</label>
             <textarea
-              name="bio"
+              id="bio"
+              className={styles.textarea}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
+              placeholder="自己紹介を入力してください"
             />
-          </label>
+          </div>
 
-          <button type="submit" disabled={isUploading}>
-            {isUploading ? '更新中...' : '更新'}
-          </button>
+          {error && <p className={styles.errorMsg}>{error}</p>}
+
+          <div className={styles.submitWrap}>
+            <button type="submit" className={styles.submitBtn} disabled={isUploading}>
+              {isUploading ? '更新中...' : '更新する'}
+            </button>
+          </div>
         </form>
-
-        {error && <p style={{ color: 'red', marginTop: '0.5rem' }}>{error}</p>}
-        <Link to="/mypage" style={{ marginTop: '1rem', display: 'inline-block' }}>マイページに戻る</Link>
       </main>
+
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.imageSrc}
+          fileName={cropTarget.file.name}
+          mimeType={cropTarget.file.type}
+          onCancel={() => setCropTarget(null)}
+          onComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };

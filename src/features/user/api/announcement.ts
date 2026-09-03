@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 
 export type Announcement = {
@@ -10,7 +11,7 @@ export type Announcement = {
 
 export type AnnouncementPage = { items: Announcement[]; total: number };
 
-const LIST_ANNOUNCEMENTS_QUERY = `
+const ListAnnouncementsDocument = graphql(`
   query ListAnnouncements($limit: Int, $offset: Int) {
     announcements(limit: $limit, offset: $offset) {
       items {
@@ -22,9 +23,9 @@ const LIST_ANNOUNCEMENTS_QUERY = `
       total
     }
   }
-`;
+`);
 
-const GET_ANNOUNCEMENT_QUERY = `
+const GetAnnouncementDocument = graphql(`
   query GetAnnouncement($id: ID!) {
     announcement(id: $id) {
       ID
@@ -33,22 +34,14 @@ const GET_ANNOUNCEMENT_QUERY = `
       createdAt
     }
   }
-`;
+`);
 
 export const listAnnouncements = async (limit = 20, offset = 0): Promise<AnnouncementPage> => {
-  const data = await request<{ announcements: AnnouncementPage }>(
-    LIST_ANNOUNCEMENTS_QUERY,
-    { limit, offset },
-    getUserToken(),
-  );
+  const data = await requestDoc(ListAnnouncementsDocument, { limit, offset }, getUserToken());
   return data.announcements ?? { items: [], total: 0 };
 };
 
 export const getAnnouncement = async (id: string): Promise<Announcement> => {
-  const data = await request<{ announcement: Announcement }>(
-    GET_ANNOUNCEMENT_QUERY,
-    { id },
-    getUserToken(),
-  );
+  const data = await requestDoc(GetAnnouncementDocument, { id }, getUserToken());
   return data.announcement;
 };

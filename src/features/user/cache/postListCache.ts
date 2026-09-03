@@ -6,6 +6,8 @@ type PostListCacheData = {
   offset: number;
   scrollY: number;
   cachedAt: number;
+  searchQuery?: string;
+  searchResults?: Post[];
 };
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
@@ -28,6 +30,33 @@ export const savePostListCache = (data: Omit<PostListCacheData, 'cachedAt'>) => 
 export const updatePostInCache = (postId: string, updater: (post: Post) => Post) => {
   if (!cache) return;
   cache = { ...cache, posts: cache.posts.map(p => p.ID === postId ? updater(p) : p) };
+};
+
+export const removePostFromCache = (postId: string) => {
+  if (!cache) return;
+  cache = { ...cache, posts: cache.posts.filter(p => p.ID !== postId), total: Math.max(0, cache.total - 1) };
+};
+
+export const updatePostAcrossCaches = (postId: string, updater: (post: Post) => Post) => {
+  updatePostInCache(postId, updater);
+  userPostCaches.forEach((data, userId) => {
+    userPostCaches.set(userId, {
+      ...data,
+      posts: data.posts.map(p => p.ID === postId ? updater(p) : p),
+    });
+  });
+};
+
+export const removePostAcrossCaches = (postId: string) => {
+  removePostFromCache(postId);
+  userPostCaches.forEach((data, userId) => {
+    const nextPosts = data.posts.filter(p => p.ID !== postId);
+    userPostCaches.set(userId, {
+      ...data,
+      posts: nextPosts,
+      total: nextPosts.length === data.posts.length ? data.total : Math.max(0, data.total - 1),
+    });
+  });
 };
 
 export const clearPostListCache = () => { cache = null; };
@@ -62,6 +91,12 @@ export const updatePostInUserPostListCache = (userId: string, postId: string, up
       });
     }
   }
+};
+
+export const removePostFromUserPostListCache = (userId: string, postId: string) => {
+  const data = userPostCaches.get(userId);
+  if (!data) return;
+  userPostCaches.set(userId, { ...data, posts: data.posts.filter(p => p.ID !== postId), total: Math.max(0, data.total - 1) });
 };
 
 export const clearAllUserPostListCaches = () => { userPostCaches.clear(); };

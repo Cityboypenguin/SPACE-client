@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getAnnouncement, updateAnnouncement, deleteAnnouncement, type Announcement } from '../api/announcements';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const AdminAnnouncementDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -67,17 +68,8 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
       <main style={{ maxWidth: 700, margin: '2rem auto', padding: '0 1rem' }}>
         <button
           onClick={() => navigate('/admin/announcements')}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#3b82f6',
-            fontSize: '0.875rem',
-            padding: '0.25rem 0',
-            marginBottom: '1.5rem',
-          }}
         >
-          ← お知らせ一覧に戻る
+          <ChevronLeft /> お知らせ一覧に戻る
         </button>
 
         {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}

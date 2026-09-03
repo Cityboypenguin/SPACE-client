@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useNotification } from '../context/NotificationContext';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
-  listMyNotifications,
+  getNotification,
   markNotificationAsRead,
   deleteNotifications,
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
+import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
+import { stableCacheOptions } from '../cache/swrOptions';
+import styles from './NotificationDetailPage.module.css';
+import { AppSwal } from '../../../lib/swal';
 
 const TYPE_LABEL: Record<string, string> = {
   favorite: 'いいね',
@@ -17,6 +22,16 @@ const TYPE_LABEL: Record<string, string> = {
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
   announcement: 'お知らせ',
+  follow: 'フォロー',
+};
+
+const ACTION_LABEL: Record<string, string> = {
+  dm: 'DMへいく',
+  favorite: '投稿へいく',
+  reply: '投稿へいく',
+  community_kick: 'コミュニティへいく',
+  community_role: 'コミュニティへいく',
+  announcement: 'お知らせへいく',
 };
 
 const TARGET_PATH: Record<string, (id: string) => string> = {
@@ -35,19 +50,18 @@ export const NotificationDetailPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
-  const { data, isLoading, mutate } = useSWR(
-    ['my-notifications-detail', id],
-    () => listMyNotifications(50, 0),
+  const { data: notification, isLoading, mutate } = useSWR(
+    id ? ['my-notification-detail', id] : null,
+    () => getNotification(id!),
+    stableCacheOptions,
   );
-
-  const notification = data?.items.find((n) => n.ID === id) ?? null;
 
   useEffect(() => {
     if (!notification || notification.isRead) return;
     markNotificationAsRead(notification.ID)
       .then(() => {
         mutate(
-          (prev) => prev ? { ...prev, items: prev.items.map((n) => n.ID === notification.ID ? { ...n, isRead: true } : n) } : prev,
+          (prev) => prev ? { ...prev, isRead: true } : prev,
           { revalidate: false },
         );
         decrementUnread();
@@ -58,7 +72,13 @@ export const NotificationDetailPage = () => {
 
   const handleDelete = async () => {
     if (!notification) return;
-    if (!window.confirm('この通知を削除しますか？')) return;
+    const result = await AppSwal.fire({
+      text: 'この通知を削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     setDeleting(true);
     try {
       await deleteNotifications([notification.ID]);
@@ -81,132 +101,79 @@ export const NotificationDetailPage = () => {
 
   return (
     <div>
-      <UserHeader />
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <button
-            onClick={() => navigate('/notifications')}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: '#3b82f6',
-              fontSize: '0.875rem',
-              padding: '0.25rem 0',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-            }}
-          >
-            ← 通知一覧に戻る
+      <UserSidebar />
+      <main className={styles.main}>
+        <div className={styles.topBar}>
+          <button type="button" onClick={() => navigate(-1)}>
+            <ChevronLeft />
           </button>
           {notification && (
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              style={{
-                padding: '0.35rem 0.9rem',
-                borderRadius: 8,
-                border: '1px solid #fca5a5',
-                background: '#fff',
-                cursor: deleting ? 'not-allowed' : 'pointer',
-                fontSize: '0.8rem',
-                color: deleting ? '#fca5a5' : '#ef4444',
-                fontWeight: 500,
-              }}
-            >
+            <button className={styles.deleteBtn} onClick={handleDelete} disabled={deleting}>
               {deleting ? '削除中...' : '削除'}
             </button>
           )}
         </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p className={styles.error}>{error}</p>}
 
         {isLoading ? (
-          <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
+          <p className={styles.empty}>読み込み中...</p>
         ) : !notification ? (
-          <p style={{ color: '#94a3b8', textAlign: 'center' }}>通知が見つかりません</p>
+          <p className={styles.empty}>通知が見つかりません</p>
         ) : (
-          <div
-            style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: 12,
-              padding: '1.5rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: 12,
-                  background: '#e2e8f0',
-                  color: '#475569',
-                  fontWeight: 600,
-                }}
-              >
+          <div className={styles.card}>
+            <div className={styles.metaRow}>
+              <span className={styles.typeBadge}>
                 {TYPE_LABEL[notification.type] ?? notification.type}
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              <span className={styles.date}>
                 {new Date(notification.createdAt).toLocaleString('ja-JP')}
               </span>
             </div>
 
             {notification.actor && (
-              <div
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}
+              <button
+                type="button"
+                className={styles.actorRow}
+                onClick={() => navigate(`/users/${notification.actor!.ID}`)}
               >
                 {notification.actor.avatarUrl ? (
                   <img
                     src={storageUrl(notification.actor.avatarUrl) ?? undefined}
                     alt={notification.actor.name}
-                    style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
+                    className={styles.actorAvatar}
                   />
                 ) : (
-                  <div
-                    style={{
-                      width: 36, height: 36, borderRadius: '50%',
-                      background: '#cbd5e1', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', fontWeight: 700, color: '#475569',
-                    }}
-                  >
+                  <div className={styles.actorAvatarFallback}>
                     {notification.actor.name.charAt(0)}
                   </div>
                 )}
-                <div>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>
-                    {notification.actor.name}
-                  </p>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
-                    @{notification.actor.accountID}
-                  </p>
+                <div className={styles.actorInfo}>
+                  <p className={styles.actorName}>{notification.actor.name}</p>
+                  <p className={styles.actorAccountID}>@{notification.actor.accountID}</p>
                 </div>
+              </button>
+            )}
+
+            <p className={styles.message}>{notification.message}</p>
+
+            {notification.targetPost && !notification.targetPost.deletedAt && (
+              <div className={styles.targetPostPreview}>
+                <p className={styles.targetPostAuthor}>{notification.targetPost.user.name}</p>
+                {notification.targetPost.content && (
+                  <p className={styles.targetPostContent}>{notification.targetPost.content}</p>
+                )}
+                {notification.targetPost.media.length > 0 && (
+                  <div className={styles.targetPostMedia}>
+                    <PostMediaGrid media={notification.targetPost.media} />
+                  </div>
+                )}
               </div>
             )}
 
-            <p style={{ fontSize: '1rem', color: '#1e293b', lineHeight: 1.6, margin: '0 0 1.5rem' }}>
-              {notification.message}
-            </p>
-
             {notification.targetType && notification.targetID && TARGET_PATH[notification.targetType] && (
-              <button
-                onClick={handleTargetLink}
-                style={{
-                  padding: '0.5rem 1.25rem',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: '#3b82f6',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 500,
-                  fontSize: '0.875rem',
-                }}
-              >
-                {DM_TYPES.has(notification.type) ? 'DMへ' :
-                 notification.targetType === 'post' ? '投稿を見る' :
-                 notification.targetType === 'room' ? 'チャットルームへ' :
-                 notification.targetType === 'announcement' ? 'お知らせを見る' : 'コミュニティへ'}
+              <button className={styles.actionBtn} onClick={handleTargetLink}>
+                {ACTION_LABEL[notification.type] ?? '詳細へいく'}
               </button>
             )}
           </div>

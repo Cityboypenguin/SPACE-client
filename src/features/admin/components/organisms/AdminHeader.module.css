@@ -71,3 +71,9 @@
   text-align: center;
   pointer-events: none;
 }
+
+@media (max-width: 768px) {
+  .header {
+    top: env(safe-area-inset-top);
+  }
+}

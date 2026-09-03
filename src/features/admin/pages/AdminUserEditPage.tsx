@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, adminUpdateUser, type User } from '../api/users';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const AdminUserEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,10 @@ export const AdminUserEditPage = () => {
     getUserByID(id)
       .then((data) => {
         const u = data.getUserByID;
+        if (!u) {
+          setError('ユーザーが見つかりません');
+          return;
+        }
         setUser(u);
         setAccountID(u.accountID);
         setName(u.name);
@@ -61,7 +66,7 @@ export const AdminUserEditPage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate(`/admin/users/${id}`)}>← 詳細に戻る</button>
+        <button onClick={() => navigate(`/admin/users/${id}`)}><ChevronLeft /> 詳細に戻る</button>
         <h1>ユーザー情報の編集</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}

@@ -4,6 +4,27 @@ import { getCommunityMembers, type Community } from '../../api/community';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { toUserMessage } from '../../../../lib/errorMessages';
 
+const URL_SPLIT_REGEX = /(https?:\/\/[^\s　。、！？「」（）【】『』〔〕…‥・]+)/g;
+const URL_TEST_REGEX = /^https?:\/\//;
+
+const renderTextWithLinks = (text: string) =>
+  text.split(URL_SPLIT_REGEX).map((part, i) =>
+    URL_TEST_REGEX.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  );
+
 type Props = {
   community: Community;
   onJoin?: (community: Community) => Promise<void>;
@@ -77,7 +98,18 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
           size={40} 
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: '1rem', color: '#1e293b' }}>{community.name}</div>
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: '1rem',
+              color: '#1e293b',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {community.name}
+          </div>
           {!expanded && (
             <div
               style={{
@@ -92,9 +124,19 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
             </div>
           )}
         </div>
-        <span style={{ color: '#94a3b8', fontSize: '0.8rem', flexShrink: 0 }}>
-          {expanded ? '▲' : '▼'}
-        </span>
+        <span
+          style={{
+            display: 'inline-block',
+            width: 0,
+            height: 0,
+            flexShrink: 0,
+            borderLeft: '5px solid transparent',
+            borderRight: '5px solid transparent',
+            ...(expanded
+              ? { borderBottom: '6px solid #94a3b8' }
+              : { borderTop: '6px solid #94a3b8' }),
+          }}
+        />
       </div>
 
       {expanded && (
@@ -119,8 +161,8 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
               </span>
             </div>
           )}
-          <p style={{ margin: '0 0 1rem', color: '#475569', lineHeight: 1.6 }}>
-            {community.description}
+          <p style={{ margin: '0 0 1rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            {renderTextWithLinks(community.description)}
           </p>
           {error && <p style={{ color: 'red', margin: '0 0 0.5rem', fontSize: '0.85rem' }}>{error}</p>}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
@@ -143,7 +185,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/community/chat/${community.roomID}`, { state: { communityID: community.ID } });
+                    navigate(`/community/chat/${community.roomID}`, { state: { communityID: community.ID, community } });
                   }}
                   style={{
                     padding: '0.45rem 1.2rem',

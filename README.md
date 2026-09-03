@@ -1,3 +1,7 @@
+## E2Eテスト
+
+機能の動作確認フロー（自動化済み範囲と手動チェックリスト）は [e2e/README.md](e2e/README.md) を参照。
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

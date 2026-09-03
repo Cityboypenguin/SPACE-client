@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "Senshu-Universe",
+  "short_name": "Senshu-Universe",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/Senshu-Universe.png",
+      "sizes": "834x834",
+      "type": "image/png"
+    }
+  ]
+}

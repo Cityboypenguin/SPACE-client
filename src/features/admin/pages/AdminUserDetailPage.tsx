@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, deleteUser, freezeUser, unfreezeUser, type User } from '../api/users';
-import { adminGetBlockers, adminGetFavoriteUsers } from '../api/relation';
+import { adminGetBlockers, adminGetFavoriteUsers, type RelatedUser } from '../api/relation';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { UserListItem } from '../../../components/molecules/UserListItem';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 const STATUS_FROZEN = 'frozen';
 
@@ -15,8 +16,8 @@ export const AdminUserDetailPage = () => {
   const [error, setError] = useState('');
   const [freezeError, setFreezeError] = useState('');
 
-  const [favorites, setFavorites] = useState<User[]>([]);
-  const [blockers, setBlockers] = useState<User[]>([]);
+  const [favorites, setFavorites] = useState<RelatedUser[]>([]);
+  const [blockers, setBlockers] = useState<RelatedUser[]>([]);
   const [relationsLoading, setRelationsLoading] = useState(true);
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export const AdminUserDetailPage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate(-1)}>← 戻る</button>
+        <button onClick={() => navigate(-1)}><ChevronLeft /> 戻る</button>
         <h1>ユーザー詳細</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}

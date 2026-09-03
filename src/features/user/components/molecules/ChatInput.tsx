@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
-import styles from '../organisms/chatRoom.module.css';
+import styles from '../ChatRoom.module.css';
+import sendIcon from '../../../../assets/パーツ_送信.svg';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -24,6 +25,7 @@ type Props = {
 export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevDisabledRef = useRef(disabled);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -32,6 +34,14 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
       textareaRef.current.style.height = 'auto';
     }
   }, [value]);
+
+  // 送信完了後 (disabled: true → false) にテキストエリアへフォーカスを戻す
+  useEffect(() => {
+    if (prevDisabledRef.current === true && disabled === false) {
+      textareaRef.current?.focus();
+    }
+    prevDisabledRef.current = disabled;
+  }, [disabled]);
 
   useEffect(() => {
     const urls = selectedFiles.map((file) =>
@@ -57,6 +67,8 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     const remaining = MAX_FILES - selectedFiles.length;
     if (remaining <= 0) return;
     onFileSelect([...selectedFiles, ...incoming.slice(0, remaining)]);
+    // ファイル選択後にテキストエリアへフォーカスを戻してEnterキーで送信できるようにする
+    textareaRef.current?.focus();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,20 +102,30 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     onFileSelect(selectedFiles.filter((_, i) => i !== index));
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (disabled || isBlocked) return;
+
+    const items = Array.from(e.clipboardData.items);
+    const imageFiles = items
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (!imageFiles.length) return;
+
+    e.preventDefault();
+    addFiles(imageFiles);
+  };
+
   const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
 
-  const getButtonText = () => {
-    if (isBlocked) return '送信不可';
-    if (disabled) return '送信中...';
-    return '送信';
-  };
 
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', flexShrink: 0 }}
     >
       {isDragging && (
         <div
@@ -126,7 +148,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
         </div>
       )}
       {selectedFiles.length > 0 && (
-        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 130, overflowY: 'auto' }}>
           {selectedFiles.map((file, i) =>
             file.type.startsWith('image/') ? (
               <div
@@ -235,13 +257,26 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             e.target.style.height = 'auto';
             e.target.style.height = `${e.target.scrollHeight}px`;
           }}
+          onPaste={handlePaste}
           onKeyDown={(e) => {
+            // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
+            // Enterは改行として扱い、送信は送信ボタンのみで行う。
+            // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
+            // 通常通りEnterで送信できるようにする。
+            const isTouch = window.matchMedia('(pointer: coarse)').matches;
+            if (isTouch) return;
             if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               if (canSubmit) onSubmit({ preventDefault: () => { } });
             }
           }}
-          placeholder={isBlocked ? 'メッセージを送信できません' : 'メッセージを入力... (Shift+Enterで改行)'}
+          placeholder={
+            isBlocked
+              ? 'メッセージを送信できません'
+              : window.matchMedia('(pointer: coarse)').matches
+              ? 'メッセージを入力...'
+              : 'メッセージを入力... (Shift+Enterで改行)'
+          }
           disabled={disabled || isBlocked}
           className={styles.inputField}
           style={{ cursor: (disabled || isBlocked) ? 'default' : 'text' }}
@@ -249,9 +284,26 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
         <button
           type="submit"
           disabled={!canSubmit}
-          style={{ cursor: !canSubmit ? 'default' : 'pointer' }}
+          title={isBlocked ? '送信不可' : disabled ? '送信中...' : '送信'}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '0 4px',
+            cursor: canSubmit ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
-          {getButtonText()}
+          <img
+            src={sendIcon}
+            alt="送信"
+            style={{
+              width: 28,
+              height: 28,
+              filter: canSubmit ? 'none' : 'opacity(0.3)',
+              transition: 'filter 0.15s',
+            }}
+          />
         </button>
       </form>
     </div>

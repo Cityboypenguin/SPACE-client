@@ -1,15 +1,25 @@
-import React, { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyThread } from '../components/organisms/ReplyThread';
 import { PostCard } from '../components/organisms/PostCard';
-import { ReportModal } from '../components/organisms/ReportMadal';
-import { PostMediaGrid } from '../components/molecules/PostMediaGrid';
+import { ReportModal } from '../components/organisms/ReportModal';
+import { ReplyModal } from '../components/organisms/ReplyModal';
+import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
-import { LikeButton } from '../components/molecules/LikeButton';
+import { UserNameLink } from '../../../components/atoms/UserNameLink';
+import { LikeButton } from '../../../components/molecules/LikeButton';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import commentIcon from '../../../assets/パーツ_コメント.svg';
+import reportIcon from '../../../assets/パーツ_通報.svg';
+import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
+import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
+import deleteIcon from '../../../assets/パーツ_削除.svg';
+import styles from './PostDetailPage.module.css';
+import { AppSwal } from '../../../lib/swal';
 
 import {
   getPostByID,
@@ -18,25 +28,28 @@ import {
   deletePost,
   createFavorite,
   deleteFavorite,
-  getPresignedMediaUploadUrl,
-  uploadFileToStorage,
   type Post,
-  type MediaInput,
 } from '../api/post';
+import { uploadMediaFiles } from '../api/media';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
-import { updatePostInCache } from '../cache/postListCache';
-
+import { createBlocker } from '../api/block';
+import { useToast } from '../../../context/ToastContext';
+import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
+import { stableCacheOptions } from '../cache/swrOptions';
+import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
+  const { addToast } = useToast();
 
   const { data: post, isLoading, error, mutate } = useSWR<Post | null>(
     id ? ['post', id] : null,
     ([, postId]: [string, string]) => getPostByID(postId),
+    stableCacheOptions,
   );
 
   const [replyContent, setReplyContent] = useState('');
@@ -49,7 +62,45 @@ export const PostDetailPage = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const [editContent, setEditContent] = useState('');
-  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<Post | null>(null);
+  const [editingRootPost, setEditingRootPost] = useState<Post | null>(null);
+  const [rootEditContent, setRootEditContent] = useState('');
+  const [rootEditSelectedFiles, setRootEditSelectedFiles] = useState<File[]>([]);
+  const [rootEditDeletedMediaIDs, setRootEditDeletedMediaIDs] = useState<string[]>([]);
+  const [isRootUpdating, setIsRootUpdating] = useState(false);
+  const [rootUpdateError, setRootUpdateError] = useState('');
+  const [replyingTo, setReplyingTo] = useState<Post | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
+  const handleBlock = async (blockedUserId: string) => {
+    const result = await AppSwal.fire({
+      text: 'このユーザーをブロックしますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await createBlocker(blockedUserId);
+      addToast('ユーザーをブロックしました', 'success');
+      navigate(-1);
+    } catch (err) {
+      console.error(err);
+      addToast('ブロックに失敗しました', 'error');
+    }
+  };
 
   const isMyPost = post?.user.ID === userId;
   // ⭕️ 追加: メイン投稿が削除されているかどうかのフラグ
@@ -61,6 +112,23 @@ export const PostDetailPage = () => {
     } else {
       await createFavorite(postId);
     }
+    if (postId === id) {
+      const updater = (p: Post): Post => isLiked
+        ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
+        : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+      updatePostAcrossCaches(postId, updater);
+    }
+    void mutate();
+  };
+
+  const handleReplyToPost = async (content: string, files: File[]) => {
+    if (!replyingTo) return;
+    const mediaInputs = await uploadMediaFiles(files);
+    await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    if (id) {
+      const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
+      updatePostAcrossCaches(id, updater);
+    }
     void mutate();
   };
 
@@ -69,19 +137,14 @@ export const PostDetailPage = () => {
     setReplying(true);
     setReplyError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (replyFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          replyFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          }),
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(replyFiles);
       await createPost(replyContent.trim(), id, mediaInputs);
       setReplyContent('');
       setReplyFiles([]);
+      if (id) {
+        const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
+        updatePostAcrossCaches(id, updater);
+      }
       void mutate();
     } catch (err) {
       setReplyError(toUserMessage(err, '返信の送信に失敗しました。時間をおいてから再度お試しください。'));
@@ -105,24 +168,22 @@ export const PostDetailPage = () => {
     setIsUpdating(true);
     setUpdateError('');
     try {
-      let mediaInputs: MediaInput[] | undefined;
-      if (editSelectedFiles.length > 0) {
-        mediaInputs = await Promise.all(
-          editSelectedFiles.map(async (file) => {
-            const { presignedMediaUploadUrl } = await getPresignedMediaUploadUrl(file.type);
-            await uploadFileToStorage(presignedMediaUploadUrl.uploadUrl, file);
-            return { objectKey: presignedMediaUploadUrl.objectKey, contentType: file.type };
-          })
-        );
-      }
+      const mediaInputs = await uploadMediaFiles(editSelectedFiles);
 
-      await updatePost(id, editContent.trim(), mediaInputs, editDeletedMediaIDs);
+      const deletedIDs = [...editDeletedMediaIDs];
+      await updatePost(id, editContent.trim(), mediaInputs, deletedIDs);
 
       setIsEditing(false);
       setEditSelectedFiles([]);
       setEditDeletedMediaIDs([]);
       mutate().then(updatedPost => {
-        if (updatedPost && id) updatePostInCache(id, () => updatedPost);
+        if (updatedPost && id) {
+          const filtered = {
+            ...updatedPost,
+            media: updatedPost.media?.filter(m => !deletedIDs.includes(m.ID)) ?? [],
+          };
+          updatePostAcrossCaches(id, () => filtered);
+        }
       });
     } catch (err) {
       setUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
@@ -131,109 +192,217 @@ export const PostDetailPage = () => {
     }
   };
 
+  const handleRootEditOpen = (rootPost: Post) => {
+    setEditingRootPost(rootPost);
+    setRootEditContent(rootPost.content);
+    setRootEditSelectedFiles([]);
+    setRootEditDeletedMediaIDs([]);
+    setRootUpdateError('');
+  };
+
+  const handleRootUpdate = async () => {
+    if (!editingRootPost || isRootUpdating) return;
+    const remainingExistingMedia = editingRootPost.media?.filter(
+      media => !rootEditDeletedMediaIDs.includes(media.ID),
+    ) ?? [];
+    const hasAnyMedia = remainingExistingMedia.length > 0 || rootEditSelectedFiles.length > 0;
+    if (!rootEditContent.trim() && !hasAnyMedia) return;
+
+    setIsRootUpdating(true);
+    setRootUpdateError('');
+    try {
+      const mediaInputs = await uploadMediaFiles(rootEditSelectedFiles);
+      const updatedPost = await updatePost(
+        editingRootPost.ID,
+        rootEditContent.trim(),
+        mediaInputs,
+        rootEditDeletedMediaIDs,
+      );
+      const filteredPost = {
+        ...updatedPost,
+        media: updatedPost.media?.filter(media => !rootEditDeletedMediaIDs.includes(media.ID)) ?? [],
+      };
+      updatePostAcrossCaches(editingRootPost.ID, () => filteredPost);
+      setEditingRootPost(null);
+      await mutate();
+    } catch (err) {
+      setRootUpdateError(toUserMessage(err, '投稿の更新に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setIsRootUpdating(false);
+    }
+  };
+
   const handleDelete = async () => {
-    if (!id || !window.confirm('本当にこの投稿を削除しますか？')) return;
+    if (!id) return;
+    const result = await AppSwal.fire({
+      text: '本当にこの投稿を削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await deletePost(id);
+      removePostAcrossCaches(id);
       navigate(-1);
     } catch (err) {
       console.error(err);
     }
   };
 
+  const handleRootDelete = async (postId: string) => {
+    const result = await AppSwal.fire({
+      text: '本当にこの投稿を削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await deletePost(postId);
+      removePostAcrossCaches(postId);
+      setEditingRootPost(null);
+      await mutate();
+    } catch (err) {
+      console.error(err);
+      addToast('削除に失敗しました', 'error');
+    }
+  };
+
   return (
     <div>
-      <UserHeader />
-      <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0' }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.1rem', padding: '0.25rem 0.5rem', borderRadius: '50%' }}
-          >←</button>
-          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿</h1>
+      <UserSidebar />
+      <main className={styles.main}>
+        <div className={styles.pageHeader}>
+          <button onClick={() => navigate(-1)}><ChevronLeft /></button>
+          <h1 className={styles.pageTitle}>投稿</h1>
         </div>
 
-        {error && <p style={{ color: 'red', padding: '1rem' }}>投稿の読み込みに失敗しました</p>}
+        {error && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
         {isLoading ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+          <p className={styles.loadingText}>読み込み中...</p>
         ) : !post ? (
-          <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
+          <p className={styles.loadingText}>投稿が見つかりません</p>
         ) : (
           <>
             {post.rootPost && (
-              <div style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
-
+              <div className={styles.rootPostContainer}>
                 {post.rootPost.deletedAt != null ? (
-                  /* 🛡 大元が削除されている場合 */
-                  <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    この投稿は削除されました
-                  </div>
+                  <div className={styles.deletedPost}>投稿が見つかりません</div>
+                ) : editingRootPost?.ID === post.rootPost.ID ? (
+                  <PostComposer
+                    value={rootEditContent}
+                    onChange={setRootEditContent}
+                    onSubmit={handleRootUpdate}
+                    submitting={isRootUpdating}
+                    error={rootUpdateError}
+                    userId={userId}
+                    avatarUrl={profile?.avatarUrl}
+                    userName={profile?.user.name}
+                    selectedFiles={rootEditSelectedFiles}
+                    onFileSelect={setRootEditSelectedFiles}
+                    existingMedia={editingRootPost.media}
+                    deletedMediaIDs={rootEditDeletedMediaIDs}
+                    onDeleteExistingMedia={(mediaId) => setRootEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                    onCancel={() => setEditingRootPost(null)}
+                    submitLabel="保存する"
+                    submittingLabel="保存中..."
+                    placeholder="投稿を編集..."
+                    maxLength={500}
+                    rows={3}
+                  />
                 ) : (
-                  /* 🛡 大元が正常な場合 */
                   <PostCard
                     post={post.rootPost}
                     currentUserId={userId}
                     onLike={handleLike}
                     onClick={() => navigate(`/posts/${post.rootPost!.ID}`)}
+                    onBlock={handleBlock}
+                    onReport={() => setReportTarget(post.rootPost)}
+                    onEdit={handleRootEditOpen}
+                    onDelete={handleRootDelete}
                   />
                 )}
-
-                {/* 繋がりの縦線（削除されていようがいまいが、下に繋げる） */}
-                <div style={{
-                  width: '2px',
-                  height: '24px',
-                  background: '#cbd5e1',
-                  marginLeft: '37px',
-                  marginTop: '-1px',
-                  marginBottom: '-1px',
-                  zIndex: 1,
-                  position: 'relative'
-                }} />
+                <div className={styles.threadConnector} />
               </div>
             )}
 
             {isDeleted ? (
-              // 削除済みプレースホルダー
-              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                この投稿は削除されました
-              </div>
+              <div className={styles.deletedMain}>投稿が見つかりません</div>
             ) : (
-              // 正常な投稿の表示
-              <div style={{ padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div className={styles.postBody}>
+                <div className={styles.postBodyHeader}>
+                  <div className={styles.userInfo}>
                     <UserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
-                    <div>
-                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+                    <div className={styles.userNameBlock}>
+                      <UserNameLink userId={post.user.ID}>
+                        <div className={styles.userName}>{post.user.name}</div>
+                      </UserNameLink>
+                      <div className={styles.userAccount}>@{post.user.accountID}</div>
                     </div>
                   </div>
 
-                  {isMyPost && !isEditing && (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {!isEditing && (
+                    <div className={styles.menuWrap} ref={menuRef}>
                       <button
-                        onClick={() => {
-                          setIsEditing(true);
-                          setEditContent(post.content);
-                          setEditSelectedFiles([]);
-                          setEditDeletedMediaIDs([]);
-                          setUpdateError('');
-                        }}
-                        style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: '#f1f5f9', border: 'none', borderRadius: '4px' }}
-                      >編集</button>
-                      <button
-                        onClick={handleDelete}
-                        style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: '#ef4444' }}
-                      >削除</button>
+                        className={styles.menuButton}
+                        onClick={() => setMenuOpen(v => !v)}
+                        aria-label="メニュー"
+                      >···</button>
+                      {menuOpen && (
+                        <div className={styles.dropdown}>
+                          {isMyPost ? (
+                            <>
+                              <button
+                                className={styles.dropdownItem}
+                                onClick={() => {
+                                  setMenuOpen(false);
+                                  setIsEditing(true);
+                                  setEditContent(post.content);
+                                  setEditSelectedFiles([]);
+                                  setEditDeletedMediaIDs([]);
+                                  setUpdateError('');
+                                }}
+                              >
+                                <img src={editIcon} alt="" className={styles.dropdownIcon} />
+                                編集
+                              </button>
+                              <button
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                onClick={() => { setMenuOpen(false); handleDelete(); }}
+                              >
+                                <img src={deleteIcon} alt="" className={styles.dropdownIconDelete} />
+                                削除
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                onClick={() => { setMenuOpen(false); handleBlock(post.user.ID); }}
+                              >
+                                <img src={redblockIcon} alt="" className={styles.dropdownIcon} />
+                                ブロック
+                              </button>
+                              <button
+                                className={styles.dropdownItem}
+                                onClick={() => { setMenuOpen(false); setReportTarget(post); }}
+                              >
+                                <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                                通報
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 {isEditing ? (
-                  <div style={{ marginBottom: '0.75rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    {updateError && <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{updateError}</p>}
-
+                  <div className={styles.editForm}>
+                    {updateError && <p className={styles.editError}>{updateError}</p>}
                     <PostComposer
                       value={editContent}
                       onChange={setEditContent}
@@ -256,76 +425,52 @@ export const PostDetailPage = () => {
                         setEditSelectedFiles([]);
                         setEditDeletedMediaIDs([]);
                       }}
-                      isEmbedded={true}
+                      isEmbedded
                     />
                   </div>
                 ) : (
-                  post.content && (
-                    <p style={{
-                      margin: '0 0 0.75rem',
-                      color: '#1e293b',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.7,
-                      wordBreak: 'break-word',
-                      whiteSpace: 'pre-wrap',
-                    }}>
-                      {post.content}
-                    </p>
-                  )
+                  post.content && <p className={styles.postContent}>{renderTextWithLinks({ text: post.content })}</p>
                 )}
 
                 {!isEditing && post.media && post.media.length > 0 && (
                   <PostMediaGrid media={post.media} large />
                 )}
 
-                <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                <div className={styles.timestamp}>
                   {new Date(post.createdAt).toLocaleString('ja-JP')}
                 </div>
 
-                <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
-                  <span style={{ color: '#64748b', fontSize: '1.2rem' }}>
-                    💬 <strong>{post.replyCount}</strong> 件の返信
+                <div className={styles.postStats}>
+                  <span className={styles.replyCount}>
+                    <img src={commentIcon} alt="返信" className={styles.commentIcon} />
+                    <strong>{post.replyCount}</strong> 件の返信
                   </span>
                   <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
-
-                  {!isMyPost && (
-                    <button
-                      onClick={() => setIsReportOpen(true)}
-                      style={{
-                        background: 'none', border: 'none', color: '#64748b',
-                        fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-                        alignItems: 'center', gap: '4px', padding: '0.25rem 0.5rem',
-                        borderRadius: '6px', transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f1f5f9')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-                    >
-                      🚩 <span style={{ fontSize: '0.9rem' }}>通報</span>
-                    </button>
-                  )}
                 </div>
               </div>
             )}
 
             {/* 🛡 ⭕️ 返信入力フォーム（メインが削除されていない場合のみ） */}
             {!isDeleted && (
-              <PostComposer
-                value={replyContent}
-                onChange={setReplyContent}
-                onSubmit={handleReply}
-                submitting={replying}
-                error={replyError}
-                placeholder="返信する..."
-                rows={2}
-                submitLabel="返信する"
-                submittingLabel="送信中..."
-                iconSize={36}
-                userId={userId}
-                avatarUrl={profile?.avatarUrl}
-                userName={profile?.user.name}
-                selectedFiles={replyFiles}
-                onFileSelect={setReplyFiles}
-              />
+              <div className={styles.replyComposer}>
+                <PostComposer
+                  value={replyContent}
+                  onChange={setReplyContent}
+                  onSubmit={handleReply}
+                  submitting={replying}
+                  error={replyError}
+                  placeholder="返信する..."
+                  rows={2}
+                  submitLabel="返信する"
+                  submittingLabel="送信中..."
+                  iconSize={36}
+                  userId={userId}
+                  avatarUrl={profile?.avatarUrl}
+                  userName={profile?.user.name}
+                  selectedFiles={replyFiles}
+                  onFileSelect={setReplyFiles}
+                />
+              </div>
             )}
 
             {/* 🛡 ⭕️ 返信一覧（削除済みのリプライを除外して表示） */}
@@ -334,18 +479,29 @@ export const PostDetailPage = () => {
                 {post.replies
                   .filter(reply => reply.deletedAt == null) // ここで削除済みを除外
                   .map((reply) => (
-                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} />
+                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} onReply={setReplyingTo} />
                   ))}
               </div>
             )}
 
-            {id && (
+            {replyingTo && (
+              <ReplyModal
+                post={replyingTo}
+                onClose={() => setReplyingTo(null)}
+                onSubmit={handleReplyToPost}
+                userId={userId}
+                avatarUrl={profile?.avatarUrl}
+                userName={profile?.user.name}
+              />
+            )}
+
+            {reportTarget && (
               <ReportModal
-                isOpen={isReportOpen}
-                onClose={() => setIsReportOpen(false)}
+                isOpen={true}
+                onClose={() => setReportTarget(null)}
                 targetType="POST"
-                targetID={id}
-                postContent={post.content}
+                targetID={reportTarget.ID}
+                postContent={reportTarget.content}
               />
             )}
           </>

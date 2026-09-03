@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, getProfileByUserID, adminUpdateProfile, type User, type Profile } from '../api/users';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { storageUrl } from '../../../lib/storage';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 export const AdminUserProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,7 +53,7 @@ export const AdminUserProfilePage = () => {
     <div>
       <AdminHeader />
       <main style={{ padding: '2rem' }}>
-        <button onClick={() => navigate(`/admin/users/${id}`)}>← 詳細に戻る</button>
+        <button onClick={() => navigate(`/admin/users/${id}`)}><ChevronLeft /> 詳細に戻る</button>
         <h1>{user.name} のプロフィール</h1>
 
         {error && <p style={{ color: 'red' }}>{error}</p>}

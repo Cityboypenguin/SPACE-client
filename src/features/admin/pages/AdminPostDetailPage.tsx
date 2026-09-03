@@ -4,9 +4,11 @@ import { storageUrl } from '../../../lib/storage';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { AdminUserAvatar } from '../../../components/atoms/AdminUserAvatar';
-import { LikeButton } from '../components/molecules/LikeButton';
+import { AdminUserNameLink } from '../../../components/atoms/AdminUserNameLink';
+import { LikeButton } from '../../../components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/ToastContext';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
 const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
   <div
@@ -157,8 +159,7 @@ export const AdminPostDetailPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid #e2e8f0' }}>
           <button
             onClick={() => navigate(-1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.1rem', padding: '0.25rem 0.5rem', borderRadius: '50%' }}
-          >←</button>
+          ><ChevronLeft /></button>
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>投稿詳細 (管理者)</h1>
         </div>
 
@@ -200,7 +201,9 @@ export const AdminPostDetailPage = () => {
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <AdminUserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
                   <div>
-                    <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
+                    <AdminUserNameLink userId={post.user.ID}>
+                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{post.user.name}</div>
+                    </AdminUserNameLink>
                     <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
                   </div>
                 </div>

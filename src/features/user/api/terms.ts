@@ -1,4 +1,5 @@
-import { request } from '../../../lib/graphql';
+import { requestDoc } from '../../../lib/graphql';
+import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 
 export type TermsOfService = {
@@ -14,7 +15,7 @@ export type TermsConsentStatus = {
   currentTerms: TermsOfService | null;
 };
 
-const MY_TERMS_CONSENT_STATUS_QUERY = `
+const MyTermsConsentStatusDocument = graphql(`
   query MyTermsConsentStatus {
     myTermsConsentStatus {
       isConsented
@@ -27,33 +28,25 @@ const MY_TERMS_CONSENT_STATUS_QUERY = `
       }
     }
   }
-`;
+`);
 
-const CONSENT_TO_TERMS_MUTATION = `
+const ConsentToTermsDocument = graphql(`
   mutation ConsentToTerms($termsID: ID!) {
     consentToTerms(termsID: $termsID)
   }
-`;
+`);
 
 export const getMyTermsConsentStatus = async (): Promise<TermsConsentStatus> => {
-  const data = await request<{ myTermsConsentStatus: TermsConsentStatus }>(
-    MY_TERMS_CONSENT_STATUS_QUERY,
-    {},
-    getUserToken(),
-  );
+  const data = await requestDoc(MyTermsConsentStatusDocument, {}, getUserToken());
   return data.myTermsConsentStatus;
 };
 
 export const consentToTerms = async (termsID: string): Promise<boolean> => {
-  const data = await request<{ consentToTerms: boolean }>(
-    CONSENT_TO_TERMS_MUTATION,
-    { termsID },
-    getUserToken(),
-  );
+  const data = await requestDoc(ConsentToTermsDocument, { termsID }, getUserToken());
   return data.consentToTerms;
 };
 
-const CURRENT_TERMS_QUERY = `
+const CurrentTermsDocument = graphql(`
   query CurrentTerms {
     currentTerms {
       ID
@@ -63,9 +56,9 @@ const CURRENT_TERMS_QUERY = `
       createdAt
     }
   }
-`;
+`);
 
 export const getCurrentTerms = async (): Promise<TermsOfService | null> => {
-  const data = await request<{ currentTerms: TermsOfService | null }>(CURRENT_TERMS_QUERY, {});
-  return data.currentTerms;
+  const data = await requestDoc(CurrentTermsDocument, {});
+  return data.currentTerms ?? null;
 };

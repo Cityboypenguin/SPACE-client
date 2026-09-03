@@ -1,8 +1,11 @@
 import useSWR from 'swr';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { UserHeader } from '../components/organisms/UserHeader';
+import remarkGfm from 'remark-gfm';
+import { UserSidebar } from '../components/organisms/UserSidebar';
 import { getAnnouncement } from '../api/announcement';
+import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { staticCacheOptions } from '../cache/swrOptions';
 
 export const AnnouncementDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,25 +14,17 @@ export const AnnouncementDetailPage = () => {
   const { data: announcement, isLoading, error } = useSWR(
     id ? ['announcement', id] : null,
     ([, announcementId]: [string, string]) => getAnnouncement(announcementId),
+    staticCacheOptions,
   );
 
   return (
     <div>
-      <UserHeader />
+      <UserSidebar />
       <main style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
         <button
           onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#3b82f6',
-            fontSize: '0.875rem',
-            padding: '0.25rem 0',
-            marginBottom: '1rem',
-          }}
         >
-          ← 戻る
+          <ChevronLeft /> 戻る
         </button>
 
         {error && <p style={{ color: 'red' }}>お知らせの読み込みに失敗しました</p>}
@@ -75,7 +70,25 @@ export const AnnouncementDetailPage = () => {
               }}
               className="announcement-body"
             >
-              <ReactMarkdown>{announcement.body}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a({ href, children }) {
+                    return (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#3b82f6', textDecoration: 'underline' }}
+                      >
+                        {children}
+                      </a>
+                    );
+                  },
+                }}
+              >
+                {announcement.body}
+              </ReactMarkdown>
             </div>
           </div>
         )}
