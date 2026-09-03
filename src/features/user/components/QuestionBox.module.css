@@ -136,6 +136,8 @@
   overflow-y: auto;
   background: var(--color-bg);
   border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
 }
 
 .answerPanel {
@@ -422,6 +424,10 @@
   .answerPanel {
     min-height: 260px;
     overflow: visible;
+  }
+
+  .answerForm {
+    margin-top: 0.75rem;
   }
 
   .detailQuestionBlock {

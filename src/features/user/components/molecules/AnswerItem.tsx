@@ -36,6 +36,7 @@ export const AnswerItem = ({
 
   // ベストアンサーに選ばれている間は編集・削除できない。
   const canEditOrDelete = answer.isMine && !isBest;
+  const hasMenuActions = canEditOrDelete || (canSelectBest && !isBest) || (canCancelBest && isBest);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -123,7 +124,7 @@ export const AnswerItem = ({
 
   return (
     <div ref={rootRef} className={`${styles.answerItem} ${isBest ? styles.answerItemBest : ''}`}>
-      {canEditOrDelete && !editing && (
+      {hasMenuActions && !editing && (
         <div className={`${menuStyles.menuWrap} ${styles.answerMenu}`} ref={menuRef}>
           <button
             type="button"
@@ -136,22 +137,46 @@ export const AnswerItem = ({
           </button>
           {menuOpen && (
             <div className={menuStyles.dropdown}>
-              <button
-                type="button"
-                className={menuStyles.dropdownItem}
-                onClick={() => { setMenuOpen(false); setEditing(true); }}
-              >
-                <img src={editIcon} alt="" className={`${menuStyles.dropdownIcon} themed-icon`} />
-                編集
-              </button>
-              <button
-                type="button"
-                className={`${menuStyles.dropdownItem} ${menuStyles.dropdownItemDanger}`}
-                onClick={() => { setMenuOpen(false); void handleDelete(); }}
-              >
-                <img src={deleteIcon} alt="" className={`${menuStyles.dropdownIconDelete} themed-icon`} />
-                削除
-              </button>
+              {canSelectBest && !isBest && (
+                <button
+                  type="button"
+                  className={menuStyles.dropdownItem}
+                  onClick={() => { setMenuOpen(false); void handleSelectBest(); }}
+                >
+                  <span />
+                  ベストアンサーにする
+                </button>
+              )}
+              {canCancelBest && isBest && (
+                <button
+                  type="button"
+                  className={menuStyles.dropdownItem}
+                  onClick={() => { setMenuOpen(false); void handleCancelBest(); }}
+                >
+                  <span />
+                  ベストアンサーを取り消す
+                </button>
+              )}
+              {canEditOrDelete && (
+                <>
+                  <button
+                    type="button"
+                    className={menuStyles.dropdownItem}
+                    onClick={() => { setMenuOpen(false); setEditing(true); }}
+                  >
+                    <img src={editIcon} alt="" className={`${menuStyles.dropdownIcon} themed-icon`} />
+                    編集
+                  </button>
+                  <button
+                    type="button"
+                    className={`${menuStyles.dropdownItem} ${menuStyles.dropdownItemDanger}`}
+                    onClick={() => { setMenuOpen(false); void handleDelete(); }}
+                  >
+                    <img src={deleteIcon} alt="" className={`${menuStyles.dropdownIconDelete} themed-icon`} />
+                    削除
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -193,16 +218,6 @@ export const AnswerItem = ({
           {new Date(answer.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
         </span>
         {isBest && <span className={styles.bestAnswerLabel}>ベストアンサー</span>}
-        {isBest && canCancelBest && (
-          <button type="button" className={styles.cancelBestButton} disabled={busy} onClick={handleCancelBest}>
-            取り消す
-          </button>
-        )}
-        {canSelectBest && !isBest && (
-          <button type="button" className={styles.selectBestButton} disabled={busy} onClick={handleSelectBest}>
-            ベストアンサーにする
-          </button>
-        )}
         <button
           type="button"
           className={`${styles.likeButton} ${answer.likedByMe ? styles.likeButtonActive : ''}`}
