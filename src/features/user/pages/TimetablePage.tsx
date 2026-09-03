@@ -308,7 +308,7 @@ export const TimetablePage = () => {
 
     const rect = button.getBoundingClientRect();
     const viewportMargin = 8;
-    const buttonGap = 10;
+    const buttonGap = 18;
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const width = isMobile ? 116 : 184;
     const height = isMobile ? 64 : 44;

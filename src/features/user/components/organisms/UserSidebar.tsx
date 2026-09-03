@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -39,6 +39,7 @@ export const UserSidebar = () => {
   const { profile } = useProfile(userId);
   const [expanded, setExpanded] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreNavRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.body.classList.add('has-sidebar');
@@ -48,6 +49,17 @@ export const UserSidebar = () => {
   useEffect(() => {
     setMoreOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreNavRef.current && !moreNavRef.current.contains(event.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [moreOpen]);
 
   const handleNavigate = (path: string) => {
     setExpanded(false);
@@ -105,7 +117,7 @@ export const UserSidebar = () => {
             </button>
           );
         })}
-        <div className={styles.moreNavItem}>
+        <div className={styles.moreNavItem} ref={moreNavRef}>
           <button
             type="button"
             className={`${styles.navItem} ${styles.moreButton} ${MORE_NAV_ITEMS.some((item) => isNavActive(item.path)) ? styles.active : ''}`}
