@@ -105,6 +105,8 @@ export const TimetablePage = () => {
   const [committing, setCommitting] = useState(false);
   const [commitError, setCommitError] = useState('');
   const [colorPickerKey, setColorPickerKey] = useState<string | null>(null);
+  const [colorPickerPosition, setColorPickerPosition] = useState<CSSProperties | null>(null);
+  const [mobileDay, setMobileDay] = useState(DAYS[0]);
 
   const hasChanges = useMemo(() => {
     if (!editMode) return false;
@@ -180,6 +182,7 @@ export const TimetablePage = () => {
 
   const handleSetDraftColor = async (key: string, color: TimetableEntryColor) => {
     setColorPickerKey(null);
+    setColorPickerPosition(null);
     setDraft((prev) => {
       if (!prev[key]) return prev;
       const next = { ...prev, [key]: { ...prev[key], color } };
@@ -260,10 +263,25 @@ export const TimetablePage = () => {
       const target = e.target as HTMLElement;
       if (!target.closest('[data-color-picker-key]')) {
         setColorPickerKey(null);
+        setColorPickerPosition(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [colorPickerKey]);
+
+  useEffect(() => {
+    if (!colorPickerKey) return;
+    const closeColorPicker = () => {
+      setColorPickerKey(null);
+      setColorPickerPosition(null);
+    };
+    window.addEventListener('resize', closeColorPicker);
+    window.addEventListener('scroll', closeColorPicker, true);
+    return () => {
+      window.removeEventListener('resize', closeColorPicker);
+      window.removeEventListener('scroll', closeColorPicker, true);
+    };
   }, [colorPickerKey]);
 
   // ブラウザのリロード・タブ閉じによる下書き消失を警告する。
@@ -279,6 +297,111 @@ export const TimetablePage = () => {
 
   const handlePickCourse = (dayOfWeek: string, period: number) => {
     navigate('/timetable/search', { state: { dayOfWeek, period, pickerMode: true } });
+  };
+
+  const handleToggleColorPicker = (key: string, button: HTMLButtonElement) => {
+    if (colorPickerKey === key) {
+      setColorPickerKey(null);
+      setColorPickerPosition(null);
+      return;
+    }
+
+    const rect = button.getBoundingClientRect();
+    const viewportMargin = 8;
+    const buttonGap = 10;
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const width = isMobile ? 116 : 184;
+    const height = isMobile ? 64 : 44;
+    const left = Math.min(
+      Math.max(viewportMargin, rect.left - width - buttonGap),
+      window.innerWidth - width - viewportMargin,
+    );
+    const top = Math.min(
+      Math.max(viewportMargin, rect.top + rect.height / 2 - height / 2),
+      window.innerHeight - height - viewportMargin,
+    );
+
+    setColorPickerKey(key);
+    setColorPickerPosition({ top, left, width });
+  };
+
+  const renderSlotContent = (day: string, period: number) => {
+    const key = slotKey(day, period);
+
+    if (editMode) {
+      const slot = draft[key];
+      const swatch = getTimetableColorSwatch(slot?.color);
+      return slot ? (
+        <div
+          className={styles.courseChip}
+          style={{ '--chip-bg': swatch.bg } as CSSProperties}
+        >
+          <div className={styles.chipActions}>
+            <div
+              className={`${styles.colorPickerWrap} ${day === '土' ? styles.colorPickerWrapEdge : ''}`}
+              data-color-picker-key={key}
+            >
+              <button
+                type="button"
+                className={styles.colorSwatchButton}
+                style={{ '--selected-color': swatch.bg } as CSSProperties}
+                title="色を変更"
+                onClick={(e) => handleToggleColorPicker(key, e.currentTarget)}
+              />
+              {colorPickerKey === key && (
+                <div
+                  className={`${styles.colorPickerPopover} ${styles.colorPickerPopoverFloating}`}
+                  style={colorPickerPosition ?? undefined}
+                >
+                  {TIMETABLE_COLOR_PALETTE.map((s) => (
+                    <button
+                      key={s.key}
+                      type="button"
+                      className={styles.colorDot}
+                      style={{ background: s.bg }}
+                      title={s.label}
+                      onClick={() => { void handleSetDraftColor(key, s.key); }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              className={styles.chipActionButton}
+              title="この授業を外す"
+              onClick={() => handleRemoveDraftSlot(key)}
+            >
+              ✕
+            </button>
+          </div>
+          {!baselineCourseIDs.has(slot.course.ID) && <span className={styles.newBadge}>NEW</span>}
+          {slot.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}
+          <span className={styles.courseName}>{slot.course.courseName}</span>
+          <span className={styles.teacherName}>{slot.course.teacherName}</span>
+        </div>
+      ) : (
+        <button type="button" className={styles.emptyCellButton} onClick={() => handlePickCourse(day, period)}>
+          +
+        </button>
+      );
+    }
+
+    const entry = entryMap.get(key);
+    const viewSwatch = entry ? getTimetableColorSwatch(entry.color) : null;
+    return entry ? (
+      <div
+        className={`${styles.courseChip} ${styles.courseChipClickable} ${!isEditable ? styles.courseChipReadOnly : ''}`}
+        style={{ '--chip-bg': viewSwatch!.bg } as CSSProperties}
+        onClick={() => navigate(`/courses/chat/${entry.course.roomID}`, { state: { course: entry.course, year: viewYear, semester: viewSemester } })}
+      >
+        {entry.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}
+        <span className={styles.courseName}>{entry.course.courseName}</span>
+        <span className={styles.teacherName}>{entry.course.teacherName}</span>
+      </div>
+    ) : (
+      <div className={styles.emptySlot} />
+    );
   };
 
   return (
@@ -370,84 +493,9 @@ export const TimetablePage = () => {
                       </span>
                     </td>
                     {DAYS.map((day) => {
-                      const key = slotKey(day, period);
-                      if (editMode) {
-                        const slot = draft[key];
-                        const swatch = getTimetableColorSwatch(slot?.color);
-                        return (
-                          <td key={day} className={styles.cell}>
-                            {slot ? (
-                              <div
-                                className={styles.courseChip}
-                                style={{ '--chip-bg': swatch.bg } as CSSProperties}
-                              >
-                                <div className={styles.chipActions}>
-                                  <div
-                                    className={`${styles.colorPickerWrap} ${day === '土' ? styles.colorPickerWrapEdge : ''}`}
-                                    data-color-picker-key={key}
-                                  >
-                                    <button
-                                      type="button"
-                                      className={styles.colorSwatchButton}
-                                      style={{ '--selected-color': swatch.bg } as CSSProperties}
-                                      title="色を変更"
-                                      onClick={() => setColorPickerKey((prev) => (prev === key ? null : key))}
-                                    />
-                                    {colorPickerKey === key && (
-                                      <div className={styles.colorPickerPopover}>
-                                        {TIMETABLE_COLOR_PALETTE.map((s) => (
-                                          <button
-                                            key={s.key}
-                                            type="button"
-                                            className={styles.colorDot}
-                                            style={{ background: s.bg }}
-                                            title={s.label}
-                                            onClick={() => { void handleSetDraftColor(key, s.key); }}
-                                          />
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className={styles.chipActionButton}
-                                    title="この授業を外す"
-                                    onClick={() => handleRemoveDraftSlot(key)}
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                                {!baselineCourseIDs.has(slot.course.ID) && <span className={styles.newBadge}>NEW</span>}
-                                {slot.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}
-                                <span className={styles.courseName}>{slot.course.courseName}</span>
-                                <span className={styles.teacherName}>{slot.course.teacherName}</span>
-                              </div>
-                            ) : (
-                              <button type="button" className={styles.emptyCellButton} onClick={() => handlePickCourse(day, period)}>
-                                +
-                              </button>
-                            )}
-                          </td>
-                        );
-                      }
-
-                      const entry = entryMap.get(key);
-                      const viewSwatch = entry ? getTimetableColorSwatch(entry.color) : null;
                       return (
                         <td key={day} className={styles.cell}>
-                          {entry ? (
-                            <div
-                              className={`${styles.courseChip} ${styles.courseChipClickable} ${!isEditable ? styles.courseChipReadOnly : ''}`}
-                              style={{ '--chip-bg': viewSwatch!.bg } as CSSProperties}
-                              onClick={() => navigate(`/courses/chat/${entry.course.roomID}`, { state: { course: entry.course, year: viewYear, semester: viewSemester } })}
-                            >
-                              {entry.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}
-                              <span className={styles.courseName}>{entry.course.courseName}</span>
-                              <span className={styles.teacherName}>{entry.course.teacherName}</span>
-                            </div>
-                          ) : (
-                            <div className={styles.emptySlot} />
-                          )}
+                          {renderSlotContent(day, period)}
                         </td>
                       );
                     })}
@@ -455,6 +503,37 @@ export const TimetablePage = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {!isLoading && (
+          <div className={styles.mobileTimetable}>
+            <div className={styles.mobileDayTabs}>
+              {DAYS.map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  className={`${styles.mobileDayButton} ${mobileDay === day ? styles.mobileDayButtonActive : ''}`}
+                  onClick={() => setMobileDay(day)}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+            <div className={styles.mobileDayList}>
+              {PERIODS.map((period) => (
+                <div key={period} className={styles.mobilePeriodRow}>
+                  <div className={styles.mobilePeriodMeta}>
+                    <span className={styles.periodNumber}>{period}</span>
+                    <span className={styles.periodTime}>
+                      {PERIOD_TIMES[period].map((time) => <span key={time}>{time}</span>)}
+                    </span>
+                  </div>
+                  <div className={styles.mobileSlot}>
+                    {renderSlotContent(mobileDay, period)}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>

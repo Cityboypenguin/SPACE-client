@@ -136,6 +136,30 @@
   outline: none;
 }
 
+.moreNavItem {
+  display: none;
+}
+
+.moreMenu {
+  display: none;
+}
+
+.moreDots {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.moreDots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .active {
   background-color: var(--color-sidebar-active-bg);
   color: var(--color-sidebar-active-text);
@@ -166,6 +190,10 @@
   height: 28px;
   object-fit: contain;
   transition: filter 0.15s ease;
+}
+
+.settingsNavIcon {
+  object-fit: contain;
 }
 
 /* バッジ */
@@ -266,6 +294,7 @@
     border-right: none;
     border-top: 1px solid var(--color-border);
     padding-bottom: env(safe-area-inset-bottom);
+    overflow: visible;
   }
 
   .logo {
@@ -279,6 +308,10 @@
     justify-content: space-around;
   }
 
+  .mobileHidden {
+    display: none;
+  }
+
   .navItem {
     flex-direction: column;
     justify-content: flex-start;
@@ -288,6 +321,53 @@
     padding: 0.5rem 0 0;
     padding-left: 0;
     gap: 0.2rem;
+  }
+
+  .moreNavItem {
+    display: block;
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .moreButton {
+    height: 100%;
+  }
+
+  .moreMenu {
+    position: absolute;
+    right: 0.25rem;
+    bottom: calc(100% + 0.5rem);
+    min-width: 9.5rem;
+    padding: 0.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg-elevated);
+    box-shadow: 0 12px 28px rgb(0 0 0 / 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .moreMenuItem {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-height: 2.6rem;
+    padding: 0.45rem 0.65rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .moreMenuItemActive {
+    background: var(--color-sidebar-active-bg);
+    color: var(--color-sidebar-active-text);
   }
 
   .bottom {

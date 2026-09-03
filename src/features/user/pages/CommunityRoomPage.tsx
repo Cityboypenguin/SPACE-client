@@ -16,6 +16,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
+import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import styles from '../components/ChatRoom.module.css';
 import pageStyles from './CommunityRoomPage.module.css';
@@ -36,6 +37,7 @@ export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  useResetViewportScroll([roomId]);
   const locationState = location.state as { communityID?: string; community?: Community; showDetail?: boolean } | null;
   const { userId: currentUserID } = useAuth();
   const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);

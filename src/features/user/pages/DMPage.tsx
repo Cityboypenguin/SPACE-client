@@ -10,6 +10,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
+import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import { saveRecentDM } from '../../../lib/recentDM';
 import styles from '../components/ChatRoom.module.css';
 import pageStyles from './DMPage.module.css';
@@ -20,6 +21,7 @@ import { storageUrl } from '../../../lib/storage';
 export const DMPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  useResetViewportScroll([roomId]);
   const { userId: currentUserID } = useAuth();
   const { room, messages, error, addMessage, initialLastReadAt, partnerLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const partner = room?.user.find((u) => u.ID !== currentUserID);

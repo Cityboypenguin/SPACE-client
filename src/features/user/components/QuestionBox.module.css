@@ -11,6 +11,7 @@
   flex: 1;
   min-height: 0;
   display: flex;
+  overflow: hidden;
 }
 
 .emptyState {
@@ -367,7 +368,7 @@
   position: relative;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
-  padding: 1.35rem 3rem 0.55rem 1.25rem;
+  padding: 1.35rem 1.25rem 0.55rem;
 }
 
 .answerItemBest {
@@ -381,6 +382,7 @@
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0 0 0.45rem;
+  padding-right: 2.25rem;
 }
 
 /* menuWrap(PostCard.module.css)の position:relative と同じ詳細度で競合するため、
@@ -410,9 +412,11 @@
 }
 
 .answerFooterActions {
+  flex: 1;
   margin-left: auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 
@@ -420,7 +424,7 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 2px 6px;
+  padding: 2px 0 2px 6px;
   border: none;
   background: none;
   cursor: pointer;
@@ -584,15 +588,18 @@
 
 @media (max-width: 768px) {
   .tabContent {
-    padding: 0.75rem 0.75rem 1rem;
+    padding: 0.75rem 0.75rem calc(1rem + env(safe-area-inset-bottom));
   }
 
   .detail {
     grid-template-columns: 1fr;
+    height: 100%;
     overflow-y: auto;
+    display: block;
   }
 
   .questionPanel {
+    max-height: none;
     min-height: auto;
     overflow: visible;
     position: static;
@@ -606,21 +613,29 @@
   }
 
   .answerPanel {
-    min-height: 260px;
+    min-height: 0;
     overflow: visible;
+    display: block;
+    position: static;
   }
 
   .answerList {
+    min-height: 0;
     overflow: visible;
   }
 
   .answerListWithComposer {
-    padding-bottom: 0;
+    padding-bottom: 170px;
   }
 
   .answerFormWrap {
-    position: static;
-    margin: 0.75rem;
+    position: fixed;
+    right: 0.75rem;
+    bottom: calc(56px + 0.75rem + env(safe-area-inset-bottom));
+    left: 0.75rem;
+    order: initial;
+    margin: 0;
+    padding: 0.75rem;
   }
 
   .detailQuestionBlock {

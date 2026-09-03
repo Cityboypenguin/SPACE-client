@@ -455,6 +455,15 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+.colorPickerPopoverFloating {
+  position: fixed;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 40;
+}
+
 .colorDot {
   width: 16px;
   height: 16px;
@@ -509,26 +518,211 @@
   font-size: 0.9rem;
 }
 
+.mobileTimetable {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .main {
-    height: auto;
-    overflow: visible;
-    padding: 1rem 0.75rem 1.5rem;
+    --timetable-control-height: 2.15rem;
+    --timetable-slot-height: 70px;
+    height: calc(100vh - 56px - env(safe-area-inset-bottom));
+    height: calc(100dvh - 56px - env(safe-area-inset-bottom));
+    overflow: hidden;
+    padding: 0.65rem 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topActions {
+    align-items: flex-start;
+    gap: 0.55rem;
+    margin-bottom: 0.5rem;
   }
 
   .title {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+
+  .topControls {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-left: 0;
+  }
+
+  .semesterSelector {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .yearSelect {
+    min-width: 4.7rem;
+    padding-inline: 0.65rem 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  .semesterSlider {
+    width: 5.5rem;
+  }
+
+  .semesterOption {
+    padding-inline: 0.25rem;
+    font-size: 0.76rem;
+  }
+
+  .viewStateAction {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .searchButton,
+  .readOnlyBadge {
+    width: auto;
+    min-width: 6.9rem;
+    padding-inline: 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .editActions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .cancelButton,
+  .commitButton {
+    min-width: 5.8rem;
+    padding-inline: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .grid {
-    min-width: 760px;
+    min-width: 680px;
   }
 
   .gridWrap {
-    overflow-x: auto;
+    display: none;
   }
 
-  .grid th {
-    font-size: 1.35rem;
+  .mobileTimetable {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .mobileDayTabs {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .mobileDayButton {
+    min-width: 0;
+    min-height: 2rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0;
+  }
+
+  .mobileDayButtonActive {
+    border-color: #ff955d;
+    background: #ff955d;
+    color: #fff;
+  }
+
+  .mobileDayList {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobilePeriodRow {
+    display: grid;
+    grid-template-columns: 3.4rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .mobilePeriodMeta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text);
+  }
+
+  .mobileSlot {
+    min-width: 0;
+  }
+
+  .mobileSlot .courseChip,
+  .mobileSlot .emptyCellButton,
+  .mobileSlot .emptySlot {
+    height: 72px;
+    width: 100%;
+  }
+
+  .mobileSlot .courseName {
+    font-size: 0.74rem;
+    -webkit-line-clamp: 2;
+  }
+
+  .mobileSlot .teacherName {
+    font-size: 0.66rem;
+  }
+
+  .mobilePeriodMeta .periodNumber {
+    width: 1.55rem;
+    height: 1.55rem;
+    font-size: 0.92rem;
+  }
+
+  .mobilePeriodMeta .periodTime {
+    font-size: 0.55rem;
+  }
+
+  .courseChip {
+    padding: 5px 22px 22px 6px;
+  }
+
+  .courseName {
+    font-size: 0.62rem;
+    line-height: 1.15;
+  }
+
+  .teacherName {
+    font-size: 0.56rem;
+  }
+
+  .colorPickerPopover {
+    grid-template-columns: repeat(5, 1fr);
+    left: auto;
+    right: 0;
+    bottom: 22px;
+    z-index: 20;
+    max-width: min(116px, calc(100vw - 2rem));
+  }
+
+  .colorPickerPopoverFloating {
+    position: fixed;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    z-index: 40;
   }
 }

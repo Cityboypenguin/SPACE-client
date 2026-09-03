@@ -3,13 +3,7 @@
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-}
-
-@media (max-width: 768px) {
-  .container {
-    height: calc(100vh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    height: calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  }
+  overflow: hidden;
 }
 
 .roomHeader {
@@ -31,6 +25,33 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+
+.roomTitleBlock {
+  min-width: 0;
+  flex: 1;
+}
+
+.roomSubTitle {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roomTabs {
+  padding: 0.5rem 1.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.roomNotice {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: 0.8rem;
+  padding: 0.5rem 1.5rem;
+  flex-shrink: 0;
 }
 
 .backButton {
@@ -397,4 +418,74 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   color: var(--color-text);
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: calc(100vh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    height: calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .roomHeader {
+    gap: 0.55rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .roomHeader > button:first-child {
+    flex-shrink: 0;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+  }
+
+  .roomTitle {
+    display: block;
+    font-size: 1rem;
+  }
+
+  .roomSubTitle {
+    font-size: 0.7rem;
+  }
+
+  .roomTabs {
+    padding: 0.35rem 0.75rem 0;
+  }
+
+  .roomNotice {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .pollButton {
+    min-height: 2.15rem;
+    padding: 4px 9px;
+    font-size: 0.78rem;
+  }
+
+  .messageList {
+    padding: 0.75rem;
+    gap: 0.45rem;
+  }
+
+  .bubble {
+    max-width: min(82vw, 100%);
+    padding: 0.5rem 0.65rem;
+    font-size: 0.92rem;
+  }
+
+  .inputForm {
+    padding: 0.55rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom));
+    gap: 0.35rem;
+  }
+
+  .inputField {
+    min-height: 38px;
+    max-height: 110px;
+    font-size: 1rem;
+  }
+
+  .scrollToLatest {
+    bottom: 8px;
+    max-width: calc(100vw - 2rem);
+  }
 }

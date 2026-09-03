@@ -13,6 +13,7 @@ import { useCoursePolls } from '../hooks/useCoursePolls';
 import { getRoom, type Room } from '../api/message';
 import { getMyTimetable, getCurrentSemester, type Course } from '../api/course';
 import { stableCacheOptions, semesterCacheOptions } from '../cache/swrOptions';
+import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import styles from '../components/ChatRoom.module.css';
 
 type TabKey = 'chat' | 'question';
@@ -32,6 +33,7 @@ export const CourseRoomPage = () => {
   // 質問箱で開いていた質問は、チャットタブへ切り替えて戻ってきても復元できるよう
   // QuestionList ではなくここで保持する(QuestionList はタブ切替のたびにアンマウントされる)。
   const [selectedQuestionID, setSelectedQuestionID] = useState<string | null>(null);
+  useResetViewportScroll([roomId]);
 
   const pollsState = useCoursePolls(roomId);
   const unvotedPollCount = pollsState.unvotedTotal;
@@ -105,10 +107,10 @@ export const CourseRoomPage = () => {
           <strong className={styles.roomTitle} style={{ flex: 1 }}>投票</strong>
         ) : (
           <>
-            <div style={{ minWidth: 0, flex: 1 }}>
+            <div className={styles.roomTitleBlock}>
               <strong className={styles.roomTitle}>{course?.courseName ?? room?.name ?? '...'}</strong>
               {course && (
-                <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                <div className={styles.roomSubTitle}>
                   {course.teacherName} ・ {course.dayOfWeek}曜{course.period}限
                 </div>
               )}
@@ -136,17 +138,17 @@ export const CourseRoomPage = () => {
         <PollList roomId={roomId} roomWritable={isWritable} pollsState={pollsState} />
       ) : (
         <>
-          <div style={{ padding: '0.5rem 1.5rem 0', borderBottom: '1px solid #ccc', flexShrink: 0 }}>
+          <div className={styles.roomTabs}>
             <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
           </div>
 
           {isArchived && (
-            <div style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.8rem', padding: '0.5rem 1.5rem', flexShrink: 0 }}>
+            <div className={styles.roomNotice}>
               この学期は終了したため閲覧のみです。
             </div>
           )}
           {!isArchived && !isRegistered && (
-            <div style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.8rem', padding: '0.5rem 1.5rem', flexShrink: 0 }}>
+            <div className={styles.roomNotice}>
               この授業を時間割に登録していないため、書き込みできません。
             </div>
           )}

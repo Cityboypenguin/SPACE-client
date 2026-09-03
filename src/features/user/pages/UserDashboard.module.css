@@ -19,30 +19,6 @@
   color: var(--color-text);
 }
 
-.settingsButton {
-  width: 2.75rem;
-  height: 2.75rem;
-  border: none;
-  background: transparent;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  padding: 0;
-  opacity: 0.8;
-  transition: opacity 0.15s;
-}
-
-.settingsButton:hover {
-  opacity: 1;
-}
-
-.settingsIcon {
-  width: 2rem;
-  height: 2rem;
-  display: block;
-}
-
 .flashMessage {
   color: var(--color-success);
   font-weight: 600;
