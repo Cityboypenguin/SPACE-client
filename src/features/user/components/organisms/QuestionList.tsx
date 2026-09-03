@@ -5,6 +5,7 @@ import {
   createQuestion, answerQuestion, selectBestAnswer, cancelBestAnswer,
   updateQuestionBody, deleteQuestion, updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
 } from '../../api/question';
+import { uploadMediaFiles } from '../../api/media';
 import { CreateQuestionForm } from '../molecules/CreateQuestionForm';
 import { QuestionCard } from '../molecules/QuestionCard';
 import { QuestionDetail } from '../molecules/QuestionDetail';
@@ -26,6 +27,7 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
   const answersState = useQuestionAnswers(selectedQuestionID ?? undefined);
 
   const [body, setBody] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
 
@@ -33,13 +35,15 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
 
   const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!body.trim() || sending) return;
+    if ((!body.trim() && files.length === 0) || sending) return;
     setSending(true);
     setSendError('');
     try {
-      const created = await createQuestion(roomId, body.trim());
+      const mediaInputs = await uploadMediaFiles(files);
+      const created = await createQuestion(roomId, body.trim(), mediaInputs);
       addQuestion(created);
       setBody('');
+      setFiles([]);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : '質問の送信に失敗しました。');
     } finally {
@@ -47,8 +51,9 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
     }
   };
 
-  const handleAnswerSubmit = async (questionID: string, answerBody: string) => {
-    const answer = await answerQuestion(questionID, answerBody);
+  const handleAnswerSubmit = async (questionID: string, answerBody: string, answerFiles?: File[]) => {
+    const mediaInputs = answerFiles && answerFiles.length > 0 ? await uploadMediaFiles(answerFiles) : undefined;
+    const answer = await answerQuestion(questionID, answerBody, mediaInputs);
     answersState.addAnswer(answer);
     bumpAnswerCount(questionID, 1);
     return answer;
@@ -125,7 +130,14 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
     <div className={styles.tabContent}>
       {roomWritable && (
         <div>
-          <CreateQuestionForm value={body} onChange={setBody} onSubmit={handleSubmit} disabled={sending} />
+          <CreateQuestionForm
+            value={body}
+            onChange={setBody}
+            onSubmit={handleSubmit}
+            disabled={sending}
+            files={files}
+            onFilesChange={setFiles}
+          />
           {sendError && <p style={{ color: '#ef4444', fontSize: '0.78rem', margin: '0.3rem 0 0' }}>{sendError}</p>}
         </div>
       )}

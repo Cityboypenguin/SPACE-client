@@ -92,6 +92,10 @@ export const CourseRoomPage = () => {
               setIsPollView(false);
               return;
             }
+            if (activeTab === 'question' && selectedQuestionID != null) {
+              setSelectedQuestionID(null);
+              return;
+            }
             navigate('/timetable', { state: backYear != null && backSemester ? { year: backYear, semester: backSemester } : undefined });
           }}
         >

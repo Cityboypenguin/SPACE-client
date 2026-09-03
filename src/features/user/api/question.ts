@@ -1,13 +1,16 @@
 import { request, requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
-import type { MessageUser } from './message';
+import { type MessageUser, type Media, type MediaInput } from './message';
+
+export type { Media, MediaInput };
 
 export type Answer = {
   ID: string;
   questionID: string;
   user: MessageUser;
   body: string;
+  media: Media[];
   createdAt: string;
   isMine: boolean;
   likeCount: number;
@@ -24,6 +27,7 @@ export type Question = {
   // 質問一覧では回答本体を全件取得しない(詳細を開いた時だけ useQuestionAnswers で
   // ページングして取得する)ため、ここでは件数のみを持つ。
   answers: { total: number };
+  media: Media[];
   createdAt: string;
   updatedAt: string;
   isMine: boolean;
@@ -51,6 +55,11 @@ export const QUESTION_FIELDS = `
   answers(limit: 0) {
     total
   }
+  media {
+    ID
+    url
+    contentType
+  }
   createdAt
   updatedAt
 `;
@@ -65,6 +74,11 @@ export const ANSWER_FIELDS = `
     avatarUrl
   }
   body
+  media {
+    ID
+    url
+    contentType
+  }
   createdAt
   isMine
   likeCount
@@ -93,6 +107,11 @@ const QuestionsDocument = graphql(`
         answers(limit: 0) {
           total
         }
+        media {
+          ID
+          url
+          contentType
+        }
         createdAt
         updatedAt
       }
@@ -102,8 +121,8 @@ const QuestionsDocument = graphql(`
 `);
 
 const CreateQuestionDocument = graphql(`
-  mutation CreateQuestion($roomID: ID!, $body: String!) {
-    createQuestion(roomID: $roomID, body: $body) {
+  mutation CreateQuestion($roomID: ID!, $body: String!, $mediaInputs: [MediaUploadInput!]) {
+    createQuestion(roomID: $roomID, body: $body, mediaInputs: $mediaInputs) {
       ID
       roomID
       user {
@@ -121,6 +140,11 @@ const CreateQuestionDocument = graphql(`
       }
       answers(limit: 0) {
         total
+      }
+      media {
+        ID
+        url
+        contentType
       }
       createdAt
       updatedAt
@@ -145,8 +169,8 @@ const DELETE_QUESTION_MUTATION = `
 `;
 
 const AnswerQuestionDocument = graphql(`
-  mutation AnswerQuestion($questionID: ID!, $body: String!) {
-    answerQuestion(questionID: $questionID, body: $body) {
+  mutation AnswerQuestion($questionID: ID!, $body: String!, $mediaInputs: [MediaUploadInput!]) {
+    answerQuestion(questionID: $questionID, body: $body, mediaInputs: $mediaInputs) {
       ID
       questionID
       user {
@@ -156,6 +180,11 @@ const AnswerQuestionDocument = graphql(`
         avatarUrl
       }
       body
+      media {
+        ID
+        url
+        contentType
+      }
       createdAt
       isMine
       likeCount
@@ -245,6 +274,11 @@ const QuestionAnswersDocument = graphql(`
             avatarUrl
           }
           body
+          media {
+            ID
+            url
+            contentType
+          }
           createdAt
           isMine
           likeCount
@@ -271,8 +305,8 @@ export const listQuestions = async (roomID: string, limit = 50, offset = 0): Pro
   return data.questions;
 };
 
-export const createQuestion = async (roomID: string, body: string): Promise<Question> => {
-  const data = await requestDoc(CreateQuestionDocument, { roomID, body }, getUserToken());
+export const createQuestion = async (roomID: string, body: string, mediaInputs?: MediaInput[]): Promise<Question> => {
+  const data = await requestDoc(CreateQuestionDocument, { roomID, body, mediaInputs }, getUserToken());
   return data.createQuestion;
 };
 
@@ -290,8 +324,8 @@ export const deleteQuestion = async (id: string): Promise<boolean> => {
   return data.deleteQuestion;
 };
 
-export const answerQuestion = async (questionID: string, body: string): Promise<Answer> => {
-  const data = await requestDoc(AnswerQuestionDocument, { questionID, body }, getUserToken());
+export const answerQuestion = async (questionID: string, body: string, mediaInputs?: MediaInput[]): Promise<Answer> => {
+  const data = await requestDoc(AnswerQuestionDocument, { questionID, body, mediaInputs }, getUserToken());
   return data.answerQuestion;
 };
 

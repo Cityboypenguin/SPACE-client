@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
+import likeIconOff from '../../../../assets/パーツ_いいね.svg';
+import likeIconOn from '../../../../assets/パーツ_いいね（済）.svg';
 import { AppSwal } from '../../../../lib/swal';
+import { useTheme } from '../../../../context/ThemeContext';
 import { ClampedText } from '../../../../components/atoms/ClampedText';
 import { type Answer } from '../../api/question';
+import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import styles from '../QuestionBox.module.css';
 import menuStyles from '../organisms/PostCard.module.css';
 
@@ -28,6 +32,7 @@ export const AnswerItem = ({
   onSelectBest, onCancelBest, onUpdate, onDelete, onLike, onUnlike, rootRef,
 }: Props) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [editBody, setEditBody] = useState(answer.body);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -36,7 +41,7 @@ export const AnswerItem = ({
 
   // ベストアンサーに選ばれている間は編集・削除できない。
   const canEditOrDelete = answer.isMine && !isBest;
-  const hasMenuActions = canEditOrDelete || (canSelectBest && !isBest) || (canCancelBest && isBest);
+  const hasMenuActions = canEditOrDelete;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -137,26 +142,6 @@ export const AnswerItem = ({
           </button>
           {menuOpen && (
             <div className={menuStyles.dropdown}>
-              {canSelectBest && !isBest && (
-                <button
-                  type="button"
-                  className={menuStyles.dropdownItem}
-                  onClick={() => { setMenuOpen(false); void handleSelectBest(); }}
-                >
-                  <span />
-                  ベストアンサーにする
-                </button>
-              )}
-              {canCancelBest && isBest && (
-                <button
-                  type="button"
-                  className={menuStyles.dropdownItem}
-                  onClick={() => { setMenuOpen(false); void handleCancelBest(); }}
-                >
-                  <span />
-                  ベストアンサーを取り消す
-                </button>
-              )}
               {canEditOrDelete && (
                 <>
                   <button
@@ -195,6 +180,7 @@ export const AnswerItem = ({
               }
             }}
             disabled={busy}
+            maxLength={1000}
             className={styles.textarea}
           />
           <button type="submit" disabled={busy || !editBody.trim()} className={styles.submitButton}>
@@ -213,19 +199,59 @@ export const AnswerItem = ({
         <ClampedText text={answer.body} maxLines={6} className={styles.answerBody} />
       )}
 
+      {!editing && answer.media.length > 0 && (
+        <div className={styles.mediaPreviewGrid}>
+          <PostMediaGrid media={answer.media} />
+        </div>
+      )}
+
       <div className={styles.answerFooter}>
         <span className={styles.timestamp}>
           {new Date(answer.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
         </span>
         {isBest && <span className={styles.bestAnswerLabel}>ベストアンサー</span>}
-        <button
-          type="button"
-          className={`${styles.likeButton} ${answer.likedByMe ? styles.likeButtonActive : ''}`}
-          disabled={busy}
-          onClick={handleToggleLike}
-        >
-          {answer.likedByMe ? '♥' : '♡'} {answer.likeCount}
-        </button>
+        <div className={styles.answerFooterActions}>
+          {canSelectBest && !isBest && (
+            <button
+              type="button"
+              className={styles.selectBestHoverButton}
+              disabled={busy}
+              onClick={() => void handleSelectBest()}
+            >
+              ベストアンサーにする
+            </button>
+          )}
+          {canCancelBest && isBest && (
+            <button
+              type="button"
+              className={styles.cancelBestHoverButton}
+              disabled={busy}
+              onClick={() => void handleCancelBest()}
+            >
+              ベストアンサーを取り消す
+            </button>
+          )}
+          <button
+            type="button"
+            className={styles.likeButton}
+            disabled={busy}
+            onClick={handleToggleLike}
+          >
+            <img
+              src={answer.likedByMe ? likeIconOn : likeIconOff}
+              alt="いいね"
+              className={styles.likeIcon}
+              style={{
+                filter: answer.likedByMe
+                  ? 'none'
+                  : theme === 'dark' ? 'opacity(0.35) invert(1)' : 'opacity(0.35)',
+              }}
+            />
+            <span className={answer.likedByMe ? styles.likeCountActive : styles.likeCountDefault}>
+              {answer.likeCount}
+            </span>
+          </button>
+        </div>
       </div>
 
       {error && <p style={{ color: '#ef4444', fontSize: '0.78rem', margin: '0.3rem 0 0' }}>{error}</p>}

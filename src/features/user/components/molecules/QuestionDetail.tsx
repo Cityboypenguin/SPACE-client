@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft } from '../../../../components/atoms/ChevronLeft';
 import { ClampedText } from '../../../../components/atoms/ClampedText';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { AppSwal } from '../../../../lib/swal';
 import { type Question, type Answer } from '../../api/question';
 import { AnswerItem } from './AnswerItem';
+import { ImageAttachButton, ImageAttachPreviews } from './ImageAttachControl';
+import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import styles from '../QuestionBox.module.css';
 import menuStyles from '../organisms/PostCard.module.css';
 
@@ -18,7 +19,7 @@ type Props = {
   loadingMoreAnswers: boolean;
   loadMoreAnswers: () => void;
   onBack: () => void;
-  onAnswerSubmit: (questionID: string, body: string) => Promise<Answer>;
+  onAnswerSubmit: (questionID: string, body: string, files?: File[]) => Promise<Answer>;
   onSelectBestAnswer: (questionID: string, answerID: string) => Promise<void>;
   onCancelBestAnswer: (questionID: string) => Promise<void>;
   onUpdateQuestion: (questionID: string, body: string) => Promise<void>;
@@ -46,17 +47,21 @@ export const QuestionDetail = ({
 }: Props) => {
   const answerTextareaRef = useRef<HTMLTextAreaElement>(null);
   const editQuestionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const answerPanelRef = useRef<HTMLElement>(null);
+  const answerPanelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const answerElementsRef = useRef(new Map<string, HTMLDivElement>());
   const questionMenuRef = useRef<HTMLDivElement>(null);
   const [answerBody, setAnswerBody] = useState('');
+  const [answerFiles, setAnswerFiles] = useState<File[]>([]);
   const [answering, setAnswering] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(false);
   const [editQuestionBody, setEditQuestionBody] = useState(question.body);
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // 質問本文の「続きを読む」展開中は、テキスト自身ではなく左パネル全体を
+  // スクロール可能にする(ClampedText の fillContainer モードから通知を受ける)。
+  const [questionTextExpanded, setQuestionTextExpanded] = useState(false);
 
   const resizeTextarea = (textarea: HTMLTextAreaElement) => {
     textarea.style.height = 'auto';
@@ -100,12 +105,13 @@ export const QuestionDetail = ({
 
   const handleAnswerSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!answerBody.trim() || answering) return;
+    if ((!answerBody.trim() && answerFiles.length === 0) || answering) return;
     setAnswering(true);
     setError('');
     try {
-      const created = await onAnswerSubmit(question.ID, answerBody.trim());
+      const created = await onAnswerSubmit(question.ID, answerBody.trim(), answerFiles);
       setAnswerBody('');
+      setAnswerFiles([]);
       // 追加された回答がDOMに反映されてから、自分の回答までスクロールする。
       requestAnimationFrame(() => {
         answerElementsRef.current.get(created.ID)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -152,7 +158,7 @@ export const QuestionDetail = ({
     }
   };
 
-  const canSubmitAnswer = roomWritable && !answering && answerBody.trim() !== '';
+  const canSubmitAnswer = roomWritable && !answering && (answerBody.trim() !== '' || answerFiles.length > 0);
   const orderedAnswers = question.bestAnswer
     ? [
       ...answers.filter((answer) => answer.ID === question.bestAnswer?.ID),
@@ -162,43 +168,41 @@ export const QuestionDetail = ({
 
   return (
     <div className={styles.detail}>
-      <section className={styles.questionPanel}>
-        <div className={styles.detailNav}>
-          <button type="button" className={styles.backButton} onClick={onBack}>
-            <ChevronLeft />
-            <span>質問一覧へ</span>
-          </button>
+      <section className={`${styles.questionPanel} ${questionTextExpanded ? styles.questionPanelExpanded : ''}`}>
+        <div
+          className={`${styles.detailQuestionBlock} ${question.isMine ? styles.detailQuestionBlockWithMenu : ''} ${questionTextExpanded ? styles.detailQuestionBlockExpanded : ''}`}
+        >
           {question.isMine && (
-            <div className={menuStyles.menuWrap} ref={questionMenuRef}>
-              <button type="button" className={menuStyles.menuButton} onClick={() => setMenuOpen((v) => !v)} aria-label="メニュー">
-                ···
-              </button>
-              {menuOpen && (
-                <div className={menuStyles.dropdown}>
-                  <button
-                    type="button"
-                    className={menuStyles.dropdownItem}
-                    onClick={() => { setEditQuestionBody(question.body); setEditingQuestion(true); setMenuOpen(false); }}
-                  >
-                    <img src={editIcon} alt="" className={`${menuStyles.dropdownIcon} themed-icon`} />
-                    編集
-                  </button>
-                  <button
-                    type="button"
-                    className={`${menuStyles.dropdownItem} ${menuStyles.dropdownItemDanger}`}
-                    onClick={handleQuestionDelete}
-                    disabled={busy}
-                  >
-                    <img src={deleteIcon} alt="" className={`${menuStyles.dropdownIconDelete} themed-icon`} />
-                    削除
-                  </button>
-                </div>
-              )}
+            <div className={styles.detailMenuAbs}>
+              <div className={menuStyles.menuWrap} ref={questionMenuRef}>
+                <button type="button" className={menuStyles.menuButton} onClick={() => setMenuOpen((v) => !v)} aria-label="メニュー">
+                  ···
+                </button>
+                {menuOpen && (
+                  <div className={menuStyles.dropdown}>
+                    <button
+                      type="button"
+                      className={menuStyles.dropdownItem}
+                      onClick={() => { setEditQuestionBody(question.body); setEditingQuestion(true); setMenuOpen(false); }}
+                    >
+                      <img src={editIcon} alt="" className={`${menuStyles.dropdownIcon} themed-icon`} />
+                      編集
+                    </button>
+                    <button
+                      type="button"
+                      className={`${menuStyles.dropdownItem} ${menuStyles.dropdownItemDanger}`}
+                      onClick={handleQuestionDelete}
+                      disabled={busy}
+                    >
+                      <img src={deleteIcon} alt="" className={`${menuStyles.dropdownIconDelete} themed-icon`} />
+                      削除
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-        </div>
 
-        <div className={styles.detailQuestionBlock}>
           {editingQuestion ? (
             <form onSubmit={handleQuestionUpdate} className={styles.editQuestionForm}>
               <textarea
@@ -217,6 +221,7 @@ export const QuestionDetail = ({
                 }}
                 className={styles.textarea}
                 disabled={busy}
+                maxLength={1000}
               />
               <div className={styles.editActions}>
                 <button type="submit" className={styles.submitButton} disabled={busy || !editQuestionBody.trim()}>
@@ -228,18 +233,62 @@ export const QuestionDetail = ({
               </div>
             </form>
           ) : (
-            <ClampedText text={question.body} maxLines={8} className={styles.detailTitle} />
+            <ClampedText
+              text={question.body}
+              className={styles.detailTitle}
+              fillContainer
+              onExpandedChange={setQuestionTextExpanded}
+            />
+          )}
+          {question.media.length > 0 && (
+            <div className={styles.mediaPreviewGrid}>
+              <PostMediaGrid media={question.media} large />
+            </div>
           )}
           <span className={styles.detailTime}>{formatRelativeTime(question.createdAt)}</span>
           <div className={styles.detailMeta}>
             <span>回答{totalAnswers}件</span>
-            <span>{question.isAnswered ? 'ベストアンサーあり' : '未解決'}</span>
+            <span>{question.isAnswered ? '解決' : '未解決'}</span>
           </div>
         </div>
 
         {error && <p className={styles.errorText}>{error}</p>}
+      </section>
+
+      <section className={styles.answerPanel}>
+        <div className={`${styles.answerList} ${roomWritable ? styles.answerListWithComposer : ''}`} ref={answerPanelRef}>
+          {answers.length === 0 ? (
+            <p className={styles.emptyState}>まだ回答がありません。</p>
+          ) : orderedAnswers.map((answer) => {
+            const isBest = question.bestAnswer?.ID === answer.ID;
+            return (
+              <AnswerItem
+                key={answer.ID}
+                rootRef={(el) => {
+                  if (el) answerElementsRef.current.set(answer.ID, el);
+                  else answerElementsRef.current.delete(answer.ID);
+                }}
+                answer={answer}
+                isBest={isBest}
+                canSelectBest={question.isMine && !question.isAnswered}
+                canCancelBest={question.isMine && question.isAnswered}
+                onSelectBest={() => onSelectBestAnswer(question.ID, answer.ID)}
+                onCancelBest={() => onCancelBestAnswer(question.ID)}
+                onUpdate={(body) => onUpdateAnswer(question.ID, answer.ID, body)}
+                onDelete={() => onDeleteAnswer(question.ID, answer.ID)}
+                onLike={() => onLikeAnswer(question.ID, answer.ID)}
+                onUnlike={() => onUnlikeAnswer(question.ID, answer.ID)}
+              />
+            );
+          })}
+          <div ref={bottomSentinelRef} style={{ height: 1 }} />
+          {loadingMoreAnswers && (
+            <p style={{ color: 'var(--color-text-muted)', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+          )}
+        </div>
+
         {roomWritable && (
-          <form onSubmit={handleAnswerSubmit} className={styles.answerForm}>
+          <form onSubmit={handleAnswerSubmit} className={styles.answerFormWrap}>
             <textarea
               ref={answerTextareaRef}
               value={answerBody}
@@ -256,43 +305,17 @@ export const QuestionDetail = ({
               }}
               placeholder="回答する"
               disabled={answering}
-              className={styles.answerTextarea}
+              maxLength={1000}
+              className={styles.composerTextarea}
             />
-            <button type="submit" disabled={!canSubmitAnswer} className={styles.answerSubmitButton}>
-              回答
-            </button>
+            <ImageAttachPreviews files={answerFiles} onFilesChange={setAnswerFiles} disabled={answering} />
+            <div className={styles.composerFooter}>
+              <ImageAttachButton files={answerFiles} onFilesChange={setAnswerFiles} disabled={answering} />
+              <button type="submit" disabled={!canSubmitAnswer} className={styles.composerSubmitButton}>
+                回答
+              </button>
+            </div>
           </form>
-        )}
-      </section>
-
-      <section className={styles.answerPanel} ref={answerPanelRef}>
-        {answers.length === 0 ? (
-          <p className={styles.emptyState}>まだ回答がありません。</p>
-        ) : orderedAnswers.map((answer) => {
-          const isBest = question.bestAnswer?.ID === answer.ID;
-          return (
-            <AnswerItem
-              key={answer.ID}
-              rootRef={(el) => {
-                if (el) answerElementsRef.current.set(answer.ID, el);
-                else answerElementsRef.current.delete(answer.ID);
-              }}
-              answer={answer}
-              isBest={isBest}
-              canSelectBest={question.isMine && !question.isAnswered}
-              canCancelBest={question.isMine && question.isAnswered}
-              onSelectBest={() => onSelectBestAnswer(question.ID, answer.ID)}
-              onCancelBest={() => onCancelBestAnswer(question.ID)}
-              onUpdate={(body) => onUpdateAnswer(question.ID, answer.ID, body)}
-              onDelete={() => onDeleteAnswer(question.ID, answer.ID)}
-              onLike={() => onLikeAnswer(question.ID, answer.ID)}
-              onUnlike={() => onUnlikeAnswer(question.ID, answer.ID)}
-            />
-          );
-        })}
-        <div ref={bottomSentinelRef} style={{ height: 1 }} />
-        {loadingMoreAnswers && (
-          <p style={{ color: 'var(--color-text-muted)', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
         )}
       </section>
     </div>

@@ -1,4 +1,5 @@
 import { type Question } from '../../api/question';
+import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import styles from '../QuestionBox.module.css';
 
 type Props = {
@@ -21,12 +22,17 @@ export const QuestionCard = ({ question, onOpen }: Props) => {
   const otherAnswers = Math.max(0, question.answers.total - (bestAnswer ? 1 : 0));
 
   return (
-    <button type="button" className={styles.card} onClick={onOpen}>
+    <div role="button" tabIndex={0} className={styles.card} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}>
       <span className={styles.cardTopLine}>
         {!question.isAnswered && <span className={styles.unansweredBadge}>未回答</span>}
         <span className={styles.cardTime}>{formatRelativeTime(question.createdAt)}</span>
       </span>
       <span className={styles.questionTitle}>{question.body}</span>
+      {question.media.length > 0 && (
+        <div className={styles.mediaPreviewGrid}>
+          <PostMediaGrid media={question.media} />
+        </div>
+      )}
       {bestAnswer && (
         <span className={styles.bestPreviewBlock}>
           <span className={styles.bestPreviewBadge}>ベストアンサー</span>
@@ -36,6 +42,6 @@ export const QuestionCard = ({ question, onOpen }: Props) => {
       <span className={styles.cardAnswerCount}>
         {otherAnswers > 0 ? `他 ${otherAnswers} 件の回答` : `${question.answers.total}件の回答`}
       </span>
-    </button>
+    </div>
   );
 };

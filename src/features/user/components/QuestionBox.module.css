@@ -32,6 +32,7 @@
 }
 
 .card {
+  box-sizing: border-box;
   width: 100%;
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -133,42 +134,68 @@
 .questionPanel {
   min-width: 0;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--color-bg);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
 }
 
+/* 質問本文の「続きを読む」を展開している間は、パネル全体をスクロール可能にする。 */
+.questionPanelExpanded {
+  overflow-y: auto;
+}
+
 .answerPanel {
   min-width: 0;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
-.detailNav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.8rem 1.25rem 0.4rem;
+.answerList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
-.backButton {
-  border: none;
-  background: none;
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0;
-  font-weight: 700;
-  cursor: pointer;
+.answerListWithComposer {
+  padding-bottom: 150px;
 }
 
 .detailQuestionBlock {
   position: relative;
   padding: 0.8rem 1.5rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 「…」メニューがある質問は、右上に絶対配置したボタンとタイトル文が重ならないよう
+   右側の余白を広げる(specificity をクラス2個にして、モバイル用の padding-inline
+   上書きより確実に優先させる)。 */
+.detailQuestionBlock.detailQuestionBlockWithMenu {
+  padding-right: 2.75rem;
+}
+
+/* 質問本文の「続きを読む」展開中は、この要素自体もナチュラルな高さで積み
+   上げる(flex:1のまま中身だけ溢れさせると後続の時刻・回答件数の行と重なる)。
+   祖先の .questionPanelExpanded 側で overflow-y:auto にしてパネル全体が
+   スクロールできるようにしている。 */
+.detailQuestionBlock.detailQuestionBlockExpanded {
+  flex: none;
+  min-height: auto;
+}
+
+.detailMenuAbs {
+  position: absolute;
+  top: 0.7rem;
+  right: 1.1rem;
+  z-index: 3;
 }
 
 .detailTitle {
@@ -210,6 +237,59 @@
   justify-content: flex-end;
 }
 
+.composerBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  background: var(--color-bg-elevated);
+}
+
+.composerTextarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  max-height: 240px;
+  box-sizing: border-box;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  padding: 0.25rem 0;
+}
+
+.composerFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+.composerSubmitButton {
+  border: none;
+  border-radius: 20px;
+  background: #ff7430;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.4rem 1.1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.composerSubmitButton:disabled {
+  background: #f89150;
+  cursor: default;
+}
+
 .formRow {
   display: flex;
   gap: 0.5rem;
@@ -219,7 +299,8 @@
 .textarea {
   flex: 1;
   resize: none;
-  overflow: hidden;
+  overflow-y: auto;
+  max-height: 240px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0.4rem 0.6rem;
@@ -254,49 +335,26 @@
   cursor: pointer;
 }
 
-.answerForm {
-  position: sticky;
-  bottom: 0;
+.answerFormWrap {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
   z-index: 2;
-  margin: auto 0.75rem 0.9rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-bg-elevated);
-  min-height: 52px;
+  margin: 0;
   display: flex;
-  align-items: flex-end;
-  gap: 0.6rem;
-  padding: 0.55rem 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 78%, var(--color-text));
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  background: var(--color-bg-elevated);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
 }
 
-.answerTextarea {
-  flex: 1;
-  min-width: 0;
-  min-height: 28px;
-  resize: none;
-  overflow: hidden;
-  border: none;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  font-size: 1rem;
-  outline: none;
-}
-
-.answerSubmitButton {
-  border: none;
-  border-radius: 18px;
-  background: #ff8b45;
-  color: #fff;
-  padding: 0.4rem 1.05rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.answerSubmitButton:disabled {
-  opacity: 0.45;
-  cursor: default;
+.answerFormWrap:focus-within {
+  border-color: color-mix(in srgb, #ff7430 55%, var(--color-border));
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.2);
 }
 
 .errorText {
@@ -351,35 +409,74 @@
   font-weight: 700;
 }
 
-.selectBestButton,
-.cancelBestButton {
+.answerFooterActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.likeButton {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 2px 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.likeIcon {
+  width: 18px;
+  height: 18px;
+  transition: filter 0.15s;
+}
+
+.likeCountDefault {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.likeCountActive {
+  font-size: 0.82rem;
+  color: #f43f5e;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.selectBestHoverButton,
+.cancelBestHoverButton {
   font-size: 0.72rem;
-  padding: 0.35rem 1rem;
-  border-radius: 6px;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
   border: 1px solid #ff8b45;
   background: var(--color-bg-elevated);
   color: #ff8b45;
   cursor: pointer;
-  margin-left: auto;
+  white-space: nowrap;
 }
 
-.cancelBestButton {
+.cancelBestHoverButton {
   border-color: #ef4444;
   color: #ef4444;
 }
 
-.likeButton {
-  margin-left: auto;
-  font-size: 0.86rem;
-  padding: 2px 6px;
-  border: none;
-  background: none;
-  color: var(--color-text);
-  cursor: pointer;
-}
+/* デスクトップ(ホバー可能な環境)では、回答にマウスを乗せた時だけボタンを表示する。
+   タッチ端末はホバー操作がないため常時表示にして選択・取り消しできるようにする。 */
+@media (hover: hover) {
+  .selectBestHoverButton,
+  .cancelBestHoverButton {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
 
-.likeButtonActive {
-  color: #ef4444;
+  .answerItem:hover .selectBestHoverButton,
+  .answerItem:hover .cancelBestHoverButton {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .editButton {
@@ -402,13 +499,92 @@
   cursor: pointer;
 }
 
+.mediaPreviewRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.mediaThumb {
+  position: relative;
+}
+
+.mediaThumbImg {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+.mediaThumbRemove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-text-muted);
+  color: #fff;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.cameraButton {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+}
+
+.cameraButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.cameraIcon {
+  width: 28px;
+  height: 28px;
+  filter: opacity(0.45);
+}
+
+.addMoreButton {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  border: 2px dashed var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addMoreButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.mediaPreviewGrid {
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 768px) {
   .tabContent {
     padding: 0.75rem 0.75rem 1rem;
-  }
-
-  .detailNav {
-    padding-inline: 1rem;
   }
 
   .detail {
@@ -424,12 +600,25 @@
     border-bottom: 1px solid var(--color-border);
   }
 
+  .detailQuestionBlock {
+    flex: none;
+    min-height: auto;
+  }
+
   .answerPanel {
     min-height: 260px;
     overflow: visible;
   }
 
-  .answerForm {
+  .answerList {
+    overflow: visible;
+  }
+
+  .answerListWithComposer {
+    padding-bottom: 0;
+  }
+
+  .answerFormWrap {
     position: static;
     margin: 0.75rem;
   }
