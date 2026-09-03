@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { icon: timetableIcon, label: '授業', path: '/timetable', iconSize: 28, mobile: 'primary' },
   { icon: notificationIcon, label: '通知', path: '/notifications', iconSize: 24, mobile: 'primary' },
   { icon: searchIcon, label: '検索', path: '/search', iconSize: 24, mobile: 'more' },
-  { icon: settingsIcon, label: '設定', path: '/mypage/settings', iconSize: 32, mobile: 'more' },
+  { icon: settingsIcon, label: '設定', path: '/mypage/settings', iconSize: 36, mobile: 'more' },
 ] as const;
 
 const MORE_NAV_ITEMS = NAV_ITEMS.filter((item) => item.mobile === 'more');
@@ -131,7 +131,9 @@ export const UserSidebar = () => {
                   className={`${styles.moreMenuItem} ${isNavActive(path) ? styles.moreMenuItemActive : ''}`}
                   onClick={() => handleNavigate(path)}
                 >
-                  {renderIcon(icon, label, iconSize)}
+                  <span className={styles.iconWrap}>
+                    {renderIcon(icon, label, iconSize)}
+                  </span>
                   <span>{label}</span>
                 </button>
               ))}
