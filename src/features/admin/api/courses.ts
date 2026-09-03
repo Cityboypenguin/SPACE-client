@@ -223,17 +223,19 @@ const AdminGetCourseQuestionsDocument = graphql(`
         }
         body
         isAnswered
-        answers {
-          ID
-          questionID
-          user {
+        answers(limit: 200) {
+          items {
             ID
-            name
-            accountID
-            avatarUrl
+            questionID
+            user {
+              ID
+              name
+              accountID
+              avatarUrl
+            }
+            body
+            createdAt
           }
-          body
-          createdAt
         }
         createdAt
       }
@@ -244,7 +246,10 @@ const AdminGetCourseQuestionsDocument = graphql(`
 
 export const getCourseQuestions = async (roomID: string, limit = 200): Promise<{ items: Question[]; total: number }> => {
   const data = await requestDoc(AdminGetCourseQuestionsDocument, { roomID, limit }, getAdminToken());
-  return data.questions as { items: Question[]; total: number };
+  return {
+    items: data.questions.items.map((q) => ({ ...q, answers: q.answers.items })),
+    total: data.questions.total,
+  } as { items: Question[]; total: number };
 };
 
 const AdminDeleteQuestionDocument = graphql(`

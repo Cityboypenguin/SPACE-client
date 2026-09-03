@@ -1,27 +1,35 @@
 import { useState } from 'react';
 import { useCourseQuestions } from '../../hooks/useCourseQuestions';
+import { useQuestionAnswers } from '../../hooks/useQuestionAnswers';
 import {
   createQuestion, answerQuestion, selectBestAnswer, cancelBestAnswer,
-  updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
+  updateQuestionBody, deleteQuestion, updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
 } from '../../api/question';
 import { CreateQuestionForm } from '../molecules/CreateQuestionForm';
 import { QuestionCard } from '../molecules/QuestionCard';
+import { QuestionDetail } from '../molecules/QuestionDetail';
 import styles from '../QuestionBox.module.css';
 
 type Props = {
   roomId: string;
   roomWritable: boolean;
+  selectedQuestionID: string | null;
+  onSelectQuestion: (questionID: string | null) => void;
 };
 
-export const QuestionList = ({ roomId, roomWritable }: Props) => {
+export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelectQuestion }: Props) => {
   const {
     questions, loading, error, hasMore, loadingMore, loadMore,
-    subscribeAnswers, addQuestion, addAnswer, updateAnswerInList, removeAnswer, updateQuestion,
+    addQuestion, updateQuestion, bumpAnswerCount, removeQuestion,
   } = useCourseQuestions(roomId);
+
+  const answersState = useQuestionAnswers(selectedQuestionID ?? undefined);
 
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
+
+  const selectedQuestion = questions.find((question) => question.ID === selectedQuestionID) ?? null;
 
   const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -41,7 +49,9 @@ export const QuestionList = ({ roomId, roomWritable }: Props) => {
 
   const handleAnswerSubmit = async (questionID: string, answerBody: string) => {
     const answer = await answerQuestion(questionID, answerBody);
-    addAnswer(questionID, answer);
+    answersState.addAnswer(answer);
+    bumpAnswerCount(questionID, 1);
+    return answer;
   };
 
   const handleSelectBestAnswer = async (questionID: string, answerID: string) => {
@@ -54,25 +64,62 @@ export const QuestionList = ({ roomId, roomWritable }: Props) => {
     updateQuestion(updated);
   };
 
-  const handleUpdateAnswer = async (questionID: string, answerID: string, body: string) => {
+  const handleUpdateQuestion = async (questionID: string, body: string) => {
+    const updated = await updateQuestionBody(questionID, body);
+    updateQuestion(updated);
+  };
+
+  const handleDeleteQuestion = async (questionID: string) => {
+    await deleteQuestion(questionID);
+    removeQuestion(questionID);
+  };
+
+  const handleUpdateAnswer = async (_questionID: string, answerID: string, body: string) => {
     const updated = await updateAnswer(answerID, body);
-    updateAnswerInList(questionID, updated);
+    answersState.updateAnswer(updated);
   };
 
   const handleDeleteAnswer = async (questionID: string, answerID: string) => {
     await deleteAnswer(answerID);
-    removeAnswer(questionID, answerID);
+    answersState.removeAnswer(answerID);
+    bumpAnswerCount(questionID, -1);
   };
 
-  const handleLikeAnswer = async (questionID: string, answerID: string) => {
+  const handleLikeAnswer = async (_questionID: string, answerID: string) => {
     const updated = await likeAnswer(answerID);
-    updateAnswerInList(questionID, updated);
+    answersState.updateAnswer(updated);
   };
 
-  const handleUnlikeAnswer = async (questionID: string, answerID: string) => {
+  const handleUnlikeAnswer = async (_questionID: string, answerID: string) => {
     const updated = await unlikeAnswer(answerID);
-    updateAnswerInList(questionID, updated);
+    answersState.updateAnswer(updated);
   };
+
+  if (selectedQuestion) {
+    return (
+      <div className={styles.tabContentDetail}>
+        <QuestionDetail
+          question={selectedQuestion}
+          roomWritable={roomWritable}
+          answers={answersState.answers}
+          totalAnswers={answersState.total}
+          hasMoreAnswers={answersState.hasMore}
+          loadingMoreAnswers={answersState.loadingMore}
+          loadMoreAnswers={answersState.loadMore}
+          onBack={() => onSelectQuestion(null)}
+          onAnswerSubmit={handleAnswerSubmit}
+          onSelectBestAnswer={handleSelectBestAnswer}
+          onCancelBestAnswer={handleCancelBestAnswer}
+          onUpdateQuestion={handleUpdateQuestion}
+          onDeleteQuestion={handleDeleteQuestion}
+          onUpdateAnswer={handleUpdateAnswer}
+          onDeleteAnswer={handleDeleteAnswer}
+          onLikeAnswer={handleLikeAnswer}
+          onUnlikeAnswer={handleUnlikeAnswer}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.tabContent}>
@@ -93,15 +140,7 @@ export const QuestionList = ({ roomId, roomWritable }: Props) => {
         <QuestionCard
           key={question.ID}
           question={question}
-          roomWritable={roomWritable}
-          subscribeAnswers={subscribeAnswers}
-          onAnswerSubmit={handleAnswerSubmit}
-          onSelectBestAnswer={handleSelectBestAnswer}
-          onCancelBestAnswer={handleCancelBestAnswer}
-          onUpdateAnswer={handleUpdateAnswer}
-          onDeleteAnswer={handleDeleteAnswer}
-          onLikeAnswer={handleLikeAnswer}
-          onUnlikeAnswer={handleUnlikeAnswer}
+          onOpen={() => onSelectQuestion(question.ID)}
         />
       ))}
 

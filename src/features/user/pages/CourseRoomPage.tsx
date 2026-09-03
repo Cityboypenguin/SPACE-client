@@ -29,6 +29,9 @@ export const CourseRoomPage = () => {
   const locationState = location.state as { course?: Course; year?: number; semester?: string } | null;
   const [activeTab, setActiveTab] = useState<TabKey>('chat');
   const [isPollView, setIsPollView] = useState(false);
+  // 質問箱で開いていた質問は、チャットタブへ切り替えて戻ってきても復元できるよう
+  // QuestionList ではなくここで保持する(QuestionList はタブ切替のたびにアンマウントされる)。
+  const [selectedQuestionID, setSelectedQuestionID] = useState<string | null>(null);
 
   const pollsState = useCoursePolls(roomId);
   const unvotedPollCount = pollsState.unvotedTotal;
@@ -145,7 +148,14 @@ export const CourseRoomPage = () => {
           )}
 
           {activeTab === 'chat' && <CourseChatTab roomId={roomId} roomWritable={isWritable} />}
-          {activeTab === 'question' && <QuestionList roomId={roomId} roomWritable={isWritable} />}
+          {activeTab === 'question' && (
+            <QuestionList
+              roomId={roomId}
+              roomWritable={isWritable}
+              selectedQuestionID={selectedQuestionID}
+              onSelectQuestion={setSelectedQuestionID}
+            />
+          )}
         </>
       )}
     </div>
