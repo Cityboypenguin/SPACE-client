@@ -2,8 +2,6 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Tabs } from '../../../components/molecules/Tabs';
-import useSWR from 'swr';
-import { UserHeader } from '../components/organisms/UserHeader';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
@@ -15,11 +13,10 @@ import { AppSwal } from '../../../lib/swal';
 
 import {
   getTopLevelPosts,
-  getFollowersTopLevelPosts, 
-  createPost,
-  searchPosts,
   getNewFeedPostsCount,
+  searchPosts,
   searchPostsByHashtag,
+  createPost,
   updatePost,
   deletePost,
   createFavorite,
@@ -56,22 +53,6 @@ function postMatchesSearch(content: string, query: string): boolean {
   }
   return content.toLowerCase().includes(trimmed.toLowerCase());
 }
-
-// ⭕️ タブ用のスタイル
-const TAB_STYLE = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  padding: '0.75rem 0',
-  background: 'none',
-  border: 'none',
-  borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
-  cursor: 'pointer',
-  fontWeight: active ? 700 : 400,
-  color: active ? '#3b82f6' : '#64748b',
-  fontSize: '0.95rem',
-  transition: 'color 0.15s, border-color 0.15s',
-});
-
-type Tab = 'all' | 'following';
 
 export const PostListPage = () => {
   const navigate = useNavigate();
@@ -120,7 +101,6 @@ export const PostListPage = () => {
   const postsRef = useRef(posts);
   const totalRef = useRef(total);
   const scrollYRef = useRef(initialCache?.scrollY ?? 0);
-  
   useEffect(() => { postsRef.current = posts; }, [posts]);
   useEffect(() => { totalRef.current = total; }, [total]);
 
@@ -242,7 +222,7 @@ export const PostListPage = () => {
       if (mode === 'initial') setInitialLoading(false);
       else if (mode === 'more') setLoadingMore(false);
     }
-  }, [userId]);
+  }, []);
 
   // バナーからの更新（常にフェッチ）※一時コメントアウト中
   const handleRefresh = useCallback(() => {
