@@ -118,6 +118,21 @@
   background: #dbeafe;
 }
 
+:root[data-theme='dark'] .itemUnread,
+:root:not([data-theme='light']) .itemUnread {
+  background: #1e3a5f;
+}
+
+:root[data-theme='dark'] .itemUnread:hover,
+:root:not([data-theme='light']) .itemUnread:hover {
+  background: #274a76;
+}
+
+:root[data-theme='dark'] .itemSelected,
+:root:not([data-theme='light']) .itemSelected {
+  background: #274a76;
+}
+
 /* ── Checkbox (select mode) ── */
 .checkbox {
   flex-shrink: 0;

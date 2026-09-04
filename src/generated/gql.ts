@@ -70,6 +70,9 @@ type Documents = {
     "\n  query AdminListTerms {\n    adminListTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": typeof types.AdminListTermsDocument,
     "\n  query AdminListConsents($termsID: ID!, $limit: Int, $offset: Int) {\n    adminListConsents(termsID: $termsID, limit: $limit, offset: $offset) {\n      items {\n        ID\n        user {\n          ID\n          accountID\n          name\n          email\n        }\n        consentedAt\n      }\n      total\n    }\n  }\n": typeof types.AdminListConsentsDocument,
     "\n  mutation CreateTermsOfService($input: CreateTermsOfServiceInput!) {\n    createTermsOfService(input: $input) {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": typeof types.CreateTermsOfServiceDocument,
+    "\n  query AdminUserTimetable($userID: ID!, $year: Int, $semester: String) {\n    userTimetable(userID: $userID, year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n": typeof types.AdminUserTimetableDocument,
+    "\n  mutation AdminRegisterTimetableEntry($userID: ID!, $courseID: ID!) {\n    adminRegisterTimetableEntry(userID: $userID, courseID: $courseID) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n": typeof types.AdminRegisterTimetableEntryDocument,
+    "\n  mutation AdminRemoveTimetableEntry($id: ID!, $userID: ID!) {\n    adminRemoveTimetableEntry(id: $id, userID: $userID)\n  }\n": typeof types.AdminRemoveTimetableEntryDocument,
     "\n  query Users($limit: Int, $offset: Int) {\n    users(limit: $limit, offset: $offset) {\n      items {\n        ID\n        accountID\n        name\n        email\n        role\n        status\n        createdAt\n        updatedAt\n      }\n      total\n    }\n  }\n": typeof types.UsersDocument,
     "\n  query AdminSearchUsers($keyword: String!) {\n    searchUsers(keyword: $keyword) {\n      items {\n        ID\n        accountID\n        name\n        email\n        role\n        status\n        createdAt\n        updatedAt\n      }\n      total\n    }\n  }\n": typeof types.AdminSearchUsersDocument,
     "\n  query GetUserByID($id: ID!) {\n    getUserByID(id: $id) {\n      ID\n      accountID\n      name\n      email\n      role\n      status\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetUserByIdDocument,
@@ -181,6 +184,8 @@ type Documents = {
     "\n  query CurrentTerms {\n    currentTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": typeof types.CurrentTermsDocument,
     "\n  query ThemePreference {\n    themePreference\n  }\n": typeof types.ThemePreferenceDocument,
     "\n  mutation SetThemePreference($theme: ThemePreference!) {\n    setThemePreference(theme: $theme)\n  }\n": typeof types.SetThemePreferenceDocument,
+    "\n  query TimetableProfileVisibility {\n    timetableProfileVisibility\n  }\n": typeof types.TimetableProfileVisibilityDocument,
+    "\n  mutation SetTimetableProfileVisibility($visible: Boolean!) {\n    setTimetableProfileVisibility(visible: $visible)\n  }\n": typeof types.SetTimetableProfileVisibilityDocument,
 };
 const documents: Documents = {
     "\n  mutation CreateAdministrator($input: CreateAdministratorInput!) {\n    createAdministrator(input: $input) {\n      ID\n      name\n      email\n    }\n  }\n": types.CreateAdministratorDocument,
@@ -239,6 +244,9 @@ const documents: Documents = {
     "\n  query AdminListTerms {\n    adminListTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": types.AdminListTermsDocument,
     "\n  query AdminListConsents($termsID: ID!, $limit: Int, $offset: Int) {\n    adminListConsents(termsID: $termsID, limit: $limit, offset: $offset) {\n      items {\n        ID\n        user {\n          ID\n          accountID\n          name\n          email\n        }\n        consentedAt\n      }\n      total\n    }\n  }\n": types.AdminListConsentsDocument,
     "\n  mutation CreateTermsOfService($input: CreateTermsOfServiceInput!) {\n    createTermsOfService(input: $input) {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": types.CreateTermsOfServiceDocument,
+    "\n  query AdminUserTimetable($userID: ID!, $year: Int, $semester: String) {\n    userTimetable(userID: $userID, year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n": types.AdminUserTimetableDocument,
+    "\n  mutation AdminRegisterTimetableEntry($userID: ID!, $courseID: ID!) {\n    adminRegisterTimetableEntry(userID: $userID, courseID: $courseID) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n": types.AdminRegisterTimetableEntryDocument,
+    "\n  mutation AdminRemoveTimetableEntry($id: ID!, $userID: ID!) {\n    adminRemoveTimetableEntry(id: $id, userID: $userID)\n  }\n": types.AdminRemoveTimetableEntryDocument,
     "\n  query Users($limit: Int, $offset: Int) {\n    users(limit: $limit, offset: $offset) {\n      items {\n        ID\n        accountID\n        name\n        email\n        role\n        status\n        createdAt\n        updatedAt\n      }\n      total\n    }\n  }\n": types.UsersDocument,
     "\n  query AdminSearchUsers($keyword: String!) {\n    searchUsers(keyword: $keyword) {\n      items {\n        ID\n        accountID\n        name\n        email\n        role\n        status\n        createdAt\n        updatedAt\n      }\n      total\n    }\n  }\n": types.AdminSearchUsersDocument,
     "\n  query GetUserByID($id: ID!) {\n    getUserByID(id: $id) {\n      ID\n      accountID\n      name\n      email\n      role\n      status\n      createdAt\n      updatedAt\n    }\n  }\n": types.GetUserByIdDocument,
@@ -350,6 +358,8 @@ const documents: Documents = {
     "\n  query CurrentTerms {\n    currentTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": types.CurrentTermsDocument,
     "\n  query ThemePreference {\n    themePreference\n  }\n": types.ThemePreferenceDocument,
     "\n  mutation SetThemePreference($theme: ThemePreference!) {\n    setThemePreference(theme: $theme)\n  }\n": types.SetThemePreferenceDocument,
+    "\n  query TimetableProfileVisibility {\n    timetableProfileVisibility\n  }\n": types.TimetableProfileVisibilityDocument,
+    "\n  mutation SetTimetableProfileVisibility($visible: Boolean!) {\n    setTimetableProfileVisibility(visible: $visible)\n  }\n": types.SetTimetableProfileVisibilityDocument,
 };
 
 /**
@@ -590,6 +600,18 @@ export function graphql(source: "\n  query AdminListConsents($termsID: ID!, $lim
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation CreateTermsOfService($input: CreateTermsOfServiceInput!) {\n    createTermsOfService(input: $input) {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  mutation CreateTermsOfService($input: CreateTermsOfServiceInput!) {\n    createTermsOfService(input: $input) {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminUserTimetable($userID: ID!, $year: Int, $semester: String) {\n    userTimetable(userID: $userID, year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n"): (typeof documents)["\n  query AdminUserTimetable($userID: ID!, $year: Int, $semester: String) {\n    userTimetable(userID: $userID, year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminRegisterTimetableEntry($userID: ID!, $courseID: ID!) {\n    adminRegisterTimetableEntry(userID: $userID, courseID: $courseID) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation AdminRegisterTimetableEntry($userID: ID!, $courseID: ID!) {\n    adminRegisterTimetableEntry(userID: $userID, courseID: $courseID) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminRemoveTimetableEntry($id: ID!, $userID: ID!) {\n    adminRemoveTimetableEntry(id: $id, userID: $userID)\n  }\n"): (typeof documents)["\n  mutation AdminRemoveTimetableEntry($id: ID!, $userID: ID!) {\n    adminRemoveTimetableEntry(id: $id, userID: $userID)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -1034,6 +1056,14 @@ export function graphql(source: "\n  query ThemePreference {\n    themePreferenc
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation SetThemePreference($theme: ThemePreference!) {\n    setThemePreference(theme: $theme)\n  }\n"): (typeof documents)["\n  mutation SetThemePreference($theme: ThemePreference!) {\n    setThemePreference(theme: $theme)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query TimetableProfileVisibility {\n    timetableProfileVisibility\n  }\n"): (typeof documents)["\n  query TimetableProfileVisibility {\n    timetableProfileVisibility\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetTimetableProfileVisibility($visible: Boolean!) {\n    setTimetableProfileVisibility(visible: $visible)\n  }\n"): (typeof documents)["\n  mutation SetTimetableProfileVisibility($visible: Boolean!) {\n    setTimetableProfileVisibility(visible: $visible)\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

@@ -12,6 +12,7 @@ import { UserListItem } from '../components/molecules/UserListItem';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { useToast } from '../../../context/ToastContext';
 import { useTheme } from '../../../context/ThemeContext';
+import { getTimetableProfileVisibility, setTimetableProfileVisibility } from '../api/timetableVisibility';
 import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postListCache';
 import { staticCacheOptions } from '../cache/swrOptions';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -207,12 +208,31 @@ const GeneralView = ({
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { addToast } = useToast();
   const { mutate: globalMutate } = useSWRConfig();
   const [cacheCleared, setCacheCleared] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [timetableVisible, setTimetableVisible] = useState(true);
+
+  useEffect(() => {
+    getTimetableProfileVisibility()
+      .then(setTimetableVisible)
+      .catch(() => {});
+  }, []);
+
+  const handleTimetableVisibilityChange = async (visible: boolean) => {
+    const previous = timetableVisible;
+    setTimetableVisible(visible);
+    try {
+      await setTimetableProfileVisibility(visible);
+    } catch {
+      setTimetableVisible(previous);
+      addToast('設定の変更に失敗しました', 'error');
+    }
+  };
 
   const handleClearCache = async () => {
     const result = await AppSwal.fire({
@@ -269,6 +289,17 @@ const GeneralView = ({
           className={styles.switch}
           checked={theme === 'dark'}
           onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
+        />
+      </div>
+
+      <div className={styles.toggleRow}>
+        <span className={styles.toggleLabel}>プロフィールに時間割を公開する</span>
+        <input
+          type="checkbox"
+          role="switch"
+          className={styles.switch}
+          checked={timetableVisible}
+          onChange={(e) => void handleTimetableVisibilityChange(e.target.checked)}
         />
       </div>
 

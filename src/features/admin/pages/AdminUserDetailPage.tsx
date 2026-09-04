@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, deleteUser, freezeUser, unfreezeUser, type User } from '../api/users';
 import { adminGetBlockers, adminGetFavoriteUsers, type RelatedUser } from '../api/relation';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { AdminUserTimetableSection } from '../components/organisms/AdminUserTimetableSection';
 import { UserListItem } from '../../../components/molecules/UserListItem';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 
@@ -186,6 +187,8 @@ export const AdminUserDetailPage = () => {
             </div>
           )}
         </div>
+
+        {id && <AdminUserTimetableSection userID={id} />}
 
         <hr />
 

@@ -1,4 +1,4 @@
-import { requestDoc } from '../../../lib/graphql';
+import { request, requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 import type { TimetableEntryColor } from '../lib/timetableColors';
@@ -144,6 +144,40 @@ export const searchCourses = async (
 export const getMyTimetable = async (year?: number, semester?: string): Promise<TimetableEntry[]> => {
   const data = await requestDoc(MyTimetableDocument, { year, semester }, getUserToken());
   return data.myTimetable;
+};
+
+const UserTimetableQuery = `
+  query UserTimetable($userID: ID!, $year: Int, $semester: String) {
+    userTimetable(userID: $userID, year: $year, semester: $semester) {
+      ID
+      color
+      createdAt
+      course {
+        ID
+        roomID
+        dayOfWeek
+        period
+        teacherName
+        courseName
+        year
+        semester
+        createdAt
+      }
+    }
+  }
+`;
+
+export const getUserTimetable = async (
+  userID: string,
+  year?: number,
+  semester?: string,
+): Promise<TimetableEntry[]> => {
+  const data = await request<{ userTimetable: TimetableEntry[] }>(
+    UserTimetableQuery,
+    { userID, year, semester },
+    getUserToken(),
+  );
+  return data.userTimetable;
 };
 
 export const getCurrentSemester = async (): Promise<CurrentSemester> => {

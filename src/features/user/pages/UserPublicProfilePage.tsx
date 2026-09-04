@@ -6,6 +6,7 @@ import { ProfileCard } from '../components/organisms/ProfileCard';
 import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
+import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -21,9 +22,9 @@ import { staticCacheOptions } from '../cache/swrOptions';
 import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
-import favoriteIconOff from '../../../assets/パーツ_お気に入り.svg';
-import favoeirteIconOn from '../../../assets/パーツ_お気に入り（ON）.svg';
+import favoriteIconOn from '../../../assets/パーツ_お気に入り（ON）.svg';
 import dmIcon from '../../../assets/パーツ_メール.svg';
+import timetableIcon from '../../../assets/パーツ_時間割.svg';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserPublicProfilePage.module.css';
 import { AppSwal } from '../../../lib/swal';
@@ -67,6 +68,7 @@ export const UserPublicProfilePage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isTimetableOpen, setIsTimetableOpen] = useState(false);
   const [reportingPostId, setReportingPostId] = useState<string | null>(null);
   const [reportingPostContent, setReportingPostContent] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
@@ -304,31 +306,42 @@ export const UserPublicProfilePage = () => {
     setPosts((prev) => prev.map((p) => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p));
   };
 
-  // ── right-side action buttons (passed to ProfileCard) ────────────────────
-  const rightActions = profile && !isMe ? (
+  // ── profile action buttons (passed to ProfileCard) ───────────────────────
+  const profileActions = profile && !isMe ? (
     <div className={styles.profileActions}>
       {!isBlocked && (
         <button
-          className={`${styles.profileActionButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}
+          className={`${styles.profileActionButton} ${styles.profileFavoriteButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}
           onClick={handleFavoriteToggle}
           disabled={actionLoading}
         >
           <img
-            src={isFavorited ? favoeirteIconOn : favoriteIconOff}
+            src={favoriteIconOn}
             alt=""
-            className={`${styles.profileActionIcon}${isFavorited ? ` ${styles.profileActionIconFavorited}` : ' themed-icon'}`}
+            className={`${styles.profileActionIcon} ${styles.profileFavoriteIcon}${isFavorited ? ` ${styles.profileFavoriteIconFavorited}` : ''}`}
           />
           {isFavorited ? 'お気に入り解除' : 'お気に入り'}
         </button>
       )}
-      <button
-        className={styles.profileActionButton}
-        onClick={handleDM}
-        disabled={dmLoading}
-      >
-        <img src={dmIcon} alt="" className={`${styles.profileActionIcon} themed-icon`} />
-        DMを開始
-      </button>
+      <div className={styles.profileActionPair}>
+        <button
+          className={styles.profileActionButton}
+          onClick={() => setIsTimetableOpen(true)}
+        >
+          <img src={timetableIcon} alt="" className={`${styles.profileActionIcon} themed-icon`} />
+          時間割
+        </button>
+        <button
+          type="button"
+          className={`${styles.profileActionButton} ${styles.profileActionIconButton}`}
+          onClick={handleDM}
+          disabled={dmLoading}
+          aria-label="DMを開始"
+          title="DMを開始"
+        >
+          <img src={dmIcon} alt="" className={`${styles.profileActionIconOnly} themed-icon`} />
+        </button>
+      </div>
     </div>
   ) : undefined;
 
@@ -377,7 +390,7 @@ export const UserPublicProfilePage = () => {
 
         {profile && (
           <>
-            <ProfileCard profile={profile} rightActions={rightActions} />
+            <ProfileCard profile={profile} actions={profileActions} />
             <hr className={styles.divider} />
             <ScrollablePostsList
               posts={posts}
@@ -423,6 +436,15 @@ export const UserPublicProfilePage = () => {
           targetType="POST"
           targetID={reportingPostId}
           postContent={reportingPostContent}
+        />
+      )}
+
+      {profile && isTimetableOpen && (
+        <PublicTimetableOverlay
+          userId={profile.user.ID}
+          userName={profile.user.name}
+          isMe={isMe}
+          onClose={() => setIsTimetableOpen(false)}
         />
       )}
     </div>

@@ -63,6 +63,11 @@
   color: var(--color-text);
 }
 
+.yearSelect:focus,
+.yearSelect:focus-visible {
+  outline: none;
+}
+
 .semesterSlider {
   position: relative;
   display: grid;
