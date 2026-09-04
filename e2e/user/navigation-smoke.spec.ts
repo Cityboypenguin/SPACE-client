@@ -12,7 +12,7 @@ const routes: { path: string; heading: string | RegExp; hasSidebar?: boolean }[]
   { path: '/mypage', heading: 'マイページ' },
   { path: '/mypage/settings', heading: '設定' },
   { path: '/mypage/profile-edit', heading: 'プロフィール編集' },
-  { path: '/mypage/user-info-edit', heading: 'ユーザー情報の編集' },
+  { path: '/mypage/user-info-edit', heading: 'プロフィール編集' },
   { path: '/mypage/favorites', heading: 'お気に入りリスト' },
   { path: '/mypage/followers', heading: 'フォロワー' },
   { path: '/mypage/blocks', heading: 'ブロック一覧' },

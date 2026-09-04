@@ -58,9 +58,6 @@ const CourseRoomPage = lazy(() =>
 const UserProfileEditPage = lazy(() =>
   import('../pages/UserProfileEditPage').then((m) => ({ default: m.UserProfileEditPage })),
 );
-const UserInfoEditPage = lazy(() =>
-  import('../pages/UserInfoEditPage').then((m) => ({ default: m.UserInfoEditPage })),
-);
 const PostListPage = lazy(() =>
   import('../pages/PostListPage').then((m) => ({ default: m.PostListPage })),
 );
@@ -100,7 +97,7 @@ export const userRoutes = (
       <Route path="/mypage" element={<UserDashboard />} />
       <Route path="/mypage/settings" element={<UserSettingsPage />} />
       <Route path="/mypage/profile-edit" element={<UserProfileEditPage />} />
-      <Route path="/mypage/user-info-edit" element={<UserInfoEditPage />} />
+      <Route path="/mypage/user-info-edit" element={<UserProfileEditPage />} />
       <Route path="/mypage/favorites" element={<FavoriteUsersPage />} />
       <Route path="/mypage/followers" element={<FavoriteUsersPage mode="followers" />} />
       <Route path="/mypage/blocks" element={<BlockedUsersPage />} />
