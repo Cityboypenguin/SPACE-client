@@ -13,13 +13,16 @@ const METRICS = [
   { key: 'messages',    label: 'DM',               color: '#8b5cf6' },
   { key: 'newUsers',    label: '新規登録',         color: '#f59e0b' },
   { key: 'likes',       label: 'いいね',           color: '#ef4444' },
-  { key: 'activeUsers', label: 'アクティブユーザー', color: '#06b6d4' },
+  { key: 'activeUsers', label: 'アクティブユーザー（直近3日）', color: '#06b6d4' },
 ] as const;
 
 type MetricKey = typeof METRICS[number]['key'];
 
 function toDateStr(d: Date) {
-  return d.toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function addDays(d: Date, n: number) {
@@ -36,7 +39,26 @@ const PRESETS = [
   { label: '過去90日', from: () => toDateStr(addDays(new Date(), -89)), to: () => toDateStr(new Date()) },
 ];
 
-export const TimeSeriesChart = () => {
+function currentBucketLabel(granularity: TimeSeriesGranularity, now = new Date()) {
+  const date = toDateStr(now);
+  if (granularity === 'day') return date;
+  return `${date} ${String(now.getHours()).padStart(2, '0')}:00`;
+}
+
+function applyCurrentActiveUsers(
+  points: TimeSeriesPoint[],
+  granularity: TimeSeriesGranularity,
+  currentActiveUsers: number,
+) {
+  if (!Number.isFinite(currentActiveUsers)) return points;
+
+  const currentLabel = currentBucketLabel(granularity);
+  return points.map(point => (
+    point.label === currentLabel ? { ...point, activeUsers: currentActiveUsers } : point
+  ));
+}
+
+export const TimeSeriesChart = ({ currentActiveUsers }: { currentActiveUsers: number }) => {
   const today = toDateStr(new Date());
   const [granularity, setGranularity] = useState<TimeSeriesGranularity>('day');
   const [from, setFrom] = useState(toDateStr(addDays(new Date(), -29)));
@@ -53,10 +75,13 @@ export const TimeSeriesChart = () => {
     setLoading(true);
     setError('');
     getTimeSeries(granularity, from, to)
-      .then((pts) => { setData(pts); setError(''); })
+      .then((pts) => {
+        setData(applyCurrentActiveUsers(pts, granularity, currentActiveUsers));
+        setError('');
+      })
       .catch((e: Error) => { setData([]); setError(e.message || 'データの取得に失敗しました'); })
       .finally(() => setLoading(false));
-  }, [granularity, from, to]);
+  }, [currentActiveUsers, granularity, from, to]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -69,7 +94,7 @@ export const TimeSeriesChart = () => {
     setVisible(v => ({ ...v, [key]: !v[key] }));
 
   const exportCsv = () => {
-    const header = ['日時', '投稿', 'コメント', 'DM', '新規登録', 'いいね', 'アクティブユーザー'];
+    const header = ['日時', '投稿', 'コメント', 'DM', '新規登録', 'いいね', 'アクティブユーザー（直近3日）'];
     const rows = data.map(d => [d.label, d.posts, d.comments, d.messages, d.newUsers, d.likes, d.activeUsers]);
     downloadCsv(`timeseries_${from}_${to}.csv`, [header, ...rows]);
   };
