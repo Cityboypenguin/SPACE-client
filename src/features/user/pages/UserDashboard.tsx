@@ -28,21 +28,6 @@ import { AppSwal } from '../../../lib/swal';
 
 const LIMIT = 20;
 
-export type Tab = 'myposts' | 'favorites';
-
-const TAB_STYLE = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  padding: '0.75rem 0',
-  background: 'none',
-  border: 'none',
-  borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
-  cursor: 'pointer',
-  fontWeight: active ? 700 : 400,
-  color: active ? '#3b82f6' : '#64748b',
-  fontSize: '0.95rem',
-  transition: 'color 0.15s, border-color 0.15s',
-});
-
 export const UserDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -100,7 +85,6 @@ export const UserDashboard = () => {
     window.scrollTo(0, initialCache.scrollY);
   }, [initialCache]);
 
-  // ⭕️ アンマウント（他画面への遷移）時のキャッシュ保存
   useEffect(() => {
     return () => {
       if (userId) {
@@ -109,10 +93,10 @@ export const UserDashboard = () => {
           total: ownTotalRef.current,
           offset: ownPostsRef.current.length,
           scrollY: scrollYRef.current,
-        }, prevTabRef.current);
+        });
       }
     };
-  }, [userId, getCleanPosts]);
+  }, [userId]);
 
   // ── Flash message ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -223,7 +207,7 @@ export const UserDashboard = () => {
         total: ownTotalRef.current,
         offset: ownPostsRef.current.length,
         scrollY: scrollYRef.current,
-      }, currentTab);
+      });
     }
     navigate(`/posts/${postId}`);
   };
