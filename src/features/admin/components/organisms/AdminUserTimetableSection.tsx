@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { getUserTimetable, adminRegisterTimetableEntry, adminRemoveTimetableEntry, type TimetableEntry } from '../../api/timetable';
 import { listCourseYears, getCurrentSemester, listCourses, type Course } from '../../api/courses';
+import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '../../../user/components/timetableConstants';
 import { getTimetableColorSwatch } from '../../../user/lib/timetableColors';
 import styles from './AdminUserTimetableSection.module.css';
-
-const DAYS = ['月', '火', '水', '木', '金', '土'];
-const PERIODS = [1, 2, 3, 4, 5, 6, 7];
 
 const slotKey = (day: string, period: number) => `${day}-${period}`;
 
@@ -51,7 +49,9 @@ export const AdminUserTimetableSection = ({ userID }: Props) => {
     }
   }, [userID, year, semester]);
 
-  useEffect(() => { loadTimetable(); }, [loadTimetable]);
+  useEffect(() => {
+    void Promise.resolve().then(loadTimetable);
+  }, [loadTimetable]);
 
   const entryMap = new Map<string, TimetableEntry>();
   entries.forEach((entry) => entryMap.set(slotKey(entry.course.dayOfWeek, entry.course.period), entry));
@@ -113,14 +113,14 @@ export const AdminUserTimetableSection = ({ userID }: Props) => {
             <thead>
               <tr>
                 <th />
-                {DAYS.map((day) => <th key={day}>{day}</th>)}
+                {TIMETABLE_DAYS.map((day) => <th key={day}>{day}</th>)}
               </tr>
             </thead>
             <tbody>
-              {PERIODS.map((period) => (
+              {TIMETABLE_PERIODS.map((period) => (
                 <tr key={period}>
                   <td className={styles.periodCell}>{period}</td>
-                  {DAYS.map((day) => {
+                  {TIMETABLE_DAYS.map((day) => {
                     const entry = entryMap.get(slotKey(day, period));
                     return (
                       <td key={day} className={styles.cell}>

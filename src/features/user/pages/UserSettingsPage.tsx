@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { updateMyProfile, deleteMyAccount } from '../api/profile';
 import { getCurrentTerms } from '../api/terms';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { UserListItem } from '../components/molecules/UserListItem';
+import { UserListItem } from '../../../components/molecules/UserListItem';
 import { TermsContent } from '../components/molecules/TermsContent';
-import { useToast } from '../../../context/ToastContext';
-import { useTheme } from '../../../context/ThemeContext';
+import { useToast } from '../../../context/useToast';
+import { useTheme } from '../../../context/useTheme';
 import { getTimetableProfileVisibility, setTimetableProfileVisibility } from '../api/timetableVisibility';
 import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postListCache';
 import { staticCacheOptions } from '../cache/swrOptions';
@@ -125,7 +125,9 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
     }
   }, []);
 
-  useEffect(() => { loadUsers(0, true); }, [loadUsers]);
+  useEffect(() => {
+    void Promise.resolve().then(() => loadUsers(0, true));
+  }, [loadUsers]);
 
   const sentinelRef = useInfiniteScroll(
     useCallback(() => {

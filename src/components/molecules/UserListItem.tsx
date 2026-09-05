@@ -1,5 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import { storageUrl } from '../../lib/storage';
+import type { ReactNode } from 'react';
+import { UserAvatar } from '../atoms/UserAvatar';
+import { UserNameLink } from '../atoms/UserNameLink';
 import styles from './UserListItem.module.css';
 
 type SimpleUser = {
@@ -11,29 +12,56 @@ type SimpleUser = {
 
 type Props = {
   user: SimpleUser;
-  actionButton?: React.ReactNode;
+  actionButton?: ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
+  actionVariant?: 'default' | 'danger';
+  disabled?: boolean;
   basePath?: string;
 };
 
-export const UserListItem = ({ user, actionButton, basePath = '/users' }: Props) => {
-  const navigate = useNavigate();
+export const UserListItem = ({
+  user,
+  actionButton,
+  actionLabel,
+  onAction,
+  actionVariant = 'default',
+  disabled = false,
+  basePath = '/users',
+}: Props) => {
+  const action: ReactNode = actionButton ?? (actionLabel && onAction ? (
+    <button
+      type="button"
+      onClick={onAction}
+      disabled={disabled}
+      className={`${styles.action} ${actionVariant === 'danger' ? styles.actionDanger : ''}`}
+    >
+      {actionLabel}
+    </button>
+  ) : null);
 
   return (
-    <li className={styles.item} style={{ display: 'flex', alignItems: 'center', padding: '10px 0' }}>
-      <div onClick={() => navigate(`${basePath}/${user.ID}`)} style={{ cursor: 'pointer', marginRight: '16px' }}>
-        {user.avatarUrl ? (
-          <img src={storageUrl(user.avatarUrl) ?? undefined} alt={user.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-        ) : (
-          <div className={styles.avatarPlaceholder} style={{ width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {user.name.charAt(0)}
-          </div>
-        )}
+    <li className={styles.item}>
+      <UserAvatar
+        userId={user.ID}
+        name={user.name}
+        avatarUrl={user.avatarUrl}
+        size={40}
+        basePath={basePath}
+        useMyPageForCurrentUser={basePath === '/users'}
+      />
+      <div className={styles.info}>
+        <UserNameLink
+          userId={user.ID}
+          className={styles.name}
+          basePath={basePath}
+          useMyPageForCurrentUser={basePath === '/users'}
+        >
+          {user.name}
+        </UserNameLink>
+        <span className={styles.accountID}>@{user.accountID}</span>
       </div>
-      <div style={{ flexGrow: 1 }}>
-        <p style={{ margin: 0, fontWeight: 'bold' }}>{user.name}</p>
-        <p className={styles.handle} style={{ margin: 0, fontSize: '0.8em' }}>@{user.accountID}</p>
-      </div>
-      {actionButton && <div>{actionButton}</div>}
+      {action && <div className={styles.actionWrap}>{action}</div>}
     </li>
   );
 };

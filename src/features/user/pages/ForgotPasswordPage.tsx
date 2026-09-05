@@ -4,7 +4,7 @@ import { requestPasswordReset, verifyPasswordResetOTP, resetPassword } from '../
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import styles from './ForgotPasswordPage.module.css';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'done';

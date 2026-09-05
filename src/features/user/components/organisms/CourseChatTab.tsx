@@ -3,7 +3,7 @@ import { ChatMessageBubble } from '../molecules/ChatMessageBubble';
 import { ChatInput } from '../molecules/ChatInput';
 import { ChatDateSeparator } from '../../../../components/atoms/ChatDateSeparator';
 import { NewMessagesBadge } from '../molecules/NewMessagesBadge';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
 import { useChatScroll } from '../../hooks/useChatScroll';

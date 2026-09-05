@@ -7,7 +7,7 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import styles from './PostListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -26,7 +26,7 @@ import {
 import { uploadMediaFiles } from '../api/media';
 import { extractHashtags } from '../../../lib/hashtags';
 import { createBlocker } from '../api/block';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -265,7 +265,7 @@ export const PostListPage = () => {
   useEffect(() => {
     feedLoadedAtRef.current = new Date();
     if (initialCache) return;
-    loadPosts(0, 'initial');
+    void Promise.resolve().then(() => loadPosts(0, 'initial'));
   }, [loadPosts, initialCache]);
 
   // スクロール位置の復元（描画前に実行してちらつきを防ぐ）

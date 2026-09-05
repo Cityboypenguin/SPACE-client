@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { UserListItem } from '../components/molecules/UserListItem';
+import { UserListItem } from '../../../components/molecules/UserListItem';
 import {
   listFavoriteUsers,
   listMyFollowers,
@@ -10,7 +10,7 @@ import {
   type User,
 } from '../api/favorite_user';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './FavoriteUsersPage.module.css';
 
@@ -53,10 +53,12 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
   }, [isFollowersMode]);
 
   useEffect(() => {
-    setUsers([]);
-    setTotal(0);
-    setRemovedIds(new Set());
-    loadUsers(0, true);
+    void Promise.resolve().then(() => {
+      setUsers([]);
+      setTotal(0);
+      setRemovedIds(new Set());
+      loadUsers(0, true);
+    });
   }, [mode, loadUsers]);
 
   const sentinelRef = useInfiniteScroll(

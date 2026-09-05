@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 import { Link } from 'react-router-dom';
@@ -7,6 +7,7 @@ import {
   adminUpdateReportStatus, 
   getReportServiceStatus,
   updateReportServiceStatus,
+  type Report,
 } from '../api/report';
 
 type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY';
@@ -27,7 +28,7 @@ const statusJa: Record<string, string> = {
 };
 
 export const ReportsPage: React.FC = () => {
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize('reports');
@@ -40,7 +41,7 @@ export const ReportsPage: React.FC = () => {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, size = pageSize) => {
+  const loadPage = useCallback((p: number, size = pageSize) => {
     setError('');
     getReports(filterStatus, activeTab === 'ALL' ? undefined : activeTab, size, p * size)
       .then((data) => {
@@ -52,11 +53,11 @@ export const ReportsPage: React.FC = () => {
         console.error(err);
         setError('通報一覧の取得に失敗しました');
       });
-  };
+  }, [activeTab, filterStatus, pageSize]);
 
   const loadReports = () => loadPage(0);
 
-  const loadServiceStatus = async () => {
+  const loadServiceStatus = useCallback(async () => {
     setIsStatusLoading(true);
     try {
       const isEnabled = await getReportServiceStatus();
@@ -66,15 +67,15 @@ export const ReportsPage: React.FC = () => {
     } finally {
       setIsStatusLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadPage(0);
-  }, [filterStatus, activeTab, pageSize]);
-
-  useEffect(() => {
-    loadServiceStatus();
   }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadServiceStatus);
+  }, [loadServiceStatus]);
 
   const handleToggleServiceStatus = async () => {
     const nextStatus = !isServiceEnabled;
@@ -90,9 +91,10 @@ export const ReportsPage: React.FC = () => {
       const updatedStatus = await updateReportServiceStatus(nextStatus);
       setIsServiceEnabled(updatedStatus);
       alert('通報機能の設定を更新しました');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'エラー';
       console.error(err);
-      setError(`システム設定の更新に失敗しました: ${err.message || 'エラー'}`);
+      setError(`システム設定の更新に失敗しました: ${message}`);
     } finally {
       setIsUpdating(false);
     }

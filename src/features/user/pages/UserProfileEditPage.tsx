@@ -5,8 +5,8 @@ import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ImageCropModal } from '../components/organisms/ImageCropModal';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../context/useAuth';
+import { useToast } from '../../../context/useToast';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { profileCacheKey, profileCacheOptions } from '../hooks/useProfile';
 import {
@@ -66,10 +66,12 @@ export const UserProfileEditPage = () => {
 
   useEffect(() => {
     if (!profileData) return;
-    setAccountID(profileData.user.accountID);
-    setName(profileData.user.name);
-    setBio(profileData.bio || '');
-    setCurrentAvatarUrl(profileData.avatarUrl);
+    void Promise.resolve().then(() => {
+      setAccountID(profileData.user.accountID);
+      setName(profileData.user.name);
+      setBio(profileData.bio || '');
+      setCurrentAvatarUrl(profileData.avatarUrl);
+    });
   }, [profileData]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

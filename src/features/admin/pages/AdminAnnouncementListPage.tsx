@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getAdminAnnouncements, type Announcement } from '../api/announcements';
@@ -14,7 +14,7 @@ export const AdminAnnouncementListPage: React.FC = () => {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, size = pageSize) => {
+  const loadPage = useCallback((p: number, size = pageSize) => {
     setError('');
     getAdminAnnouncements(size, p * size)
       .then((data) => {
@@ -23,11 +23,11 @@ export const AdminAnnouncementListPage: React.FC = () => {
         setPage(p);
       })
       .catch(() => setError('お知らせ一覧の取得に失敗しました'));
-  };
+  }, [pageSize]);
 
   useEffect(() => {
-    loadPage(0);
-  }, [pageSize]);
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
 
   return (
     <div>

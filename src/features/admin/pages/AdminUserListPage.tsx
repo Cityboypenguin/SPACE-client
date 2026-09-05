@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUsers, searchUsers, type User } from '../api/users';
 import { AdminHeader } from '../components/organisms/AdminHeader';
@@ -16,7 +16,7 @@ export const AdminUserListPage = () => {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, size = pageSize) => {
+  const loadPage = useCallback((p: number, size = pageSize) => {
     setError('');
     getUsers(size, p * size)
       .then((data) => {
@@ -25,11 +25,11 @@ export const AdminUserListPage = () => {
         setPage(p);
       })
       .catch(() => setError('ユーザー一覧の取得に失敗しました'));
-  };
+  }, [pageSize]);
 
   useEffect(() => {
-    if (!isSearching) loadPage(0);
-  }, [pageSize]);
+    if (!isSearching) void Promise.resolve().then(() => loadPage(0));
+  }, [isSearching, loadPage]);
 
   const handleSearch = async (e: { preventDefault(): void }) => {
     e.preventDefault();

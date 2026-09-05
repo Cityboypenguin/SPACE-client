@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCommunities, type Community } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
@@ -14,7 +14,7 @@ export const AdminCommunityListPage = () => {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, size = pageSize) => {
+  const loadPage = useCallback((p: number, size = pageSize) => {
     setError('');
     getCommunities(size, p * size)
       .then((data) => {
@@ -23,11 +23,11 @@ export const AdminCommunityListPage = () => {
         setPage(p);
       })
       .catch(() => setError('コミュニティ一覧の取得に失敗しました'));
-  };
+  }, [pageSize]);
 
   useEffect(() => {
-    loadPage(0);
-  }, [pageSize]);
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
 
   return (
     <div>

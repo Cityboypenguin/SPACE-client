@@ -10,7 +10,7 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostCard } from '../components/organisms/PostCard';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { Avatar } from '../../../components/atoms/Avatar';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { storageUrl } from '../../../lib/storage';

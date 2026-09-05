@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import {
   getCurrentSemester,
   updateCurrentSemester,
@@ -12,8 +12,8 @@ import {
   type CourseImportStatus,
   type Course,
 } from '../api/courses';
+import { TIMETABLE_DAYS } from '../../user/components/timetableConstants';
 
-const DAYS = ['月', '火', '水', '木', '金', '土'];
 const LIST_PAGE_SIZE = 20;
 
 const STATE_LABELS: Record<CourseImportStatus['state'], string> = {
@@ -281,7 +281,7 @@ export const AdminCourseManagementPage = () => {
                 </select>
                 <select value={filterDayOfWeek} onChange={(e) => setFilterDayOfWeek(e.target.value)} style={{ padding: '0.4rem 0.6rem' }}>
                   <option value="">曜日（すべて）</option>
-                  {DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
+                  {TIMETABLE_DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
                 </select>
                 <input
                   type="text"

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useNotification } from '../../context/NotificationContext';
-import { useUnreadRoomCounts } from '../../context/UnreadRoomCountsContext';
+import { useAuth } from '../../context/useAuth';
+import { useNotification } from '../../context/useNotification';
+import { useUnreadRoomCounts } from '../../context/useUnreadRoomCounts';
 import { useProfile } from '../../hooks/useProfile';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
@@ -47,7 +47,7 @@ export const UserSidebar = () => {
   }, []);
 
   useEffect(() => {
-    setMoreOpen(false);
+    void Promise.resolve().then(() => setMoreOpen(false));
   }, [location.pathname]);
 
   useEffect(() => {

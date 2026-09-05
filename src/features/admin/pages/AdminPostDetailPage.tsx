@@ -1,106 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { storageUrl } from '../../../lib/storage';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { AdminUserAvatar } from '../../../components/atoms/AdminUserAvatar';
 import { AdminUserNameLink } from '../../../components/atoms/AdminUserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 
-const ImageLightbox = ({ url, onClose }: { url: string; onClose: () => void }) => (
-  <div
-    onClick={(e) => { e.stopPropagation(); onClose(); }}
-    style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 9999, cursor: 'zoom-out',
-    }}
-  >
-    <button
-      onClick={(e) => { e.stopPropagation(); onClose(); }}
-      style={{
-        position: 'absolute', top: 16, right: 20,
-        background: 'none', border: 'none', color: '#fff',
-        fontSize: '2rem', cursor: 'pointer', lineHeight: 1,
-      }}
-    >✕</button>
-    <img
-      src={url} alt="拡大表示"
-      onClick={(e) => e.stopPropagation()}
-      style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }}
-    />
-  </div>
-);
-
-const PostMediaDetail = ({ media }: { media: Media[] }) => {
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-  const images = media.filter((m) => m.contentType.startsWith('image/'));
-  const files = media.filter((m) => !m.contentType.startsWith('image/'));
-  const count = images.length;
-
-  const gridStyle: React.CSSProperties =
-    count <= 1
-      ? { display: 'block' }
-      : count === 2
-        ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }
-        : count === 3
-          ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 3 }
-          : { display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 3 };
-
-  return (
-    <>
-      {images.length > 0 && (
-        <div style={{ ...gridStyle, marginBottom: 8, maxWidth: 420 }}>
-          {images.map((m, i) => {
-            const url = storageUrl(m.url);
-            return (
-              <img
-                key={m.ID}
-                src={url}
-                alt="添付画像"
-                onClick={() => setLightboxUrl(url)}
-                style={{
-                  width: '100%',
-                  height: count === 1 ? 'auto' : 160,
-                  maxHeight: count === 1 ? 400 : 160,
-                  objectFit: 'cover',
-                  borderRadius: count === 1 ? 10 : (i === 0 && count === 3 ? '10px 0 0 10px' : 8),
-                  cursor: 'zoom-in', display: 'block',
-                  gridColumn: count === 3 && i === 0 ? '1 / 2' : undefined,
-                  gridRow: count === 3 && i === 0 ? '1 / 3' : undefined,
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-      {files.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-          {files.map((m) => (
-            <a
-              key={m.ID}
-              href={storageUrl(m.url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 12px', background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)', borderRadius: 8,
-                fontSize: '0.85rem', color: 'var(--color-text)', textDecoration: 'none',
-              }}
-            >
-              📎 {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
-            </a>
-          ))}
-        </div>
-      )}
-      {lightboxUrl && <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
-    </>
-  );
-};
+const PostMediaDetail = ({ media }: { media: Media[] }) => <PostMediaGrid media={media} large />;
 
 export const AdminPostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -110,18 +20,18 @@ export const AdminPostDetailPage = () => {
   const [error, setError] = useState('');
   const { addToast } = useToast();
 
-  const loadPost = (postId: string) => {
+  const loadPost = useCallback((postId: string) => {
     setLoading(true);
     setError('');
     getPostByID(postId)
       .then(setPost)
       .catch(() => setError('投稿の読み込みに失敗しました'))
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
-    if (id) loadPost(id);
-  }, [id]);
+    if (id) void Promise.resolve().then(() => loadPost(id));
+  }, [id, loadPost]);
 
   const handleMainDelete = async () => {
     if (!id || !window.confirm('この親投稿を削除しますか？')) return;

@@ -4,7 +4,7 @@ import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import likeIconOff from '../../../../assets/パーツ_いいね.svg';
 import likeIconOn from '../../../../assets/パーツ_いいね（済）.svg';
 import { AppSwal } from '../../../../lib/swal';
-import { useTheme } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/useTheme';
 import { ClampedText } from '../../../../components/atoms/ClampedText';
 import { type Answer } from '../../api/question';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';

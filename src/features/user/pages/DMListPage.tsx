@@ -6,7 +6,7 @@ import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { listMyDMRooms, deleteRoom, DELETED_ACCOUNT_ID, type Room } from '../api/message';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
@@ -48,7 +48,7 @@ export const DMListPage = () => {
   }, []);
 
   useEffect(() => {
-    loadDMRooms(0, true);
+    void Promise.resolve().then(() => loadDMRooms(0, true));
   }, [loadDMRooms]);
 
   const sentinelRef = useInfiniteScroll(

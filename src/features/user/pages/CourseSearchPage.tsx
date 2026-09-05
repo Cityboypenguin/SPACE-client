@@ -3,18 +3,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { searchCourses, type Course, type SearchCoursesResult } from '../api/course';
+import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '../components/timetableConstants';
 import styles from '../components/CourseSearch.module.css';
-
-const DAYS = ['月', '火', '水', '木', '金', '土'];
-const PERIODS = [1, 2, 3, 4, 5, 6, 7];
 
 export const CourseSearchPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as { dayOfWeek?: string; period?: number } | null;
 
-  const [dayOfWeek, setDayOfWeek] = useState(locationState?.dayOfWeek ?? DAYS[0]);
-  const [period, setPeriod] = useState(locationState?.period ?? PERIODS[0]);
+  const [dayOfWeek, setDayOfWeek] = useState(locationState?.dayOfWeek ?? TIMETABLE_DAYS[0]);
+  const [period, setPeriod] = useState(locationState?.period ?? TIMETABLE_PERIODS[0]);
   const [keyword, setKeyword] = useState('');
   const [result, setResult] = useState<SearchCoursesResult | null>(null);
   const [searching, setSearching] = useState(false);
@@ -80,10 +78,10 @@ export const CourseSearchPage = () => {
 
         <form className={styles.filters} onSubmit={handleSearchSubmit}>
           <select className={styles.select} value={dayOfWeek} onChange={(e) => setDayOfWeek(e.target.value)}>
-            {DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
+            {TIMETABLE_DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
           </select>
           <select className={styles.select} value={period} onChange={(e) => setPeriod(Number(e.target.value))}>
-            {PERIODS.map((p) => <option key={p} value={p}>{p}限</option>)}
+            {TIMETABLE_PERIODS.map((p) => <option key={p} value={p}>{p}限</option>)}
           </select>
           <input
             type="text"

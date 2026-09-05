@@ -31,10 +31,10 @@ import {
   type Post,
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
 import { stableCacheOptions } from '../cache/swrOptions';
 import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';

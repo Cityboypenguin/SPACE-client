@@ -8,8 +8,8 @@ import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
 import { useProfile } from '../hooks/useProfile';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../context/useAuth';
+import { useToast } from '../../../context/useToast';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { getOrCreateDMRoom } from '../api/message';
@@ -134,7 +134,7 @@ export const UserPublicProfilePage = () => {
 
   useEffect(() => {
     if (initialCache) return;
-    if (id) loadPosts(id, 0, true);
+    if (id) void Promise.resolve().then(() => loadPosts(id, 0, true));
   }, [id, loadPosts, initialCache]);
 
   const postsSentinelRef = useInfiniteScroll(

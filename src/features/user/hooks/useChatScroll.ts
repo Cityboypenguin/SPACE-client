@@ -14,10 +14,12 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
 
   // ルーム切り替え時にスクロール状態をリセット
   useEffect(() => {
-    setHasScrolled(false);
-    seenCountRef.current = 0;
-    lastKnownTailIdRef.current = undefined;
-    setNewMessageCount(0);
+    void Promise.resolve().then(() => {
+      setHasScrolled(false);
+      seenCountRef.current = 0;
+      lastKnownTailIdRef.current = undefined;
+      setNewMessageCount(0);
+    });
   }, [roomId]);
 
   useEffect(() => {
@@ -49,8 +51,8 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
     } else {
       bottomRef.current?.scrollIntoView({ behavior: 'auto' });
     }
-    setHasScrolled(true);
-  }, [messages.length, hasScrolled]);
+    void Promise.resolve().then(() => setHasScrolled(true));
+  }, [messages, hasScrolled]);
 
   // 末尾に新着が追加されたときのみ処理（プリペンドはスキップ）
   // - 歴史閲覧中（hasMoreAfter=true）はページング中のためスクロール抑制
@@ -78,7 +80,7 @@ export const useChatScroll = (messages: Message[], currentUserID: string | null 
       const unseen = messages.length - seenCountRef.current;
       setNewMessageCount(unseen > 0 ? unseen : 0);
     }
-  }, [messages.length, hasScrolled, currentUserID, hasMoreAfter]);
+  }, [messages, hasScrolled, currentUserID, hasMoreAfter]);
 
   const scrollToLatest = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

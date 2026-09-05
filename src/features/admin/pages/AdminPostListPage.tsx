@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { getPosts, adminDeletePost, type Post } from '../api/posts';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 
 
@@ -16,7 +16,7 @@ export const AdminPostListPage = () => {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, size = pageSize) => {
+  const loadPage = useCallback((p: number, size = pageSize) => {
     setError('');
     getPosts(size, p * size)
       .then((data) => {
@@ -25,11 +25,11 @@ export const AdminPostListPage = () => {
         setPage(p);
       })
       .catch(() => setError('投稿の読み込みに失敗しました'));
-  };
+  }, [pageSize]);
 
   useEffect(() => {
-    loadPage(0);
-  }, [pageSize]);
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
 
   const handleDelete = async (id: string) => {
     try {

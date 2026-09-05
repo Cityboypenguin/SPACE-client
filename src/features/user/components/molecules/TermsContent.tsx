@@ -28,7 +28,7 @@ export const TermsContent = ({ documentUrl, onScrolledToBottom, onError, style }
         onError?.();
       })
       .finally(() => setLoading(false));
-  }, [documentUrl]);
+  }, [documentUrl, onError]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (notified.current || error) return;

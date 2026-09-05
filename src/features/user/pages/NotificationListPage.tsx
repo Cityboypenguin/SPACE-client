@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Pagination } from '../components/molecules/Pagination';
-import { useNotification } from '../context/NotificationContext';
+import { useNotification } from '../context/useNotification';
 import {
   listMyNotificationGroups,
   listMyNotifications,
@@ -116,10 +116,12 @@ export const NotificationListPage = () => {
   );
 
   useEffect(() => {
-    setNotifPage(0);
-    setAnnouncePage(0);
-    setSelectMode(false);
-    setSelectedIds(new Set());
+    void Promise.resolve().then(() => {
+      setNotifPage(0);
+      setAnnouncePage(0);
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    });
   }, [pageSize]);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { listTerms, listConsents, type TermsOfService, type TermsConsentRecord } from '../api/terms';
@@ -18,7 +18,7 @@ export const AdminTermsDetailPage: React.FC = () => {
 
   const totalPages = Math.ceil(consentTotal / pageSize);
 
-  const loadConsents = (p: number, size = pageSize) => {
+  const loadConsents = useCallback((p: number, size = pageSize) => {
     if (!id) return;
     listConsents(id, size, p * size)
       .then((data) => {
@@ -27,23 +27,25 @@ export const AdminTermsDetailPage: React.FC = () => {
         setConsentPage(p);
       })
       .catch(() => setError('同意者一覧の取得に失敗しました'));
-  };
+  }, [id, pageSize]);
 
   useEffect(() => {
     if (!id) return;
-    listTerms()
-      .then((allTerms) => {
-        const found = allTerms.find((t) => t.ID === id) ?? null;
-        setTerms(found);
-      })
-      .catch(() => setError('データの取得に失敗しました'))
-      .finally(() => setLoading(false));
-    loadConsents(0);
-  }, [id]);
+    void Promise.resolve().then(() => {
+      listTerms()
+        .then((allTerms) => {
+          const found = allTerms.find((t) => t.ID === id) ?? null;
+          setTerms(found);
+        })
+        .catch(() => setError('データの取得に失敗しました'))
+        .finally(() => setLoading(false));
+      loadConsents(0);
+    });
+  }, [id, loadConsents]);
 
   useEffect(() => {
-    loadConsents(0);
-  }, [pageSize]);
+    void Promise.resolve().then(() => loadConsents(0));
+  }, [loadConsents]);
 
   return (
     <div>

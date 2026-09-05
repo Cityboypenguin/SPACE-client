@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getInquiries } from '../api/inquiry';
@@ -48,7 +48,7 @@ export const AdminInquiryListPage: React.FC = () => {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, status: string, size = pageSize) => {
+  const loadPage = useCallback((p: number, status: string, size = pageSize) => {
     setError('');
     getInquiries(status, size, p * size)
       .then((data) => {
@@ -60,11 +60,11 @@ export const AdminInquiryListPage: React.FC = () => {
         console.error(err);
         setError('問い合わせ一覧の取得に失敗しました');
       });
-  };
+  }, [pageSize]);
 
   useEffect(() => {
-    loadPage(0, filterStatus);
-  }, [filterStatus, pageSize]);
+    void Promise.resolve().then(() => loadPage(0, filterStatus));
+  }, [filterStatus, loadPage]);
 
   const handleFilterChange = (status: string) => {
     setFilterStatus(status);

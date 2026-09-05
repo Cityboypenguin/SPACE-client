@@ -42,7 +42,7 @@ export const CommunityListPage = () => {
   }, []);
 
   useEffect(() => {
-    loadCommunities(0, true);
+    void Promise.resolve().then(() => loadCommunities(0, true));
   }, [loadCommunities]);
 
   const sentinelRef = useInfiniteScroll(

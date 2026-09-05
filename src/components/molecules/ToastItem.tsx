@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { Toast } from '../../context/ToastContext';
+import type { Toast } from '../../context/toastContextValue';
 
 const TYPE_STYLES: Record<
   Toast['type'],

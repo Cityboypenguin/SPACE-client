@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
-import { useTheme } from '../../../../context/ThemeContext';
+import { useTheme } from '../../../../context/useTheme';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -49,7 +49,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     const urls = selectedFiles.map((file) =>
       file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
     );
-    setPreviewUrls(urls);
+    void Promise.resolve().then(() => setPreviewUrls(urls));
     return () => {
       urls.forEach((url) => { if (url) URL.revokeObjectURL(url); });
     };
@@ -127,67 +127,34 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: 'relative', flexShrink: 0 }}
+      className={styles.chatInputRoot}
     >
       {isDragging && (
         <div
-          className={styles.dragOverlayBorder}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            pointerEvents: 'none',
-          }}
+          className={`${styles.dragOverlay} ${styles.dragOverlayBorder}`}
         >
-          <span className={styles.dragOverlayText} style={{ fontSize: '0.85rem', fontWeight: 500 }}>
+          <span className={styles.dragOverlayText}>
             ここにドロップ
           </span>
         </div>
       )}
       {selectedFiles.length > 0 && (
-        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 130, overflowY: 'auto' }}>
+        <div className={styles.filePreviewList}>
           {selectedFiles.map((file, i) =>
             file.type.startsWith('image/') ? (
               <div
                 key={i}
-                style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}
+                className={styles.filePreviewThumb}
               >
                 <img
                   src={previewUrls[i]}
                   alt={file.name}
-                  className={styles.filePreviewImgBorder}
-                  style={{
-                    width: 56,
-                    height: 56,
-                    objectFit: 'cover',
-                    borderRadius: 8,
-                    display: 'block',
-                  }}
+                  className={`${styles.filePreviewImage} ${styles.filePreviewImgBorder}`}
                 />
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  className={styles.fileRemoveBtn}
-                  style={{
-                    position: 'absolute',
-                    top: -6,
-                    right: -6,
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.65rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    lineHeight: 1,
-                  }}
+                  className={`${styles.fileRemoveButton} ${styles.fileRemoveBtn}`}
                 >
                   ✕
                 </button>
@@ -195,25 +162,15 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             ) : (
               <div
                 key={i}
-                className={styles.fileChip}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  fontSize: '0.75rem',
-                  maxWidth: 160,
-                }}
+                className={`${styles.fileChipInner} ${styles.fileChip}`}
               >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className={styles.fileChipName}>
                   📎 {file.name}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  className={styles.fileChipRemoveBtn}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', padding: 0, flexShrink: 0 }}
+                  className={`${styles.fileChipRemoveButton} ${styles.fileChipRemoveBtn}`}
                 >
                   ✕
                 </button>
@@ -228,14 +185,8 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
           title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
-          className={(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? 'default' : 'pointer',
-            fontSize: '1.2rem',
-            padding: '0 4px',
-          }}
+          className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
+          style={{ cursor: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? 'default' : 'pointer' }}
         >
           📎
         </button>

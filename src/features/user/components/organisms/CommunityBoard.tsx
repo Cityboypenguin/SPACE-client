@@ -5,7 +5,7 @@ import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import styles from './CommunityBoard.module.css';
 
-const URL_SPLIT_REGEX = /(https?:\/\/[^\s　。、！？「」（）【】『』〔〕…‥・]+)/g;
+const URL_SPLIT_REGEX = /(https?:\/\/[^\s\u3000。、！？「」（）【】『』〔〕…‥・]+)/g;
 const URL_TEST_REGEX = /^https?:\/\//;
 
 const renderTextWithLinks = (text: string) =>

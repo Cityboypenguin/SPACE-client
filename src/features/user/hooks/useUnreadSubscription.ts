@@ -12,7 +12,10 @@ export const emitUnreadRoomUpdate = (update: UnreadUpdate) => {
 
 export const useUnreadSubscription = (onUpdate: Listener) => {
   const onUpdateRef = useRef(onUpdate);
-  onUpdateRef.current = onUpdate;
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     const listener: Listener = (update) => onUpdateRef.current(update);

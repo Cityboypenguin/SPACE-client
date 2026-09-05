@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
@@ -36,7 +36,7 @@ export const AdminCommunityDetailPage = () => {
   const [membersError, setMembersError] = useState('');
   const [messagesError, setMessagesError] = useState('');
 
-  const fetchCommunity = async () => {
+  const fetchCommunity = useCallback(async () => {
     if (!id) return;
     try {
       const data = await getCommunities();
@@ -49,9 +49,9 @@ export const AdminCommunityDetailPage = () => {
     } catch {
       setError('コミュニティ情報の取得に失敗しました');
     }
-  };
+  }, [id]);
 
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     if (!id) return;
     try {
       const data = await getCommunityMembers(id);
@@ -59,33 +59,38 @@ export const AdminCommunityDetailPage = () => {
     } catch {
       setMembersError('メンバー一覧の取得に失敗しました');
     }
-  };
+  }, [id]);
 
-  const fetchMessages = async (roomID: string) => {
+  const fetchMessages = useCallback(async (roomID: string) => {
     try {
       const data = await listRoomMessages(roomID);
       setMessages(data.messages.items);
     } catch {
       setMessagesError('メッセージ一覧の取得に失敗しました');
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (community) {
+    if (!community) void Promise.resolve().then(fetchCommunity);
+  }, [community, fetchCommunity]);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      if (!community) return;
       setName(community.name);
       setDescription(community.description);
-      fetchMessages(community.roomID);
-    } else {
-      fetchCommunity();
-    }
-    fetchMembers();
-  }, [id]);
+    });
+  }, [community]);
+
+  useEffect(() => {
+    void Promise.resolve().then(fetchMembers);
+  }, [fetchMembers]);
 
   useEffect(() => {
     if (community?.roomID) {
-      fetchMessages(community.roomID);
+      void Promise.resolve().then(() => fetchMessages(community.roomID));
     }
-  }, [community?.roomID]);
+  }, [community?.roomID, fetchMessages]);
 
   const handleDeleteMessage = async (message: Message) => {
     if (!window.confirm('このメッセージを削除しますか？')) return;

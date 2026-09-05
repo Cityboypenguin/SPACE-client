@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, type ReactNode } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
-import { useToast } from '../../../../context/ToastContext';
+import { useToast } from '../../../../context/useToast';
 import { useHashtagSuggestions } from '../../hooks/useHashtagSuggestions';
 import { HashtagSuggestionList } from '../molecules/HashtagSuggestionList';
 import cameraIcon from '../../../../assets/パーツ_画像送付.svg';

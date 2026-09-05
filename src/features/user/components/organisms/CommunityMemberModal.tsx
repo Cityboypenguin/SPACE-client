@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCommunityMembers, type Community } from '../../api/community';
+import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { storageUrl } from '../../../../lib/storage';
@@ -20,15 +20,17 @@ type Props = {
 };
 
 export const CommunityMembersModal = ({ community, onClose }: Props) => {
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<CommunityMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getCommunityMembers(community.ID)
-      .then((data) => setMembers(data))
-      .catch(() => setError('メンバー一覧の取得に失敗しました'))
-      .finally(() => setLoading(false));
+    void Promise.resolve().then(() => {
+      getCommunityMembers(community.ID)
+        .then((data) => setMembers(data))
+        .catch(() => setError('メンバー一覧の取得に失敗しました'))
+        .finally(() => setLoading(false));
+    });
   }, [community.ID]);
 
   return (

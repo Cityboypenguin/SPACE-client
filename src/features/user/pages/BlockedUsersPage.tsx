@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { UserListItem } from '../components/molecules/UserListItem';
+import { UserListItem } from '../../../components/molecules/UserListItem';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { useRef } from 'react';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
@@ -39,7 +39,7 @@ export const BlockedUsersPage = () => {
   }, []);
 
   useEffect(() => {
-    loadUsers(0, true);
+    void Promise.resolve().then(() => loadUsers(0, true));
   }, [loadUsers]);
 
   const sentinelRef = useInfiniteScroll(

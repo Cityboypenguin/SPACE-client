@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { TimetableGrid, TIMETABLE_DAYS } from '../components/TimetableGrid';
+import { TimetableGrid } from '../components/TimetableGrid';
+import { TIMETABLE_DAYS } from '../components/timetableConstants';
 import {
   getMyTimetable,
   getCurrentSemester,

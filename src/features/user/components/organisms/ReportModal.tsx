@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createReport } from '../../api/report';
-import { useToast } from '../../../../context/ToastContext';
+import { useToast } from '../../../../context/useToast';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import styles from './ReportModal.module.css';
 

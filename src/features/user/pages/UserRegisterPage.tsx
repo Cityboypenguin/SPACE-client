@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerUser, loginUser, sendEmailOTP, verifyEmailOTP, USER_TOKEN_KEY } from '../api/auth';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
 import styles from './UserRegisterPage.module.css';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 
 const OTP_COOLDOWN_SECONDS = 60;
 

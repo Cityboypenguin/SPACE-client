@@ -7,8 +7,8 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { useToast } from '../../../context/ToastContext';
-import { useAuth } from '../context/AuthContext';
+import { useToast } from '../../../context/useToast';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import {
@@ -101,8 +101,10 @@ export const UserDashboard = () => {
   // ── Flash message ────────────────────────────────────────────────────────
   useEffect(() => {
     if (location.state && (location.state as { message?: string }).message) {
-      setFlashMessage((location.state as { message: string }).message);
-      window.history.replaceState({}, document.title);
+      void Promise.resolve().then(() => {
+        setFlashMessage((location.state as { message: string }).message);
+        window.history.replaceState({}, document.title);
+      });
     }
   }, [location]);
 
@@ -129,7 +131,7 @@ export const UserDashboard = () => {
 
   useEffect(() => {
     if (initialCache) return;
-    if (userId) loadOwnPosts(userId, 0, true);
+    if (userId) void Promise.resolve().then(() => loadOwnPosts(userId, 0, true));
   }, [userId, loadOwnPosts, initialCache]);
 
   // ── Load liked posts ──────────────────────────────────────────────────────

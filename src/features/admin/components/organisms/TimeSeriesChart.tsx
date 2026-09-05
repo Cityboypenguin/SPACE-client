@@ -58,7 +58,9 @@ export const TimeSeriesChart = () => {
       .finally(() => setLoading(false));
   }, [granularity, from, to]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    void Promise.resolve().then(load);
+  }, [load]);
 
   const applyPreset = (preset: typeof PRESETS[number]) => {
     setFrom(preset.from());

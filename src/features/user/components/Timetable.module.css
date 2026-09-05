@@ -1,9 +1,9 @@
 .main {
   --timetable-control-height: 2.35rem;
-  --timetable-slot-height: clamp(64px, calc((100vh - 180px) / 7), 70px);
+  --timetable-slot-height: clamp(4rem, calc((100dvh - 11.25rem) / 7), 4.375rem);
   max-width: 960px;
   margin: 0 auto;
-  height: 100vh;
+  height: 100dvh;
   padding: 0.65rem 1.35rem 0.65rem;
   background: var(--color-bg);
   box-sizing: border-box;
@@ -232,7 +232,7 @@
 
 .gridWrap {
   overflow: visible;
-  max-height: calc(100vh - 58px);
+  max-height: calc(100dvh - 3.625rem);
 }
 
 .grid {
@@ -530,9 +530,8 @@
 @media (max-width: 768px) {
   .main {
     --timetable-control-height: 2.15rem;
-    --timetable-slot-height: 70px;
-    height: calc(100vh - 56px - env(safe-area-inset-bottom));
-    height: calc(100dvh - 56px - env(safe-area-inset-bottom));
+    --timetable-slot-height: clamp(4rem, calc((100dvh - 9.5rem) / 7), 4.375rem);
+    height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom));
     overflow: hidden;
     padding: 0.65rem 0.5rem 0rem 0.75rem;
     display: flex;
@@ -602,7 +601,7 @@
   }
 
   .grid {
-    min-width: 680px;
+    min-width: min(42.5rem, calc(100vw - 1.25rem));
   }
 
   .gridWrap {
@@ -675,7 +674,7 @@
   .mobileSlot .courseChip,
   .mobileSlot .emptyCellButton,
   .mobileSlot .emptySlot {
-    height: 69px;
+    height: var(--timetable-slot-height);
     width: 100%;
   }
 

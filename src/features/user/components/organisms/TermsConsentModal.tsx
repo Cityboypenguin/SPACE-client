@@ -31,7 +31,7 @@ export const TermsConsentModal = ({ terms, onConsented }: Props) => {
             利用規約への同意
           </h2>
           <p className={styles.versionInfo}>
-            バージョン {terms.version}　施行日:{' '}
+            バージョン {terms.version} 施行日:{' '}
             {new Date(terms.effectiveDate).toLocaleDateString('ja-JP')}
           </p>
         </div>

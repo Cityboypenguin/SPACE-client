@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useToast } from '../../../../context/ToastContext';
+import { useToast } from '../../../../context/useToast';
 import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
 import styles from '../QuestionBox.module.css';
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import likeIconOff from '../../assets/パーツ_いいね.svg';
 import likeIconOn from '../../assets/パーツ_いいね（済）.svg';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../context/useTheme';
 import styles from './LikeButton.module.css';
 
 type LikeablePost = {

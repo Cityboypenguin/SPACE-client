@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { listRoomMessages, adminDeleteMessage, type Message } from '../api/communities';
@@ -30,7 +30,7 @@ export const AdminCourseChatDetailPage = () => {
   const [questionsError, setQuestionsError] = useState('');
   const [pollsError, setPollsError] = useState('');
 
-  const fetchCourse = async () => {
+  const fetchCourse = useCallback(async () => {
     if (!id) return;
     try {
       const found = await getCourse(id);
@@ -39,47 +39,48 @@ export const AdminCourseChatDetailPage = () => {
     } catch {
       setError('授業情報の取得に失敗しました');
     }
-  };
+  }, [id]);
 
-  const fetchMessages = async (roomID: string) => {
+  const fetchMessages = useCallback(async (roomID: string) => {
     try {
       const data = await listRoomMessages(roomID);
       setMessages(data.messages.items);
     } catch {
       setMessagesError('メッセージ一覧の取得に失敗しました');
     }
-  };
+  }, []);
 
-  const fetchQuestions = async (roomID: string) => {
+  const fetchQuestions = useCallback(async (roomID: string) => {
     try {
       const data = await getCourseQuestions(roomID);
       setQuestions(data.items);
     } catch {
       setQuestionsError('質問一覧の取得に失敗しました');
     }
-  };
+  }, []);
 
-  const fetchPolls = async (roomID: string) => {
+  const fetchPolls = useCallback(async (roomID: string) => {
     try {
       const data = await getCoursePolls(roomID);
       setPolls(data.items);
     } catch {
       setPollsError('投票一覧の取得に失敗しました');
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (!course) fetchCourse();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    if (!course) void Promise.resolve().then(fetchCourse);
+  }, [course, fetchCourse]);
 
   useEffect(() => {
     if (course?.roomID) {
-      fetchMessages(course.roomID);
-      fetchQuestions(course.roomID);
-      fetchPolls(course.roomID);
+      void Promise.resolve().then(() => {
+        fetchMessages(course.roomID);
+        fetchQuestions(course.roomID);
+        fetchPolls(course.roomID);
+      });
     }
-  }, [course?.roomID]);
+  }, [course?.roomID, fetchMessages, fetchQuestions, fetchPolls]);
 
   const handleDeleteMessage = async (message: Message) => {
     if (!window.confirm('このメッセージを削除しますか？')) return;

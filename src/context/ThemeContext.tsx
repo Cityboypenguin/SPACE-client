@@ -1,13 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { getThemePreference, setThemePreference as setThemePreferenceAPI } from '../features/user/api/theme';
 import { getUserToken } from '../features/user/api/auth';
-
-export type Theme = 'light' | 'dark';
-
-type ThemeContextValue = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-};
+import { ThemeContext, type Theme } from './themeContextValue';
 
 const THEME_STORAGE_KEY = 'theme';
 
@@ -19,8 +13,6 @@ const resolveInitialTheme = (): Theme => {
   if (saved === 'light' || saved === 'dark') return saved;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
-
-const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<Theme>(resolveInitialTheme);
@@ -59,10 +51,4 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   );
 
   return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
-};
-
-export const useTheme = (): ThemeContextValue => {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
-  return ctx;
 };

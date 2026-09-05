@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/useAuth';
+import { useNotification } from '../context/useNotification';
 import { TermsConsentModal } from '../components/organisms/TermsConsentModal';
 import { UnreadRoomCountsProvider } from '../context/UnreadRoomCountsContext';
 import styles from './UserProtectedRoute.module.css';
