@@ -113,7 +113,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 1.5rem;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
 }
 
 .replyButton {
@@ -123,14 +123,17 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  color: #94a3b8;
+  color: #64748b;
+  font-size: 0.95rem;
+
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .commentIcon {
   width: 20px;
   height: 20px;
-  filter: opacity(0.35);
+  filter: opacity(0.45);
 }
 
 .contentClamped {
