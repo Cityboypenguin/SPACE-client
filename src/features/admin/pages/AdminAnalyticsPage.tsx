@@ -4,28 +4,14 @@ import { getAnalytics, getCommunityAnalytics } from '../api/analytics';
 import { TimeSeriesChart } from '../components/organisms/TimeSeriesChart';
 import type { AnalyticsSummary, CommunityStatItem } from '../api/analytics';
 import { downloadCsv } from '../lib/exportCsv';
-
-const card: React.CSSProperties = {
-  background: 'var(--color-bg-elevated)', borderRadius: 10, padding: '1.2rem 1.5rem',
-  boxShadow: '0 1px 4px rgba(0,0,0,.08)', marginBottom: '0.75rem',
-};
-const grid = (cols: number): React.CSSProperties => ({
-  display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0.75rem', marginBottom: '1.5rem',
-});
-const section: React.CSSProperties = { marginBottom: '2rem' };
-const sectionTitle: React.CSSProperties = {
-  fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '0.75rem', borderBottom: '2px solid var(--color-border)', paddingBottom: '0.4rem',
-};
-const label: React.CSSProperties = { fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 4 };
-const value: React.CSSProperties = { fontSize: '1.6rem', fontWeight: 700, color: 'var(--color-text)' };
-const subValue: React.CSSProperties = { fontSize: '0.85rem', color: 'var(--color-text)' };
+import styles from './AdminPageStyles.module.css';
 
 function Stat({ label: l, value: v, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div style={card}>
-      <div style={label}>{l}</div>
-      <div style={value}>{v}</div>
-      {sub && <div style={subValue}>{sub}</div>}
+    <div className={styles.analyticsCard}>
+      <div className={styles.statLabel}>{l}</div>
+      <div className={styles.statValue}>{v}</div>
+      {sub && <div className={styles.statSubValue}>{sub}</div>}
     </div>
   );
 }
@@ -130,36 +116,33 @@ export const AdminAnalyticsPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <><AdminHeader /><main style={{ padding: '2rem' }}><p>読み込み中...</p></main></>;
-  if (error) return <><AdminHeader /><main style={{ padding: '2rem' }}><p style={{ color: 'var(--color-danger)' }}>{error}</p></main></>;
+  if (loading) return <><AdminHeader /><main className={styles.page}><p>読み込み中...</p></main></>;
+  if (error) return <><AdminHeader /><main className={styles.page}><p className={styles.errorText}>{error}</p></main></>;
   if (!data) return null;
 
   return (
     <>
       <AdminHeader />
-      <main style={{ padding: '2rem', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>アナリティクス</h1>
+      <main className={styles.pageCentered}>
+        <div className={styles.headerRow}>
+          <h1 className={styles.title}>アナリティクス</h1>
           <button
             onClick={() => exportSummaryCsv(data)}
-            style={{
-              padding: '0.5rem 1.2rem', borderRadius: 8, fontSize: '0.88rem', fontWeight: 600,
-              border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', cursor: 'pointer',
-            }}
+            className={styles.ghostButtonLarge}
           >
             ↓ サマリーをCSV出力
           </button>
         </div>
 
         {/* 時系列グラフ */}
-        <div style={section}>
+        <div className={styles.analyticsSection}>
           <TimeSeriesChart />
         </div>
 
         {/* 基本集計 */}
-        <div style={section}>
-          <div style={sectionTitle}>基本集計</div>
-          <div style={grid(4)}>
+        <div className={styles.analyticsSection}>
+          <div className={styles.analyticsSectionTitle}>基本集計</div>
+          <div className={styles.analyticsGrid}>
             <Stat label="ユーザー数（累計）" value={fmtInt(data.totalUsers)} sub={`凍結中: ${fmtInt(data.frozenUsersCount)}`} />
             <Stat label="新規登録（本日）" value={fmtInt(data.newUsersToday)} />
             <Stat label="新規登録（今週）" value={fmtInt(data.newUsersThisWeek)} />
@@ -176,9 +159,9 @@ export const AdminAnalyticsPage = () => {
         </div>
 
         {/* アクティビティ */}
-        <div style={section}>
-          <div style={sectionTitle}>アクティビティ・継続率</div>
-          <div style={grid(4)}>
+        <div className={styles.analyticsSection}>
+          <div className={styles.analyticsSectionTitle}>アクティビティ・継続率</div>
+          <div className={styles.analyticsGrid}>
             <Stat label="アクティブユーザー（直近3日）" value={fmtInt(data.currentActiveUsers)} />
             <Stat label="本日のアクティブユーザー" value={fmtInt(data.dau)} />
             <Stat label="WAU（今週）" value={fmtInt(data.wau)} />
@@ -188,38 +171,38 @@ export const AdminAnalyticsPage = () => {
         </div>
 
         {/* セッション */}
-        <div style={section}>
-          <div style={sectionTitle}>セッション</div>
-          <div style={grid(4)}>
+        <div className={styles.analyticsSection}>
+          <div className={styles.analyticsSectionTitle}>セッション</div>
+          <div className={styles.analyticsGrid}>
             <Stat label="平均セッション時間" value={fmtSec(data.avgSessionDurationSeconds)} />
             <Stat label="1日あたり平均セッション数" value={fmt(data.avgSessionsPerDay)} />
             <Stat label="平均スクロール深度" value={`${fmt(data.avgScrollDepth)}%`} />
           </div>
           {data.pageViewStats.length > 0 && (
-            <div style={card}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span style={{ fontWeight: 600 }}>画面別滞在時間（上位{data.pageViewStats.length}ページ）</span>
+            <div className={styles.analyticsCard}>
+              <div className={styles.cardHeaderCompact}>
+                <span className={styles.cardTitle}>画面別滞在時間（上位{data.pageViewStats.length}ページ）</span>
                 <button
                   onClick={() => exportPageViewsCsv(data.pageViewStats)}
-                  style={{ padding: '0.25rem 0.75rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', cursor: 'pointer' }}
+                  className={styles.ghostButton}
                 >↓ CSV</button>
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+              <table className={styles.smallTable}>
                 <thead>
-                  <tr style={{ background: 'var(--color-surface)', textAlign: 'left' }}>
-                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>ページ</th>
-                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>平均滞在時間</th>
-                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>平均スクロール深度</th>
-                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>表示回数</th>
+                  <tr className={styles.smallTableHeaderRow}>
+                    <th className={styles.smallTableHeader}>ページ</th>
+                    <th className={styles.smallTableHeader}>平均滞在時間</th>
+                    <th className={styles.smallTableHeader}>平均スクロール深度</th>
+                    <th className={styles.smallTableHeader}>表示回数</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.pageViewStats.map((pv) => (
-                    <tr key={pv.pagePath} style={{ borderTop: '1px solid var(--color-border)' }}>
-                      <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{pv.pagePath}</td>
-                      <td style={{ padding: '0.5rem' }}>{fmtSec(pv.avgDurationSeconds)}</td>
-                      <td style={{ padding: '0.5rem' }}>{fmt(pv.avgMaxScrollDepth)}%</td>
-                      <td style={{ padding: '0.5rem' }}>{fmtInt(pv.totalViews)}</td>
+                    <tr key={pv.pagePath} className={styles.smallTableRow}>
+                      <td className={`${styles.smallTableCell} ${styles.mono}`}>{pv.pagePath}</td>
+                      <td className={styles.smallTableCell}>{fmtSec(pv.avgDurationSeconds)}</td>
+                      <td className={styles.smallTableCell}>{fmt(pv.avgMaxScrollDepth)}%</td>
+                      <td className={styles.smallTableCell}>{fmtInt(pv.totalViews)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -229,9 +212,9 @@ export const AdminAnalyticsPage = () => {
         </div>
 
         {/* コンテンツ */}
-        <div style={section}>
-          <div style={sectionTitle}>コンテンツ・エンゲージメント</div>
-          <div style={grid(4)}>
+        <div className={styles.analyticsSection}>
+          <div className={styles.analyticsSectionTitle}>コンテンツ・エンゲージメント</div>
+          <div className={styles.analyticsGrid}>
             <Stat label="本日の投稿数" value={fmtInt(data.postsToday)} />
             <Stat label="本日のコメント数" value={fmtInt(data.commentsToday)} />
             <Stat label="本日のDM数" value={fmtInt(data.messagesToday)} />
@@ -244,37 +227,37 @@ export const AdminAnalyticsPage = () => {
         </div>
 
         {/* コミュニティ・ソーシャル */}
-        <div style={section}>
-          <div style={sectionTitle}>コミュニティ・ソーシャルグラフ</div>
-          <div style={grid(4)}>
+        <div className={styles.analyticsSection}>
+          <div className={styles.analyticsSectionTitle}>コミュニティ・ソーシャルグラフ</div>
+          <div className={styles.analyticsGrid}>
             <Stat label="アクティブなコミュニティ（30日）" value={fmtInt(data.activeCommunitiesLast30Days)} />
             <Stat label="コミュニティ平均メンバー数" value={fmt(data.avgCommunityMembers)} />
             <Stat label="ユーザー平均参加コミュニティ数" value={fmt(data.avgCommunitiesPerUser)} />
             <Stat label="フォロー総数" value={fmtInt(data.totalFollows)} sub={`ユーザー平均: ${fmt(data.avgFollowersPerUser)}`} />
           </div>
           {communities.length > 0 && (
-            <div style={card}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span style={{ fontWeight: 600 }}>コミュニティ別アクティビティ（上位{communities.length}件）</span>
+            <div className={styles.analyticsCard}>
+              <div className={styles.cardHeaderCompact}>
+                <span className={styles.cardTitle}>コミュニティ別アクティビティ（上位{communities.length}件）</span>
                 <button
                   onClick={() => exportCommunitiesCsv(communities)}
-                  style={{ padding: '0.25rem 0.75rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 500, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', cursor: 'pointer' }}
+                  className={styles.ghostButton}
                 >↓ CSV</button>
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+              <table className={styles.smallTable}>
                 <thead>
-                  <tr style={{ background: 'var(--color-surface)', textAlign: 'left' }}>
-                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>コミュニティ名</th>
-                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>メンバー数</th>
-                    <th style={{ padding: '0.5rem', color: 'var(--color-text-muted)' }}>メッセージ数</th>
+                  <tr className={styles.smallTableHeaderRow}>
+                    <th className={styles.smallTableHeader}>コミュニティ名</th>
+                    <th className={styles.smallTableHeader}>メンバー数</th>
+                    <th className={styles.smallTableHeader}>メッセージ数</th>
                   </tr>
                 </thead>
                 <tbody>
                   {communities.map((c) => (
-                    <tr key={c.communityID} style={{ borderTop: '1px solid var(--color-border)' }}>
-                      <td style={{ padding: '0.5rem' }}>{c.name}</td>
-                      <td style={{ padding: '0.5rem' }}>{fmtInt(c.memberCount)}</td>
-                      <td style={{ padding: '0.5rem' }}>{fmtInt(c.messageCount)}</td>
+                    <tr key={c.communityID} className={styles.smallTableRow}>
+                      <td className={styles.smallTableCell}>{c.name}</td>
+                      <td className={styles.smallTableCell}>{fmtInt(c.memberCount)}</td>
+                      <td className={styles.smallTableCell}>{fmtInt(c.messageCount)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -284,9 +267,9 @@ export const AdminAnalyticsPage = () => {
         </div>
 
         {/* オンボーディング */}
-        <div style={section}>
-          <div style={sectionTitle}>オンボーディング</div>
-          <div style={grid(4)}>
+        <div className={styles.analyticsSection}>
+          <div className={styles.analyticsSectionTitle}>オンボーディング</div>
+          <div className={styles.analyticsGrid}>
             <Stat label="プロフィール設定済み" value={fmtInt(data.usersWithProfile)} sub={`${fmt(data.usersWithProfile / data.totalUsers * 100)}%`} />
             <Stat label="アバター設定済み" value={fmtInt(data.usersWithAvatar)} sub={`${fmt(data.usersWithAvatar / data.totalUsers * 100)}%`} />
             <Stat label="初投稿済み" value={fmtInt(data.usersWithPost)} sub={`${fmt(data.usersWithPost / data.totalUsers * 100)}%`} />
@@ -298,9 +281,9 @@ export const AdminAnalyticsPage = () => {
         </div>
 
         {/* 通知 */}
-        <div style={section}>
-          <div style={sectionTitle}>通知</div>
-          <div style={grid(4)}>
+        <div className={styles.analyticsSection}>
+          <div className={styles.analyticsSectionTitle}>通知</div>
+          <div className={styles.analyticsGrid}>
             <Stat label="通知総数" value={fmtInt(data.totalNotifications)} />
             <Stat label="開封済み" value={fmtInt(data.readNotifications)} />
             <Stat label="開封率" value={`${fmt(data.notificationReadRate)}%`} />
@@ -308,9 +291,9 @@ export const AdminAnalyticsPage = () => {
         </div>
 
         {/* インフラ */}
-        <div style={section}>
-          <div style={sectionTitle}>インフラ・パフォーマンス</div>
-          <div style={grid(4)}>
+        <div className={styles.analyticsSection}>
+          <div className={styles.analyticsSectionTitle}>インフラ・パフォーマンス</div>
+          <div className={styles.analyticsGrid}>
             <Stat label="WebSocket接続数" value={fmtInt(data.webSocketConnections)} />
             <Stat label="SSE接続数" value={fmtInt(data.sseConnections)} />
             <Stat label="エラーレート (5xx)" value={`${fmt(data.errorRate5xx)}%`} />

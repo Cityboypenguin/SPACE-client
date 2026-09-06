@@ -13,6 +13,7 @@ import {
   type Course,
 } from '../api/courses';
 import { TIMETABLE_DAYS } from '../../user/components/timetableConstants';
+import styles from './AdminPageStyles.module.css';
 
 const LIST_PAGE_SIZE = 20;
 
@@ -21,13 +22,6 @@ const STATE_LABELS: Record<CourseImportStatus['state'], string> = {
   RUNNING: '実行中',
   SUCCEEDED: '成功',
   FAILED: '失敗',
-};
-
-const STATE_COLORS: Record<CourseImportStatus['state'], string> = {
-  IDLE: '#94a3b8',
-  RUNNING: '#2563eb',
-  SUCCEEDED: '#27ae60',
-  FAILED: '#c0392b',
 };
 
 const POLL_INTERVAL_MS = 3000;
@@ -161,37 +155,29 @@ export const AdminCourseManagementPage = () => {
     }
   };
 
-  const cardStyle: React.CSSProperties = {
-    marginTop: '1.5rem',
-    padding: '1.5rem',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    maxWidth: '520px',
-  };
-
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <h1>授業管理</h1>
 
         {loading ? (
           <p>読み込み中...</p>
         ) : (
           <>
-            {loadError && <p style={{ color: 'red' }}>{loadError}</p>}
+            {loadError && <p className={styles.errorText}>{loadError}</p>}
 
-            <div style={cardStyle}>
-              <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>学期指定</h2>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
+            <div className={styles.sectionCard}>
+              <h2 className={styles.sectionTitle}>学期指定</h2>
+              <div className={styles.filterForm}>
                 <input
                   type="number"
                   value={year}
                   onChange={(e) => setYear(Number(e.target.value))}
-                  style={{ width: '90px', padding: '0.4rem 0.6rem' }}
+                  className={styles.inputCompact}
                 />
                 <span>年</span>
-                <select value={semester} onChange={(e) => setSemester(e.target.value)} style={{ padding: '0.4rem 0.6rem' }}>
+                <select value={semester} onChange={(e) => setSemester(e.target.value)} className={styles.select}>
                   <option value="前期">前期</option>
                   <option value="後期">後期</option>
                 </select>
@@ -199,28 +185,20 @@ export const AdminCourseManagementPage = () => {
               <button
                 onClick={() => { void handleSaveSemester(); }}
                 disabled={savingSemester}
-                style={{
-                  padding: '0.6rem 1.4rem',
-                  backgroundColor: '#2563eb',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: savingSemester ? 'not-allowed' : 'pointer',
-                  opacity: savingSemester ? 0.7 : 1,
-                }}
+                className={`${styles.primaryButton} ${styles.primaryButtonLarge} ${savingSemester ? styles.disabled : ''}`}
               >
                 {savingSemester ? '更新中...' : '学期を更新する'}
               </button>
             </div>
 
-            <div style={cardStyle}>
-              <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>授業データの取り込み</h2>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
+            <div className={styles.sectionCard}>
+              <h2 className={styles.sectionTitle}>授業データの取り込み</h2>
+              <div className={styles.filterForm}>
                 <input
                   type="number"
                   value={importYear}
                   onChange={(e) => setImportYear(Number(e.target.value))}
-                  style={{ width: '90px', padding: '0.4rem 0.6rem' }}
+                  className={styles.inputCompact}
                   disabled={status?.state === 'RUNNING'}
                 />
                 <span>年度をシラバスサイトから取り込む</span>
@@ -228,58 +206,50 @@ export const AdminCourseManagementPage = () => {
               <button
                 onClick={() => { void handleTriggerImport(); }}
                 disabled={triggering || status?.state === 'RUNNING'}
-                style={{
-                  padding: '0.6rem 1.4rem',
-                  backgroundColor: '#2563eb',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: (triggering || status?.state === 'RUNNING') ? 'not-allowed' : 'pointer',
-                  opacity: (triggering || status?.state === 'RUNNING') ? 0.7 : 1,
-                }}
+                className={`${styles.primaryButton} ${styles.primaryButtonLarge} ${(triggering || status?.state === 'RUNNING') ? styles.disabled : ''}`}
               >
                 {status?.state === 'RUNNING' ? '実行中...' : '取り込みを開始'}
               </button>
 
               {status && (
-                <div style={{ marginTop: '1.25rem', fontSize: '0.9rem' }}>
-                  <p style={{ margin: '0 0 0.4rem' }}>
+                <div className={styles.statusLine}>
+                  <p>
                     状態：
-                    <strong style={{ color: STATE_COLORS[status.state] }}> {STATE_LABELS[status.state]}</strong>
+                    <strong className={styles.importState} data-state={status.state}> {STATE_LABELS[status.state]}</strong>
                     {status.year != null && ` （${status.year}年度）`}
                   </p>
                   {status.state === 'SUCCEEDED' && (
-                    <p style={{ margin: '0 0 0.4rem', color: '#475569' }}>
+                    <p className={styles.cellText}>
                       新規登録: {status.imported ?? 0}件 ・ スキップ: {status.skipped ?? 0}件
                     </p>
                   )}
                   {status.state === 'FAILED' && status.errorMessage && (
-                    <p style={{ margin: '0 0 0.4rem', color: '#c0392b' }}>{status.errorMessage}</p>
+                    <p className={styles.errorText}>{status.errorMessage}</p>
                   )}
                 </div>
               )}
-              <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#888' }}>
+              <p className={styles.helpText}>
                 既に取り込み済みの授業は重複登録されず、新規分のみ追加されます。1回の実行に数十秒〜数分かかることがあります。
               </p>
             </div>
 
-            <div style={{ ...cardStyle, maxWidth: '900px' }}>
-              <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>授業一覧</h2>
+            <div className={`${styles.sectionCard} ${styles.sectionCardWide}`}>
+              <h2 className={styles.sectionTitle}>授業一覧</h2>
               <form
                 onSubmit={handleFilterSubmit}
-                style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}
+                className={styles.filterForm}
               >
-                <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} style={{ padding: '0.4rem 0.6rem' }}>
+                <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className={styles.select}>
                   <option value="">年度（すべて）</option>
                   {courseYears.map((y) => <option key={y} value={y}>{y}年度</option>)}
                 </select>
-                <select value={filterSemester} onChange={(e) => setFilterSemester(e.target.value)} style={{ padding: '0.4rem 0.6rem' }}>
+                <select value={filterSemester} onChange={(e) => setFilterSemester(e.target.value)} className={styles.select}>
                   <option value="">学期（すべて）</option>
                   <option value="前期">前期</option>
                   <option value="後期">後期</option>
                   <option value="通年">通年</option>
                 </select>
-                <select value={filterDayOfWeek} onChange={(e) => setFilterDayOfWeek(e.target.value)} style={{ padding: '0.4rem 0.6rem' }}>
+                <select value={filterDayOfWeek} onChange={(e) => setFilterDayOfWeek(e.target.value)} className={styles.select}>
                   <option value="">曜日（すべて）</option>
                   {TIMETABLE_DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
                 </select>
@@ -288,43 +258,36 @@ export const AdminCourseManagementPage = () => {
                   value={filterKeyword}
                   onChange={(e) => setFilterKeyword(e.target.value)}
                   placeholder="授業名・教員名で絞り込み"
-                  style={{ padding: '0.4rem 0.6rem', flex: '1 1 180px' }}
+                  className={`${styles.input} ${styles.inputGrow}`}
                 />
                 <button
                   type="submit"
-                  style={{
-                    padding: '0.5rem 1.2rem',
-                    backgroundColor: '#2563eb',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                  }}
+                  className={styles.primaryButton}
                 >
                   検索
                 </button>
               </form>
 
-              {listError && <p style={{ color: '#c0392b' }}>{listError}</p>}
+              {listError && <p className={styles.errorText}>{listError}</p>}
 
               {listLoading ? (
                 <p>読み込み中...</p>
               ) : courseItems.length === 0 ? (
-                <p style={{ color: '#888' }}>該当する授業がありません。</p>
+                <p className={styles.mutedText}>該当する授業がありません。</p>
               ) : (
                 <>
-                  <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 0.5rem' }}>
+                  <p className={styles.metaText}>
                     全{courseTotal}件中 {listOffset + 1}〜{listOffset + courseItems.length}件を表示（行をクリックするとチャット内容を確認できます）
                   </p>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                  <div className={styles.tableWrap}>
+                    <table className={styles.compactTable}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
-                          <th style={{ padding: '0.5rem' }}>授業名</th>
-                          <th style={{ padding: '0.5rem' }}>教員</th>
-                          <th style={{ padding: '0.5rem' }}>曜日・時限</th>
-                          <th style={{ padding: '0.5rem' }}>年度</th>
-                          <th style={{ padding: '0.5rem' }}>学期</th>
+                        <tr className={styles.compactHeaderRow}>
+                          <th className={styles.compactTableHeader}>授業名</th>
+                          <th className={styles.compactTableHeader}>教員</th>
+                          <th className={styles.compactTableHeader}>曜日・時限</th>
+                          <th className={styles.compactTableHeader}>年度</th>
+                          <th className={styles.compactTableHeader}>学期</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -332,24 +295,24 @@ export const AdminCourseManagementPage = () => {
                           <tr
                             key={course.ID}
                             onClick={() => navigate(`/admin/courses/${course.ID}`, { state: { course } })}
-                            style={{ borderBottom: '1px solid #eee', cursor: 'pointer' }}
+                            className={styles.clickableRow}
                           >
-                            <td style={{ padding: '0.5rem' }}>{course.courseName}</td>
-                            <td style={{ padding: '0.5rem' }}>{course.teacherName}</td>
-                            <td style={{ padding: '0.5rem' }}>{course.dayOfWeek}曜{course.period}限</td>
-                            <td style={{ padding: '0.5rem' }}>{course.year}</td>
-                            <td style={{ padding: '0.5rem' }}>{course.semester}</td>
+                            <td className={styles.compactTableCell}>{course.courseName}</td>
+                            <td className={styles.compactTableCell}>{course.teacherName}</td>
+                            <td className={styles.compactTableCell}>{course.dayOfWeek}曜{course.period}限</td>
+                            <td className={styles.compactTableCell}>{course.year}</td>
+                            <td className={styles.compactTableCell}>{course.semester}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                  <div className={styles.pagination}>
                     <button
                       type="button"
                       disabled={listOffset === 0}
                       onClick={() => setListOffset((prev) => Math.max(0, prev - LIST_PAGE_SIZE))}
-                      style={{ padding: '0.4rem 1rem', cursor: listOffset === 0 ? 'not-allowed' : 'pointer' }}
+                      className={styles.paginationButton}
                     >
                       前へ
                     </button>
@@ -357,10 +320,7 @@ export const AdminCourseManagementPage = () => {
                       type="button"
                       disabled={listOffset + courseItems.length >= courseTotal}
                       onClick={() => setListOffset((prev) => prev + LIST_PAGE_SIZE)}
-                      style={{
-                        padding: '0.4rem 1rem',
-                        cursor: listOffset + courseItems.length >= courseTotal ? 'not-allowed' : 'pointer',
-                      }}
+                      className={styles.paginationButton}
                     >
                       次へ
                     </button>

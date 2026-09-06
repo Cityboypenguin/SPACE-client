@@ -13,6 +13,7 @@ import {
   type Poll,
 } from '../api/courses';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import styles from './AdminPageStyles.module.css';
 
 export const AdminCourseChatDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -112,57 +113,57 @@ export const AdminCourseChatDetailPage = () => {
     }
   };
 
-  if (!course) return <p style={{ padding: '2rem' }}>{error || '読み込み中...'}</p>;
+  if (!course) return <p className={styles.page}>{error || '読み込み中...'}</p>;
 
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <button onClick={() => navigate('/admin/courses')}><ChevronLeft /> 一覧に戻る</button>
         <h1>授業チャット詳細</h1>
 
-        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
 
-        <table style={{ marginBottom: '1rem' }}>
+        <table className={styles.infoTable}>
           <tbody>
-            <tr><th style={{ textAlign: 'left', paddingRight: '1rem' }}>授業名</th><td>{course.courseName}</td></tr>
-            <tr><th style={{ textAlign: 'left', paddingRight: '1rem' }}>担当教員</th><td>{course.teacherName}</td></tr>
-            <tr><th style={{ textAlign: 'left', paddingRight: '1rem' }}>曜日・時限</th><td>{course.dayOfWeek}曜{course.period}限</td></tr>
-            <tr><th style={{ textAlign: 'left', paddingRight: '1rem' }}>年度・学期</th><td>{course.year}年度 {course.semester}</td></tr>
+            <tr><th className={styles.infoHeader}>授業名</th><td>{course.courseName}</td></tr>
+            <tr><th className={styles.infoHeader}>担当教員</th><td>{course.teacherName}</td></tr>
+            <tr><th className={styles.infoHeader}>曜日・時限</th><td>{course.dayOfWeek}曜{course.period}限</td></tr>
+            <tr><th className={styles.infoHeader}>年度・学期</th><td>{course.year}年度 {course.semester}</td></tr>
           </tbody>
         </table>
 
-        <hr style={{ margin: '2rem 0' }} />
+        <hr className={styles.divider} />
 
         <h2>メッセージ一覧</h2>
-        {messagesError && <p style={{ color: 'var(--color-danger)' }}>{messagesError}</p>}
+        {messagesError && <p className={styles.errorText}>{messagesError}</p>}
         {messages.length > 0 ? (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>投稿者</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>内容</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>投稿日時</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>操作</th>
+                <th className={styles.tableHeader}>投稿者</th>
+                <th className={styles.tableHeader}>内容</th>
+                <th className={styles.tableHeader}>投稿日時</th>
+                <th className={styles.tableHeader}>操作</th>
               </tr>
             </thead>
             <tbody>
               {messages.map((message) => (
                 <tr key={message.ID}>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
+                  <td className={styles.tableCell}>
                     {message.user.name}
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginLeft: '4px' }}>
+                    <span className={styles.accountId}>
                       @{message.user.accountID}
                     </span>
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', maxWidth: '400px', wordBreak: 'break-word' }}>
+                  <td className={`${styles.tableCell} ${styles.contentCell}`}>
                     {message.content}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>
+                  <td className={`${styles.tableCell} ${styles.nowrap}`}>
                     {new Date(message.createdAt).toLocaleString('ja-JP')}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
-                    <button onClick={() => handleDeleteMessage(message)} style={{ color: 'var(--color-danger)' }}>
+                  <td className={styles.tableCell}>
+                    <button onClick={() => handleDeleteMessage(message)} className={styles.dangerButton}>
                       削除
                     </button>
                   </td>
@@ -174,43 +175,43 @@ export const AdminCourseChatDetailPage = () => {
           !messagesError && <p>メッセージはありません</p>
         )}
 
-        <hr style={{ margin: '2rem 0' }} />
+        <hr className={styles.divider} />
 
         <h2>質問箱一覧</h2>
-        {questionsError && <p style={{ color: 'var(--color-danger)' }}>{questionsError}</p>}
+        {questionsError && <p className={styles.errorText}>{questionsError}</p>}
         {questions.length > 0 ? (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>質問者</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>本文</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>状態</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>回答数</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>投稿日時</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>操作</th>
+                <th className={styles.tableHeader}>質問者</th>
+                <th className={styles.tableHeader}>本文</th>
+                <th className={styles.tableHeader}>状態</th>
+                <th className={styles.tableHeader}>回答数</th>
+                <th className={styles.tableHeader}>投稿日時</th>
+                <th className={styles.tableHeader}>操作</th>
               </tr>
             </thead>
             <tbody>
               {questions.map((question) => (
                 <tr key={question.ID}>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
+                  <td className={styles.tableCell}>
                     {question.user.name}
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginLeft: '4px' }}>
+                    <span className={styles.accountId}>
                       @{question.user.accountID}
                     </span>
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', maxWidth: '400px', wordBreak: 'break-word' }}>
+                  <td className={`${styles.tableCell} ${styles.contentCell}`}>
                     {question.body}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
+                  <td className={styles.tableCell}>
                     {question.isAnswered ? '解決済み' : '未解決'}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>{question.answers.length}</td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>
+                  <td className={styles.tableCell}>{question.answers.length}</td>
+                  <td className={`${styles.tableCell} ${styles.nowrap}`}>
                     {new Date(question.createdAt).toLocaleString('ja-JP')}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
-                    <button onClick={() => handleDeleteQuestion(question)} style={{ color: 'var(--color-danger)' }}>
+                  <td className={styles.tableCell}>
+                    <button onClick={() => handleDeleteQuestion(question)} className={styles.dangerButton}>
                       削除
                     </button>
                   </td>
@@ -222,41 +223,41 @@ export const AdminCourseChatDetailPage = () => {
           !questionsError && <p>質問はありません</p>
         )}
 
-        <hr style={{ margin: '2rem 0' }} />
+        <hr className={styles.divider} />
 
         <h2>投票一覧</h2>
-        {pollsError && <p style={{ color: 'var(--color-danger)' }}>{pollsError}</p>}
+        {pollsError && <p className={styles.errorText}>{pollsError}</p>}
         {polls.length > 0 ? (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>作成者</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>質問</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>選択肢と得票数</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>作成日時</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--color-border)' }}>操作</th>
+                <th className={styles.tableHeader}>作成者</th>
+                <th className={styles.tableHeader}>質問</th>
+                <th className={styles.tableHeader}>選択肢と得票数</th>
+                <th className={styles.tableHeader}>作成日時</th>
+                <th className={styles.tableHeader}>操作</th>
               </tr>
             </thead>
             <tbody>
               {polls.map((poll) => (
                 <tr key={poll.ID}>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
+                  <td className={styles.tableCell}>
                     {poll.user.name}
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginLeft: '4px' }}>
+                    <span className={styles.accountId}>
                       @{poll.user.accountID}
                     </span>
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', maxWidth: '300px', wordBreak: 'break-word' }}>
+                  <td className={`${styles.tableCell} ${styles.contentCellNarrow}`}>
                     {poll.question}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
+                  <td className={styles.tableCell}>
                     {poll.options.map((o) => `${o.label}(${o.voteCount})`).join(' / ')}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}>
+                  <td className={`${styles.tableCell} ${styles.nowrap}`}>
                     {new Date(poll.createdAt).toLocaleString('ja-JP')}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid var(--color-border)' }}>
-                    <button onClick={() => handleDeletePoll(poll)} style={{ color: 'var(--color-danger)' }}>
+                  <td className={styles.tableCell}>
+                    <button onClick={() => handleDeletePoll(poll)} className={styles.dangerButton}>
                       削除
                     </button>
                   </td>

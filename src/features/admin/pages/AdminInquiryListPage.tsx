@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getInquiries } from '../api/inquiry';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
+import styles from './AdminPageStyles.module.css';
 
 type Inquiry = {
   id: string;
@@ -20,12 +21,6 @@ const STATUS_LABEL: Record<string, string> = {
   PENDING: '未対応',
   IN_PROGRESS: '対応中',
   RESOLVED: '対応済',
-};
-
-const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  PENDING: { bg: 'var(--color-warning-bg)', color: 'var(--color-warning)' },
-  IN_PROGRESS: { bg: '#dbeafe', color: '#1d4ed8' },
-  RESOLVED: { bg: 'var(--color-success-bg)', color: 'var(--color-success)' },
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -73,22 +68,22 @@ export const AdminInquiryListPage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-        <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 600, color: 'var(--color-text)' }}>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>
             問い合わせ管理
           </h1>
         </div>
 
-        <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className={styles.toolbar}>
           <div>
-            <label style={{ fontWeight: 500, marginRight: '0.5rem', color: 'var(--color-text)' }}>
+            <label className={styles.label}>
               ステータス絞り込み：
             </label>
             <select
               value={filterStatus}
               onChange={(e) => handleFilterChange(e.target.value)}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', cursor: 'pointer' }}
+              className={styles.select}
             >
               <option value="ALL">すべて</option>
               <option value="PENDING">未対応</option>
@@ -96,14 +91,14 @@ export const AdminInquiryListPage: React.FC = () => {
               <option value="RESOLVED">対応済</option>
             </select>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>全 {total} 件</span>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text)' }}>
+          <div className={styles.toolbarGroup}>
+            <span className={styles.countText}>全 {total} 件</span>
+            <label className={styles.controlGroupPlain}>
               表示件数
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                style={{ padding: '0.4rem 0.5rem', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', cursor: 'pointer', fontSize: '0.85rem' }}
+                className={styles.select}
               >
                 {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
               </select>
@@ -111,74 +106,68 @@ export const AdminInquiryListPage: React.FC = () => {
           </div>
         </div>
 
-        {error && <p style={{ color: 'var(--color-danger)', textAlign: 'center', padding: '1rem' }}>{error}</p>}
+        {error && <p className={styles.centerError}>{error}</p>}
 
-        <div style={{ overflowX: 'auto', background: 'var(--color-bg-elevated)', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className={styles.tablePanelPlain}>
+          <table className={styles.table}>
             <thead>
-              <tr style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
-                <th style={{ padding: '1rem' }}>件名</th>
-                <th style={{ padding: '1rem' }}>氏名</th>
-                <th style={{ padding: '1rem' }}>メールアドレス</th>
-                <th style={{ padding: '1rem' }}>どのようなお問い合わせか</th>
-                <th style={{ padding: '1rem' }}>ステータス</th>
-                <th style={{ padding: '1rem' }}>受信日時</th>
-                <th style={{ padding: '1rem' }}>詳細</th>
+              <tr className={styles.tableHeaderRow}>
+                <th className={styles.tableCellLarge}>件名</th>
+                <th className={styles.tableCellLarge}>氏名</th>
+                <th className={styles.tableCellLarge}>メールアドレス</th>
+                <th className={styles.tableCellLarge}>どのようなお問い合わせか</th>
+                <th className={styles.tableCellLarge}>ステータス</th>
+                <th className={styles.tableCellLarge}>受信日時</th>
+                <th className={styles.tableCellLarge}>詳細</th>
               </tr>
             </thead>
             <tbody>
-              {inquiries.map((inquiry) => {
-                const sc = STATUS_COLOR[inquiry.status] ?? { bg: 'var(--color-surface)', color: 'var(--color-text)' };
-                return (
-                  <tr key={inquiry.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={{ padding: '1rem' }}>{inquiry.subject || '---'}</td>
-                    <td style={{ padding: '1rem' }}>{inquiry.name}</td>
-                    <td style={{ padding: '1rem', color: 'var(--color-text)' }}>{inquiry.email}</td>
-                    <td style={{ padding: '1rem' }}>{CATEGORY_LABEL[inquiry.category] ?? inquiry.category}</td>
-                    <td style={{ padding: '1rem' }}>
-                      <span style={{
-                        padding: '0.25rem 0.6rem', borderRadius: 20, fontSize: '0.85rem', fontWeight: 600,
-                        background: sc.bg, color: sc.color,
-                      }}>
+              {inquiries.map((inquiry) => (
+                  <tr key={inquiry.id} className={styles.tableRow}>
+                    <td className={styles.tableCellLarge}>{inquiry.subject || '---'}</td>
+                    <td className={styles.tableCellLarge}>{inquiry.name}</td>
+                    <td className={`${styles.tableCellLarge} ${styles.cellText}`}>{inquiry.email}</td>
+                    <td className={styles.tableCellLarge}>{CATEGORY_LABEL[inquiry.category] ?? inquiry.category}</td>
+                    <td className={styles.tableCellLarge}>
+                      <span className={styles.statusBadge} data-status={inquiry.status}>
                         {STATUS_LABEL[inquiry.status] ?? inquiry.status}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                    <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
                       {inquiry.createdAt ? new Date(inquiry.createdAt).toLocaleString('ja-JP') : '---'}
                     </td>
-                    <td style={{ padding: '1rem' }}>
+                    <td className={styles.tableCellLarge}>
                       <button
                         onClick={() => navigate(`/admin/inquiries/${inquiry.id}`)}
-                        style={{ padding: '0.35rem 0.7rem', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                        className={styles.primaryButton}
                       >
                         詳細
                       </button>
                     </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </div>
 
         {inquiries.length === 0 && !error && (
-          <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>問い合わせが見つかりませんでした</p>
+          <p className={styles.emptyState}>問い合わせが見つかりませんでした</p>
         )}
 
         {totalPages > 1 && (
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+          <div className={styles.pagination}>
             <button
               onClick={() => loadPage(page - 1, filterStatus)}
               disabled={page === 0}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid var(--color-border)', cursor: page === 0 ? 'not-allowed' : 'pointer', background: 'var(--color-bg-elevated)' }}
+              className={styles.paginationButton}
             >
               前へ
             </button>
-            <span style={{ color: 'var(--color-text)' }}>{page + 1} / {totalPages}</span>
+            <span className={styles.cellText}>{page + 1} / {totalPages}</span>
             <button
               onClick={() => loadPage(page + 1, filterStatus)}
               disabled={page >= totalPages - 1}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid var(--color-border)', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', background: 'var(--color-bg-elevated)' }}
+              className={styles.paginationButton}
             >
               次へ
             </button>
