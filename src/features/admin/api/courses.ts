@@ -19,6 +19,9 @@ export type CourseImportStatus = {
   errorMessage?: string | null;
   startedAt?: string | null;
   finishedAt?: string | null;
+  processedCount?: number | null;
+  totalCount?: number | null;
+  progressPercent?: number | null;
 };
 
 export type Course = {
@@ -66,6 +69,9 @@ const AdminCourseImportStatusDocument = graphql(`
       errorMessage
       startedAt
       finishedAt
+      processedCount
+      totalCount
+      progressPercent
     }
   }
 `);
@@ -80,6 +86,9 @@ const AdminTriggerCourseImportDocument = graphql(`
       errorMessage
       startedAt
       finishedAt
+      processedCount
+      totalCount
+      progressPercent
     }
   }
 `);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { useToast } from '../../../context/useToast';
@@ -12,6 +12,7 @@ import {
   type CourseImportStatus,
   type Course,
 } from '../api/courses';
+import { subscribeToAdminGraphQL } from '../api/adminGraphqlWs';
 import { TIMETABLE_DAYS } from '../../user/components/timetableConstants';
 import styles from '../styles/AdminShared.module.css';
 
@@ -24,7 +25,22 @@ const STATE_LABELS: Record<CourseImportStatus['state'], string> = {
   FAILED: '失敗',
 };
 
-const POLL_INTERVAL_MS = 3000;
+const ADMIN_COURSE_IMPORT_STATUS_UPDATED_SUBSCRIPTION = `
+  subscription AdminCourseImportStatusUpdated {
+    adminCourseImportStatusUpdated {
+      state
+      year
+      imported
+      skipped
+      errorMessage
+      startedAt
+      finishedAt
+      processedCount
+      totalCount
+      progressPercent
+    }
+  }
+`;
 
 export const AdminCourseManagementPage = () => {
   const { addToast } = useToast();
@@ -40,8 +56,6 @@ export const AdminCourseManagementPage = () => {
   const [importYear, setImportYear] = useState(new Date().getFullYear());
   const [status, setStatus] = useState<CourseImportStatus | null>(null);
   const [triggering, setTriggering] = useState(false);
-
-  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [courseYears, setCourseYears] = useState<number[]>([]);
   const [filterYear, setFilterYear] = useState('');
@@ -103,30 +117,27 @@ export const AdminCourseManagementPage = () => {
     })();
   }, []);
 
+  // 取り込みが動いている間だけWebSocketを張る。ボタン押下で開始した場合はもちろん、
+  // ページを開いた時点で既にRUNNINGだった場合(別の管理者が実行中/リロードした場合)も
+  // 直前のuseEffectで取得した初期状態をきっかけに接続される。SUCCEEDED/FAILEDに
+  // なった時点でこのeffectのクリーンアップが走り、切断される。
   useEffect(() => {
-    if (status?.state !== 'RUNNING') {
-      if (pollTimerRef.current) {
-        clearInterval(pollTimerRef.current);
-        pollTimerRef.current = null;
-      }
-      return;
-    }
-    pollTimerRef.current = setInterval(async () => {
-      try {
-        const next = await getCourseImportStatus();
+    if (status?.state !== 'RUNNING') return;
+    const unsubscribe = subscribeToAdminGraphQL<{ adminCourseImportStatusUpdated: CourseImportStatus }>(
+      ADMIN_COURSE_IMPORT_STATUS_UPDATED_SUBSCRIPTION,
+      {},
+      (data) => {
+        const next = data.adminCourseImportStatusUpdated;
         setStatus(next);
         if (next.state === 'SUCCEEDED') {
           addToast(`取り込みが完了しました（新規${next.imported ?? 0}件・スキップ${next.skipped ?? 0}件）`, 'success');
         } else if (next.state === 'FAILED') {
           addToast(next.errorMessage ?? '取り込みに失敗しました', 'error');
         }
-      } catch {
-        // 次回のポーリングで再試行する
-      }
-    }, POLL_INTERVAL_MS);
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    };
+      },
+      (err) => console.error('[AdminCourseManagementPage] import status subscription error:', err),
+    );
+    return unsubscribe;
   }, [status?.state, addToast]);
 
   const handleSaveSemester = async () => {
@@ -218,6 +229,11 @@ export const AdminCourseManagementPage = () => {
                     <strong className={styles.importState} data-state={status.state}> {STATE_LABELS[status.state]}</strong>
                     {status.year != null && ` （${status.year}年度）`}
                   </p>
+                  {status.state === 'RUNNING' && status.progressPercent != null && (
+                    <p className={styles.cellText}>
+                      進捗: {status.progressPercent}%（{status.processedCount ?? 0} / {status.totalCount ?? 0}件）
+                    </p>
+                  )}
                   {status.state === 'SUCCEEDED' && (
                     <p className={styles.cellText}>
                       新規登録: {status.imported ?? 0}件 ・ スキップ: {status.skipped ?? 0}件
