@@ -34,6 +34,16 @@ export type Course = {
   year: number;
   semester: string;
   createdAt: string;
+  registeredCount: number;
+};
+
+export type AdminCreateCourseInput = {
+  dayOfWeek: string;
+  period: number;
+  teacherName: string;
+  courseName: string;
+  year: number;
+  semester: string;
 };
 
 export type CoursePage = {
@@ -106,11 +116,45 @@ const AdminListCoursesDocument = graphql(`
         year
         semester
         createdAt
+        registeredCount
       }
       total
     }
   }
 `);
+
+const AdminCreateCourseDocument = graphql(`
+  mutation AdminCreateCourse($input: AdminCreateCourseInput!) {
+    adminCreateCourse(input: $input) {
+      ID
+      roomID
+      dayOfWeek
+      period
+      teacherName
+      courseName
+      year
+      semester
+      createdAt
+      registeredCount
+    }
+  }
+`);
+
+export const createCourse = async (input: AdminCreateCourseInput): Promise<Course> => {
+  const data = await requestDoc(AdminCreateCourseDocument, { input }, getAdminToken());
+  return data.adminCreateCourse;
+};
+
+const AdminDeleteCourseDocument = graphql(`
+  mutation AdminDeleteCourse($id: ID!) {
+    adminDeleteCourse(id: $id)
+  }
+`);
+
+export const deleteCourse = async (id: string): Promise<boolean> => {
+  const data = await requestDoc(AdminDeleteCourseDocument, { id }, getAdminToken());
+  return data.adminDeleteCourse;
+};
 
 const AdminListCourseYearsDocument = graphql(`
   query AdminListCourseYears {

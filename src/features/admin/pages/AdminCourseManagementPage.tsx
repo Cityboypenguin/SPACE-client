@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { useToast } from '../../../context/useToast';
@@ -9,11 +9,13 @@ import {
   triggerCourseImport,
   listCourses,
   listCourseYears,
+  createCourse,
+  deleteCourse,
   type CourseImportStatus,
   type Course,
 } from '../api/courses';
 import { subscribeToAdminGraphQL } from '../api/adminGraphqlWs';
-import { TIMETABLE_DAYS } from '../../user/components/timetableConstants';
+import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '../../user/components/timetableConstants';
 import styles from '../styles/AdminShared.module.css';
 
 const LIST_PAGE_SIZE = 20;
@@ -69,21 +71,34 @@ export const AdminCourseManagementPage = () => {
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState('');
 
+  const [newDayOfWeek, setNewDayOfWeek] = useState(TIMETABLE_DAYS[0]);
+  const [newPeriod, setNewPeriod] = useState(TIMETABLE_PERIODS[0]);
+  const [newTeacherName, setNewTeacherName] = useState('');
+  const [newCourseName, setNewCourseName] = useState('');
+  const [newYear, setNewYear] = useState(new Date().getFullYear());
+  const [newSemester, setNewSemester] = useState('前期');
+  const [creatingCourse, setCreatingCourse] = useState(false);
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
+
+  const refetchCourseList = useCallback(async () => {
+    setListLoading(true);
+    setListError('');
+    try {
+      const data = await listCourses(appliedFilter, LIST_PAGE_SIZE, listOffset);
+      setCourseItems(data.items);
+      setCourseTotal(data.total);
+    } catch (err) {
+      setListError(err instanceof Error ? err.message : '授業一覧の取得に失敗しました');
+    } finally {
+      setListLoading(false);
+    }
+  }, [appliedFilter, listOffset]);
+
   useEffect(() => {
     (async () => {
-      setListLoading(true);
-      setListError('');
-      try {
-        const data = await listCourses(appliedFilter, LIST_PAGE_SIZE, listOffset);
-        setCourseItems(data.items);
-        setCourseTotal(data.total);
-      } catch (err) {
-        setListError(err instanceof Error ? err.message : '授業一覧の取得に失敗しました');
-      } finally {
-        setListLoading(false);
-      }
+      await refetchCourseList();
     })();
-  }, [appliedFilter, listOffset]);
+  }, [refetchCourseList]);
 
   const handleFilterSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -163,6 +178,52 @@ export const AdminCourseManagementPage = () => {
       addToast(err instanceof Error ? err.message : '取り込みの開始に失敗しました', 'error');
     } finally {
       setTriggering(false);
+    }
+  };
+
+  const handleCreateCourse = async (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    if (!newTeacherName.trim() || !newCourseName.trim()) {
+      addToast('教員名・授業名は必須です', 'error');
+      return;
+    }
+    setCreatingCourse(true);
+    try {
+      await createCourse({
+        dayOfWeek: newDayOfWeek,
+        period: newPeriod,
+        teacherName: newTeacherName.trim(),
+        courseName: newCourseName.trim(),
+        year: newYear,
+        semester: newSemester,
+      });
+      addToast('授業を追加しました', 'success');
+      setNewTeacherName('');
+      setNewCourseName('');
+      await refetchCourseList();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : '授業の追加に失敗しました', 'error');
+    } finally {
+      setCreatingCourse(false);
+    }
+  };
+
+  const handleDeleteCourse = async (course: Course, e: { stopPropagation(): void }) => {
+    e.stopPropagation();
+    const warning = course.registeredCount > 0
+      ? `この授業は${course.registeredCount}人が時間割に登録しています。削除するとその登録・チャット履歴（メッセージ・質問・投票）が全て失われます。`
+      : 'この授業を削除すると、チャット履歴も全て失われます。';
+    if (!window.confirm(`「${course.courseName}」を削除しますか？\n${warning}\nこの操作は取り消せません。`)) return;
+
+    setDeletingCourseId(course.ID);
+    try {
+      await deleteCourse(course.ID);
+      addToast('授業を削除しました', 'success');
+      await refetchCourseList();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : '授業の削除に失敗しました', 'error');
+    } finally {
+      setDeletingCourseId(null);
     }
   };
 
@@ -249,6 +310,50 @@ export const AdminCourseManagementPage = () => {
               </p>
             </div>
 
+            <div className={styles.sectionCard}>
+              <h2 className={styles.sectionTitle}>授業を手動で追加</h2>
+              <form onSubmit={(e) => { void handleCreateCourse(e); }} className={styles.filterForm}>
+                <select value={newDayOfWeek} onChange={(e) => setNewDayOfWeek(e.target.value)} className={styles.select}>
+                  {TIMETABLE_DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
+                </select>
+                <select value={newPeriod} onChange={(e) => setNewPeriod(Number(e.target.value))} className={styles.select}>
+                  {TIMETABLE_PERIODS.map((p) => <option key={p} value={p}>{p}限</option>)}
+                </select>
+                <select value={newSemester} onChange={(e) => setNewSemester(e.target.value)} className={styles.select}>
+                  <option value="前期">前期</option>
+                  <option value="後期">後期</option>
+                  <option value="通年">通年</option>
+                </select>
+                <input
+                  type="number"
+                  value={newYear}
+                  onChange={(e) => setNewYear(Number(e.target.value))}
+                  className={styles.inputCompact}
+                />
+                <input
+                  type="text"
+                  value={newTeacherName}
+                  onChange={(e) => setNewTeacherName(e.target.value)}
+                  placeholder="教員名"
+                  className={styles.input}
+                />
+                <input
+                  type="text"
+                  value={newCourseName}
+                  onChange={(e) => setNewCourseName(e.target.value)}
+                  placeholder="授業名"
+                  className={`${styles.input} ${styles.inputGrow}`}
+                />
+                <button type="submit" disabled={creatingCourse} className={styles.primaryButton}>
+                  {creatingCourse ? '追加中...' : '追加する'}
+                </button>
+              </form>
+              <p className={styles.helpText}>
+                スクレイピングが拾わなかった授業の緊急追加用です。追加すると専用のチャットルームも作られます。
+                後日スクレイピングで同じ授業が取り込まれると重複登録される点に注意してください。
+              </p>
+            </div>
+
             <div className={`${styles.sectionCard} ${styles.sectionCardWide}`}>
               <h2 className={styles.sectionTitle}>授業一覧</h2>
               <form
@@ -304,6 +409,8 @@ export const AdminCourseManagementPage = () => {
                           <th className={styles.compactTableHeader}>曜日・時限</th>
                           <th className={styles.compactTableHeader}>年度</th>
                           <th className={styles.compactTableHeader}>学期</th>
+                          <th className={styles.compactTableHeader}>登録者数</th>
+                          <th className={styles.compactTableHeader}></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -318,6 +425,17 @@ export const AdminCourseManagementPage = () => {
                             <td className={styles.compactTableCell}>{course.dayOfWeek}曜{course.period}限</td>
                             <td className={styles.compactTableCell}>{course.year}</td>
                             <td className={styles.compactTableCell}>{course.semester}</td>
+                            <td className={styles.compactTableCell}>{course.registeredCount}人</td>
+                            <td className={styles.compactTableCell}>
+                              <button
+                                type="button"
+                                disabled={deletingCourseId === course.ID}
+                                onClick={(e) => { void handleDeleteCourse(course, e); }}
+                                className={`${styles.dangerButtonSmall} ${deletingCourseId === course.ID ? styles.disabled : ''}`}
+                              >
+                                {deletingCourseId === course.ID ? '削除中...' : '削除'}
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

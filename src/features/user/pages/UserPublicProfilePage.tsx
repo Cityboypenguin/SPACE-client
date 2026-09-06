@@ -8,6 +8,7 @@ import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
 import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
+import { ProfilePillButton } from '../components/molecules/ProfilePillButton';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../../../context/useToast';
@@ -310,31 +311,26 @@ export const UserPublicProfilePage = () => {
   const profileActions = profile && !isMe ? (
     <div className={styles.profileActions}>
       {!isBlocked && (
-        <button
-          className={`${styles.profileActionButton} ${styles.profileFavoriteButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}
+        <ProfilePillButton
+          icon={favoriteIconOn}
+          label={isFavorited ? 'お気に入り解除' : 'お気に入り'}
           onClick={handleFavoriteToggle}
           disabled={actionLoading}
-        >
-          <img
-            src={favoriteIconOn}
-            alt=""
-            className={`${styles.profileActionIcon} ${styles.profileFavoriteIcon}${isFavorited ? ` ${styles.profileFavoriteIconFavorited}` : ''}`}
-          />
-          {isFavorited ? 'お気に入り解除' : 'お気に入り'}
-        </button>
+          className={`${styles.profileFavoriteButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}
+          iconClassName={`${styles.profileFavoriteIcon}${isFavorited ? ` ${styles.profileFavoriteIconFavorited}` : ''}`}
+        />
       )}
       <div className={styles.profileActionPair}>
         <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} />
-        <button
-          type="button"
-          className={`${styles.profileActionButton} ${styles.profileActionIconButton}`}
+        <ProfilePillButton
+          icon={dmIcon}
           onClick={handleDM}
           disabled={dmLoading}
-          aria-label="DMを開始"
+          iconOnly
+          themedIcon
+          ariaLabel="DMを開始"
           title="DMを開始"
-        >
-          <img src={dmIcon} alt="" className={`${styles.profileActionIconOnly} themed-icon`} />
-        </button>
+        />
       </div>
     </div>
   ) : undefined;

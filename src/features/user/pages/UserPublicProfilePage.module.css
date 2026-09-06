@@ -121,68 +121,20 @@
   gap: 0.5rem;
 }
 
-.profileActionButton {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-height: 2.25rem;
-  padding: 0.42rem 1.25rem 0.42rem 3rem;
-  width: 13.5rem;
-  background: var(--color-bg-elevated);
-  border: 1.5px solid var(--color-border);
-  border-radius: 999px;
-  font-size: 1.25rem;
-  line-height: 1.1;
-  color: var(--color-text);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.profileActionButton:hover {
-  background: var(--color-surface);
-}
-
 .profileFavoriteButton {
-  background: #38BDF8;
-  border-color: #38BDF8;
-  color: #fff;
-}
-
-.profileFavoriteButton:hover {
-  background: #0EA5E9;
-  border-color: #0EA5E9;
-}
-
-.profileActionButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.profileActionButton:focus,
-.profileActionButton:focus-visible {
-  outline: none;
+  --pill-bg: #38BDF8;
+  --pill-border: #38BDF8;
+  --pill-color: #fff;
+  --pill-bg-hover: #0EA5E9;
+  --pill-border-hover: #0EA5E9;
 }
 
 .profileActionButtonFavorited {
-  background: #F97316;
-  border-color: #F97316;
-  color: #fff;
-}
-
-.profileActionButtonFavorited:hover {
-  background: #EA6C0A;
-}
-
-.profileActionIcon {
-  position: absolute;
-  left: 1.1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.55rem;
-  height: 1.55rem;
-  object-fit: fill;
+  --pill-bg: #F97316;
+  --pill-border: #F97316;
+  --pill-color: #fff;
+  --pill-bg-hover: #EA6C0A;
+  --pill-border-hover: #F97316;
 }
 
 .profileActionIconFavorited {
@@ -197,46 +149,15 @@
   filter: none;
 }
 
-.profileActionIconButton {
-  width: 2.25rem;
-  min-width: 2.25rem;
-  height: 2.25rem;
-  min-height: 2.25rem;
-  justify-content: center;
-  padding: 0;
-  border-radius: 50%;
-}
-
-.profileActionIconOnly {
-  width: 1.18rem;
-  height: 1.18rem;
-  object-fit: fill;
-}
-
 @media (max-width: 640px) {
   .profileActions {
     align-items: stretch;
     width: 100%;
   }
 
-  .profileActionButton {
-    flex: 0 0 13.5rem;
-    width: 13.5rem;
-    max-width: 100%;
-    font-size: 1rem;
-  }
-
   .profileActionPair {
     flex: 1 1 auto;
     flex-wrap: wrap;
-  }
-
-  .profileActionIconButton {
-    flex: 0 0 2.25rem;
-    width: 2.25rem;
-    min-width: 2.25rem;
-    height: 2.25rem;
-    min-height: 2.25rem;
   }
 }
 

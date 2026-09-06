@@ -1,0 +1,76 @@
+.button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 2.25rem;
+  width: 13.5rem;
+  padding: 0.42rem 1.25rem 0.42rem 3rem;
+  border: 1.5px solid var(--pill-border, var(--color-border));
+  border-radius: 999px;
+  background: var(--pill-bg, var(--color-bg-elevated));
+  color: var(--pill-color, var(--color-text));
+  font-size: 1.25rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.button:hover {
+  background: var(--pill-bg-hover, var(--color-surface));
+  border-color: var(--pill-border-hover, var(--pill-border, var(--color-border)));
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button:focus,
+.button:focus-visible {
+  outline: none;
+}
+
+.icon {
+  position: absolute;
+  left: 1.1rem;
+  top: 50%;
+  width: 1.55rem;
+  height: 1.55rem;
+  object-fit: fill;
+  transform: translateY(-50%);
+}
+
+.iconOnly {
+  width: 2.25rem;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.iconOnlyImg {
+  width: 1.18rem;
+  height: 1.18rem;
+  object-fit: fill;
+}
+
+@media (max-width: 640px) {
+  .button {
+    flex: 0 0 13.5rem;
+    width: 13.5rem;
+    max-width: 100%;
+    font-size: 1rem;
+  }
+
+  .iconOnly {
+    flex: 0 0 2.25rem;
+    width: 2.25rem;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    min-height: 2.25rem;
+  }
+}
