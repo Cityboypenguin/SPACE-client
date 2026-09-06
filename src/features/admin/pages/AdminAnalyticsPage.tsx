@@ -4,7 +4,7 @@ import { getAnalytics, getCommunityAnalytics } from '../api/analytics';
 import { TimeSeriesChart } from '../components/organisms/TimeSeriesChart';
 import type { AnalyticsSummary, CommunityStatItem } from '../api/analytics';
 import { downloadCsv } from '../lib/exportCsv';
-import styles from './AdminPageStyles.module.css';
+import styles from '../styles/AdminShared.module.css';
 
 function Stat({ label: l, value: v, sub }: { label: string; value: string | number; sub?: string }) {
   return (

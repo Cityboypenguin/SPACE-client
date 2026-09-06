@@ -144,6 +144,16 @@
   color: var(--color-primary);
 }
 
+.optionPlain[data-clickable='true'],
+.optionBar[data-clickable='true'] {
+  cursor: pointer;
+}
+
+.optionPlain[data-clickable='false'],
+.optionBar[data-clickable='false'] {
+  cursor: default;
+}
+
 /* 結果表示中(期限切れ or 期限なし)の選択肢: 得票率で塗りつぶすピル型バー */
 .optionBar {
   position: relative;
@@ -234,6 +244,30 @@
   cursor: default;
 }
 
+.submitButtonSpaced {
+  margin-left: 0.5rem;
+}
+
+.formError,
+.cardError {
+  color: #ef4444;
+  font-size: 0.78rem;
+}
+
+.formError {
+  margin: 0 0 0.4rem;
+}
+
+.cardError {
+  margin: 0.3rem 0 0;
+}
+
+.listError {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
 .cancelFormButton {
   background: none;
   border: 1px solid var(--color-border);
@@ -280,6 +314,10 @@
   margin-bottom: 0.4rem;
   background: var(--color-bg-elevated);
   color: var(--color-text);
+}
+
+.formInputFlush {
+  margin-bottom: 0;
 }
 
 .optionInputRow {

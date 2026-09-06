@@ -6,6 +6,7 @@ import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminUserTimetableSection } from '../components/organisms/AdminUserTimetableSection';
 import { UserListItem } from '../../../components/molecules/UserListItem';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import styles from '../styles/AdminShared.module.css';
 
 const STATUS_FROZEN = 'frozen';
 
@@ -94,13 +95,13 @@ export const AdminUserDetailPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <button onClick={() => navigate(-1)}><ChevronLeft /> 戻る</button>
         <h1>ユーザー詳細</h1>
 
-        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
 
-        <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+        <div className={styles.buttonRowCompactSpaced}>
           <button onClick={() => navigate(`/admin/users/${id}/profile`)}>プロフィールを見る</button>
           <button onClick={() => navigate(`/admin/users/${id}/edit`)}>情報を編集</button>
         </div>
@@ -117,15 +118,8 @@ export const AdminUserDetailPage = () => {
           <dt>ステータス</dt>
           <dd>
             <span
-              style={{
-                display: 'inline-block',
-                padding: '2px 10px',
-                borderRadius: 12,
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                background: isFrozen ? '#dbeafe' : '#dcfce7',
-                color: isFrozen ? '#1d4ed8' : '#16a34a',
-              }}
+              className={styles.userStatusBadge}
+              data-status={isFrozen ? 'frozen' : 'active'}
             >
               {isFrozen ? '凍結中' : 'アクティブ'}
             </span>
@@ -136,27 +130,21 @@ export const AdminUserDetailPage = () => {
           <dd>{user.updatedAt}</dd>
         </dl>
 
-        <div style={{ marginTop: '2rem', marginBottom: '2rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: '8px' }}>
-          <h2 style={{ fontSize: '1.25rem', marginTop: 0, marginBottom: '1rem' }}>交友関係 (管理者閲覧用)</h2>
+        <div className={styles.relationshipSection}>
+          <h2 className={styles.relationshipTitle}>交友関係 (管理者閲覧用)</h2>
           {relationsLoading ? (
             <p>読み込み中...</p>
           ) : (
-            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <div className={styles.relationshipGrid}>
 
-              <div style={{ flex: 1, minWidth: '300px', background: 'var(--color-bg-elevated)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                <h3 style={{ fontSize: '1rem', marginTop: 0, borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
+              <div className={styles.relationshipCard}>
+                <h3 className={styles.relationshipCardTitle}>
                   お気に入り ({favorites.length})
                 </h3>
                 {favorites.length === 0 ? (
-                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>登録なし</p>
+                  <p className={styles.mutedSmall}>登録なし</p>
                 ) : (
-                  <ul style={{
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    maxHeight: '400px',
-                    overflowY: 'auto'
-                  }}>
+                  <ul className={styles.scrollList}>
                     {favorites.map(fUser => (
                       <UserListItem key={fUser.ID} user={fUser} basePath="/admin/users" />
                     ))}
@@ -164,20 +152,14 @@ export const AdminUserDetailPage = () => {
                 )}
               </div>
 
-              <div style={{ flex: 1, minWidth: '300px', background: 'var(--color-bg-elevated)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                <h3 style={{ fontSize: '1rem', marginTop: 0, color: 'var(--color-danger)', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
+              <div className={styles.relationshipCard}>
+                <h3 className={`${styles.relationshipCardTitle} ${styles.errorText}`}>
                   ブロック ({blockers.length})
                 </h3>
                 {blockers.length === 0 ? (
-                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>ブロックなし</p>
+                  <p className={styles.mutedSmall}>ブロックなし</p>
                 ) : (
-                  <ul style={{
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    maxHeight: '400px',
-                    overflowY: 'auto'
-                  }}>
+                  <ul className={styles.scrollList}>
                     {blockers.map(bUser => (
                       <UserListItem key={bUser.ID} user={bUser} basePath="/admin/users" />
                     ))}
@@ -192,51 +174,27 @@ export const AdminUserDetailPage = () => {
 
         <hr />
 
-        {freezeError && <p style={{ color: 'var(--color-danger)' }}>{freezeError}</p>}
+        {freezeError && <p className={styles.errorText}>{freezeError}</p>}
 
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className={styles.buttonRow}>
           {isFrozen ? (
             <button
               onClick={handleUnfreeze}
-              style={{
-                padding: '0.5rem 1.25rem',
-                borderRadius: 8,
-                border: '1px solid #93c5fd',
-                background: '#eff6ff',
-                color: '#1d4ed8',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className={styles.freezeButton}
             >
               凍結を解除する
             </button>
           ) : (
             <button
               onClick={handleFreeze}
-              style={{
-                padding: '0.5rem 1.25rem',
-                borderRadius: 8,
-                border: '1px solid #93c5fd',
-                background: '#eff6ff',
-                color: '#1d4ed8',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className={styles.freezeButton}
             >
               ユーザーを凍結する
             </button>
           )}
           <button
             onClick={handleDelete}
-            style={{
-              padding: '0.5rem 1.25rem',
-              borderRadius: 8,
-              border: '1px solid #fca5a5',
-              background: 'var(--color-bg-elevated)',
-              color: 'var(--color-danger)',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
+            className={styles.dangerOutlineButton}
           >
             このユーザーを削除する
           </button>

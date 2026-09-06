@@ -6,6 +6,10 @@
   flex-shrink: 0;
 }
 
+.badge[data-clickable='true'] {
+  cursor: pointer;
+}
+
 /* オーナーバッジは意図的な機能アクセントカラー（紫）としてテーマに依らず固定 */
 .badgeOwner {
   background: #ede9fe;

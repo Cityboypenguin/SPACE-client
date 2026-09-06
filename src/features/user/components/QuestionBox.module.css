@@ -168,6 +168,13 @@
   padding-bottom: var(--question-composer-space);
 }
 
+.answerLoadingText {
+  color: var(--color-text-muted);
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
 .detailQuestionBlock {
   position: relative;
   padding: 0.8rem 1.5rem 0.65rem;
@@ -435,6 +442,26 @@
   width: 18px;
   height: 18px;
   transition: filter 0.15s;
+}
+
+.likeIconInactive {
+  filter: opacity(0.35);
+}
+
+.likeIconInactiveDark {
+  filter: opacity(0.35) invert(1);
+}
+
+.inlineError {
+  color: #ef4444;
+  font-size: 0.78rem;
+  margin: 0.3rem 0 0;
+}
+
+.listError {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 .likeCountDefault {

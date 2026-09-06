@@ -240,12 +240,7 @@ export const AnswerItem = ({
             <img
               src={answer.likedByMe ? likeIconOn : likeIconOff}
               alt="いいね"
-              className={styles.likeIcon}
-              style={{
-                filter: answer.likedByMe
-                  ? 'none'
-                  : theme === 'dark' ? 'opacity(0.35) invert(1)' : 'opacity(0.35)',
-              }}
+              className={`${styles.likeIcon} ${answer.likedByMe ? '' : theme === 'dark' ? styles.likeIconInactiveDark : styles.likeIconInactive}`}
             />
             <span className={answer.likedByMe ? styles.likeCountActive : styles.likeCountDefault}>
               {answer.likeCount}
@@ -254,7 +249,7 @@ export const AnswerItem = ({
         </div>
       </div>
 
-      {error && <p style={{ color: '#ef4444', fontSize: '0.78rem', margin: '0.3rem 0 0' }}>{error}</p>}
+      {error && <p className={styles.inlineError}>{error}</p>}
     </div>
   );
 };

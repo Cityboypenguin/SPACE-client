@@ -8,7 +8,8 @@ import { useToast } from '../../../context/useToast';
 import { useRef } from 'react';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
-import styles from './BlockedUsersPage.module.css';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
+import styles from './UserListPage.module.css';
 
 const LIMIT = 20;
 
@@ -72,7 +73,7 @@ export const BlockedUsersPage = () => {
   return (
     <div>
       <UserSidebar />
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
+      <main className={styles.main}>
         <button onClick={() => navigate('/mypage')}><ChevronLeft /> マイページに戻る</button>
         <h1>ブロック一覧</h1>
 
@@ -82,7 +83,7 @@ export const BlockedUsersPage = () => {
           <p className={styles.emptyText}>ブロックしているユーザーはいません。</p>
         ) : (
           <>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul className={styles.list}>
               {users.map((user) => (
                 <UserListItem
                   key={user.ID}
@@ -93,7 +94,7 @@ export const BlockedUsersPage = () => {
                 />
               ))}
             </ul>
-            <div ref={sentinelRef} style={{ height: '1px' }} />
+            <ScrollSentinel ref={sentinelRef} />
             {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
           </>
         )}

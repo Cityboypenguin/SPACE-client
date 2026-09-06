@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getInquiries } from '../api/inquiry';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
-import styles from './AdminPageStyles.module.css';
+import styles from '../styles/AdminShared.module.css';
+import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
+import { AdminPagination } from '../components/molecules/AdminPagination';
 
 type Inquiry = {
   id: string;
@@ -93,16 +95,7 @@ export const AdminInquiryListPage: React.FC = () => {
           </div>
           <div className={styles.toolbarGroup}>
             <span className={styles.countText}>全 {total} 件</span>
-            <label className={styles.controlGroupPlain}>
-              表示件数
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className={styles.select}
-              >
-                {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
-              </select>
-            </label>
+            <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
           </div>
         </div>
 
@@ -154,25 +147,12 @@ export const AdminInquiryListPage: React.FC = () => {
           <p className={styles.emptyState}>問い合わせが見つかりませんでした</p>
         )}
 
-        {totalPages > 1 && (
-          <div className={styles.pagination}>
-            <button
-              onClick={() => loadPage(page - 1, filterStatus)}
-              disabled={page === 0}
-              className={styles.paginationButton}
-            >
-              前へ
-            </button>
-            <span className={styles.cellText}>{page + 1} / {totalPages}</span>
-            <button
-              onClick={() => loadPage(page + 1, filterStatus)}
-              disabled={page >= totalPages - 1}
-              className={styles.paginationButton}
-            >
-              次へ
-            </button>
-          </div>
-        )}
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          onPrev={() => loadPage(page - 1, filterStatus)}
+          onNext={() => loadPage(page + 1, filterStatus)}
+        />
       </main>
     </div>
   );

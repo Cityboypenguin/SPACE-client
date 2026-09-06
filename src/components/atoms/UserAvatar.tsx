@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { storageUrl } from '../../lib/storage';
 import { Avatar } from './Avatar';
 import { useAuth } from '../../features/user/context/useAuth';
+import styles from './UserAvatar.module.css';
 
 type Props = {
   userId: string;
@@ -21,13 +22,10 @@ export const UserAvatar = ({ userId, name, avatarUrl, size = 40, basePath = '/us
     <img
       src={storageUrl(avatarUrl) ?? undefined}
       alt={name}
+      className={styles.image}
       style={{
         width: size,
         height: size,
-        borderRadius: '50%',
-        objectFit: 'cover',
-        display: 'block',
-        flexShrink: 0,
       }}
     />
   ) : (
@@ -39,7 +37,7 @@ export const UserAvatar = ({ userId, name, avatarUrl, size = 40, basePath = '/us
       to={targetPath}
       state={{ from: location.pathname }}
       onClick={(e) => e.stopPropagation()}
-      style={{ textDecoration: 'none', flexShrink: 0, display: 'inline-flex' }}
+      className={styles.link}
     >
       {content}
     </Link>

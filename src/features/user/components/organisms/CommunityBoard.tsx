@@ -3,28 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getCommunityMembers, type Community } from '../../api/community';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { toUserMessage } from '../../../../lib/errorMessages';
+import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
 import styles from './CommunityBoard.module.css';
-
-const URL_SPLIT_REGEX = /(https?:\/\/[^\s\u3000。、！？「」（）【】『』〔〕…‥・]+)/g;
-const URL_TEST_REGEX = /^https?:\/\//;
-
-const renderTextWithLinks = (text: string) =>
-  text.split(URL_SPLIT_REGEX).map((part, i) =>
-    URL_TEST_REGEX.test(part) ? (
-      <a
-        key={i}
-        href={part}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={styles.link}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {part}
-      </a>
-    ) : (
-      part
-    ),
-  );
 
 type Props = {
   community: Community;
@@ -83,17 +63,14 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
     <div
       onClick={() => setExpanded((v) => !v)}
       className={`${styles.card} ${expanded ? styles.cardExpanded : styles.cardCollapsed}`}
-      style={{
-        boxShadow: expanded ? '0 2px 12px rgba(100,108,255,0.10)' : '0 1px 4px rgba(0,0,0,0.06)',
-      }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div className={styles.headerRow}>
         <CommunityAvatar 
           name={community.name} 
           src={community.avatarURL} 
           size={40} 
         />
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className={styles.titleBlock}>
           <div className={styles.title}>
             {community.name}
           </div>
@@ -112,7 +89,7 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
           className={styles.expandedSection}
         >
           {shownMemberCount !== null && (
-            <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div className={styles.memberCountRow}>
               <span className={styles.memberCountLabel}>メンバー数:</span>
               <span className={styles.memberCountBadge}>
                 {shownMemberCount} 人
@@ -120,13 +97,17 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
             </div>
           )}
           <p className={styles.description}>
-            {renderTextWithLinks(community.description)}
+            {renderTextWithLinks({
+              text: community.description,
+              linkClassName: styles.link,
+              stopPropagation: true,
+            })}
           </p>
           {error && <p className={styles.errorText}>{error}</p>}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div className={styles.actionsRow}>
 
             {joinedState ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div className={styles.joinedActions}>
                 <span className={styles.joinedBadge}>
                   参加済み
                 </span>

@@ -16,7 +16,7 @@ import {
 } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { storageUrl } from '../../../lib/storage';
-import styles from './AdminPageStyles.module.css';
+import styles from '../styles/AdminShared.module.css';
 
 const ROLE_OWNER = 'owner';
 

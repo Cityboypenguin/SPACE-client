@@ -34,6 +34,10 @@
   font-size: 0.85rem;
 }
 
+.tableWrap {
+  overflow-x: auto;
+}
+
 .grid th,
 .grid td {
   border: 1px solid var(--color-border);
@@ -68,6 +72,151 @@
   border-radius: 6px;
   background: var(--entry-bg, var(--color-bg-elevated));
   color: #fff;
+}
+
+.entry[data-color='RED_VIVID'] {
+  background: #ff2020;
+}
+
+.entry[data-color='ORANGE_VIVID'] {
+  background: #ff7a00;
+}
+
+.entry[data-color='YELLOW_VIVID'] {
+  background: #ffe600;
+}
+
+.entry[data-color='GREEN_VIVID'] {
+  background: #00d95c;
+}
+
+.entry[data-color='CYAN_VIVID'] {
+  background: #00d9e8;
+}
+
+.entry[data-color='BLUE_VIVID'] {
+  background: #0057ff;
+}
+
+.entry[data-color='INDIGO_VIVID'] {
+  background: #2200f0;
+}
+
+.entry[data-color='PURPLE_VIVID'] {
+  background: #8000ff;
+}
+
+.entry[data-color='MAGENTA_VIVID'] {
+  background: #ff00e0;
+}
+
+.entry[data-color='RED'] {
+  background: #e5342a;
+}
+
+.entry[data-color='ORANGE'] {
+  background: #f0932b;
+}
+
+.entry[data-color='YELLOW'] {
+  background: #f5e94f;
+}
+
+.entry[data-color='GREEN'] {
+  background: #58d66e;
+}
+
+.entry[data-color='CYAN'] {
+  background: #52e6f0;
+}
+
+.entry[data-color='BLUE'],
+.entry:not([data-color]) {
+  background: #4a80e0;
+}
+
+.entry[data-color='INDIGO'] {
+  background: #2e3edb;
+}
+
+.entry[data-color='PURPLE'] {
+  background: #8e3fe0;
+}
+
+.entry[data-color='MAGENTA'] {
+  background: #e63fdc;
+}
+
+.entry[data-color='RED_LIGHT'] {
+  background: #e8a19c;
+}
+
+.entry[data-color='ORANGE_LIGHT'] {
+  background: #f0c9a0;
+}
+
+.entry[data-color='YELLOW_LIGHT'] {
+  background: #f0dfa0;
+}
+
+.entry[data-color='GREEN_LIGHT'] {
+  background: #b8d9a8;
+}
+
+.entry[data-color='CYAN_LIGHT'] {
+  background: #a8cdd0;
+}
+
+.entry[data-color='BLUE_LIGHT'] {
+  background: #b0c8ea;
+}
+
+.entry[data-color='INDIGO_LIGHT'] {
+  background: #a8c0e6;
+}
+
+.entry[data-color='PURPLE_LIGHT'] {
+  background: #bcb0dc;
+}
+
+.entry[data-color='MAGENTA_LIGHT'] {
+  background: #d0a8c0;
+}
+
+.entry[data-color='RED_MUTED'] {
+  background: #cc6b64;
+}
+
+.entry[data-color='ORANGE_MUTED'] {
+  background: #dba064;
+}
+
+.entry[data-color='YELLOW_MUTED'] {
+  background: #dcc468;
+}
+
+.entry[data-color='GREEN_MUTED'] {
+  background: #8fb87a;
+}
+
+.entry[data-color='CYAN_MUTED'] {
+  background: #6b9ea3;
+}
+
+.entry[data-color='BLUE_MUTED'] {
+  background: #6e93d1;
+}
+
+.entry[data-color='INDIGO_MUTED'] {
+  background: #7088c4;
+}
+
+.entry[data-color='PURPLE_MUTED'] {
+  background: #8878b8;
+}
+
+.entry[data-color='MAGENTA_MUTED'] {
+  background: #b06b94;
 }
 
 .entryInfo {

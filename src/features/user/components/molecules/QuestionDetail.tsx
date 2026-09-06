@@ -7,6 +7,7 @@ import { type Question, type Answer } from '../../api/question';
 import { AnswerItem } from './AnswerItem';
 import { ImageAttachButton, ImageAttachPreviews } from './ImageAttachControl';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { ScrollSentinel } from '../../../../components/atoms/ScrollSentinel';
 import styles from '../QuestionBox.module.css';
 import menuStyles from '../organisms/PostCard.module.css';
 
@@ -281,9 +282,9 @@ export const QuestionDetail = ({
               />
             );
           })}
-          <div ref={bottomSentinelRef} style={{ height: 1 }} />
+          <ScrollSentinel ref={bottomSentinelRef} />
           {loadingMoreAnswers && (
-            <p style={{ color: 'var(--color-text-muted)', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={styles.answerLoadingText}>読み込み中...</p>
           )}
         </div>
 

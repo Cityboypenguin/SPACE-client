@@ -4,6 +4,9 @@ import { AdminHeader } from '../components/organisms/AdminHeader';
 import { listTerms, listConsents, type TermsOfService, type TermsConsentRecord } from '../api/terms';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
+import { AdminPagination } from '../components/molecules/AdminPagination';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminTermsDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,121 +53,86 @@ export const AdminTermsDetailPage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1rem' }}>
+      <main className={styles.pageMedium}>
         <button
           onClick={() => navigate('/admin/terms')}
         >
           <ChevronLeft /> 利用規約一覧に戻る
         </button>
 
-        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
-        {loading && <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
+        {loading && <p className={styles.emptyState}>読み込み中...</p>}
 
         {!loading && terms && (
           <>
-            <div style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 12,
-              padding: '1.25rem 1.5rem',
-              marginBottom: '2rem',
-            }}>
-              <h1 style={{ margin: '0 0 1rem', fontSize: '1.1rem', fontWeight: 700 }}>
+            <div className={styles.summaryCard}>
+              <h1 className={styles.summaryTitle}>
                 バージョン {terms.version}
               </h1>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
-                <div><span style={{ fontWeight: 600 }}>施行日時：</span>{new Date(terms.effectiveDate).toLocaleString('ja-JP')}</div>
-                <div><span style={{ fontWeight: 600 }}>登録日時：</span>{new Date(terms.createdAt).toLocaleString('ja-JP')}</div>
+              <div className={styles.summaryGrid}>
+                <div><span className={styles.strongText}>施行日時：</span>{new Date(terms.effectiveDate).toLocaleString('ja-JP')}</div>
+                <div><span className={styles.strongText}>登録日時：</span>{new Date(terms.createdAt).toLocaleString('ja-JP')}</div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>同意ユーザー一覧</h2>
-              <span style={{
-                background: '#dbeafe',
-                color: '#1d4ed8',
-                borderRadius: 12,
-                padding: '0.15rem 0.6rem',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-              }}>
+            <div className={styles.sectionToolbar}>
+              <h2 className={styles.sectionHeading}>同意ユーザー一覧</h2>
+              <span className={styles.countBadge}>
                 {consentTotal}人
               </span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
-                表示件数
-                <select
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                  style={{ border: '1px solid var(--color-border)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
-                >
-                  {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
-                </select>
-              </label>
+              <div className={styles.pushRight}>
+                <AdminPageSizeSelect value={pageSize} onChange={setPageSize} muted />
+              </div>
             </div>
 
             {consents.length === 0 ? (
-              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>
+              <p className={styles.emptyState}>
                 まだ同意したユーザーはいません
               </p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <table className={styles.compactTable}>
                 <thead>
-                  <tr style={{ background: 'var(--color-surface)', borderBottom: '2px solid var(--color-border)' }}>
-                    <th style={thStyle}>ユーザー名</th>
-                    <th style={thStyle}>アカウントID</th>
-                    <th style={thStyle}>メールアドレス</th>
-                    <th style={thStyle}>同意日時</th>
+                  <tr className={styles.tableHeaderRowStrong}>
+                    <th className={styles.mutedTableHeader}>ユーザー名</th>
+                    <th className={styles.mutedTableHeader}>アカウントID</th>
+                    <th className={styles.mutedTableHeader}>メールアドレス</th>
+                    <th className={styles.mutedTableHeader}>同意日時</th>
                   </tr>
                 </thead>
                 <tbody>
                   {consents.map((c) => (
                     <tr
                       key={c.ID}
-                      style={{ borderBottom: '1px solid var(--color-border)', cursor: 'pointer' }}
+                      className={styles.clickableRow}
                       onClick={() => navigate(`/admin/users/${c.user.ID}`)}
                     >
-                      <td style={tdStyle}>
-                        <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{c.user.name}</span>
+                      <td className={styles.tableCellBody}>
+                        <span className={styles.strongText}>{c.user.name}</span>
                       </td>
-                      <td style={tdStyle}>@{c.user.accountID}</td>
-                      <td style={tdStyle}>{c.user.email}</td>
-                      <td style={tdStyle}>{new Date(c.consentedAt).toLocaleString('ja-JP')}</td>
+                      <td className={styles.tableCellBody}>@{c.user.accountID}</td>
+                      <td className={styles.tableCellBody}>{c.user.email}</td>
+                      <td className={styles.tableCellBody}>{new Date(c.consentedAt).toLocaleString('ja-JP')}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
 
-            {totalPages > 1 && (
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
-                <button onClick={() => loadConsents(consentPage - 1)} disabled={consentPage === 0}>前へ</button>
-                <span>{consentPage + 1} / {totalPages}</span>
-                <button onClick={() => loadConsents(consentPage + 1)} disabled={consentPage >= totalPages - 1}>次へ</button>
-              </div>
-            )}
+            <AdminPagination
+              page={consentPage}
+              totalPages={totalPages}
+              onPrev={() => loadConsents(consentPage - 1)}
+              onNext={() => loadConsents(consentPage + 1)}
+            />
           </>
         )}
 
         {!loading && !terms && !error && (
-          <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '2rem' }}>
+          <p className={styles.emptyState}>
             利用規約が見つかりませんでした
           </p>
         )}
       </main>
     </div>
   );
-};
-
-const thStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  textAlign: 'left',
-  fontWeight: 600,
-  color: 'var(--color-text-muted)',
-  fontSize: '0.85rem',
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: '0.75rem 1rem',
-  color: 'var(--color-text)',
-  verticalAlign: 'middle',
 };

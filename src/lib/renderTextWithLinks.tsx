@@ -16,9 +16,10 @@ type Props = {
   linkClassName?: string;
   hashtagClassName?: string;
   onHashtagClick?: (tag: string) => void;
+  stopPropagation?: boolean;
 };
 
-export const renderTextWithLinks = ({ text, linkClassName, hashtagClassName, onHashtagClick }: Props): ReactNode[] => {
+export const renderTextWithLinks = ({ text, linkClassName, hashtagClassName, onHashtagClick, stopPropagation = false }: Props): ReactNode[] => {
   const nodes: ReactNode[] = [];
   let lastIndex = 0;
   let key = 0;
@@ -40,7 +41,14 @@ export const renderTextWithLinks = ({ text, linkClassName, hashtagClassName, onH
 
     if (url) {
       nodes.push(
-        <a key={key++} href={url} target="_blank" rel="noopener noreferrer" className={linkClassName}>
+        <a
+          key={key++}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClassName}
+          onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
+        >
           {url}
         </a>,
       );
@@ -49,8 +57,11 @@ export const renderTextWithLinks = ({ text, linkClassName, hashtagClassName, onH
       nodes.push(
         <span
           key={key++}
-          className={[hashtagClassName, styles.hashtag].filter(Boolean).join(' ')}
-          style={{ cursor: onHashtagClick ? 'pointer' : undefined }}
+          className={[
+            hashtagClassName,
+            styles.hashtag,
+            onHashtagClick ? styles.hashtagClickable : '',
+          ].filter(Boolean).join(' ')}
           onClick={onHashtagClick ? (e) => { e.stopPropagation(); onHashtagClick(tag); } : undefined}
         >
           {hashtag}

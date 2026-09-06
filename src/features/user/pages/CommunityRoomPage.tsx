@@ -178,7 +178,7 @@ export const CommunityRoomPage = () => {
         <button onClick={() => navigate('/community')}><ChevronLeft /></button>
         <button
           onClick={() => openDetail()}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, flex: 1, overflow: 'hidden' }}
+          className={styles.roomHeaderButton}
         >
           <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
           <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
@@ -187,7 +187,7 @@ export const CommunityRoomPage = () => {
 
       <div className={styles.messageListWrapper}>
         <div className={styles.messageList} ref={messageListRef}>
-          <div ref={topSentinelRef} style={{ height: '1px' }} />
+          <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
             <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
@@ -203,7 +203,7 @@ export const CommunityRoomPage = () => {
               && (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
 
             return (
-              <div key={msg.ID} style={{ display: 'contents' }}>
+              <div key={msg.ID} className={styles.messageGroup}>
                 <ChatDateSeparator
                   currentCreatedAt={msg.createdAt}
                   prevCreatedAt={prevMsg?.createdAt}
@@ -228,7 +228,7 @@ export const CommunityRoomPage = () => {
               </div>
             );
           })}
-          <div ref={bottomSentinelRef} style={{ height: '1px' }} />
+          <div ref={bottomSentinelRef} className={styles.scrollSentinel} />
           {loadingNewer && (
             <p className={pageStyles.loadingText}>読み込み中...</p>
           )}

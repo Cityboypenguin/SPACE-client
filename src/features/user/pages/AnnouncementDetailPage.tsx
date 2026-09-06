@@ -21,7 +21,7 @@ export const AnnouncementDetailPage = () => {
   return (
     <div>
       <UserSidebar />
-      <main style={{ maxWidth: '700px', margin: '0 auto', padding: '1rem' }}>
+      <main className={styles.main}>
         <button
           onClick={() => navigate(-1)}
         >
@@ -36,7 +36,7 @@ export const AnnouncementDetailPage = () => {
           <p className={styles.loadingText}>お知らせが見つかりません</p>
         ) : (
           <div className={styles.card}>
-            <div style={{ marginBottom: '0.5rem' }}>
+            <div className={styles.badgeRow}>
               <span className={styles.badge}>
                 運営からのお知らせ
               </span>

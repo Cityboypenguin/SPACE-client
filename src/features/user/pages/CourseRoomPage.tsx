@@ -104,7 +104,7 @@ export const CourseRoomPage = () => {
           <ChevronLeft />
         </button>
         {isPollView ? (
-          <strong className={styles.roomTitle} style={{ flex: 1 }}>投票</strong>
+          <strong className={`${styles.roomTitle} ${styles.roomTitleFlex}`}>投票</strong>
         ) : (
           <>
             <div className={styles.roomTitleBlock}>

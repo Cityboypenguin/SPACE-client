@@ -38,8 +38,21 @@
 }
 
 /* ============ Search Bar ============ */
+.searchWrap {
+  position: relative;
+}
+
 .searchBarArea {
   margin: 3rem 1rem;
+}
+
+.searchSuggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin-top: 4px;
 }
 
 /* ============ Tabs ============ (共通: src/components/molecules/Tabs.tsx) ============ */

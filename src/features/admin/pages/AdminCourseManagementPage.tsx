@@ -13,7 +13,7 @@ import {
   type Course,
 } from '../api/courses';
 import { TIMETABLE_DAYS } from '../../user/components/timetableConstants';
-import styles from './AdminPageStyles.module.css';
+import styles from '../styles/AdminShared.module.css';
 
 const LIST_PAGE_SIZE = 20;
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { createAnnouncement } from '../api/announcements';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminAnnouncementCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -32,16 +33,16 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: 700, margin: '2rem auto', padding: '0 1rem' }}>
-        <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>
+      <main className={styles.formPage}>
+        <h1 className={styles.formPageTitle}>
           お知らせ作成
         </h1>
 
-        {error && <p style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p className={styles.formError}>{error}</p>}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <form onSubmit={handleSubmit} className={styles.adminForm}>
           <div>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+            <label className={styles.fieldLabel}>
               タイトル
             </label>
             <input
@@ -50,19 +51,12 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
               onChange={(e) => setTitle(e.target.value)}
               maxLength={255}
               placeholder="例: 利用規約の改定について"
-              style={{
-                width: '100%',
-                padding: '0.6rem 0.75rem',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                fontSize: '0.95rem',
-                boxSizing: 'border-box',
-              }}
+              className={styles.formInput}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+            <label className={styles.fieldLabel}>
               本文（マークダウン形式）
             </label>
             <textarea
@@ -70,51 +64,25 @@ export const AdminAnnouncementCreatePage: React.FC = () => {
               onChange={(e) => setBody(e.target.value)}
               rows={12}
               placeholder={'## 見出し\n\n本文をマークダウンで記述できます。\n\n- リスト\n- リスト'}
-              style={{
-                width: '100%',
-                padding: '0.6rem 0.75rem',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                fontSize: '0.95rem',
-                fontFamily: 'monospace',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-              }}
+              className={`${styles.formInput} ${styles.monoTextarea}`}
             />
-            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '0.25rem 0 0' }}>
+            <p className={styles.formHelp}>
               マークダウン形式で記述できます
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className={styles.buttonRow}>
             <button
               type="submit"
               disabled={submitting}
-              style={{
-                padding: '0.6rem 1.5rem',
-                background: 'var(--color-primary)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 8,
-                cursor: submitting ? 'not-allowed' : 'pointer',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-              }}
+              className={`${styles.primaryButtonLargeRounded} ${submitting ? styles.disabled : ''}`}
             >
               {submitting ? '送信中...' : '送信する'}
             </button>
             <button
               type="button"
               onClick={() => navigate('/admin/announcements')}
-              style={{
-                padding: '0.6rem 1.5rem',
-                background: 'var(--color-bg-elevated)',
-                color: 'var(--color-text)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                cursor: 'pointer',
-                fontSize: '0.95rem',
-              }}
+              className={styles.secondaryButtonLarge}
             >
               キャンセル
             </button>

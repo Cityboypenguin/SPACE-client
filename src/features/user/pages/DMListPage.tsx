@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
 import { Avatar } from '../../../components/atoms/Avatar';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { listMyDMRooms, deleteRoom, DELETED_ACCOUNT_ID, type Room } from '../api/message';
@@ -171,7 +172,7 @@ export const DMListPage = () => {
                 </li>
               );
             })}
-            <div ref={sentinelRef} style={{ height: '1px' }} />
+            <ScrollSentinel ref={sentinelRef} />
             {dmLoadingMore && (
               <p className={styles.empty}>読み込み中...</p>
             )}

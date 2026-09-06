@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { listMyCommunities, type Community } from '../api/community';
@@ -124,7 +125,7 @@ export const CommunityListPage = () => {
                 </li>
               );
             })}
-            <div ref={sentinelRef} style={{ height: '1px' }} />
+            <ScrollSentinel ref={sentinelRef} />
             {loadingMore && (
               <p className={styles.empty}>読み込み中...</p>
             )}

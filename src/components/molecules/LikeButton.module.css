@@ -6,10 +6,33 @@
   align-items: center;
   gap: 0.3rem;
   transition: opacity 0.1s;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: default;
 }
 
 .icon {
   transition: filter 0.15s;
+}
+
+.iconDefault {
+  width: 20px;
+  height: 20px;
+}
+
+.iconLarge {
+  width: 22px;
+  height: 22px;
+}
+
+.iconInactive {
+  filter: opacity(0.35);
+}
+
+.iconInactiveDark {
+  filter: opacity(0.35) invert(1);
 }
 
 .count {
@@ -26,6 +49,14 @@
 .countDefault {
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.countSmall {
+  font-size: 0.9rem;
+}
+
+.countLarge {
+  font-size: 0.95rem;
 }
 
 .suffix {

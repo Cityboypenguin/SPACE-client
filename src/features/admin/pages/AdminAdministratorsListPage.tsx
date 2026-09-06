@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { getAdministrators, searchAdministrators, type Administrator } from '../api/administrators';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
+import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
+import { AdminPagination } from '../components/molecules/AdminPagination';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminAdministratorListPage = () => {
   const [administrators, setAdministrators] = useState<Administrator[]>([]);
@@ -59,37 +62,29 @@ export const AdminAdministratorListPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <h1>管理者一覧</h1>
-        <form onSubmit={handleSearch} style={{ marginBottom: '1rem' }}>
+        <form onSubmit={handleSearch} className={styles.searchForm}>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="名前で検索"
+            className={styles.input}
           />
-          <button type="submit">検索</button>
+          <button type="submit" className={styles.primaryButton}>検索</button>
           {query && (
-            <button type="button" onClick={handleClear} style={{ marginLeft: '0.5rem' }}>
+            <button type="button" onClick={handleClear} className={styles.paginationButton}>
               クリア
             </button>
           )}
         </form>
-        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>全 {total} 件</p>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text)' }}>
-            表示件数
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              style={{ border: '1px solid var(--color-border)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
-            >
-              {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
-            </select>
-          </label>
+        {error && <p className={styles.errorText}>{error}</p>}
+        <div className={styles.listMetaRow}>
+          <p className={styles.countText}>全 {total} 件</p>
+          <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
         </div>
-        <table>
+        <table className={styles.compactTable}>
           <thead>
             <tr>
               <th>名前</th>
@@ -101,7 +96,7 @@ export const AdminAdministratorListPage = () => {
               <tr
                 key={administrator.ID}
                 onClick={() => navigate(`/admin/administrators/${administrator.ID}`)}
-                style={{ cursor: 'pointer' }}
+                className={styles.clickableRow}
               >
                 <td>{administrator.name}</td>
                 <td>{administrator.email}</td>
@@ -111,11 +106,12 @@ export const AdminAdministratorListPage = () => {
         </table>
         {administrators.length === 0 && !error && <p>該当する管理者が見つかりませんでした</p>}
         {!isSearching && totalPages > 1 && (
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button onClick={() => loadPage(page - 1)} disabled={page === 0}>前へ</button>
-            <span>{page + 1} / {totalPages}</span>
-            <button onClick={() => loadPage(page + 1)} disabled={page >= totalPages - 1}>次へ</button>
-          </div>
+          <AdminPagination
+            page={page}
+            totalPages={totalPages}
+            onPrev={() => loadPage(page - 1)}
+            onNext={() => loadPage(page + 1)}
+          />
         )}
       </main>
     </div>

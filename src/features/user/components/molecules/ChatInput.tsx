@@ -186,7 +186,6 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
           title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
           className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
-          style={{ cursor: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? 'default' : 'pointer' }}
         >
           📎
         </button>
@@ -196,7 +195,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           multiple
           accept={ACCEPTED_FILE_TYPES.join(',')}
           onChange={handleFileChange}
-          style={{ display: 'none' }}
+          className={styles.hiddenInput}
         />
         <textarea
           ref={textareaRef}
@@ -229,33 +228,17 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           }
           disabled={disabled || isBlocked}
           className={styles.inputField}
-          style={{ cursor: (disabled || isBlocked) ? 'default' : 'text' }}
         />
         <button
           type="submit"
           disabled={!canSubmit}
           title={isBlocked ? '送信不可' : disabled ? '送信中...' : '送信'}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '0 4px',
-            cursor: canSubmit ? 'pointer' : 'default',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className={styles.sendIconButton}
         >
           <img
             src={sendIcon}
             alt="送信"
-            style={{
-              width: 28,
-              height: 28,
-              filter: [
-                canSubmit ? null : 'opacity(0.3)',
-                theme === 'dark' ? 'invert(1)' : null,
-              ].filter(Boolean).join(' ') || 'none',
-              transition: 'filter 0.15s',
-            }}
+            className={`${styles.sendIcon} ${!canSubmit ? styles.sendIconDisabled : ''} ${theme === 'dark' ? styles.sendIconDark : ''}`}
           />
         </button>
       </form>

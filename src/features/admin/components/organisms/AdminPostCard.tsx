@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { AdminUserAvatar } from '../../../../components/atoms/AdminUserAvatar';
+import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserMeta } from '../../../../components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { LikeButton } from '../../../../components/molecules/LikeButton';
@@ -22,7 +22,13 @@ export const AdminPostCard = ({ post }: Props) => {
       className={`${styles.card} ${isDeleted ? styles.cardDeleted : ''}`}
       onClick={() => navigate(`/admin/posts/${post.ID}`)}
     >
-      <AdminUserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} />
+      <UserAvatar
+        userId={post.user.ID}
+        name={post.user.name}
+        avatarUrl={post.user.avatarUrl}
+        basePath="/admin/users"
+        useMyPageForCurrentUser={false}
+      />
       <div className={styles.body}>
         <div className={styles.bodyHeader}>
           <UserMeta userId={post.user.ID} name={post.user.name} accountID={post.user.accountID} timestamp={formatTime(post.createdAt)} admin />

@@ -8,6 +8,7 @@ import {
   type Administrator,
 } from '../api/administrators';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminAdministratorEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -71,14 +72,14 @@ export const AdminAdministratorEditPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <button onClick={() => navigate('/admin/administrators')}><ChevronLeft /> 一覧に戻る</button>
         <h1>管理者アカウントの編集</h1>
 
-        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
-        {success && <p style={{ color: 'var(--color-success)' }}>{success}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
+        {success && <p className={styles.successText}>{success}</p>}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}>
+        <form onSubmit={handleSubmit} className={styles.formColumn}>
           <div>
             <label>名前</label><br />
             <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -99,10 +100,10 @@ export const AdminAdministratorEditPage = () => {
           <button type="submit">保存</button>
         </form>
 
-        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
+        <div className={styles.dangerZone}>
           <button
             onClick={handleDelete}
-            style={{ color: 'white', backgroundColor: 'var(--color-danger)', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer' }}
+            className={styles.dangerSolidButton}
           >
             このアカウントを削除
           </button>

@@ -64,6 +64,10 @@
   color: var(--color-text);
 }
 
+.detailTextarea {
+  min-height: 80px;
+}
+
 .buttonGroup {
   display: flex;
   justify-content: flex-end;

@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/user/context/useAuth';
+import styles from './UserNameLink.module.css';
 
 type Props = {
   userId: string;
@@ -21,8 +22,7 @@ export const UserNameLink = ({ userId, className, children, basePath = '/users',
       to={targetPath}
       state={{ from: location.pathname }}
       onClick={(e) => e.stopPropagation()}
-      className={className}
-      style={{ textDecoration: 'none', color: 'inherit' }}
+      className={`${styles.link} ${className ?? ''}`}
     >
       {children}
     </Link>

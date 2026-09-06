@@ -6,6 +6,7 @@ import {
   uploadTermsDocument,
   createTermsOfService,
 } from '../api/terms';
+import styles from '../styles/AdminShared.module.css';
 
 type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 
@@ -69,16 +70,16 @@ export const AdminTermsCreatePage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: 700, margin: '2rem auto', padding: '0 1rem' }}>
-        <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>
+      <main className={styles.formPage}>
+        <h1 className={styles.formPageTitle}>
           利用規約バージョン登録
         </h1>
 
-        {error && <p style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p className={styles.formError}>{error}</p>}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <form onSubmit={handleSubmit} className={styles.adminForm}>
           <div>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+            <label className={styles.fieldLabel}>
               バージョン番号
             </label>
             <input
@@ -87,62 +88,44 @@ export const AdminTermsCreatePage: React.FC = () => {
               onChange={(e) => setVersion(e.target.value)}
               maxLength={50}
               placeholder="例: 1.0.0"
-              style={{
-                width: '100%',
-                padding: '0.6rem 0.75rem',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                fontSize: '0.95rem',
-                boxSizing: 'border-box',
-              }}
+              className={styles.formInput}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+            <label className={styles.fieldLabel}>
               規約ドキュメント（Markdownファイル）
             </label>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <div className={styles.fileUploadRow}>
               <input
                 type="file"
                 accept=".md,.markdown,text/markdown,text/plain"
                 onChange={handleFileChange}
-                style={{ flex: 1, fontSize: '0.9rem' }}
+                className={styles.fileInput}
               />
               <button
                 type="button"
                 onClick={handleUpload}
                 disabled={!file || uploadState === 'uploading'}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: uploadState === 'done' ? 'var(--color-success)' : 'var(--color-primary)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: !file || uploadState === 'uploading' ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  whiteSpace: 'nowrap',
-                  opacity: !file || uploadState === 'uploading' ? 0.6 : 1,
-                }}
+                className={`${styles.primaryButton} ${uploadState === 'done' ? styles.successButton : ''} ${(!file || uploadState === 'uploading') ? styles.disabled : ''}`}
               >
                 {uploadButtonLabel}
               </button>
             </div>
             {uploadState === 'done' && (
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-success)', marginTop: '0.4rem' }}>
+              <p className={styles.formSuccessSmall}>
                 アップロード完了: {objectKey}
               </p>
             )}
             {uploadState === 'error' && (
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-danger)', marginTop: '0.4rem' }}>
+              <p className={styles.formErrorSmall}>
                 アップロードに失敗しました。再度お試しください。
               </p>
             )}
           </div>
 
           <div>
-            <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+            <label className={styles.fieldLabel}>
               施行予定日時
             </label>
             <input
@@ -151,49 +134,25 @@ export const AdminTermsCreatePage: React.FC = () => {
               onChange={(e) => setEffectiveDate(e.target.value)}
               min="1000-01-01T00:00"
               max="9999-12-31T23:59"
-              style={{
-                width: '100%',
-                padding: '0.6rem 0.75rem',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                fontSize: '0.95rem',
-                boxSizing: 'border-box',
-              }}
+              className={styles.formInput}
             />
-            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: '0.25rem 0 0' }}>
+            <p className={styles.formHelp}>
               指定日時以降、このバージョンが有効な最新規約として自動的に適用されます
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className={styles.buttonRow}>
             <button
               type="submit"
               disabled={submitting || uploadState !== 'done'}
-              style={{
-                padding: '0.6rem 1.5rem',
-                background: submitting || uploadState !== 'done' ? '#93c5fd' : 'var(--color-primary)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 8,
-                cursor: submitting || uploadState !== 'done' ? 'not-allowed' : 'pointer',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-              }}
+              className={`${styles.primaryButtonLargeRounded} ${(submitting || uploadState !== 'done') ? styles.disabled : ''}`}
             >
               {submitting ? '登録中...' : '登録する'}
             </button>
             <button
               type="button"
               onClick={() => navigate('/admin')}
-              style={{
-                padding: '0.6rem 1.5rem',
-                background: 'var(--color-bg-elevated)',
-                color: 'var(--color-text-muted)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                cursor: 'pointer',
-                fontSize: '0.95rem',
-              }}
+              className={styles.secondaryButtonLarge}
             >
               キャンセル
             </button>

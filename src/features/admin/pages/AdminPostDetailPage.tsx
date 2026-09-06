@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPostCard } from '../components/organisms/AdminPostCard';
-import { AdminUserAvatar } from '../../../components/atoms/AdminUserAvatar';
-import { AdminUserNameLink } from '../../../components/atoms/AdminUserNameLink';
+import { UserAvatar } from '../../../components/atoms/UserAvatar';
+import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
 import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/useToast';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
+import styles from '../styles/AdminShared.module.css';
 
 const PostMediaDetail = ({ media }: { media: Media[] }) => <PostMediaGrid media={media} large />;
 
@@ -65,24 +66,24 @@ export const AdminPostDetailPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-border)' }}>
+      <main className={styles.feedPage}>
+        <div className={styles.postDetailHeader}>
           <button
             onClick={() => navigate(-1)}
           ><ChevronLeft /></button>
-          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)' }}>投稿詳細 (管理者)</h1>
+          <h1 className={styles.postDetailTitle}>投稿詳細 (管理者)</h1>
         </div>
 
-        {error && <p style={{ color: 'var(--color-danger)', padding: '1rem' }}>{error}</p>}
+        {error && <p className={styles.errorPadded}>{error}</p>}
 
         {loading ? (
-          <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>読み込み中...</p>
+          <p className={styles.emptyState}>読み込み中...</p>
         ) : !post ? (
-          <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>投稿が見つかりません</p>
+          <p className={styles.emptyState}>投稿が見つかりません</p>
         ) : (
           <>
             {post.rootPost && (
-              <div style={{ paddingBottom: '0.5rem' }}>
+              <div className={styles.rootPostPreview}>
                 <AdminPostCard
                   post={post.rootPost}
                   isDetail={false}
@@ -91,43 +92,46 @@ export const AdminPostDetailPage = () => {
               </div>
             )}
 
-            <div style={{
-              padding: '1rem',
-              borderBottom: '1px solid var(--color-border)',
-              background: isDeleted ? 'var(--color-danger-bg)' : 'var(--color-bg-elevated)'
-            }}>
+            <div className={styles.adminPostDetailCard} data-deleted={isDeleted}>
 
               {isDeleted && (
-                <div style={{
-                  display: 'inline-block',
-                  background: 'var(--color-danger)', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold',
-                  padding: '0.25rem 0.5rem', borderRadius: '4px', marginBottom: '0.75rem'
-                }}>
+                <div className={styles.deletedBadge}>
                   削除済み ({new Date(post.deletedAt!).toLocaleString('ja-JP')})
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <AdminUserAvatar userId={post.user.ID} name={post.user.name} avatarUrl={post.user.avatarUrl} size={44} />
+              <div className={styles.postAuthorHeader}>
+                <div className={styles.authorRow}>
+                  <UserAvatar
+                    userId={post.user.ID}
+                    name={post.user.name}
+                    avatarUrl={post.user.avatarUrl}
+                    size={44}
+                    basePath="/admin/users"
+                    useMyPageForCurrentUser={false}
+                  />
                   <div>
-                    <AdminUserNameLink userId={post.user.ID}>
-                      <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{post.user.name}</div>
-                    </AdminUserNameLink>
-                    <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>@{post.user.accountID}</div>
+                    <UserNameLink
+                      userId={post.user.ID}
+                      basePath="/admin/users"
+                      useMyPageForCurrentUser={false}
+                    >
+                      <div className={styles.authorName}>{post.user.name}</div>
+                    </UserNameLink>
+                    <div className={styles.authorAccount}>@{post.user.accountID}</div>
                   </div>
                 </div>
 
                 {!isDeleted && (
                   <button
                     onClick={handleMainDelete}
-                    style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--color-danger)' }}
+                    className={styles.textDangerButton}
                   >削除</button>
                 )}
               </div>
 
               {post.content && (
-                <p style={{ margin: '0 0 0.75rem', color: isDeleted ? 'var(--color-text-muted)' : 'var(--color-text)', fontSize: '1.1rem', lineHeight: 1.7, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                <p className={styles.adminPostContent}>
                   {post.content}
                 </p>
               )}
@@ -136,15 +140,15 @@ export const AdminPostDetailPage = () => {
                 <PostMediaDetail media={post.media} />
               )}
 
-              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+              <div className={styles.postTimestamp}>
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
               </div>
 
-              <div style={{ display: 'flex', gap: '1.5rem', fontSize: '1.2rem', alignItems: 'center' }}>
-                <span style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>
+              <div className={styles.postActions}>
+                <span className={styles.replySummary}>
                   💬 <strong>{post.replyCount}</strong> 件の返信
                 </span>
-                <div style={{ pointerEvents: 'none' }}>
+                <div className={styles.disabledPointer}>
                   <LikeButton post={post} currentUserId={null} onLike={async () => { }} large />
                 </div>
               </div>

@@ -19,12 +19,46 @@
   flex-shrink: 0;
 }
 
+.roomHeaderButton {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.avatarButton {
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.headerAvatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .roomTitle {
   font-size: 1.1rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+
+.roomTitleFlex {
+  flex: 1;
 }
 
 .roomTitleBlock {
@@ -103,6 +137,25 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.scrollSentinel {
+  height: 1px;
+}
+
+.messageGroup {
+  display: contents;
+}
+
+.loadingText {
+  padding: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.errorText {
+  color: var(--color-danger);
 }
 
 .theirRow {
@@ -189,6 +242,49 @@
   line-height: 1.5;
   vertical-align: middle;
   box-sizing: border-box;
+}
+
+.inputField:disabled {
+  cursor: default;
+}
+
+.inputField:not(:disabled) {
+  cursor: text;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.sendIconButton {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.sendIconButton:disabled {
+  cursor: default;
+}
+
+.sendIcon {
+  width: 28px;
+  height: 28px;
+  transition: filter 0.15s;
+}
+
+.sendIconDisabled {
+  filter: opacity(0.3);
+}
+
+.sendIconDark {
+  filter: invert(1);
+}
+
+.sendIconDisabled.sendIconDark {
+  filter: opacity(0.3) invert(1);
 }
 
 .messageActions {

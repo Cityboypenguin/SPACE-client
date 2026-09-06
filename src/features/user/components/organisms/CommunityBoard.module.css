@@ -18,6 +18,22 @@
 
 .cardExpanded {
   background: var(--color-surface);
+  box-shadow: 0 2px 12px rgba(100, 108, 255, 0.1);
+}
+
+.cardCollapsed {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.titleBlock {
+  flex: 1;
+  min-width: 0;
 }
 
 .title {
@@ -72,6 +88,13 @@
   background: var(--color-surface);
   padding: 2px 8px;
   border-radius: 12px;
+}
+
+.memberCountRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
 }
 
 .description {
@@ -142,4 +165,17 @@
 
 .reportButton:hover {
   background: var(--color-danger-bg);
+}
+
+.actionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.joinedActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }

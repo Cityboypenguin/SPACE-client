@@ -32,30 +32,19 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
     }
   };
 
-  const iconSize = large ? 22 : 20;
-
   return (
     <button
       onClick={handle}
       disabled={liking || !currentUserId}
       className={styles.button}
-      style={{ cursor: currentUserId ? 'pointer' : 'default' }}
     >
       <img
         src={isLiked ? likeIconOn : likeIconOff}
         alt="いいね"
-        className={styles.icon}
-        style={{
-          width: iconSize,
-          height: iconSize,
-          filter: isLiked
-            ? 'none'
-            : theme === 'dark' ? 'opacity(0.35) invert(1)' : 'opacity(0.35)',
-        }}
+        className={`${styles.icon} ${large ? styles.iconLarge : styles.iconDefault} ${isLiked ? '' : theme === 'dark' ? styles.iconInactiveDark : styles.iconInactive}`}
       />
       <span
-        className={isLiked ? styles.countLiked : styles.countDefault}
-        style={{ fontSize: large ? '0.95rem' : '0.9rem' }}
+        className={`${isLiked ? styles.countLiked : styles.countDefault} ${large ? styles.countLarge : styles.countSmall}`}
       >
         {large ? <strong>{post.favorites.length}</strong> : post.favorites.length}
         {large && <span className={styles.suffix}>いいね</span>}

@@ -4,6 +4,7 @@ import { getUserByID, getProfileByUserID, adminUpdateProfile, type User, type Pr
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { storageUrl } from '../../../lib/storage';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminUserProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,22 +53,22 @@ export const AdminUserProfilePage = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <button onClick={() => navigate(`/admin/users/${id}`)}><ChevronLeft /> 詳細に戻る</button>
         <h1>{user.name} のプロフィール</h1>
 
-        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
 
         {profile === undefined ? (
           <p>読み込み中...</p>
         ) : (
           <>
-            <section style={{ marginBottom: '2rem' }}>
+            <section className={styles.analyticsSection}>
               <h2>現在のプロフィール</h2>
               {profile === null ? (
-                <p style={{ color: 'var(--color-text-muted)' }}>プロフィールが未設定です</p>
+                <p className={styles.mutedText}>プロフィールが未設定です</p>
               ) : (
-                <dl style={{ lineHeight: '2' }}>
+                <dl className={styles.definitionList}>
                   <dt><strong>ユーザー名</strong></dt>
                   <dd>{profile.username}</dd>
                   <dt><strong>自己紹介</strong></dt>
@@ -78,7 +79,7 @@ export const AdminUserProfilePage = () => {
                       <img
                         src={storageUrl(profile.avatarUrl) ?? undefined}
                         alt="プロフィール画像"
-                        style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: '50%' }}
+                        className={styles.profileImage}
                       />
                     ) : (
                       '未設定'
@@ -94,11 +95,11 @@ export const AdminUserProfilePage = () => {
 
             <section>
               <h2>プロフィールの編集</h2>
-              {editError && <p style={{ color: 'var(--color-danger)' }}>{editError}</p>}
-              {editSuccess && <p style={{ color: 'var(--color-success)' }}>{editSuccess}</p>}
+              {editError && <p className={styles.errorText}>{editError}</p>}
+              {editSuccess && <p className={styles.successText}>{editSuccess}</p>}
               <form
                 onSubmit={handleSubmit}
-                style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}
+                className={styles.formColumn}
               >
                 <div>
                   <label>自己紹介</label><br />
@@ -106,7 +107,7 @@ export const AdminUserProfilePage = () => {
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     rows={3}
-                    style={{ width: '100%' }}
+                    className={styles.fullWidth}
                     placeholder="自己紹介を入力"
                   />
                 </div>

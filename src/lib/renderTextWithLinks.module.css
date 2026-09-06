@@ -1,3 +1,7 @@
 .hashtag {
   color: var(--color-link);
 }
+
+.hashtagClickable {
+  cursor: pointer;
+}

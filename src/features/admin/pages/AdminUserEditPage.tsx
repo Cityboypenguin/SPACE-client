@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getUserByID, adminUpdateUser, type User } from '../api/users';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminUserEditPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,14 +66,14 @@ export const AdminUserEditPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <button onClick={() => navigate(`/admin/users/${id}`)}><ChevronLeft /> 詳細に戻る</button>
         <h1>ユーザー情報の編集</h1>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {success && <p style={{ color: 'green' }}>{success}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
+        {success && <p className={styles.successText}>{success}</p>}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}>
+        <form onSubmit={handleSubmit} className={styles.formColumn}>
           <div>
             <label>ユーザーID</label><br />
             <input value={accountID} onChange={(e) => setAccountID(e.target.value)} />

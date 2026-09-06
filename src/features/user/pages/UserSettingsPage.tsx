@@ -9,6 +9,7 @@ import { getCurrentTerms } from '../api/terms';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { UserListItem } from '../../../components/molecules/UserListItem';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { useToast } from '../../../context/useToast';
 import { useTheme } from '../../../context/useTheme';
@@ -179,7 +180,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
               />
             ))}
           </ul>
-          <div ref={sentinelRef} style={{ height: 1 }} />
+          <ScrollSentinel ref={sentinelRef} />
           {loadingMore && <p className={styles.mutedTextCenter}>読み込み中...</p>}
         </>
       )}

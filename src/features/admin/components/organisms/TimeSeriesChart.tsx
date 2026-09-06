@@ -6,6 +6,7 @@ import {
 import { getTimeSeries } from '../../api/analytics';
 import type { TimeSeriesGranularity, TimeSeriesPoint } from '../../api/analytics';
 import { downloadCsv } from '../../lib/exportCsv';
+import styles from './TimeSeriesChart.module.css';
 
 const METRICS = [
   { key: 'posts',       label: '投稿',             color: '#3b82f6' },
@@ -76,20 +77,6 @@ export const TimeSeriesChart = () => {
     downloadCsv(`timeseries_${from}_${to}.csv`, [header, ...rows]);
   };
 
-  // ボタンスタイル
-  const btn = (active: boolean, color?: string): React.CSSProperties => ({
-    padding: '0.35rem 0.8rem', borderRadius: 6, cursor: 'pointer',
-    fontSize: '0.82rem', fontWeight: 500, transition: 'all 0.15s',
-    border: `1px solid ${active ? (color ?? 'var(--color-primary)') : 'var(--color-border)'}`,
-    background: active ? (color ?? 'var(--color-primary)') : 'var(--color-bg-elevated)',
-    color: active ? '#fff' : 'var(--color-text-muted)',
-  });
-
-  const inputStyle: React.CSSProperties = {
-    padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)',
-    fontSize: '0.85rem', color: 'var(--color-text)', background: 'var(--color-bg-elevated)', cursor: 'pointer',
-  };
-
   // X軸ラベルを短縮（月-日 または 日-時）
   const tickFormatter = (label: string) =>
     granularity === 'hour' ? label.slice(5).replace(' ', ' ') : label.slice(5);
@@ -98,72 +85,71 @@ export const TimeSeriesChart = () => {
   const xInterval = data.length > 60 ? Math.ceil(data.length / 30) - 1 : data.length > 20 ? 1 : 0;
 
   return (
-    <div style={{ background: 'var(--color-bg-elevated)', borderRadius: 10, padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,.08)' }}>
+    <div className={styles.card}>
       {/* タイトル */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>
+      <div className={styles.header}>
+        <h3 className={styles.title}>
           アクティビティ推移
         </h3>
         <button
           onClick={exportCsv}
           disabled={data.length === 0}
-          style={{
-            padding: '0.35rem 0.9rem', borderRadius: 6, fontSize: '0.82rem', fontWeight: 500,
-            border: '1px solid var(--color-border)', background: data.length === 0 ? 'var(--color-surface)' : 'var(--color-bg-elevated)',
-            color: data.length === 0 ? 'var(--color-text-muted)' : 'var(--color-text)', cursor: data.length === 0 ? 'default' : 'pointer',
-          }}
+          className={styles.csvButton}
         >
           ↓ CSV
         </button>
       </div>
 
       {/* コントロール行 */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
+      <div className={styles.controls}>
 
         {/* 粒度切替 */}
-        <div style={{ display: 'flex', gap: '0.25rem' }}>
-          <button style={btn(granularity === 'day')}  onClick={() => setGranularity('day')}>日別</button>
-          <button style={btn(granularity === 'hour')} onClick={() => setGranularity('hour')}>時間別</button>
+        <div className={styles.buttonGroup}>
+          <button className={styles.toggleButton} data-active={granularity === 'day'} onClick={() => setGranularity('day')}>日別</button>
+          <button className={styles.toggleButton} data-active={granularity === 'hour'} onClick={() => setGranularity('hour')}>時間別</button>
         </div>
 
         {/* プリセット */}
-        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+        <div className={styles.buttonGroup}>
           {PRESETS.map(p => (
             <button
               key={p.label}
-              style={btn(from === p.from() && to === p.to())}
+              className={styles.toggleButton}
+              data-active={from === p.from() && to === p.to()}
               onClick={() => applyPreset(p)}
             >{p.label}</button>
           ))}
         </div>
 
         {/* 日付ピッカー */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div className={styles.dateRange}>
           <input
             type="date"
             value={from}
             max={to}
             onChange={e => setFrom(e.target.value)}
-            style={inputStyle}
+            className={styles.dateInput}
           />
-          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>〜</span>
+          <span className={styles.rangeSeparator}>〜</span>
           <input
             type="date"
             value={to}
             min={from}
             max={today}
             onChange={e => setTo(e.target.value)}
-            style={inputStyle}
+            className={styles.dateInput}
           />
         </div>
 
         {/* メトリクス切替 */}
-        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+        <div className={styles.buttonGroup}>
           {METRICS.map(m => (
             <button
               key={m.key}
               onClick={() => toggleMetric(m.key)}
-              style={btn(visible[m.key], m.color)}
+              className={styles.toggleButton}
+              data-active={visible[m.key]}
+              data-metric={m.key}
             >{m.label}</button>
           ))}
         </div>
@@ -171,22 +157,22 @@ export const TimeSeriesChart = () => {
 
       {/* グラフ本体 */}
       {from > to ? (
-        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-danger)' }}>
+        <div className={styles.chartError}>
           開始日が終了日より後になっています
         </div>
       ) : loading ? (
-        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
+        <div className={styles.chartMessage}>
           読み込み中…
         </div>
       ) : error ? (
-        <div style={{ height: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-          <div style={{ color: 'var(--color-danger)', fontSize: '0.9rem' }}>取得エラー: {error}</div>
-          <button onClick={load} style={{ padding: '0.4rem 1rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', cursor: 'pointer', fontSize: '0.85rem' }}>
+        <div className={styles.chartErrorPanel}>
+          <div className={styles.errorText}>取得エラー: {error}</div>
+          <button onClick={load} className={styles.retryButton}>
             再読み込み
           </button>
         </div>
       ) : data.length === 0 ? (
-        <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
+        <div className={styles.chartMessage}>
           この期間にデータがありません
         </div>
       ) : (

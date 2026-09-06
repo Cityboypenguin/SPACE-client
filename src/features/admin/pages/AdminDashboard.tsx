@@ -6,24 +6,9 @@ import { getMaintenanceMode } from '../api/maintenance';
 import { getInquiries } from '../api/inquiry';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 import type { AnalyticsSummary } from '../api/analytics';
-
-// ---- スタイル定数 ----
-const pageStyle: React.CSSProperties = { padding: '2rem', maxWidth: 1100, margin: '0 auto' };
-const sectionTitle: React.CSSProperties = {
-  fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em',
-  color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem',
-};
-const grid = (cols: number): React.CSSProperties => ({
-  display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0.75rem', marginBottom: '2rem',
-});
+import styles from '../styles/AdminShared.module.css';
 
 type CardVariant = 'default' | 'alert' | 'warning' | 'ok';
-const cardColors: Record<CardVariant, { bg: string; border: string; accent: string }> = {
-  default: { bg: 'var(--color-bg-elevated)', border: 'var(--color-border)',     accent: 'var(--color-text)' },
-  alert:   { bg: 'var(--color-danger-bg)',   border: 'var(--color-danger)',     accent: 'var(--color-danger)' },
-  warning: { bg: 'var(--color-warning-bg)',  border: 'var(--color-warning)',    accent: 'var(--color-warning)' },
-  ok:      { bg: 'var(--color-success-bg)',  border: 'var(--color-success)',    accent: 'var(--color-success)' },
-};
 
 function KpiCard({
   label, value, sub, variant = 'default', onClick,
@@ -34,22 +19,15 @@ function KpiCard({
   variant?: CardVariant;
   onClick?: () => void;
 }) {
-  const c = cardColors[variant];
   return (
     <div
       onClick={onClick}
-      style={{
-        background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10,
-        padding: '1.2rem 1.4rem', cursor: onClick ? 'pointer' : 'default',
-        transition: 'box-shadow 0.15s',
-        boxShadow: '0 1px 3px rgba(0,0,0,.06)',
-      }}
-      onMouseEnter={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(0,0,0,.1)'; }}
-      onMouseLeave={e => { if (onClick) (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 3px rgba(0,0,0,.06)'; }}
+      className={`${styles.kpiCard} ${onClick ? styles.kpiCardClickable : ''}`}
+      data-variant={variant}
     >
-      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: '1.7rem', fontWeight: 700, color: c.accent }}>{value}</div>
-      {sub && <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{sub}</div>}
+      <div className={styles.kpiLabel}>{label}</div>
+      <div className={styles.kpiValue}>{value}</div>
+      {sub && <div className={styles.kpiSub}>{sub}</div>}
     </div>
   );
 }
@@ -83,14 +61,14 @@ export const AdminDashboard = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={pageStyle}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--color-text)' }}>
+      <main className={styles.dashboardPage}>
+        <h1 className={styles.dashboardTitle}>
           ダッシュボード
         </h1>
 
         {/* 要対応アラート */}
-        <div style={sectionTitle}>要対応</div>
-        <div style={grid(3)}>
+        <div className={styles.dashboardSectionTitle}>要対応</div>
+        <div className={styles.dashboardGridThree}>
           <KpiCard
             label="未対応の通報"
             value={loading ? '…' : (pendingReports ?? '—')}
@@ -115,8 +93,8 @@ export const AdminDashboard = () => {
         </div>
 
         {/* KPIサマリー */}
-        <div style={sectionTitle}>本日のサマリー</div>
-        <div style={grid(4)}>
+        <div className={styles.dashboardSectionTitle}>本日のサマリー</div>
+        <div className={styles.dashboardGridFour}>
           <KpiCard
             label="アクティブユーザー（直近3日）"
             value={loading ? '…' : (analytics?.currentActiveUsers.toLocaleString() ?? '—')}
@@ -143,8 +121,8 @@ export const AdminDashboard = () => {
         </div>
 
         {/* インフラ状態 */}
-        <div style={sectionTitle}>インフラ・パフォーマンス</div>
-        <div style={grid(4)}>
+        <div className={styles.dashboardSectionTitle}>インフラ・パフォーマンス</div>
+        <div className={styles.dashboardGridFour}>
           <KpiCard
             label="WebSocket接続数"
             value={loading ? '…' : (analytics?.webSocketConnections.toLocaleString() ?? '—')}
@@ -170,14 +148,10 @@ export const AdminDashboard = () => {
         </div>
 
         {/* 詳細へのリンク */}
-        <div style={{ textAlign: 'right' }}>
+        <div className={styles.alignRight}>
           <button
             onClick={() => navigate('/admin/analytics')}
-            style={{
-              padding: '0.6rem 1.4rem', borderRadius: 8, border: 'none',
-              background: 'var(--color-primary)', color: '#fff', fontWeight: 600,
-              cursor: 'pointer', fontSize: '0.9rem',
-            }}
+            className={styles.primaryButtonLargeRounded}
           >
             詳細アナリティクスを見る →
           </button>

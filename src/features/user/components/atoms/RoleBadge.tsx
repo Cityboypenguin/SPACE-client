@@ -11,7 +11,7 @@ export const RoleBadge = ({ role, onClick }: Props) => {
     <span
       onClick={onClick}
       className={`${styles.badge} ${isOwner ? styles.badgeOwner : styles.badgeMember}`}
-      style={{ cursor: onClick ? 'pointer' : undefined }}
+      data-clickable={onClick ? 'true' : 'false'}
     >
       {isOwner ? 'オーナー' : 'メンバー'}
     </span>

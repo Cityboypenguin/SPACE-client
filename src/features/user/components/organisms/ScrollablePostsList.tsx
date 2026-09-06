@@ -1,5 +1,6 @@
 import { type RefObject } from 'react';
 import { PostCard } from './PostCard';
+import { ScrollSentinel } from '../../../../components/atoms/ScrollSentinel';
 import { type Post } from '../../api/post';
 import styles from './ScrollablePostsList.module.css';
 
@@ -58,7 +59,7 @@ export const ScrollablePostsList = ({
             onDelete={onDelete}
           />
         ))}
-        <div ref={sentinelRef} style={{ height: '1px' }} />
+        <ScrollSentinel ref={sentinelRef} />
         {loadingMore && (
           <p className={styles.statusTextCompact}>読み込み中...</p>
         )}

@@ -13,7 +13,7 @@ import {
   type Poll,
 } from '../api/courses';
 import { AdminHeader } from '../components/organisms/AdminHeader';
-import styles from './AdminPageStyles.module.css';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminCourseChatDetailPage = () => {
   const { id } = useParams<{ id: string }>();

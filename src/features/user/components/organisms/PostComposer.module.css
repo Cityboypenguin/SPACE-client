@@ -1,6 +1,7 @@
 .wrapper {
   display: flex;
   gap: 0.75rem;
+  position: relative;
 }
 
 .wrapperNormal {
@@ -109,6 +110,19 @@
 /* 文字色を透明にしているためプレースホルダも透明になり得る。明示的に色を指定する。 */
 .textareaHighlighted::placeholder {
   color: var(--color-text-muted);
+}
+
+.hashtagHighlight {
+  color: #1d9bf0;
+}
+
+.suggestionPopover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  margin-top: 4px;
 }
 
 .mediaPreviews {
@@ -256,6 +270,16 @@
   transition: background 0.1s;
 }
 
+.submitButtonActive {
+  background: #ff7430;
+  cursor: pointer;
+}
+
+.submitButtonDisabled {
+  background: #f89150;
+  cursor: default;
+}
+
 .submitButtonLarge {
   padding: 0.45rem 1.2rem;
   font-size: 0.9rem;
@@ -268,6 +292,18 @@
 
 /* ドラッグ＆ドロップ時のオーバーレイ（インラインスタイルから抽出） */
 .dragOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   border: 2px dashed var(--color-text-muted);
   background: rgba(107, 114, 128, 0.08);
+  pointer-events: none;
+}
+
+.hiddenInput {
+  display: none;
 }

@@ -117,20 +117,13 @@ export const DMPage = () => {
             type="button"
             onClick={() => navigate(`/users/${partner.ID}`)}
             aria-label={`${partner.name} のマイページへ移動`}
-            style={{
-              padding: 0,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              lineHeight: 0,
-              flexShrink: 0,
-            }}
+            className={styles.avatarButton}
           >
             {partner.avatarUrl ? (
             <img
               src={storageUrl(partner.avatarUrl) ?? undefined}
               alt={partner.name}
-              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              className={styles.headerAvatar}
             />
             ) : (
               <Avatar name={partnerName} size={36} />
@@ -148,7 +141,7 @@ export const DMPage = () => {
 
       <div className={styles.messageListWrapper}>
         <div className={styles.messageList} ref={messageListRef}>
-          <div ref={topSentinelRef} style={{ height: '1px' }} />
+          <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
             <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
@@ -168,7 +161,7 @@ export const DMPage = () => {
             const isLastReadByPartner = isMine && msg.ID === lastReadMessageId;
 
             return (
-              <div key={msg.ID} style={{ display: 'contents' }}>
+              <div key={msg.ID} className={styles.messageGroup}>
                 <ChatDateSeparator
                   currentCreatedAt={msg.createdAt}
                   prevCreatedAt={prevMsg?.createdAt}
@@ -196,7 +189,7 @@ export const DMPage = () => {
               </div>
             );
           })}
-          <div ref={bottomSentinelRef} style={{ height: '1px' }} />
+          <div ref={bottomSentinelRef} className={styles.scrollSentinel} />
           {loadingNewer && (
             <p className={pageStyles.loadingText}>読み込み中...</p>
           )}

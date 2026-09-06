@@ -12,7 +12,8 @@ import {
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useToast } from '../../../context/useToast';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
-import styles from './FavoriteUsersPage.module.css';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
+import styles from './UserListPage.module.css';
 
 const LIMIT = 20;
 
@@ -91,7 +92,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
   return (
     <div>
       <UserSidebar />
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
+      <main className={styles.main}>
         <button onClick={() => navigate('/mypage')}><ChevronLeft /> マイページに戻る</button>
         <h1>{isFollowersMode ? 'フォロワー' : 'お気に入りリスト'}</h1>
 
@@ -103,7 +104,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
           </p>
         ) : (
           <>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul className={styles.list}>
               {users.map((user) => {
                 const isRemoved = removedIds.has(user.ID);
                 return (
@@ -118,7 +119,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
                 );
               })}
             </ul>
-            <div ref={sentinelRef} style={{ height: '1px' }} />
+            <ScrollSentinel ref={sentinelRef} />
             {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
           </>
         )}

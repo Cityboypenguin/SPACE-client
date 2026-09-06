@@ -138,7 +138,7 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
                 className={`${styles.optionPlain} ${isSelected ? styles.optionPlainSelected : ''}`}
                 disabled={!canVote || voting}
                 onClick={() => selectOption(option.ID)}
-                style={{ cursor: canVote ? 'pointer' : 'default' }}
+                data-clickable={canVote ? 'true' : 'false'}
               >
                 {option.label}
               </button>
@@ -153,7 +153,7 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
               className={`${styles.optionBar} ${isLeading ? styles.optionBarLeading : ''} ${isSelected ? styles.optionBarSelected : ''}`}
               disabled={!canVote || voting}
               onClick={() => selectOption(option.ID)}
-              style={{ cursor: canVote ? 'pointer' : 'default' }}
+              data-clickable={canVote ? 'true' : 'false'}
             >
               <div className={styles.optionBarFill} style={{ width: `${percent}%` }} />
               <span className={styles.optionBarLabel}>{option.label}</span>
@@ -165,7 +165,7 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
 
       <p className={styles.respondedCount}>{totalVotes}人が回答済み</p>
 
-      {error && <p style={{ color: '#ef4444', fontSize: '0.78rem', margin: '0.3rem 0 0' }}>{error}</p>}
+      {error && <p className={styles.cardError}>{error}</p>}
     </div>
   );
 };

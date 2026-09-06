@@ -92,15 +92,13 @@ export const CreatePollForm = ({ onCreate }: Props) => {
           type="date"
           value={deadlineDate}
           onChange={(e) => setDeadlineDate(e.target.value)}
-          className={styles.formInput}
-          style={{ marginBottom: 0 }}
+          className={`${styles.formInput} ${styles.formInputFlush}`}
         />
         <input
           type="time"
           value={deadlineTime}
           onChange={(e) => setDeadlineTime(e.target.value)}
-          className={styles.formInput}
-          style={{ marginBottom: 0 }}
+          className={`${styles.formInput} ${styles.formInputFlush}`}
         />
       </div>
 
@@ -112,8 +110,7 @@ export const CreatePollForm = ({ onCreate }: Props) => {
             value={option}
             onChange={(e) => updateOption(i, e.target.value)}
             placeholder={`${i + 1}.選択肢を入力`}
-            className={styles.formInput}
-            style={{ marginBottom: 0 }}
+            className={`${styles.formInput} ${styles.formInputFlush}`}
           />
           {options.length > MIN_OPTIONS && (
             <button type="button" className={styles.removeOptionButton} onClick={() => removeOption(i)}>✕</button>
@@ -129,7 +126,7 @@ export const CreatePollForm = ({ onCreate }: Props) => {
         複数選択を許可する
       </label>
 
-      {error && <p style={{ color: '#ef4444', fontSize: '0.78rem', margin: '0 0 0.4rem' }}>{error}</p>}
+      {error && <p className={styles.formError}>{error}</p>}
 
       <div className={styles.submitRow}>
         <button type="button" className={styles.cancelFormButton} onClick={() => { reset(); setOpen(false); }}>
@@ -137,9 +134,8 @@ export const CreatePollForm = ({ onCreate }: Props) => {
         </button>
         <button
           type="submit"
-          className={styles.submitButton}
+          className={`${styles.submitButton} ${styles.submitButtonSpaced}`}
           disabled={submitting || !question.trim() || options.filter((o) => o.trim() !== '').length < MIN_OPTIONS}
-          style={{ marginLeft: '0.5rem' }}
         >
           {submitting ? '投稿中...' : '投票を投稿'}
         </button>

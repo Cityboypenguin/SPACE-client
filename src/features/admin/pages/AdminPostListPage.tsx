@@ -4,6 +4,9 @@ import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { getPosts, adminDeletePost, type Post } from '../api/posts';
 import { useToast } from '../../../context/useToast';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
+import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
+import { AdminPagination } from '../components/molecules/AdminPagination';
+import styles from '../styles/AdminShared.module.css';
 
 
 export const AdminPostListPage = () => {
@@ -45,43 +48,33 @@ export const AdminPostListPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text)' }}>
+      <main className={styles.feedPage}>
+        <div className={styles.feedHeader}>
+          <h1 className={styles.titleSmall}>
             投稿管理
           </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>全 {total} 件</span>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-text)' }}>
-              表示件数
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                style={{ border: '1px solid var(--color-border)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
-              >
-                {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
-              </select>
-            </label>
+          <div className={styles.toolbarGroup}>
+            <span className={styles.countText}>全 {total} 件</span>
+            <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
           </div>
         </div>
 
-        {error && <p style={{ color: 'var(--color-danger)', padding: '1rem' }}>{error}</p>}
+        {error && <p className={styles.errorPadded}>{error}</p>}
 
         {posts.length === 0 && !error ? (
-          <p style={{ color: 'var(--color-text-muted)', padding: '2rem', textAlign: 'center' }}>投稿がまだありません</p>
+          <p className={styles.emptyState}>投稿がまだありません</p>
         ) : (
           posts.map((post) => (
             <AdminPostCard key={post.ID} post={post} onDelete={handleDelete} />
           ))
         )}
 
-        {totalPages > 1 && (
-          <div style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
-            <button onClick={() => loadPage(page - 1)} disabled={page === 0}>前へ</button>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>{page + 1} / {totalPages}</span>
-            <button onClick={() => loadPage(page + 1)} disabled={page >= totalPages - 1}>次へ</button>
-          </div>
-        )}
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          onPrev={() => loadPage(page - 1)}
+          onNext={() => loadPage(page + 1)}
+        />
       </main>
     </div>
   );

@@ -35,7 +35,7 @@ export const PollList = ({ roomId, roomWritable, pollsState }: Props) => {
     <div className={styles.tabContent}>
       {roomWritable && <CreatePollForm onCreate={handleCreate} />}
 
-      {error && <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>{error}</p>}
+      {error && <p className={styles.listError}>{error}</p>}
 
       {!loading && polls.length === 0 && !error && (
         <p className={styles.emptyState}>まだ投票がありません。</p>

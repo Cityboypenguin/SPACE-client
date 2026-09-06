@@ -78,11 +78,10 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
         <div className={styles.formGroup}>
           <label className={styles.label}>詳細説明（任意）</label>
           <textarea
-            className={styles.textarea}
             value={customReason}
             onChange={(e) => setCustomReason(e.target.value)}
             placeholder="詳しい問題の状況を入力してください"
-            style={{ minHeight: '80px' }}
+            className={`${styles.textarea} ${styles.detailTextarea}`}
           />
         </div>
 

@@ -9,7 +9,9 @@ import {
   updateReportServiceStatus,
   type Report,
 } from '../api/report';
-import styles from './AdminPageStyles.module.css';
+import styles from '../styles/AdminShared.module.css';
+import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
+import { AdminPagination } from '../components/molecules/AdminPagination';
 
 type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY';
 
@@ -168,14 +170,7 @@ export const ReportsPage: React.FC = () => {
             </div>
 
             <div className={styles.controlGroup}>
-              <span className={styles.controlLabel}>表示件数：</span>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className={styles.selectSmall}
-              >
-                {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
-              </select>
+              <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
             </div>
           </div>
         </div>
@@ -293,25 +288,12 @@ export const ReportsPage: React.FC = () => {
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div className={styles.pagination}>
-            <button
-              onClick={() => loadPage(page - 1)}
-              disabled={page === 0}
-              className={styles.paginationButton}
-            >
-              前へ
-            </button>
-            <span className={styles.cellText}>{page + 1} / {totalPages}</span>
-            <button
-              onClick={() => loadPage(page + 1)}
-              disabled={page >= totalPages - 1}
-              className={styles.paginationButton}
-            >
-              次へ
-            </button>
-          </div>
-        )}
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          onPrev={() => loadPage(page - 1)}
+          onNext={() => loadPage(page + 1)}
+        />
       </main>
     </div>
   );

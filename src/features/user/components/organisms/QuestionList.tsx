@@ -138,11 +138,11 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
             files={files}
             onFilesChange={setFiles}
           />
-          {sendError && <p style={{ color: '#ef4444', fontSize: '0.78rem', margin: '0.3rem 0 0' }}>{sendError}</p>}
+          {sendError && <p className={styles.inlineError}>{sendError}</p>}
         </div>
       )}
 
-      {error && <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>{error}</p>}
+      {error && <p className={styles.listError}>{error}</p>}
 
       {!loading && questions.length === 0 && !error && (
         <p className={styles.emptyState}>まだ質問がありません。</p>

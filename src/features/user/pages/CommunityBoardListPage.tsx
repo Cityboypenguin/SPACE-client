@@ -133,27 +133,23 @@ export const CommunityBoardListPage = () => {
   return (
     <div>
       <UserSidebar />
-      <main style={{ padding: '2rem', maxWidth: '700px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+      <main className={styles.page}>
+        <div className={styles.header}>
           <button
             onClick={() => navigate('/community')}
           >
             <ChevronLeft /> 戻る
           </button>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', flex: 1 }}>コミュニティを探す</h1>
+          <h1 className={styles.title}>コミュニティを探す</h1>
           <button
             onClick={() => navigate('/community/create')}
-            style={{
-              background: '#f97316', color: '#fff', border: 'none',
-              borderRadius: 8, padding: '0.5rem 1rem',
-              fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-            }}
+            className={styles.createButton}
           >
             + 作成
           </button>
         </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div className={styles.searchBlock}>
           <IconSearchBar
             value={query}
             onChange={setQuery}
@@ -173,7 +169,7 @@ export const CommunityBoardListPage = () => {
             ) : randomResults.length === 0 ? (
               <p className={styles.mutedText}>おすすめのコミュニティはありません</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div className={styles.boardList}>
                 {randomResults.map((c) => (
                   <CommunityBoard
                     key={c.ID}
@@ -198,7 +194,7 @@ export const CommunityBoardListPage = () => {
         {searched && results.length > 0 && (
           <div>
             <h2 className={styles.sectionTitle}>検索結果</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div className={styles.boardList}>
               {results.map((c) => (
                 <CommunityBoard
                   key={c.ID}
@@ -210,7 +206,7 @@ export const CommunityBoardListPage = () => {
                 />
               ))}
             </div>
-            <div ref={sentinelRef} style={{ height: '1px' }} />
+            <div ref={sentinelRef} className={styles.sentinel} />
             {loadingMore && (
               <p className={styles.loadingMoreText}>読み込み中...</p>
             )}

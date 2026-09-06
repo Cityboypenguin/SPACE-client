@@ -42,17 +42,17 @@ export const CommunityMembersModal = ({ community, onClose }: Props) => {
         onClick={(e) => e.stopPropagation()}
         className={styles.modal}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div className={styles.header}>
           <h3 className={styles.title}>メンバー一覧 ({members.length})</h3>
-          <button onClick={onClose} className={styles.closeButton} style={{ border: 'none' }}>✕</button>
+          <button onClick={onClose} className={styles.closeButton}>✕</button>
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1, paddingRight: '4px' }}>
+        <div className={styles.body}>
           {loading && <p className={styles.loadingText}>読み込み中...</p>}
           {error && <p className={styles.errorText}>{error}</p>}
 
           {!loading && !error && (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <ul className={styles.memberList}>
               {members.map((m) => (
                 <li
                   key={m.user.ID}
@@ -65,7 +65,7 @@ export const CommunityMembersModal = ({ community, onClose }: Props) => {
                     size={36}
                   />
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className={styles.memberInfo}>
                     <UserNameLink userId={m.user.ID}>
                       <div className={styles.memberName}>{m.user.name}</div>
                     </UserNameLink>

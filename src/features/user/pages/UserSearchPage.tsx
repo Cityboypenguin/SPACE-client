@@ -7,6 +7,7 @@ import {
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
 import { PostCard } from '../components/organisms/PostCard';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { Avatar } from '../../../components/atoms/Avatar';
@@ -346,7 +347,7 @@ export const UserSearchPage = () => {
               </div>
               {searched && (
                 <>
-                  <div ref={userSentinelRef} style={{ height: '1px' }} />
+                  <ScrollSentinel ref={userSentinelRef} />
                   {loadingMore && <p className={styles.loadingText}>読み込み中...</p>}
                 </>
               )}
@@ -374,7 +375,7 @@ export const UserSearchPage = () => {
                 />
               ))}
             </div>
-            {searched && <div ref={postSentinelRef} style={{ height: '1px' }} />}
+            {searched && <ScrollSentinel ref={postSentinelRef} />}
           </>
         ) : searched ? (
           <p className={styles.emptyText}>該当する投稿が見つかりませんでした</p>

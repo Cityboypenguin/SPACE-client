@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getUserTimetable, adminRegisterTimetableEntry, adminRemoveTimetableEntry, type TimetableEntry } from '../../api/timetable';
 import { listCourseYears, getCurrentSemester, listCourses, type Course } from '../../api/courses';
 import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '../../../user/components/timetableConstants';
-import { getTimetableColorSwatch } from '../../../user/lib/timetableColors';
 import styles from './AdminUserTimetableSection.module.css';
 
 const slotKey = (day: string, period: number) => `${day}-${period}`;
@@ -108,7 +107,7 @@ export const AdminUserTimetableSection = ({ userID }: Props) => {
       {loading ? (
         <p className={styles.muted}>読み込み中...</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div className={styles.tableWrap}>
           <table className={styles.grid}>
             <thead>
               <tr>
@@ -127,7 +126,7 @@ export const AdminUserTimetableSection = ({ userID }: Props) => {
                         {entry && (
                           <div
                             className={styles.entry}
-                            style={{ '--entry-bg': getTimetableColorSwatch(entry.color).bg } as CSSProperties}
+                            data-color={entry.color}
                           >
                             <div className={styles.entryInfo}>
                               <span className={styles.courseName}>{entry.course.courseName}</span>

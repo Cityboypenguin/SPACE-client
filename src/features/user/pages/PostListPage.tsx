@@ -588,7 +588,7 @@ export const PostListPage = () => {
           </div>
         )}
 
-        <div style={{ position: 'relative' }}>
+        <div className={styles.searchWrap}>
           <div className={styles.searchBarArea}>
             <IconSearchBar
               value={searchQuery}
@@ -622,7 +622,7 @@ export const PostListPage = () => {
             />
           </div>
           {showSuggestions && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>
+            <div className={styles.searchSuggestions}>
               <HashtagSuggestionList
                 suggestions={suggestions}
                 activeIndex={Math.min(suggestActiveIndex, suggestions.length - 1)}

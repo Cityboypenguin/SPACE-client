@@ -71,16 +71,16 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
     <>
       <div className={styles.messageListWrapper}>
         <div className={styles.messageList} ref={messageListRef}>
-          <div ref={topSentinelRef} style={{ height: '1px' }} />
+          <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={styles.loadingText}>読み込み中...</p>
           )}
-          {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
+          {(error || sendError) && <p className={styles.errorText}>{error || sendError}</p>}
 
           {messages.map((msg, index) => {
             const prevMsg = index > 0 ? messages[index - 1] : null;
             return (
-              <div key={msg.ID} style={{ display: 'contents' }}>
+              <div key={msg.ID} className={styles.messageGroup}>
                 <ChatDateSeparator
                   currentCreatedAt={msg.createdAt}
                   prevCreatedAt={prevMsg?.createdAt}
@@ -101,9 +101,9 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
               </div>
             );
           })}
-          <div ref={bottomSentinelRef} style={{ height: '1px' }} />
+          <div ref={bottomSentinelRef} className={styles.scrollSentinel} />
           {loadingNewer && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={styles.loadingText}>読み込み中...</p>
           )}
           <div ref={bottomRef} />
         </div>
