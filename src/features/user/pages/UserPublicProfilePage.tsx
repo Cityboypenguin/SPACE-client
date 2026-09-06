@@ -7,6 +7,7 @@ import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
+import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../../../context/useToast';
@@ -24,7 +25,6 @@ import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
 import favoriteIconOn from '../../../assets/パーツ_お気に入り（ON）.svg';
 import dmIcon from '../../../assets/パーツ_メール.svg';
-import timetableIcon from '../../../assets/パーツ_時間割.svg';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserPublicProfilePage.module.css';
 import { AppSwal } from '../../../lib/swal';
@@ -324,13 +324,7 @@ export const UserPublicProfilePage = () => {
         </button>
       )}
       <div className={styles.profileActionPair}>
-        <button
-          className={styles.profileActionButton}
-          onClick={() => setIsTimetableOpen(true)}
-        >
-          <img src={timetableIcon} alt="" className={`${styles.profileActionIcon} themed-icon`} />
-          時間割
-        </button>
+        <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} />
         <button
           type="button"
           className={`${styles.profileActionButton} ${styles.profileActionIconButton}`}

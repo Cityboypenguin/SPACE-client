@@ -29,8 +29,9 @@
 
 .actionButtons {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .actionButton {

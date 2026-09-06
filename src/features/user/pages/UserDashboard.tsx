@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ProfileCard } from '../components/organisms/ProfileCard';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReportModal } from '../components/organisms/ReportModal';
+import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
+import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/useToast';
@@ -22,7 +25,9 @@ import {
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
 import { createBlocker } from '../api/block';
+import { getTimetableProfileVisibility } from '../api/timetableVisibility';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
+import { staticCacheOptions } from '../cache/swrOptions';
 import styles from './UserDashboard.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -36,6 +41,12 @@ export const UserDashboard = () => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<'own' | 'liked'>('own');
   const [flashMessage, setFlashMessage] = useState('');
+  const [isTimetableOpen, setIsTimetableOpen] = useState(false);
+  const { data: timetableVisible } = useSWR(
+    userId ? 'timetable-profile-visibility' : null,
+    () => getTimetableProfileVisibility(),
+    staticCacheOptions,
+  );
 
   // ── Own posts ────────────────────────────────────────────────────────────
   const [initialCache] = useState(() => userId ? getUserPostListCache(userId) : null);
@@ -295,6 +306,7 @@ export const UserDashboard = () => {
     <div className={styles.actionButtons}>
       <Link to="/mypage/profile-edit" className={styles.actionButton}>プロフィール編集</Link>
       <Link to="/mypage/favorites" className={styles.actionButton}>お気に入りリスト</Link>
+      <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} />
       {/* <Link to="/mypage/followers" className={styles.actionButton}>フォロワー</Link> */}
     </div>
   );
@@ -382,6 +394,16 @@ export const UserDashboard = () => {
             targetType="POST"
             targetID={reportingPostId}
             postContent={reportingPostContent}
+          />
+        )}
+
+        {profile && userId && isTimetableOpen && (
+          <PublicTimetableOverlay
+            userId={userId}
+            userName={profile.user.name}
+            isMe={true}
+            isProfileHidden={timetableVisible === false}
+            onClose={() => setIsTimetableOpen(false)}
           />
         )}
       </main>

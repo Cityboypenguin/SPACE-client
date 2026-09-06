@@ -5,8 +5,7 @@ import {
   getCourseYears,
   getCurrentSemester,
   getMyTimetable,
-  getUserTimetable,
-  isPrivateTimetableError,
+  getUserTimetableProfile,
   type TimetableEntry,
 } from '../../api/course';
 import { stableCacheOptions, staticCacheOptions, semesterCacheOptions } from '../../cache/swrOptions';
@@ -19,10 +18,11 @@ type Props = {
   userId: string;
   userName: string;
   isMe: boolean;
+  isProfileHidden?: boolean;
   onClose: () => void;
 };
 
-export const PublicTimetableOverlay = ({ userId, userName, isMe, onClose }: Props) => {
+export const PublicTimetableOverlay = ({ userId, userName, isMe, isProfileHidden = false, onClose }: Props) => {
   const { data: currentSemester } = useSWR('current-semester', () => getCurrentSemester(), semesterCacheOptions);
   const { data: courseYears } = useSWR('course-years', () => getCourseYears(), staticCacheOptions);
   const [selectedYear, setSelectedYear] = useState<number | undefined>();
@@ -37,12 +37,22 @@ export const PublicTimetableOverlay = ({ userId, userName, isMe, onClose }: Prop
     return Array.from(years).sort((a, b) => b - a);
   }, [courseYears, currentSemester]);
 
-  const { data: entries, error, isLoading } = useSWR(
+  const { data, error, isLoading } = useSWR(
     viewYear != null && viewSemester ? ['public-timetable', userId, viewYear, viewSemester, isMe] : null,
-    () => isMe ? getMyTimetable(viewYear, viewSemester) : getUserTimetable(userId, viewYear, viewSemester),
+    async () => {
+      if (isMe) {
+        const myEntries = await getMyTimetable(viewYear, viewSemester);
+        return { visible: true, entries: myEntries };
+      }
+      return getUserTimetableProfile(userId, viewYear, viewSemester);
+    },
     stableCacheOptions,
   );
-  const isPrivate = !isMe && isPrivateTimetableError(error);
+  const entries = data?.entries;
+  // バックエンドが visible を明示的に返すので、entries が空 = 未登録なのか
+  // 非公開なのかは visible だけで判定する（空配列を非公開扱いにしない）。
+  const isPrivate = !isMe && data != null && !data.visible;
+  const shouldGrayOut = isProfileHidden || isPrivate;
 
   const entryMap = useMemo(() => {
     const map = new Map<string, TimetableEntry>();
@@ -91,7 +101,7 @@ export const PublicTimetableOverlay = ({ userId, userName, isMe, onClose }: Prop
         <button type="button" className={styles.floatingCloseButton} onClick={onClose} aria-label="閉じる">
           ×
         </button>
-        <main className={`${timetableStyles.main} ${styles.panel}`}>
+        <main className={`${timetableStyles.main} ${styles.panel} ${shouldGrayOut ? styles.panelPrivate : ''}`}>
           <div className={styles.header}>
             <div className={styles.titleBlock}>
               <h1 className={timetableStyles.title}>{userName}の時間割</h1>
@@ -121,9 +131,10 @@ export const PublicTimetableOverlay = ({ userId, userName, isMe, onClose }: Prop
             </div>
           </div>
 
-          {isPrivate ? (
+          {isPrivate && (
             <p className={styles.noticeText}>このユーザーはプロフィールで時間割を公開していません。</p>
-          ) : error ? (
+          )}
+          {!isPrivate && error ? (
             <p className={timetableStyles.errorText}>時間割の読み込みに失敗しました。</p>
           ) : null}
           {isLoading ? (
@@ -132,6 +143,7 @@ export const PublicTimetableOverlay = ({ userId, userName, isMe, onClose }: Prop
             <TimetableGrid
               renderSlotContent={renderSlotContent}
               classNames={{
+                gridWrap: shouldGrayOut ? styles.privateGridWrap : undefined,
                 mobileTimetable: styles.compactMobileTimetable,
                 mobileDayList: styles.compactMobileDayList,
                 mobilePeriodRow: styles.compactMobilePeriodRow,

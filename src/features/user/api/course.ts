@@ -210,6 +210,50 @@ export const getUserTimetable = async (
   return data.userTimetable;
 };
 
+export type UserTimetableProfile = {
+  visible: boolean;
+  entries: TimetableEntry[];
+};
+
+const UserTimetableProfileQuery = `
+  query UserTimetableProfile($userID: ID!, $year: Int, $semester: String) {
+    userTimetableProfile(userID: $userID, year: $year, semester: $semester) {
+      visible
+      entries {
+        ID
+        color
+        createdAt
+        course {
+          ID
+          roomID
+          dayOfWeek
+          period
+          teacherName
+          courseName
+          year
+          semester
+          createdAt
+        }
+      }
+    }
+  }
+`;
+
+// 対象ユーザーの時間割公開設定を含めて取得する。visible が false の場合は
+// entries が空でも「非公開」であって「未登録」ではないことが判別できる。
+export const getUserTimetableProfile = async (
+  userID: string,
+  year?: number,
+  semester?: string,
+): Promise<UserTimetableProfile> => {
+  const data = await request<{ userTimetableProfile: UserTimetableProfile }>(
+    UserTimetableProfileQuery,
+    { userID, year, semester },
+    getUserToken(),
+  );
+  return data.userTimetableProfile;
+};
+
 export const getCurrentSemester = async (): Promise<CurrentSemester> => {
   const data = await requestDoc(CurrentSemesterDocument, {}, getUserToken());
   return data.currentSemester;

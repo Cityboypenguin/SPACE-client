@@ -22,6 +22,17 @@
   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.28);
 }
 
+.panel.panelPrivate {
+  position: relative;
+  background: color-mix(in srgb, var(--color-bg-elevated) 62%, #9ca3af);
+}
+
+.privateGridWrap,
+.panelPrivate .compactMobileTimetable {
+  filter: grayscale(1);
+  opacity: 0.72;
+}
+
 .sheet {
   position: relative;
   width: min(960px, 100%);
@@ -70,8 +81,13 @@
 }
 
 .noticeText {
-  margin: 2rem auto;
+  position: absolute;
+  top: 4.4rem;
+  left: 50%;
+  z-index: 2;
+  margin: 0;
   max-width: 28rem;
+  width: calc(100% - 2rem);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-bg-elevated);
@@ -79,6 +95,8 @@
   padding: 1rem 1.25rem;
   text-align: center;
   line-height: 1.6;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  transform: translateX(-50%);
 }
 
 .compactCourseChip {
