@@ -69,6 +69,18 @@
   flex: 1;
 }
 
+.noticeText {
+  margin: 2rem auto;
+  max-width: 28rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+  padding: 1rem 1.25rem;
+  text-align: center;
+  line-height: 1.6;
+}
+
 .compactCourseChip {
   height: var(--timetable-slot-height);
   justify-content: flex-start;

@@ -10,9 +10,11 @@ import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { UserListItem } from '../../../components/molecules/UserListItem';
 import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
+import { ToggleSwitch } from '../../../components/atoms/ToggleSwitch';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { useToast } from '../../../context/useToast';
 import { useTheme } from '../../../context/useTheme';
+import type { Theme } from '../../../context/themeContextValue';
 import { getTimetableProfileVisibility, setTimetableProfileVisibility } from '../api/timetableVisibility';
 import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postListCache';
 import { staticCacheOptions } from '../cache/swrOptions';
@@ -22,7 +24,7 @@ import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { InquiryForm } from '../components/organisms/InquiryForm';
 import { AppSwal } from '../../../lib/swal';
 
-type View = 'general' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
+type View = 'general' | 'personal' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
 
 const LIMIT = 20;
 
@@ -201,41 +203,127 @@ const TermsView = () => {
   );
 };
 
+type PersonalSettingsFormProps = {
+  initialTheme: Theme;
+  initialTimetableVisible: boolean;
+  onSave: (settings: { theme: Theme; timetableVisible: boolean }) => Promise<void>;
+};
+
+const PersonalSettingsForm = ({ initialTheme, initialTimetableVisible, onSave }: PersonalSettingsFormProps) => {
+  const [draftTheme, setDraftTheme] = useState<Theme>(initialTheme);
+  const [draftTimetableVisible, setDraftTimetableVisible] = useState(initialTimetableVisible);
+  const [saving, setSaving] = useState(false);
+  const hasChanges = draftTheme !== initialTheme || draftTimetableVisible !== initialTimetableVisible;
+
+  const handleSave = async () => {
+    if (!hasChanges || saving) return;
+    setSaving(true);
+    try {
+      await onSave({ theme: draftTheme, timetableVisible: draftTimetableVisible });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className={styles.personalSettings}>
+      <div className={styles.toggleRow}>
+        <span className={styles.toggleLabel}>ダークモード</span>
+        <ToggleSwitch
+          checked={draftTheme === 'dark'}
+          onChange={(checked) => setDraftTheme(checked ? 'dark' : 'light')}
+          ariaLabel="ダークモード"
+        />
+      </div>
+
+      <div className={styles.toggleRow}>
+        <span className={styles.toggleLabel}>プロフィールに時間割を公開する</span>
+        <ToggleSwitch
+          checked={draftTimetableVisible}
+          onChange={setDraftTimetableVisible}
+          ariaLabel="プロフィールに時間割を公開する"
+        />
+      </div>
+
+      <button
+        type="button"
+        className={styles.submitBtn}
+        disabled={!hasChanges || saving}
+        onClick={() => void handleSave()}
+      >
+        {saving ? '保存中...' : '保存する'}
+      </button>
+    </div>
+  );
+};
+
+const PersonalSettingsView = ({ onBack }: { onBack: () => void }) => {
+  const { theme, setTheme } = useTheme();
+  const { addToast } = useToast();
+  const {
+    data: timetableVisible,
+    mutate: mutateTimetableVisible,
+    isLoading,
+  } = useSWR('timetable-profile-visibility', () => getTimetableProfileVisibility(), staticCacheOptions);
+  const isReady = timetableVisible != null;
+
+  const handleSave = async (settings: { theme: Theme; timetableVisible: boolean }) => {
+    try {
+      if (settings.theme !== theme) {
+        setTheme(settings.theme);
+      }
+      if (settings.timetableVisible !== timetableVisible) {
+        const saved = await setTimetableProfileVisibility(settings.timetableVisible);
+        mutateTimetableVisible(saved, { revalidate: false });
+      }
+      addToast('個人設定を保存しました', 'success');
+    } catch {
+      addToast('個人設定の保存に失敗しました', 'error');
+    }
+  };
+
+  return (
+    <>
+      <h2 className={styles.backTitle}>
+        <button onClick={onBack}><ChevronLeft /></button>
+        個人設定
+      </h2>
+
+      {!isReady && isLoading ? (
+        <p className={styles.mutedText}>読み込み中...</p>
+      ) : !isReady ? (
+        <p className={styles.errorMsg}>個人設定の読み込みに失敗しました</p>
+      ) : (
+        <PersonalSettingsForm
+          key={`${theme}:${timetableVisible}`}
+          initialTheme={theme}
+          initialTimetableVisible={timetableVisible}
+          onSave={handleSave}
+        />
+      )}
+    </>
+  );
+};
+
 const GeneralView = ({
+  onPersonalClick,
   onPasswordClick,
   onBlocksClick,
 }: {
+  onPersonalClick: () => void;
   onPasswordClick: () => void;
   onBlocksClick: () => void;
 }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const { addToast } = useToast();
   const { mutate: globalMutate } = useSWRConfig();
   const [cacheCleared, setCacheCleared] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [timetableVisible, setTimetableVisible] = useState(true);
 
-  useEffect(() => {
-    getTimetableProfileVisibility()
-      .then(setTimetableVisible)
-      .catch(() => {});
-  }, []);
-
-  const handleTimetableVisibilityChange = async (visible: boolean) => {
-    const previous = timetableVisible;
-    setTimetableVisible(visible);
-    try {
-      await setTimetableProfileVisibility(visible);
-    } catch {
-      setTimetableVisible(previous);
-      addToast('設定の変更に失敗しました', 'error');
-    }
-  };
+  useSWR('timetable-profile-visibility', () => getTimetableProfileVisibility(), staticCacheOptions);
 
   const handleClearCache = async () => {
     const result = await AppSwal.fire({
@@ -274,6 +362,10 @@ const GeneralView = ({
     <>
       <h2 className={styles.sectionTitle}>一般設定</h2>
       <div className={styles.subMenuList}>
+        <button className={styles.subMenuItem} onClick={onPersonalClick}>
+          個人設定
+          <span className={styles.subMenuArrow}>›</span>
+        </button>
         <button className={styles.subMenuItem} onClick={onPasswordClick}>
           パスワード変更
           <span className={styles.subMenuArrow}>›</span>
@@ -282,28 +374,6 @@ const GeneralView = ({
           ブロックリスト
           <span className={styles.subMenuArrow}>›</span>
         </button>
-      </div>
-
-      <div className={styles.toggleRow}>
-        <span className={styles.toggleLabel}>ダークモード</span>
-        <input
-          type="checkbox"
-          role="switch"
-          className={styles.switch}
-          checked={theme === 'dark'}
-          onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
-        />
-      </div>
-
-      <div className={styles.toggleRow}>
-        <span className={styles.toggleLabel}>プロフィールに時間割を公開する</span>
-        <input
-          type="checkbox"
-          role="switch"
-          className={styles.switch}
-          checked={timetableVisible}
-          onChange={(e) => void handleTimetableVisibilityChange(e.target.checked)}
-        />
       </div>
 
       <div className={styles.actionGroup}>
@@ -418,10 +488,12 @@ export const UserSettingsPage = () => {
         <main className={styles.rightPanel}>
           {view === 'general' && (
             <GeneralView
+              onPersonalClick={() => setView('personal')}
               onPasswordClick={() => setView('password')}
               onBlocksClick={() => setView('blocks')}
             />
           )}
+          {view === 'personal' && <PersonalSettingsView onBack={() => setView('general')} />}
           {view === 'password' && <PasswordView onBack={() => setView('general')} />}
           {view === 'blocks' && <BlocksView onBack={() => setView('general')} />}
           {view === 'terms' && <TermsView />}

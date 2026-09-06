@@ -6,6 +6,7 @@ import {
   getCurrentSemester,
   getMyTimetable,
   getUserTimetable,
+  isPrivateTimetableError,
   type TimetableEntry,
 } from '../../api/course';
 import { stableCacheOptions, staticCacheOptions, semesterCacheOptions } from '../../cache/swrOptions';
@@ -41,6 +42,7 @@ export const PublicTimetableOverlay = ({ userId, userName, isMe, onClose }: Prop
     () => isMe ? getMyTimetable(viewYear, viewSemester) : getUserTimetable(userId, viewYear, viewSemester),
     stableCacheOptions,
   );
+  const isPrivate = !isMe && isPrivateTimetableError(error);
 
   const entryMap = useMemo(() => {
     const map = new Map<string, TimetableEntry>();
@@ -119,10 +121,14 @@ export const PublicTimetableOverlay = ({ userId, userName, isMe, onClose }: Prop
             </div>
           </div>
 
-          {error && <p className={timetableStyles.errorText}>時間割の読み込みに失敗しました。</p>}
+          {isPrivate ? (
+            <p className={styles.noticeText}>このユーザーはプロフィールで時間割を公開していません。</p>
+          ) : error ? (
+            <p className={timetableStyles.errorText}>時間割の読み込みに失敗しました。</p>
+          ) : null}
           {isLoading ? (
             <p className={timetableStyles.empty}>読み込み中...</p>
-          ) : (
+          ) : !error ? (
             <TimetableGrid
               renderSlotContent={renderSlotContent}
               classNames={{
@@ -131,7 +137,7 @@ export const PublicTimetableOverlay = ({ userId, userName, isMe, onClose }: Prop
                 mobilePeriodRow: styles.compactMobilePeriodRow,
               }}
             />
-          )}
+          ) : null}
         </main>
       </div>
     </div>

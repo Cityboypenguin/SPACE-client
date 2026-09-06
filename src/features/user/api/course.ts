@@ -27,6 +27,25 @@ export type CurrentSemester = {
   semester: string;
 };
 
+const PRIVATE_TIMETABLE_ERROR_PATTERNS = [
+  'timetable is private',
+  'timetable not public',
+  'timetable profile visibility',
+  'not visible',
+  'not published',
+  '非公開',
+  '公開されていません',
+  '公開していません',
+  'forbidden',
+  '403',
+];
+
+export const isPrivateTimetableError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  const normalized = message.toLowerCase();
+  return PRIVATE_TIMETABLE_ERROR_PATTERNS.some((pattern) => normalized.includes(pattern.toLowerCase()));
+};
+
 const SearchCoursesDocument = graphql(`
   query SearchCourses($dayOfWeek: String!, $period: Int!, $keyword: String, $limit: Int, $offset: Int) {
     searchCourses(dayOfWeek: $dayOfWeek, period: $period, keyword: $keyword, limit: $limit, offset: $offset) {
@@ -172,11 +191,22 @@ export const getUserTimetable = async (
   year?: number,
   semester?: string,
 ): Promise<TimetableEntry[]> => {
-  const data = await request<{ userTimetable: TimetableEntry[] }>(
-    UserTimetableQuery,
-    { userID, year, semester },
-    getUserToken(),
-  );
+  let data: { userTimetable: TimetableEntry[] | null };
+  try {
+    data = await request<{ userTimetable: TimetableEntry[] | null }>(
+      UserTimetableQuery,
+      { userID, year, semester },
+      getUserToken(),
+    );
+  } catch (error) {
+    if (isPrivateTimetableError(error)) {
+      throw new Error('timetable is private');
+    }
+    throw error;
+  }
+  if (data.userTimetable == null) {
+    throw new Error('timetable is private');
+  }
   return data.userTimetable;
 };
 
