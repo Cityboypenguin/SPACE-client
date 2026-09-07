@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
+import { Modal, ModalCloseButton } from '../../../../components/molecules/Modal';
 import { RoleBadge } from '../atoms/RoleBadge';
 import { ImageCropModal } from './ImageCropModal';
 import { toUserMessage } from '../../../../lib/errorMessages';
@@ -165,15 +166,12 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   };
 
   return (
-    <div
-      className={styles.overlay}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>コミュニティ設定</h2>
-          <button onClick={onClose} className={styles.closeButton}>✕</button>
-        </div>
+    <>
+    <Modal onClose={onClose} overlayClassName={styles.overlay} className={styles.modal}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>コミュニティ設定</h2>
+        <ModalCloseButton onClick={onClose} />
+      </div>
 
         <div className={styles.tabs}>
           {(['info', 'members'] as const).map((t) => (
@@ -332,17 +330,17 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
             </div>
           )}
         </div>
-      </div>
+    </Modal>
 
-      {cropTarget && (
-        <ImageCropModal
-          imageSrc={cropTarget.imageSrc}
-          fileName={cropTarget.file.name}
-          mimeType={cropTarget.file.type}
-          onCancel={() => setCropTarget(null)}
-          onComplete={handleCropComplete}
-        />
-      )}
-    </div>
+    {cropTarget && (
+      <ImageCropModal
+        imageSrc={cropTarget.imageSrc}
+        fileName={cropTarget.file.name}
+        mimeType={cropTarget.file.type}
+        onCancel={() => setCropTarget(null)}
+        onComplete={handleCropComplete}
+      />
+    )}
+    </>
   );
 };

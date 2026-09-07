@@ -14,6 +14,7 @@ import {
 } from '../api/community';
 import { storageUrl } from '../../../lib/storage';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './CommunityMembersPage.module.css';
 
 export const CommunityMembersPage = () => {
@@ -127,9 +128,9 @@ export const CommunityMembersPage = () => {
         {error && <p className={styles.errorText}>{error}</p>}
 
         {loading ? (
-          <p className={styles.empty}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem 0' }}>読み込み中...</StatusText>
         ) : members.length === 0 ? (
-          <p className={styles.empty}>メンバーがいません</p>
+          <StatusText style={{ padding: '2rem 0' }}>メンバーがいません</StatusText>
         ) : (
           <>
             <ul className={styles.list}>

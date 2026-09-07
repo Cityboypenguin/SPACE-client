@@ -9,6 +9,7 @@ import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
 import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
 import { ProfilePillButton } from '../components/molecules/ProfilePillButton';
+import { DropdownMenu, DropdownMenuItem } from '../../../components/molecules/DropdownMenu';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../../../context/useToast';
@@ -41,15 +42,6 @@ export const UserPublicProfilePage = () => {
 
   // ── three-dot menu ────────────────────────────────────────────────────────
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [menuOpen]);
 
   // ── favorite / block ──────────────────────────────────────────────────────
   const { data: favoriteUsers, mutate: mutateFavorites } = useSWR(
@@ -344,34 +336,24 @@ export const UserPublicProfilePage = () => {
             <ChevronLeft />
           </button>
           {profile && !isMe && (
-            <div className={styles.menuWrap} ref={menuRef}>
-              <button
-                className={styles.menuButton}
-                onClick={() => setMenuOpen(v => !v)}
-                aria-label="メニュー"
-              >
-                ···
-              </button>
-              {menuOpen && (
-                <div className={styles.dropdown}>
-                  <button
-                    className={isBlocked ?  styles.dropdownItem : `${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+            <DropdownMenu triggerClassName={styles.menuButton} open={menuOpen} onOpenChange={setMenuOpen}>
+              {() => (
+                <>
+                  <DropdownMenuItem
+                    icon={isBlocked ? blockIcon : redblockIcon}
+                    themedIcon={isBlocked}
+                    danger={!isBlocked}
                     onClick={handleBlockToggle}
                     disabled={actionLoading}
                   >
-                    <img src={isBlocked ? blockIcon : redblockIcon} alt="" className={`${styles.dropdownIcon}${isBlocked ? ' themed-icon' : ''}`} />
                     {isBlocked ? 'ブロック解除' : 'ブロック'}
-                  </button>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={handleReportUser}
-                  >
-                    <img src={reportIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem icon={reportIcon} themedIcon onClick={handleReportUser}>
                     通報
-                  </button>
-                </div>
+                  </DropdownMenuItem>
+                </>
               )}
-            </div>
+            </DropdownMenu>
           )}
         </div>
 

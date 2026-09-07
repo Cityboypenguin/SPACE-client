@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createReport } from '../../api/report';
 import { useToast } from '../../../../context/useToast';
 import { toUserMessage } from '../../../../lib/errorMessages';
+import { Modal } from '../../../../components/molecules/Modal';
 import styles from './ReportModal.module.css';
 
 interface ReportModalProps {
@@ -45,12 +46,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
   };
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <form
-        className={styles.modal}
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={handleSubmit}
-      >
+    <Modal onClose={onClose} overlayClassName={styles.overlay} className={styles.modal}>
+      <form onSubmit={handleSubmit}>
         <h2 className={styles.title}>{title}</h2>
 
         {postContent && (
@@ -94,6 +91,6 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 };

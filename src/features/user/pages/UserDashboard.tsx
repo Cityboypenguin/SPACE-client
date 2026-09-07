@@ -28,6 +28,7 @@ import { createBlocker } from '../api/block';
 import { getTimetableProfileVisibility } from '../api/timetableVisibility';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
 import { staticCacheOptions } from '../cache/swrOptions';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './UserDashboard.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -322,7 +323,7 @@ export const UserDashboard = () => {
         {flashMessage && <p className={styles.flashMessage}>{flashMessage}</p>}
 
         {profileLoading ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>
         ) : profile ? (
           <ProfileCard profile={profile} actions={profileActions} />
         ) : null}
@@ -337,9 +338,9 @@ export const UserDashboard = () => {
         />
 
         {isLoading ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>
         ) : displayedPosts.length === 0 ? (
-          <p className={styles.emptyText}>投稿がまだありません</p>
+          <StatusText style={{ padding: '2rem' }}>投稿がまだありません</StatusText>
         ) : (
           displayedPosts.map(post => (
             editingPost?.ID === post.ID ? (
@@ -385,7 +386,7 @@ export const UserDashboard = () => {
         <div ref={ownSentinelRef} />
         <div ref={likedSentinelRef} />
 
-        {isLoadingMore && <p className={styles.loadingText}>読み込み中...</p>}
+        {isLoadingMore && <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>}
 
         {reportingPostId && (
           <ReportModal

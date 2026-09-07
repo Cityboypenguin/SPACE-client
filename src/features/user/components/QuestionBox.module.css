@@ -393,14 +393,6 @@
   padding-right: 2.25rem;
 }
 
-/* menuWrap(PostCard.module.css)の position:relative と同じ詳細度で競合するため、
-   読み込み順に依存せず確実に上書きされるようクラスを二重指定して詳細度を上げる。 */
-.answerMenu.answerMenu {
-  position: absolute;
-  top: 0.75rem;
-  right: 1rem;
-}
-
 .answerFooter {
   display: flex;
   align-items: center;

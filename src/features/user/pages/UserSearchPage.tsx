@@ -16,6 +16,7 @@ import { useProfile } from '../hooks/useProfile';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { storageUrl } from '../../../lib/storage';
 import searchIconSvg from '../../../assets/パーツ_検索.svg';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './UserSearchPage.module.css';
 
 type Mode = 'user' | 'post';
@@ -348,15 +349,15 @@ export const UserSearchPage = () => {
               {searched && (
                 <>
                   <ScrollSentinel ref={userSentinelRef} />
-                  {loadingMore && <p className={styles.loadingText}>読み込み中...</p>}
+                  {loadingMore && <StatusText style={{ padding: '1rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>}
                 </>
               )}
             </>
           ) : searched ? (
-            <p className={styles.emptyText}>該当するユーザーが見つかりませんでした</p>
+            <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>該当するユーザーが見つかりませんでした</StatusText>
           ) : null
         ) : postLoading ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '1rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>
         ) : displayedPosts.length > 0 ? (
           <>
             <div>
@@ -378,7 +379,7 @@ export const UserSearchPage = () => {
             {searched && <ScrollSentinel ref={postSentinelRef} />}
           </>
         ) : searched ? (
-          <p className={styles.emptyText}>該当する投稿が見つかりませんでした</p>
+          <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>該当する投稿が見つかりませんでした</StatusText>
         ) : null}
       </main>
     </div>

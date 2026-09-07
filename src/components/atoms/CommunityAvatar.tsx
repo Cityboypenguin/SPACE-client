@@ -1,4 +1,5 @@
 import { storageUrl } from '../../lib/storage';
+import { AvatarFrame } from './AvatarFrame';
 import styles from './CommunityAvatar.module.css';
 
 type Props = {
@@ -13,13 +14,7 @@ export const CommunityAvatar = ({ name, src, directSrc, size = 40 }: Props) => {
   const resolvedSrc = directSrc ?? (!isNone ? storageUrl(src) : null);
 
   return (
-    <div
-      className={styles.wrap}
-      style={{
-        width: size,
-        height: size,
-      }}
-    >
+    <AvatarFrame size={size}>
       {resolvedSrc ? (
         <img
           src={resolvedSrc}
@@ -31,6 +26,6 @@ export const CommunityAvatar = ({ name, src, directSrc, size = 40 }: Props) => {
           {name.charAt(0) || '?'}
         </span>
       )}
-    </div>
+    </AvatarFrame>
   );
 };

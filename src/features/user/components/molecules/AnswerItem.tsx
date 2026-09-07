@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import likeIconOff from '../../../../assets/パーツ_いいね.svg';
@@ -8,8 +8,8 @@ import { useTheme } from '../../../../context/useTheme';
 import { ClampedText } from '../../../../components/atoms/ClampedText';
 import { type Answer } from '../../api/question';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import styles from '../QuestionBox.module.css';
-import menuStyles from '../organisms/PostCard.module.css';
 
 type Props = {
   answer: Answer;
@@ -31,28 +31,15 @@ export const AnswerItem = ({
   answer, isBest, canSelectBest, canCancelBest,
   onSelectBest, onCancelBest, onUpdate, onDelete, onLike, onUnlike, rootRef,
 }: Props) => {
-  const menuRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [editBody, setEditBody] = useState(answer.body);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   // ベストアンサーに選ばれている間は編集・削除できない。
   const canEditOrDelete = answer.isMine && !isBest;
   const hasMenuActions = canEditOrDelete;
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
 
   const handleSelectBest = async () => {
     setBusy(true);
@@ -130,41 +117,20 @@ export const AnswerItem = ({
   return (
     <div ref={rootRef} className={`${styles.answerItem} ${isBest ? styles.answerItemBest : ''}`}>
       {hasMenuActions && !editing && (
-        <div className={`${menuStyles.menuWrap} ${styles.answerMenu}`} ref={menuRef}>
-          <button
-            type="button"
-            className={menuStyles.menuButton}
-            disabled={busy}
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="メニュー"
-          >
-            ···
-          </button>
-          {menuOpen && (
-            <div className={menuStyles.dropdown}>
-              {canEditOrDelete && (
-                <>
-                  <button
-                    type="button"
-                    className={menuStyles.dropdownItem}
-                    onClick={() => { setMenuOpen(false); setEditing(true); }}
-                  >
-                    <img src={editIcon} alt="" className={`${menuStyles.dropdownIcon} themed-icon`} />
-                    編集
-                  </button>
-                  <button
-                    type="button"
-                    className={`${menuStyles.dropdownItem} ${menuStyles.dropdownItemDanger}`}
-                    onClick={() => { setMenuOpen(false); void handleDelete(); }}
-                  >
-                    <img src={deleteIcon} alt="" className={`${menuStyles.dropdownIconDelete} themed-icon`} />
-                    削除
-                  </button>
-                </>
-              )}
-            </div>
+        <DropdownMenu wrapStyle={{ position: 'absolute', top: '0.75rem', right: '1rem' }} disabled={busy}>
+          {(close) => (
+            canEditOrDelete && (
+              <>
+                <DropdownMenuItem icon={editIcon} themedIcon onClick={() => { close(); setEditing(true); }}>
+                  編集
+                </DropdownMenuItem>
+                <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); void handleDelete(); }}>
+                  削除
+                </DropdownMenuItem>
+              </>
+            )
           )}
-        </div>
+        </DropdownMenu>
       )}
 
       {editing ? (

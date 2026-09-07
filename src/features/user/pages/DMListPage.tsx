@@ -11,6 +11,7 @@ import { useAuth } from '../context/useAuth';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './DMListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -119,11 +120,11 @@ export const DMListPage = () => {
         <h2 className={styles.sectionTitle}>DM</h2>
 
         {dmInitialLoading ? (
-          <p className={styles.empty}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>読み込み中...</StatusText>
         ) : filteredRooms.length === 0 ? (
-          <p className={styles.empty}>
+          <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>
             {query ? '該当するトークが見つかりませんでした' : 'DMがまだありません'}
-          </p>
+          </StatusText>
         ) : (
           <ul className={styles.dmList}>
             {filteredRooms.map((room) => {
@@ -174,7 +175,7 @@ export const DMListPage = () => {
             })}
             <ScrollSentinel ref={sentinelRef} />
             {dmLoadingMore && (
-              <p className={styles.empty}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             )}
           </ul>
         )}

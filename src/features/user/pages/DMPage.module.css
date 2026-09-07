@@ -1,10 +1,3 @@
-.loadingText {
-  color: var(--color-text-muted);
-  padding: 0.5rem;
-  text-align: center;
-  font-size: 0.8rem;
-}
-
 .errorText {
   color: var(--color-danger);
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { type TermsOfService, consentToTerms } from '../../api/terms';
 import { TermsContent } from '../molecules/TermsContent';
+import { Modal } from '../../../../components/molecules/Modal';
 import styles from './TermsConsentModal.module.css';
 
 interface Props {
@@ -24,9 +25,8 @@ export const TermsConsentModal = ({ terms, onConsented }: Props) => {
   };
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
-        <div className={styles.header}>
+    <Modal overlayClassName={styles.overlay} className={styles.modal}>
+      <div className={styles.header}>
           <h2 className={styles.title}>
             利用規約への同意
           </h2>
@@ -64,7 +64,6 @@ export const TermsConsentModal = ({ terms, onConsented }: Props) => {
             {submitting ? '処理中...' : '上記の利用規約に同意する'}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

@@ -246,20 +246,6 @@
 }
 
 /* ── States ── */
-.empty {
-  color: var(--color-text-muted);
-  padding: 2rem;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-.loading {
-  color: var(--color-text-muted);
-  padding: 2rem;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
 .error {
   color: var(--color-danger);
   padding: 1rem;

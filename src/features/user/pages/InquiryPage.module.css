@@ -183,24 +183,16 @@
 
 /* 送信完了モーダル */
 .overlay {
-  position: fixed;
-  inset: 0;
   background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 100;
 }
 
 .modal {
-  background: var(--color-bg-elevated);
   border-radius: 10px;
   padding: 1.75rem 2rem;
   max-width: 320px;
   width: 90%;
   text-align: center;
-  display: flex;
-  flex-direction: column;
   gap: 1.25rem;
 }
 

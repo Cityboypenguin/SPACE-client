@@ -4,6 +4,7 @@ import { PostComposer } from './PostComposer';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { Avatar } from '../../../../components/atoms/Avatar';
+import { Modal, ModalCloseButton } from '../../../../components/molecules/Modal';
 import { storageUrl } from '../../../../lib/storage';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './ReplyModal.module.css';
@@ -44,12 +45,11 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
   };
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.header}>
-          <span className={styles.title}>返信</span>
-          <button className={styles.closeButton} onClick={onClose}>✕</button>
-        </div>
+    <Modal onClose={onClose} overlayClassName={styles.overlay} className={styles.modal}>
+      <div className={styles.header}>
+        <span className={styles.title}>返信</span>
+        <ModalCloseButton onClick={onClose} className={styles.closeButton} />
+      </div>
 
         <div className={styles.preview}>
           <div className={styles.previewInner}>
@@ -100,7 +100,6 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
             isEmbedded
           />
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

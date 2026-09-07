@@ -16,6 +16,7 @@ import styles from '../components/ChatRoom.module.css';
 import pageStyles from './DMPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { Avatar } from '../../../components/atoms/Avatar';
+import { StatusText } from '../../../components/atoms/StatusText';
 import { storageUrl } from '../../../lib/storage';
 
 export const DMPage = () => {
@@ -143,7 +144,7 @@ export const DMPage = () => {
         <div className={styles.messageList} ref={messageListRef}>
           <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
-            <p className={pageStyles.loadingText}>読み込み中...</p>
+            <StatusText style={{ padding: '0.5rem', fontSize: '0.8rem' }}>読み込み中...</StatusText>
           )}
 
           {(error || sendError) && <p className={pageStyles.errorText}>{error || sendError}</p>}
@@ -191,7 +192,7 @@ export const DMPage = () => {
           })}
           <div ref={bottomSentinelRef} className={styles.scrollSentinel} />
           {loadingNewer && (
-            <p className={pageStyles.loadingText}>読み込み中...</p>
+            <StatusText style={{ padding: '0.5rem', fontSize: '0.8rem' }}>読み込み中...</StatusText>
           )}
           <div ref={bottomRef} />
         </div>

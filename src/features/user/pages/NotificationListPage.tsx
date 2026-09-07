@@ -21,6 +21,7 @@ import { storageUrl } from '../../../lib/storage';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import senshuIcon from '../../../assets/Senshu-Universe.svg';
 import { Tabs } from '../../../components/molecules/Tabs';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './NotificationListPage.module.css';
 import  mail  from '../../../assets/パーツ_メール.svg';
 import favorite from '../../../assets/パーツ_いいね.svg';
@@ -402,7 +403,7 @@ export const NotificationListPage = () => {
           <>
             {notifError && <p className={styles.error}>{notifError}</p>}
             {actorNotifs.length === 0 ? (
-              <p className={styles.empty}>通知はありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>通知はありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {actorNotifs.map((n) => (
@@ -453,9 +454,9 @@ export const NotificationListPage = () => {
           <>
             {notifError && <p className={styles.error}>{notifError}</p>}
             {notifLoading ? (
-              <p className={styles.loading}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             ) : pagedGroups.length === 0 ? (
-              <p className={styles.empty}>通知はありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>通知はありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {pagedGroups.map((group) => {
@@ -536,9 +537,9 @@ export const NotificationListPage = () => {
         {tab === 'announcements' && (
           <>
             {announceLoading ? (
-              <p className={styles.loading}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             ) : announceList.length === 0 ? (
-              <p className={styles.empty}>お知らせはありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>お知らせはありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {announceList.map((a) => (

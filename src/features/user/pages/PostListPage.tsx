@@ -8,6 +8,7 @@ import { ReplyModal } from '../components/organisms/ReplyModal';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/useToast';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './PostListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -667,7 +668,7 @@ export const PostListPage = () => {
         {loadError && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
         {(isTabLoading || searchLoading) ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>
         ) : (
           <>
             {displayedPosts.map((post) =>
@@ -711,16 +712,16 @@ export const PostListPage = () => {
               )
             )}
             {displayedPosts.length === 0 && (
-              <p className={styles.emptyText}>
+              <StatusText style={{ padding: '2rem' }}>
                 {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'フォロー中のユーザーの投稿がありません' : '投稿がまだありません'}
-              </p>
+              </StatusText>
             )}
             <div ref={recommendedSentinelRef} className={styles.sentinel} />
             <div ref={followSentinelRef} className={styles.sentinel} />
             <div ref={searchSentinelRef} className={styles.sentinel} />
-            {isTabLoadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
+            {isTabLoadingMore && <StatusText style={{ padding: '1rem' }}>読み込み中...</StatusText>}
             {!isSearching && !hasMore && displayedPosts.length > 0 && (
-              <p className={styles.allLoadedText}>すべての投稿を表示しました</p>
+              <StatusText style={{ padding: '1rem', fontSize: '0.875rem' }}>すべての投稿を表示しました</StatusText>
             )}
           </>
         )}

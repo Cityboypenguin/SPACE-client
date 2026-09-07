@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
+import { Modal, ModalCloseButton } from '../../../../components/molecules/Modal';
 import { storageUrl } from '../../../../lib/storage';
 import styles from './CommunityMemberModal.module.css';
 
@@ -34,51 +35,43 @@ export const CommunityMembersModal = ({ community, onClose }: Props) => {
   }, [community.ID]);
 
   return (
-    <div
-      onClick={onClose}
-      className={styles.overlay}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={styles.modal}
-      >
-        <div className={styles.header}>
-          <h3 className={styles.title}>メンバー一覧 ({members.length})</h3>
-          <button onClick={onClose} className={styles.closeButton}>✕</button>
-        </div>
-
-        <div className={styles.body}>
-          {loading && <p className={styles.loadingText}>読み込み中...</p>}
-          {error && <p className={styles.errorText}>{error}</p>}
-
-          {!loading && !error && (
-            <ul className={styles.memberList}>
-              {members.map((m) => (
-                <li
-                  key={m.user.ID}
-                  className={styles.memberItem}
-                >
-                  <UserAvatar
-                    userId={m.user.ID}
-                    name={m.user.name}
-                    avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) : undefined}
-                    size={36}
-                  />
-
-                  <div className={styles.memberInfo}>
-                    <UserNameLink userId={m.user.ID}>
-                      <div className={styles.memberName}>{m.user.name}</div>
-                    </UserNameLink>
-                    <div className={styles.memberAccountId}>@{m.user.accountID}</div>
-                  </div>
-
-                  <RoleBadge role={m.role} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+    <Modal onClose={onClose} overlayClassName={styles.overlay} className={styles.modal}>
+      <div className={styles.header}>
+        <h3 className={styles.title}>メンバー一覧 ({members.length})</h3>
+        <ModalCloseButton onClick={onClose} />
       </div>
-    </div>
+
+      <div className={styles.body}>
+        {loading && <p className={styles.loadingText}>読み込み中...</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
+
+        {!loading && !error && (
+          <ul className={styles.memberList}>
+            {members.map((m) => (
+              <li
+                key={m.user.ID}
+                className={styles.memberItem}
+              >
+                <UserAvatar
+                  userId={m.user.ID}
+                  name={m.user.name}
+                  avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) : undefined}
+                  size={36}
+                />
+
+                <div className={styles.memberInfo}>
+                  <UserNameLink userId={m.user.ID}>
+                    <div className={styles.memberName}>{m.user.name}</div>
+                  </UserNameLink>
+                  <div className={styles.memberAccountId}>@{m.user.accountID}</div>
+                </div>
+
+                <RoleBadge role={m.role} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Modal>
   );
 };

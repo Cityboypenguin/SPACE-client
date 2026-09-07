@@ -8,8 +8,8 @@ import { AnswerItem } from './AnswerItem';
 import { ImageAttachButton, ImageAttachPreviews } from './ImageAttachControl';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { ScrollSentinel } from '../../../../components/atoms/ScrollSentinel';
+import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import styles from '../QuestionBox.module.css';
-import menuStyles from '../organisms/PostCard.module.css';
 
 type Props = {
   question: Question;
@@ -51,13 +51,11 @@ export const QuestionDetail = ({
   const answerPanelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const answerElementsRef = useRef(new Map<string, HTMLDivElement>());
-  const questionMenuRef = useRef<HTMLDivElement>(null);
   const [answerBody, setAnswerBody] = useState('');
   const [answerFiles, setAnswerFiles] = useState<File[]>([]);
   const [answering, setAnswering] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(false);
   const [editQuestionBody, setEditQuestionBody] = useState(question.body);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   // 質問本文の「続きを読む」展開中は、テキスト自身ではなく左パネル全体を
@@ -76,17 +74,6 @@ export const QuestionDetail = ({
   useEffect(() => {
     if (editQuestionTextareaRef.current) resizeTextarea(editQuestionTextareaRef.current);
   }, [editQuestionBody, editingQuestion]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (questionMenuRef.current && !questionMenuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
 
   // 回答一覧の下端が見えたら次のページを読み込む(全件取得ではなく無限スクロール)。
   // .answerPanel は768px未満でoverflow:visibleになり実際のスクロールコンテナでは
@@ -132,7 +119,6 @@ export const QuestionDetail = ({
     try {
       await onUpdateQuestion(question.ID, editQuestionBody.trim());
       setEditingQuestion(false);
-      setMenuOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : '質問の編集に失敗しました。');
     } finally {
@@ -175,32 +161,22 @@ export const QuestionDetail = ({
         >
           {question.isMine && (
             <div className={styles.detailMenuAbs}>
-              <div className={menuStyles.menuWrap} ref={questionMenuRef}>
-                <button type="button" className={menuStyles.menuButton} onClick={() => setMenuOpen((v) => !v)} aria-label="メニュー">
-                  ···
-                </button>
-                {menuOpen && (
-                  <div className={menuStyles.dropdown}>
-                    <button
-                      type="button"
-                      className={menuStyles.dropdownItem}
-                      onClick={() => { setEditQuestionBody(question.body); setEditingQuestion(true); setMenuOpen(false); }}
+              <DropdownMenu>
+                {(close) => (
+                  <>
+                    <DropdownMenuItem
+                      icon={editIcon}
+                      themedIcon
+                      onClick={() => { close(); setEditQuestionBody(question.body); setEditingQuestion(true); }}
                     >
-                      <img src={editIcon} alt="" className={`${menuStyles.dropdownIcon} themed-icon`} />
                       編集
-                    </button>
-                    <button
-                      type="button"
-                      className={`${menuStyles.dropdownItem} ${menuStyles.dropdownItemDanger}`}
-                      onClick={handleQuestionDelete}
-                      disabled={busy}
-                    >
-                      <img src={deleteIcon} alt="" className={`${menuStyles.dropdownIconDelete} themed-icon`} />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={handleQuestionDelete} disabled={busy}>
                       削除
-                    </button>
-                  </div>
+                    </DropdownMenuItem>
+                  </>
                 )}
-              </div>
+              </DropdownMenu>
             </div>
           )}
 

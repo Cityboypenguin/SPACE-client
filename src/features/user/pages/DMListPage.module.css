@@ -160,13 +160,6 @@
   cursor: not-allowed;
 }
 
-.empty {
-  color: var(--color-text-muted);
-  text-align: center;
-  padding: 2rem 0;
-  font-size: 0.9rem;
-}
-
 .errorText {
   color: var(--color-danger);
   font-size: 0.875rem;

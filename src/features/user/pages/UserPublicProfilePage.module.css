@@ -31,80 +31,17 @@
   outline: none;
 }
 
-/* 三点リーダーメニュー */
-.menuWrap {
-  position: relative;
-}
-
+/* 三点リーダーメニュー(トリガーのみ独自スタイル。パネル/項目は共通DropdownMenu) */
 .menuButton {
-  background: none;
-  border: none;
-  cursor: pointer;
   padding: 0.35rem 0.6rem;
   border-radius: 8px;
   font-size: 1.2rem;
-  color: var(--color-text-muted);
   letter-spacing: 2px;
   transition: background 0.1s;
 }
 
 .menuButton:hover {
   background: var(--color-surface);
-}
-
-.menuButton:focus,
-.menuButton:focus-visible {
-  outline: none;
-}
-
-.dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  min-width: 140px;
-  z-index: 50;
-  overflow: hidden;
-}
-
-.dropdownItem {
-  display: grid;
-  grid-template-columns: 24px 1fr;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.7rem 1rem;
-  background: none;
-  border: none;
-  text-align: left;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.1s;
-}
-
-.dropdownItem:hover {
-  background: var(--color-surface);
-}
-
-.dropdownItem:focus,
-.dropdownItem:focus-visible {
-  outline: none;
-}
-
-.dropdownItemDanger {
-  color: var(--color-danger);
-}
-
-.dropdownIcon {
-  width: 16px;
-  height: 16px;
-  justify-self: center;
-  object-fit: fill;
 }
 
 /* プロフィール右側のアクションボタン */

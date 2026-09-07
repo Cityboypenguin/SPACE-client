@@ -63,31 +63,6 @@
   padding: 1rem;
 }
 
-.loadingText {
-  color: var(--color-text-muted);
-  padding: 2rem;
-  text-align: center;
-}
-
-.loadingMoreText {
-  color: var(--color-text-muted);
-  padding: 1rem;
-  text-align: center;
-}
-
-.allLoadedText {
-  color: var(--color-text-muted);
-  padding: 1rem;
-  text-align: center;
-  font-size: 0.875rem;
-}
-
-.emptyText {
-  color: var(--color-text-muted);
-  padding: 2rem;
-  text-align: center;
-}
-
 .sentinel {
   height: 1px;
 }

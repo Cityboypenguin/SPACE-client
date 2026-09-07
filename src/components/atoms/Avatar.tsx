@@ -1,5 +1,5 @@
 import humanIcon from '../../assets/パーツ_人間.svg';
-import styles from './Avatar.module.css';
+import { AvatarFrame } from './AvatarFrame';
 
 type Props = {
   name: string;
@@ -7,13 +7,7 @@ type Props = {
 };
 
 export const Avatar = ({ name, size = 40 }: Props) => (
-  <div
-    className={styles.wrap}
-    style={{
-      width: size,
-      height: size,
-    }}
-  >
+  <AvatarFrame size={size}>
     <img
       src={humanIcon}
       alt={name}
@@ -23,5 +17,5 @@ export const Avatar = ({ name, size = 40 }: Props) => (
         objectFit: 'contain',
       }}
     />
-  </div>
+  </AvatarFrame>
 );

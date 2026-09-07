@@ -65,14 +65,3 @@
   }
 }
 
-.loadingText {
-  color: var(--color-text-muted);
-  padding: 2rem;
-  text-align: center;
-}
-
-.emptyText {
-  color: var(--color-text-muted);
-  padding: 2rem;
-  text-align: center;
-}
