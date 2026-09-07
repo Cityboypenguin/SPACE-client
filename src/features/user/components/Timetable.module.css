@@ -25,6 +25,9 @@
   line-height: 1.1;
   font-weight: 600;
   color: var(--color-text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .topControls {
