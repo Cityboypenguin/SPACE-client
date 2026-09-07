@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ProfileCard } from '../components/organisms/ProfileCard';
@@ -8,6 +8,9 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
 import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
+import { ProfilePillButton } from '../components/molecules/ProfilePillButton';
+import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
+import favoriteIcon from '../../../assets/パーツ_お気に入り.svg';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useToast } from '../../../context/useToast';
@@ -305,10 +308,10 @@ export const UserDashboard = () => {
 
   const profileActions = (
     <div className={styles.actionButtons}>
-      <Link to="/mypage/profile-edit" className={styles.actionButton}>プロフィール編集</Link>
-      <Link to="/mypage/favorites" className={styles.actionButton}>お気に入りリスト</Link>
-      <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} />
-      {/* <Link to="/mypage/followers" className={styles.actionButton}>フォロワー</Link> */}
+      <ProfilePillButton to="/mypage/profile-edit" icon={editIcon} label="プロフィール編集" themedIcon compact />
+      <ProfilePillButton to="/mypage/favorites" icon={favoriteIcon} label="お気に入りリスト" themedIcon compact />
+      <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} compact />
+      {/* <ProfilePillButton to="/mypage/followers" icon={followerIcon} label="フォロワー" themedIcon /> */}
     </div>
   );
 

@@ -3,8 +3,9 @@ import { ProfilePillButton } from './ProfilePillButton';
 
 type Props = {
   onClick: () => void;
+  compact?: boolean;
 };
 
-export const ProfileTimetableButton = ({ onClick }: Props) => (
-  <ProfilePillButton icon={timetableIcon} label="時間割" onClick={onClick} themedIcon />
+export const ProfileTimetableButton = ({ onClick, compact }: Props) => (
+  <ProfilePillButton icon={timetableIcon} label="時間割" onClick={onClick} themedIcon compact={compact} />
 );

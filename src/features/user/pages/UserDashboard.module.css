@@ -34,34 +34,3 @@
   gap: 0.5rem;
 }
 
-.actionButton {
-  flex: 1 1 0;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 2.75rem;
-  padding: 0.4rem 0.2rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  text-decoration: none;
-  color: var(--color-text);
-  font-size: 0.72rem;
-  line-height: 1.25;
-  white-space: normal;
-  word-break: break-all;
-  transition: background 0.15s;
-}
-
-.actionButton:hover {
-  background: var(--color-surface);
-}
-
-@media (max-width: 768px) {
-  .actionButton {
-    font-size: 0.55rem;
-    padding: 0.4rem 0.15rem;
-  }
-}
-
