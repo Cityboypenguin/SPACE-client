@@ -252,6 +252,25 @@
   cursor: text;
 }
 
+.inputFieldWrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.charCount {
+  position: absolute;
+  right: 6px;
+  bottom: -1.1rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.charCountOver {
+  color: var(--color-danger);
+}
+
 .hiddenInput {
   display: none;
 }

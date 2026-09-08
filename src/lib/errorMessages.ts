@@ -9,10 +9,12 @@
 const SERVER_ERROR_MAP: Array<[string, string]> = [
   // --- 入力値エラー ---
   ['content cannot be empty', '内容を入力してください。'],
+  ['content or media is required', 'メッセージを入力するか、ファイルを添付してください。'],
 
   // --- 権限エラー ---
   ['forbidden: can only delete your own posts', '自分の投稿のみ削除できます。'],
   ['forbidden: can only update your own posts', '自分の投稿のみ編集できます。'],
+  ['forbidden: can only update your own messages', '自分の投稿のみ編集できます。'],
   ['forbidden: can only join community as yourself', '他のユーザーとしてコミュニティに参加することはできません。'],
   ['forbidden: can only remove yourself from a room', '自分以外を退出させることはできません。'],
   ['forbidden: not a member of this room', 'このチャットルームのメンバーではありません。'],

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
 import { useTheme } from '../../../../context/useTheme';
+import { MAX_MESSAGE_LENGTH, countMessageLength } from '../../constants/chat';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -119,8 +120,21 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     addFiles(imageFiles);
   };
 
-  const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
+  const messageLength = countMessageLength(value);
+  const isOverLimit = messageLength > MAX_MESSAGE_LENGTH;
+  // 上限の90%を超えたあたりから残り文字数を意識してもらうためカウンタを表示する。
+  const isNearOrOverLimit = messageLength > MAX_MESSAGE_LENGTH * 0.9;
+  const canSubmit = !disabled && !isBlocked && !isOverLimit && (value.trim() !== '' || selectedFiles.length > 0);
 
+  // フォームのnative submit（例: テスト・支援技術等からの直接submit）でも、送信中
+  // （disabled）や文字数超過時に親のonSubmitが呼ばれないよう、ここでもcanSubmitを見る。
+  // 通常のクリック/Enterキー操作は個別に canSubmit をチェック済みだが、二重送信防止を
+  // ボタンのdisabled属性だけに依存させないための最終防波堤。
+  const handleFormSubmit = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    onSubmit(e);
+  };
 
   return (
     <div
@@ -179,7 +193,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           )}
         </div>
       )}
-      <form onSubmit={onSubmit} className={styles.inputForm}>
+      <form onSubmit={handleFormSubmit} className={styles.inputForm}>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -197,38 +211,45 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           onChange={handleFileChange}
           className={styles.hiddenInput}
         />
-        <textarea
-          ref={textareaRef}
-          value={value}
-          rows={1}
-          onChange={(e) => {
-            onChange(e.target.value);
-            e.target.style.height = 'auto';
-            e.target.style.height = `${e.target.scrollHeight}px`;
-          }}
-          onPaste={handlePaste}
-          onKeyDown={(e) => {
-            // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
-            // Enterは改行として扱い、送信は送信ボタンのみで行う。
-            // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
-            // 通常通りEnterで送信できるようにする。
-            const isTouch = window.matchMedia('(pointer: coarse)').matches;
-            if (isTouch) return;
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              if (canSubmit) onSubmit({ preventDefault: () => { } });
+        <div className={styles.inputFieldWrap}>
+          <textarea
+            ref={textareaRef}
+            value={value}
+            rows={1}
+            onChange={(e) => {
+              onChange(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onPaste={handlePaste}
+            onKeyDown={(e) => {
+              // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
+              // Enterは改行として扱い、送信は送信ボタンのみで行う。
+              // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
+              // 通常通りEnterで送信できるようにする。
+              const isTouch = window.matchMedia('(pointer: coarse)').matches;
+              if (isTouch) return;
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                if (canSubmit) onSubmit({ preventDefault: () => { } });
+              }
+            }}
+            placeholder={
+              isBlocked
+                ? 'メッセージを送信できません'
+                : window.matchMedia('(pointer: coarse)').matches
+                ? 'メッセージを入力...'
+                : 'メッセージを入力... (Shift+Enterで改行)'
             }
-          }}
-          placeholder={
-            isBlocked
-              ? 'メッセージを送信できません'
-              : window.matchMedia('(pointer: coarse)').matches
-              ? 'メッセージを入力...'
-              : 'メッセージを入力... (Shift+Enterで改行)'
-          }
-          disabled={disabled || isBlocked}
-          className={styles.inputField}
-        />
+            disabled={disabled || isBlocked}
+            className={styles.inputField}
+          />
+          {isNearOrOverLimit && (
+            <span className={`${styles.charCount} ${isOverLimit ? styles.charCountOver : ''}`}>
+              {messageLength}/{MAX_MESSAGE_LENGTH}
+            </span>
+          )}
+        </div>
         <button
           type="submit"
           disabled={!canSubmit}

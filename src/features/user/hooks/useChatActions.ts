@@ -22,6 +22,8 @@ export const useChatActions = (
 
   const handleSend = async (e: { preventDefault(): void }) => {
     e.preventDefault();
+    // 送信中に再度呼ばれた場合（Enter連打やダブルクリック等）は二重送信を防ぐため即returnする。
+    if (sending) return;
     if (!content.trim() && selectedFiles.length === 0) return;
     if (!roomId) return;
     setSending(true);
