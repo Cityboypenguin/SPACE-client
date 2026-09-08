@@ -2,19 +2,14 @@ import type { APIRequestContext } from '@playwright/test';
 
 const graphqlUrl = (baseURL: string) => new URL('/query', baseURL).toString();
 
-// トークン付きでGraphQLを直叩きするための共通ヘルパー。ログイン系mutationのように
-// トークンが不要な場合は token を省略する。course/timetable系のテスト用フィクスチャ
-// セットアップ（support/courseChatFixture.ts）からも使うためexportしておく。
-export const post = async <T>(
+const post = async <T>(
   request: APIRequestContext,
   baseURL: string,
   query: string,
   variables: Record<string, unknown>,
-  token?: string,
 ): Promise<T> => {
   const response = await request.post(graphqlUrl(baseURL), {
     data: { query, variables },
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok()) {
     throw new Error(`GraphQL request failed: ${response.status()} ${await response.text()}`);

@@ -7,17 +7,20 @@ import {
 import { loginUserViaApi } from './api';
 import { env } from './env';
 
-// setup projectのstorageStateとは別に、任意の資格情報でログイン済みの新しい
-// ブラウザコンテキスト/ページを作る。admin projectのspec（storageStateが管理者用）
-// から一般ユーザー視点を確認したい場合や、2人目のユーザーが必要な場合に使う。
-export const loginAsUser = async (
+// 自分の投稿には「いいね」できない仕様のため、いいねの正常系（件数が増える）を
+// 検証するには投稿者本人とは別のユーザーでログインする必要がある。
+// setup projectのstorageStateとは別に、ここでだけ使う2人目のユーザーのページを作る。
+export const loginAsSecondUser = async (
   browser: Browser,
   request: APIRequestContext,
   baseURL: string,
-  email: string,
-  password: string,
 ): Promise<Page> => {
-  const { token, refreshToken, user } = await loginUserViaApi(request, baseURL, email, password);
+  const { token, refreshToken, user } = await loginUserViaApi(
+    request,
+    baseURL,
+    env.user2.email,
+    env.user2.password,
+  );
 
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -32,12 +35,3 @@ export const loginAsUser = async (
   );
   return page;
 };
-
-// 自分の投稿には「いいね」できない仕様のため、いいねの正常系（件数が増える）を
-// 検証するには投稿者本人とは別のユーザーでログインする必要がある。
-// 2人目のユーザー（env.user2）専用の薄いラッパー。
-export const loginAsSecondUser = (
-  browser: Browser,
-  request: APIRequestContext,
-  baseURL: string,
-): Promise<Page> => loginAsUser(browser, request, baseURL, env.user2.email, env.user2.password);
