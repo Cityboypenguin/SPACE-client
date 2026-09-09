@@ -46,17 +46,22 @@ export const CommunityRoomPage = () => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+
   const {
     bottomRef,
     firstUnreadRef,
     newMessageCount,
     isAtBottom,
     scrollToLatest,
-  } = useChatScroll(messages, roomId, hasMoreAfter);
-
-  const messageListRef = useRef<HTMLDivElement>(null);
-  const topSentinelRef = useRef<HTMLDivElement>(null);
-  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  } = useChatScroll({
+    messages,
+    containerRef: messageListRef,
+    roomId,
+    hasMoreAfter,
+  });
 
   const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
 

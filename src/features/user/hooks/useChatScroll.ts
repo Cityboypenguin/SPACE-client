@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { type Message } from '../api/message';
-import { storageUrl } from '../../../lib/storage';
 
 // スクロール制御のための可変値。描画には使わないが、ルームを切り替えたら必ず初期状態に
 // 戻す必要がある（前のルームの「初回スクロール済み」や「既読件数」を引き継ぐと、
 // 新しいルームで初期スクロールが走らない・未読バッジが誤った件数になる）。
 type RoomScrollState = {
-  /** そのルームでの初回スクロール（未読位置 or 最下部）が完了したか */
+  /** そのルームでの初回スクロール（未読位置 or 最下部）を実行済みか */
   initialScrolled: boolean;
+  /** 遅延ロードによる高さ変化への追従を終えたか */
+  initialPhaseDone: boolean;
   /** 最下部を表示中か */
   atBottom: boolean;
   /** ユーザーが目にしたとみなせるメッセージ件数 */
@@ -18,13 +19,27 @@ type RoomScrollState = {
 
 const createRoomScrollState = (): RoomScrollState => ({
   initialScrolled: false,
+  initialPhaseDone: false,
   atBottom: false,
   seenCount: 0,
   lastTailId: undefined,
 });
 
+/** まだ読み込み中の画像が残っているか */
+const hasPendingImages = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('img')).some((img) => !img.complete);
+
+type UseChatScrollParams = {
+  messages: Message[];
+  /** メッセージ一覧のスクロールコンテナ。遅延ロードによる高さ変化の検知に使う */
+  containerRef: RefObject<HTMLDivElement | null>;
+  roomId?: string;
+  /** 過去のメッセージを遡って閲覧中か（ページング中は自動スクロールを抑制する） */
+  hasMoreAfter?: boolean;
+};
+
 // 自分の発言かどうかは Message.isMine が持つため、閲覧者の ID は受け取らない。
-export const useChatScroll = (messages: Message[], roomId?: string, hasMoreAfter?: boolean) => {
+export const useChatScroll = ({ messages, containerRef, roomId, hasMoreAfter }: UseChatScrollParams) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const firstUnreadRef = useRef<HTMLDivElement>(null);
 
@@ -64,8 +79,8 @@ export const useChatScroll = (messages: Message[], roomId?: string, hasMoreAfter
     }
   }, []);
 
-  // 初回表示。画像の高さが確定する前にスクロールすると位置がずれるため、
-  // 初回取得分に含まれる画像のロード完了を待ってから位置を決める。
+  // 初回表示の位置決め。ここでは何も待たずに寄せ、そのあとの高さ変化には下の effect が
+  // 追従する。待たないぶん、画像付きのルームでも表示が遅れない。
   useEffect(() => {
     const roomState = getRoomState();
     if (messages.length === 0 || roomState.initialScrolled) return;
@@ -73,41 +88,54 @@ export const useChatScroll = (messages: Message[], roomId?: string, hasMoreAfter
     roomState.seenCount = messages.length;
     roomState.lastTailId = messages[messages.length - 1]?.ID;
 
-    const initialImageUrls = messages
-      .flatMap((msg) => msg.media ?? [])
-      .filter((media) => media.contentType.startsWith('image/'))
-      .map((media) => storageUrl(media.url));
+    scrollToInitialPosition();
+    roomState.initialScrolled = true;
 
-    if (initialImageUrls.length === 0) {
-      scrollToInitialPosition();
-      roomState.initialScrolled = true;
-      return;
+    // 画像が最初から出揃っている（キャッシュ済み・画像なし）なら追従は不要
+    const container = containerRef.current;
+    if (!container || !hasPendingImages(container)) {
+      roomState.initialPhaseDone = true;
     }
+  }, [messages, containerRef, getRoomState, scrollToInitialPosition]);
 
-    let cancelled = false;
+  // 初回表示の直後は、画像などの遅延ロードで本文の高さが後から変わる。高さが確定するのを
+  // 事前に待つ（＝ URL を先読みする）のではなく、実際にロードが完了するたびに目標位置へ
+  // 貼り直す。読み込み順やキャッシュの状態に依存しないぶん確実で、寸法情報を持たない
+  // 既存のメッセージにもそのまま効く。ユーザーが自分で操作した時点で追従をやめる。
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-    void Promise.all(
-      initialImageUrls.map(
-        (url) =>
-          new Promise<void>((resolve) => {
-            const img = new Image();
-            img.src = url;
-            // ロード成功・失敗どちらでも先に進める（失敗した画像で待ち続けない）
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-          }),
-      ),
-    ).then(() => {
-      // ロード中にルームが切り替わった場合は、新しいルームの表示を動かさない
-      if (cancelled || roomState.initialScrolled) return;
+    // load / error はバブルしないためキャプチャフェーズで拾う。
+    // error も拾うのは、壊れた画像で追従が終わらなくなるのを防ぐため。
+    const repin = () => {
+      const roomState = getRoomState();
+      if (!roomState.initialScrolled || roomState.initialPhaseDone) return;
       scrollToInitialPosition();
-      roomState.initialScrolled = true;
-    });
+      if (!hasPendingImages(container)) {
+        roomState.initialPhaseDone = true;
+      }
+    };
+
+    // ユーザーの操作が入ったら、以降は勝手に位置を動かさない
+    const release = () => {
+      getRoomState().initialPhaseDone = true;
+    };
+
+    container.addEventListener('load', repin, true);
+    container.addEventListener('error', repin, true);
+    container.addEventListener('wheel', release, { passive: true });
+    container.addEventListener('touchstart', release, { passive: true });
+    container.addEventListener('keydown', release);
 
     return () => {
-      cancelled = true;
+      container.removeEventListener('load', repin, true);
+      container.removeEventListener('error', repin, true);
+      container.removeEventListener('wheel', release);
+      container.removeEventListener('touchstart', release);
+      container.removeEventListener('keydown', release);
     };
-  }, [messages, getRoomState, scrollToInitialPosition]);
+  }, [containerRef, getRoomState, scrollToInitialPosition]);
 
   // 最下部の可視判定。初回スクロールが終わるまでは、途中経過の位置を
   // 「ユーザーが最下部を見ている」と誤認しないよう無視する。
@@ -164,8 +192,11 @@ export const useChatScroll = (messages: Message[], roomId?: string, hasMoreAfter
   }, [messages, hasMoreAfter, getRoomState]);
 
   const scrollToLatest = useCallback(() => {
+    // ユーザーの明示的な操作なので、初回の追従フェーズは終了させる
+    const roomState = getRoomState();
+    roomState.initialPhaseDone = true;
+    roomState.seenCount = messages.length;
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    getRoomState().seenCount = messages.length;
     setNewMessageCount(0);
   }, [getRoomState, messages.length]);
 
@@ -175,6 +206,5 @@ export const useChatScroll = (messages: Message[], roomId?: string, hasMoreAfter
     newMessageCount,
     isAtBottom,
     scrollToLatest,
-    scrollToInitialPosition,
   };
 };
