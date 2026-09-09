@@ -16,7 +16,7 @@ export type Message = {
   roomID: string;
   user: MessageUser;
   content: string;
-  media: { ID: string; url: string; contentType: string }[];
+  media: { ID: string; url: string; contentType: string; width?: number | null; height?: number | null }[];
   createdAt: string;
   updatedAt: string;
 };
@@ -154,6 +154,8 @@ const ListRoomMessagesDocument = graphql(`
           ID
           url
           contentType
+          width
+          height
         }
         createdAt
         updatedAt

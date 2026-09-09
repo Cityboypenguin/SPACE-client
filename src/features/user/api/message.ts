@@ -16,11 +16,17 @@ export type Media = {
   ID: string;
   url: string;
   contentType: string;
+  // 画像の実寸。表示側がロード前に領域を確保するために使う。
+  // 寸法を持たないメディアや、埋め戻し前の古いレコードでは null。
+  width?: number | null;
+  height?: number | null;
 };
 
 export type MediaInput = {
   objectKey: string;
   contentType: string;
+  width?: number;
+  height?: number;
 };
 
 export type Message = {
@@ -62,6 +68,8 @@ export const MESSAGE_FIELDS = `
     ID
     url
     contentType
+    width
+    height
   }
   createdAt
   updatedAt
@@ -111,6 +119,8 @@ const SendMessageDocument = graphql(`
         ID
         url
         contentType
+        width
+        height
       }
       createdAt
       updatedAt
@@ -135,6 +145,8 @@ const UpdateMessageDocument = graphql(`
         ID
         url
         contentType
+        width
+        height
       }
       createdAt
       updatedAt
@@ -172,6 +184,8 @@ const ListMessagesDocument = graphql(`
           ID
           url
           contentType
+          width
+          height
         }
         createdAt
         updatedAt

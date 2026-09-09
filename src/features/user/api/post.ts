@@ -61,6 +61,8 @@ export const PostFieldsFragment = graphql(`
       ID
       url
       contentType
+      width
+      height
     }
   }
 `);

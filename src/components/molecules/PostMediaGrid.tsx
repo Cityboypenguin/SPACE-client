@@ -7,6 +7,9 @@ type MediaItem = {
   ID: string;
   url: string;
   contentType: string;
+  // 画像の実寸。寸法を持たないメディアや、埋め戻し前の古いレコードでは null。
+  width?: number | null;
+  height?: number | null;
 };
 
 export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; large?: boolean }) => {
@@ -50,12 +53,17 @@ export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; la
         <div className={gridClassName} style={mediaVars}>
           {images.map((m, i) => {
             const url = storageUrl(m.url);
+            // 1枚のときだけ高さが縦横比で決まる（複数枚は固定高）。寸法が分かっていれば
+            // ロード前に同じ比率の領域を確保し、ロード完了時のレイアウト移動をなくす。
+            const reservedAspectRatio =
+              count === 1 && m.width && m.height ? `${m.width} / ${m.height}` : undefined;
             return (
               <img
                 key={m.ID}
                 src={url}
                 alt="添付画像"
                 className={imageClassName(i)}
+                style={reservedAspectRatio ? { aspectRatio: reservedAspectRatio } : undefined}
                 onClick={(e) => { e.stopPropagation(); setActiveImageIndex(i); }}
               />
             );

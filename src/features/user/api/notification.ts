@@ -1,6 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
+import { type Media } from './message';
 
 export type NotificationActor = {
   ID: string;
@@ -18,7 +19,7 @@ export type NotificationTargetPost = {
     name: string;
     accountID: string;
   };
-  media: { ID: string; url: string; contentType: string }[];
+  media: Media[];
 };
 
 export type Notification = {
@@ -78,6 +79,8 @@ const MyNotificationsDocument = graphql(`
             ID
             url
             contentType
+            width
+            height
           }
         }
         message
@@ -116,6 +119,8 @@ const MyNotificationGroupsDocument = graphql(`
             ID
             url
             contentType
+            width
+            height
           }
         }
         message
@@ -155,6 +160,8 @@ const NotificationDocument = graphql(`
           ID
           url
           contentType
+          width
+          height
         }
       }
       message

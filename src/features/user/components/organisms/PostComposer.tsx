@@ -59,6 +59,8 @@ type MinimalMedia = {
   ID: string;
   url: string;
   contentType: string;
+  width?: number | null;
+  height?: number | null;
 };
 
 type Props = {

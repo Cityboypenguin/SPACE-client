@@ -59,6 +59,8 @@ export const QUESTION_FIELDS = `
     ID
     url
     contentType
+    width
+    height
   }
   createdAt
   updatedAt
@@ -78,6 +80,8 @@ export const ANSWER_FIELDS = `
     ID
     url
     contentType
+    width
+    height
   }
   createdAt
   isMine
@@ -111,6 +115,8 @@ const QuestionsDocument = graphql(`
           ID
           url
           contentType
+          width
+          height
         }
         createdAt
         updatedAt
@@ -145,6 +151,8 @@ const CreateQuestionDocument = graphql(`
         ID
         url
         contentType
+        width
+        height
       }
       createdAt
       updatedAt
@@ -184,6 +192,8 @@ const AnswerQuestionDocument = graphql(`
         ID
         url
         contentType
+        width
+        height
       }
       createdAt
       isMine
@@ -278,6 +288,8 @@ const QuestionAnswersDocument = graphql(`
             ID
             url
             contentType
+            width
+            height
           }
           createdAt
           isMine

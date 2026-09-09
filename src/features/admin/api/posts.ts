@@ -22,6 +22,9 @@ export type Media = {
   ID: string;
   url: string;
   contentType: string;
+  // 画像の実寸。寸法を持たないメディアや、埋め戻し前の古いレコードでは null。
+  width?: number | null;
+  height?: number | null;
   createdAt: string;
 };
 
@@ -64,6 +67,8 @@ export const AdminPostFieldsFragment = graphql(`
       ID
       url
       contentType
+      width
+      height
       createdAt
     }
   }

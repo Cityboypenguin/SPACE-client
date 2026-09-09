@@ -57,6 +57,11 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
         ].join(' ')}>
           {images.map((m, i) => {
             const url = storageUrl(m.url);
+            // 1枚のときだけ高さが縦横比で決まる（複数枚は正方形固定）。寸法が分かっていれば
+            // ロード前に同じ比率の領域を確保しておく。これがないとロード完了時に高さが変わり、
+            // 初回表示のスクロール位置がずれる。寸法未取得の古いメッセージでは undefined。
+            const reservedAspectRatio =
+              images.length === 1 && m.width && m.height ? `${m.width} / ${m.height}` : undefined;
             return (
               <img
                 key={m.ID}
@@ -64,6 +69,7 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
                 alt="添付画像"
                 onClick={() => setActiveImageIndex(i)}
                 className={`${styles.messageImageThumb} ${images.length === 1 ? styles.messageImageSingle : ''}`}
+                style={reservedAspectRatio ? { aspectRatio: reservedAspectRatio } : undefined}
               />
             );
           })}
