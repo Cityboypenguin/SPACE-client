@@ -124,7 +124,7 @@ export const useChatScroll = (
       return;
     }
 
-    if (isAtBottomRef.current || (currentUserID && tail.user.ID === currentUserID)) {
+    if (isAtBottomRef.current || tail.isMine) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       seenCountRef.current = messages.length;
       setNewMessageCount(0);

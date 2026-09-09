@@ -79,11 +79,13 @@ export const useRoomMessages = (roomId: string | undefined) => {
     oldestIDRef.current = undefined;
     newestIDRef.current = undefined;
 
-    // ルーム切り替え時にリセット
-    setState({ room: null, messages: [], wsConnected: false, error: '', initialLastReadAt: null, partnerLastReadAt: null });
-    setHasMoreBefore(false);
-    setHasMoreAfter(false);
-    hasMoreAfterRef.current = false;
+    Promise.resolve().then(() => {
+      if (!active) return;
+      setState({ room: null, messages: [], wsConnected: false, error: '', initialLastReadAt: null, partnerLastReadAt: null });
+      setHasMoreBefore(false);
+      setHasMoreAfter(false);
+      hasMoreAfterRef.current = false;
+    });
 
     (async () => {
       try {

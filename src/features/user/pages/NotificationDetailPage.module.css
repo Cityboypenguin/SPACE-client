@@ -15,7 +15,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #3b82f6;
+  color: var(--color-link);
   font-size: 0.875rem;
   padding: 0.25rem 0;
   display: flex;
@@ -26,17 +26,17 @@
 .deleteBtn {
   padding: 0.3rem 0.8rem;
   border-radius: 8px;
-  border: 1.5px solid #ef4444;
-  background: #fff;
+  border: 1.5px solid var(--color-danger);
+  background: var(--color-bg-elevated);
   cursor: pointer;
   font-size: 0.8rem;
-  color: #ef4444;
+  color: var(--color-danger);
   font-weight: 600;
   transition: background 0.1s;
 }
 
 .deleteBtn:hover {
-  background: #fef2f2;
+  background: var(--color-danger-bg);
 }
 
 .deleteBtn:disabled {
@@ -45,8 +45,8 @@
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1.5rem;
 }
@@ -62,15 +62,15 @@
   font-size: 0.75rem;
   padding: 0.2rem 0.6rem;
   border-radius: 12px;
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   font-weight: 600;
   flex-shrink: 0;
 }
 
 .date {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .actorRow {
@@ -91,7 +91,7 @@
 }
 
 .actorRow:hover {
-  background: #f1f5f9;
+  background: var(--color-surface);
 }
 
 .actorInfo {
@@ -110,12 +110,12 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #cbd5e1;
+  background: var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #475569;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   flex-shrink: 0;
 }
@@ -124,7 +124,7 @@
   margin: 0;
   font-weight: 600;
   font-size: 0.9rem;
-  color: #1e293b;
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -133,7 +133,7 @@
 .actorAccountID {
   margin: 0;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -141,30 +141,30 @@
 
 .message {
   font-size: 1rem;
-  color: #1e293b;
+  color: var(--color-text);
   line-height: 1.6;
   margin: 0 0 1.5rem;
 }
 
 .targetPostPreview {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 0.75rem 1rem;
   margin: 0 0 1.5rem;
-  background: #f8fafc;
+  background: var(--color-surface);
 }
 
 .targetPostAuthor {
   margin: 0 0 0.35rem;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .targetPostContent {
   margin: 0;
   font-size: 0.9rem;
-  color: #334155;
+  color: var(--color-text);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -196,13 +196,13 @@
 }
 
 .empty {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   text-align: center;
   padding: 2rem;
 }
 
 .error {
-  color: #ef4444;
+  color: var(--color-danger);
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }

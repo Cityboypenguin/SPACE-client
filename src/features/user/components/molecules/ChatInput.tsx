@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState } from 'react';
 import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
+import { useTheme } from '../../../../context/useTheme';
+import { MAX_MESSAGE_LENGTH, countMessageLength } from '../../constants/chat';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -28,6 +30,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
   const prevDisabledRef = useRef(disabled);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (value === '' && textareaRef.current) {
@@ -47,7 +50,7 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     const urls = selectedFiles.map((file) =>
       file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
     );
-    setPreviewUrls(urls);
+    void Promise.resolve().then(() => setPreviewUrls(urls));
     return () => {
       urls.forEach((url) => { if (url) URL.revokeObjectURL(url); });
     };
@@ -117,77 +120,55 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     addFiles(imageFiles);
   };
 
-  const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
+  const messageLength = countMessageLength(value);
+  const isOverLimit = messageLength > MAX_MESSAGE_LENGTH;
+  // 上限の90%を超えたあたりから残り文字数を意識してもらうためカウンタを表示する。
+  const isNearOrOverLimit = messageLength > MAX_MESSAGE_LENGTH * 0.9;
+  const canSubmit = !disabled && !isBlocked && !isOverLimit && (value.trim() !== '' || selectedFiles.length > 0);
 
+  // フォームのnative submit（例: テスト・支援技術等からの直接submit）でも、送信中
+  // （disabled）や文字数超過時に親のonSubmitが呼ばれないよう、ここでもcanSubmitを見る。
+  // 通常のクリック/Enterキー操作は個別に canSubmit をチェック済みだが、二重送信防止を
+  // ボタンのdisabled属性だけに依存させないための最終防波堤。
+  const handleFormSubmit = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    onSubmit(e);
+  };
 
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: 'relative', flexShrink: 0 }}
+      className={styles.chatInputRoot}
     >
       {isDragging && (
         <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            border: '2px dashed #6b7280',
-            borderRadius: 8,
-            background: 'rgba(107, 114, 128, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            pointerEvents: 'none',
-          }}
+          className={`${styles.dragOverlay} ${styles.dragOverlayBorder}`}
         >
-          <span style={{ color: '#6b7280', fontSize: '0.85rem', fontWeight: 500 }}>
+          <span className={styles.dragOverlayText}>
             ここにドロップ
           </span>
         </div>
       )}
       {selectedFiles.length > 0 && (
-        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 130, overflowY: 'auto' }}>
+        <div className={styles.filePreviewList}>
           {selectedFiles.map((file, i) =>
             file.type.startsWith('image/') ? (
               <div
                 key={i}
-                style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}
+                className={styles.filePreviewThumb}
               >
                 <img
                   src={previewUrls[i]}
                   alt={file.name}
-                  style={{
-                    width: 56,
-                    height: 56,
-                    objectFit: 'cover',
-                    borderRadius: 8,
-                    border: '1px solid #e5e7eb',
-                    display: 'block',
-                  }}
+                  className={`${styles.filePreviewImage} ${styles.filePreviewImgBorder}`}
                 />
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  style={{
-                    position: 'absolute',
-                    top: -6,
-                    right: -6,
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    background: '#6b7280',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#fff',
-                    fontSize: '0.65rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    lineHeight: 1,
-                  }}
+                  className={`${styles.fileRemoveButton} ${styles.fileRemoveBtn}`}
                 >
                   ✕
                 </button>
@@ -195,26 +176,15 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             ) : (
               <div
                 key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '2px 8px',
-                  background: '#f3f4f6',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 12,
-                  fontSize: '0.75rem',
-                  color: '#374151',
-                  maxWidth: 160,
-                }}
+                className={`${styles.fileChipInner} ${styles.fileChip}`}
               >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className={styles.fileChipName}>
                   📎 {file.name}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '0.8rem', padding: 0, flexShrink: 0 }}
+                  className={`${styles.fileChipRemoveButton} ${styles.fileChipRemoveBtn}`}
                 >
                   ✕
                 </button>
@@ -223,20 +193,13 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           )}
         </div>
       )}
-      <form onSubmit={onSubmit} className={styles.inputForm}>
+      <form onSubmit={handleFormSubmit} className={styles.inputForm}>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
           title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? 'default' : 'pointer',
-            fontSize: '1.2rem',
-            padding: '0 4px',
-            color: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? '#d1d5db' : '#6b7280'
-          }}
+          className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
         >
           📎
         </button>
@@ -246,63 +209,57 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           multiple
           accept={ACCEPTED_FILE_TYPES.join(',')}
           onChange={handleFileChange}
-          style={{ display: 'none' }}
+          className={styles.hiddenInput}
         />
-        <textarea
-          ref={textareaRef}
-          value={value}
-          rows={1}
-          onChange={(e) => {
-            onChange(e.target.value);
-            e.target.style.height = 'auto';
-            e.target.style.height = `${e.target.scrollHeight}px`;
-          }}
-          onPaste={handlePaste}
-          onKeyDown={(e) => {
-            // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
-            // Enterは改行として扱い、送信は送信ボタンのみで行う。
-            // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
-            // 通常通りEnterで送信できるようにする。
-            const isTouch = window.matchMedia('(pointer: coarse)').matches;
-            if (isTouch) return;
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              if (canSubmit) onSubmit({ preventDefault: () => { } });
+        <div className={styles.inputFieldWrap}>
+          <textarea
+            ref={textareaRef}
+            value={value}
+            rows={1}
+            onChange={(e) => {
+              onChange(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onPaste={handlePaste}
+            onKeyDown={(e) => {
+              // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
+              // Enterは改行として扱い、送信は送信ボタンのみで行う。
+              // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
+              // 通常通りEnterで送信できるようにする。
+              const isTouch = window.matchMedia('(pointer: coarse)').matches;
+              if (isTouch) return;
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                if (canSubmit) onSubmit({ preventDefault: () => { } });
+              }
+            }}
+            placeholder={
+              isBlocked
+                ? 'メッセージを送信できません'
+                : window.matchMedia('(pointer: coarse)').matches
+                ? 'メッセージを入力...'
+                : 'メッセージを入力... (Shift+Enterで改行)'
             }
-          }}
-          placeholder={
-            isBlocked
-              ? 'メッセージを送信できません'
-              : window.matchMedia('(pointer: coarse)').matches
-              ? 'メッセージを入力...'
-              : 'メッセージを入力... (Shift+Enterで改行)'
-          }
-          disabled={disabled || isBlocked}
-          className={styles.inputField}
-          style={{ cursor: (disabled || isBlocked) ? 'default' : 'text' }}
-        />
+            disabled={disabled || isBlocked}
+            className={styles.inputField}
+          />
+          {isNearOrOverLimit && (
+            <span className={`${styles.charCount} ${isOverLimit ? styles.charCountOver : ''}`}>
+              {messageLength}/{MAX_MESSAGE_LENGTH}
+            </span>
+          )}
+        </div>
         <button
           type="submit"
           disabled={!canSubmit}
           title={isBlocked ? '送信不可' : disabled ? '送信中...' : '送信'}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '0 4px',
-            cursor: canSubmit ? 'pointer' : 'default',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className={styles.sendIconButton}
         >
           <img
             src={sendIcon}
             alt="送信"
-            style={{
-              width: 28,
-              height: 28,
-              filter: canSubmit ? 'none' : 'opacity(0.3)',
-              transition: 'filter 0.15s',
-            }}
+            className={`${styles.sendIcon} ${!canSubmit ? styles.sendIconDisabled : ''} ${theme === 'dark' ? styles.sendIconDark : ''}`}
           />
         </button>
       </form>

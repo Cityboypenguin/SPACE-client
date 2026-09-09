@@ -1,0 +1,6 @@
+.message {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+  max-width: 480px;
+  line-height: 1.8;
+}

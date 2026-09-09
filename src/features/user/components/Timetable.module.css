@@ -1,0 +1,733 @@
+.main {
+  --timetable-control-height: 2.35rem;
+  --timetable-slot-height: clamp(4rem, calc((100dvh - 11.25rem) / 7), 4.375rem);
+  max-width: 960px;
+  margin: 0 auto;
+  height: 100dvh;
+  padding: 0.65rem 1.35rem 0.65rem;
+  background: var(--color-bg);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.topActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.15rem;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.topControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.viewStateAction {
+  width: 9.4rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.semesterSelector {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: var(--timetable-control-height);
+  overflow: hidden;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-elevated);
+}
+
+.yearSelect {
+  height: var(--timetable-control-height);
+  padding: 0.24rem 0.55rem 0.24rem 0.85rem;
+  border: 0;
+  border-radius: 0;
+  font-size: 0.9rem;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.yearSelect:focus,
+.yearSelect:focus-visible {
+  outline: none;
+}
+
+.semesterSlider {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 6.1rem;
+  height: calc(var(--timetable-control-height) - 0.3rem);
+  margin: 0.15rem 0.15rem 0.15rem 0;
+  padding: 0.12rem;
+  border-left: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+
+.semesterSlider::before {
+  content: '';
+  position: absolute;
+  top: 0.12rem;
+  bottom: 0.12rem;
+  left: 0.12rem;
+  width: calc(50% - 0.12rem);
+  border-radius: 999px;
+  background: #ff955d;
+  transition: transform 0.18s ease;
+}
+
+.semesterSlider[data-semester='late']::before {
+  transform: translateX(100%);
+}
+
+.semesterOption {
+  position: relative;
+  z-index: 1;
+  min-height: 1.55rem;
+  padding: 0 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.semesterOption:disabled,
+.yearSelect:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.semesterOption:hover {
+  border-color: transparent;
+}
+
+.semesterOption:focus,
+.semesterOption:focus-visible {
+  outline: none;
+}
+
+.semesterOptionActive {
+  color: #fff;
+}
+
+.readOnlyBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--timetable-control-height);
+  box-sizing: border-box;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0 0.9rem;
+  white-space: nowrap;
+}
+
+.searchButton {
+  width: 100%;
+  min-height: var(--timetable-control-height);
+  padding: 0.45rem 1.25rem;
+  border-radius: 999px;
+  cursor: pointer;
+  background: #ff955d;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.editActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  min-width: 7.8rem;
+  min-height: var(--timetable-control-height);
+  padding: 0.45rem 1.25rem;
+  border-radius: 999px;
+  cursor: pointer;
+  background: #fff;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.commitButton {
+  min-width: 7.8rem;
+  min-height: var(--timetable-control-height);
+  padding: 0.45rem 1.35rem;
+  border-radius: 999px;
+  cursor: pointer;
+  background: #ff8f5a;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.commitButton:disabled,
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.commitErrorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+}
+
+.commitErrorBanner button {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid #b91c1c;
+  color: #b91c1c;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.gridWrap {
+  overflow: visible;
+  max-height: calc(100dvh - 3.625rem);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 5px;
+  table-layout: fixed;
+}
+
+.grid th {
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--color-text);
+  padding: 0 0.25rem 0.15rem;
+  border-bottom: 0;
+}
+
+.grid th:last-child {
+  color: #143cff;
+}
+
+.periodHeader {
+  width: 52px;
+}
+
+.periodCell {
+  color: var(--color-text);
+  text-align: center;
+  vertical-align: top;
+  padding: 0 0.35rem 0.1rem 0;
+  line-height: 1.15;
+}
+
+.periodNumber {
+  width: 1.72rem;
+  height: 1.72rem;
+  margin: 0 auto 0.08rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ff955d;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.periodTime {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  font-size: 0.58rem;
+  color: var(--color-text);
+}
+
+.cell {
+  border: 0;
+  vertical-align: top;
+  height: var(--timetable-slot-height);
+  padding: 3px 2px;
+}
+
+.emptyCellButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--timetable-slot-height);
+  min-height: 0;
+  padding: 0;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  color: #c9c9c9;
+  font-size: 2rem;
+  font-weight: 300;
+}
+
+.emptySlot {
+  width: 100%;
+  height: var(--timetable-slot-height);
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+  box-sizing: border-box;
+}
+
+.emptyCellButton:hover {
+  border-color: #ff9a5f;
+  color: #ff9a5f;
+  background: #fff7ed;
+}
+
+.courseChip {
+  height: var(--timetable-slot-height);
+  min-height: 0;
+  border-radius: 8px;
+  background: var(--chip-bg, #3e63dd);
+  border: 1px solid rgba(30, 41, 59, 0.1);
+  padding: 6px 24px 23px 7px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.courseChipClickable {
+  cursor: pointer;
+}
+
+.courseChipClickable:hover {
+  filter: brightness(0.93);
+}
+
+.courseChipReadOnly {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+.courseChipReadOnly:hover {
+  background: #ececf0;
+  filter: none;
+}
+
+.courseChipReadOnly .courseName {
+  color: #6b7280;
+}
+
+.courseChipReadOnly .teacherName {
+  color: #6b7280;
+}
+
+.courseName {
+  min-height: 0;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.16;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+  flex-shrink: 1;
+}
+
+.teacherName {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  color: #fff;
+  font-weight: 600;
+  margin-top: 1px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chipActions {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chipActionButton {
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  font-size: 0.62rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.colorPickerWrap {
+  position: absolute;
+  left: auto;
+  right: 5px;
+  bottom: 5px;
+  pointer-events: auto;
+}
+
+.colorPickerWrapEdge .colorPickerPopover {
+  left: auto;
+  right: 0;
+}
+
+.colorSwatchButton {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  padding: 0;
+  background:
+    radial-gradient(circle at center, var(--selected-color) 0 38%, transparent 40%),
+    conic-gradient(#ff3b30, #ff9500, #ffcc00, #34c759, #00c7be, #007aff, #5856d6, #af52de, #ff3b30);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.16);
+}
+
+.colorPickerPopover {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  z-index: 10;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.colorPickerPopoverFloating {
+  position: fixed;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 40;
+}
+
+.colorDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease;
+}
+
+.colorDot:hover {
+  transform: scale(1.15);
+}
+
+.newBadge {
+  position: absolute;
+  left: 6px;
+  bottom: 5px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  padding: 0.18rem 0.36rem;
+}
+
+.fullYearBadge {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  font-size: 0.52rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  padding: 0.2rem 0.42rem;
+  backdrop-filter: blur(4px);
+}
+
+.chipActions ~ .fullYearBadge {
+  right: 28px;
+}
+
+.empty {
+  color: #94a3b8;
+  text-align: center;
+  padding: 2rem 0;
+  font-size: 0.9rem;
+}
+
+.mobileTimetable {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .main {
+    --timetable-control-height: 2.15rem;
+    --timetable-slot-height: clamp(4rem, calc((100dvh - 9.5rem) / 7), 4.375rem);
+    height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom));
+    overflow: hidden;
+    padding: 0.65rem 0.5rem 0rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topActions {
+    align-items: flex-start;
+    gap: 0.55rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .title {
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+
+  .topControls {
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .semesterSelector {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .yearSelect {
+    min-width: 4.7rem;
+    padding-inline: 0.65rem 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  .semesterSlider {
+    width: 5.5rem;
+  }
+
+  .semesterOption {
+    padding-inline: 0.25rem;
+    font-size: 0.76rem;
+  }
+
+  .viewStateAction {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .searchButton,
+  .readOnlyBadge {
+    width: auto;
+    min-width: 6.9rem;
+    padding-inline: 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .editActions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .cancelButton,
+  .commitButton {
+    min-width: 5.8rem;
+    padding-inline: 0.9rem;
+    font-size: 0.85rem;
+  }
+
+  .grid {
+    min-width: min(42.5rem, calc(100vw - 1.25rem));
+  }
+
+  .gridWrap {
+    display: none;
+  }
+
+  .mobileTimetable {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .mobileDayTabs {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .mobileDayButton {
+    min-width: 0;
+    min-height: 2rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0;
+  }
+
+  .mobileDayButtonActive {
+    border-color: #ff955d;
+    background: #ff955d;
+    color: #fff;
+  }
+
+  .mobileDayList {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobilePeriodRow {
+    display: grid;
+    grid-template-columns: 3.4rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .mobilePeriodMeta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text);
+  }
+
+  .mobileSlot {
+    min-width: 0;
+  }
+
+  .mobileSlot .courseChip,
+  .mobileSlot .emptyCellButton,
+  .mobileSlot .emptySlot {
+    height: var(--timetable-slot-height);
+    width: 100%;
+  }
+
+  .mobileSlot .courseName {
+    font-size: 0.74rem;
+    -webkit-line-clamp: 2;
+  }
+
+  .mobileSlot .teacherName {
+    font-size: 0.66rem;
+  }
+
+  .mobilePeriodMeta .periodNumber {
+    width: 1.55rem;
+    height: 1.55rem;
+    font-size: 0.92rem;
+  }
+
+  .mobilePeriodMeta .periodTime {
+    font-size: 0.55rem;
+  }
+
+  .courseChip {
+    padding: 5px 22px 22px 6px;
+  }
+
+  .courseName {
+    font-size: 0.62rem;
+    line-height: 1.15;
+  }
+
+  .teacherName {
+    font-size: 0.56rem;
+  }
+
+  .colorPickerPopover {
+    grid-template-columns: repeat(5, 1fr);
+    left: auto;
+    right: 0;
+    bottom: 22px;
+    z-index: 20;
+    max-width: min(116px, calc(100vw - 2rem));
+  }
+
+  .colorPickerPopoverFloating {
+    position: fixed;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    z-index: 40;
+  }
+}

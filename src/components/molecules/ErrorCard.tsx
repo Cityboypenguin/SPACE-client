@@ -1,4 +1,5 @@
 import { ErrorIcon, type ErrorIconType } from '../atoms/ErrorIcon';
+import styles from './ErrorCard.module.css';
 
 type Action = {
   label: string;
@@ -30,9 +31,9 @@ export const ErrorCard = ({ iconType, title, description, actions, compact = fal
       {title}
     </h2>
     <p
+      className={styles.description}
       style={{
         margin: 0,
-        color: '#94a3b8',
         fontSize: compact ? '0.85rem' : '0.95rem',
         maxWidth: 400,
         lineHeight: 1.6,
@@ -54,17 +55,9 @@ export const ErrorCard = ({ iconType, title, description, actions, compact = fal
           <button
             key={action.label}
             onClick={action.onClick}
-            style={{
-              background: action.variant === 'secondary' ? 'none' : '#646cff',
-              color: action.variant === 'secondary' ? '#94a3b8' : '#fff',
-              border: action.variant === 'secondary' ? '1px solid #374151' : 'none',
-              borderRadius: 8,
-              padding: '0.5rem 1.25rem',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              transition: 'opacity 0.15s',
-            }}
+            className={`${styles.actionButton} ${
+              action.variant === 'secondary' ? styles.actionSecondary : styles.actionPrimary
+            }`}
           >
             {action.label}
           </button>

@@ -1,4 +1,4 @@
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { ToastItem } from '../molecules/ToastItem';
 
 export const ToastContainer = () => {

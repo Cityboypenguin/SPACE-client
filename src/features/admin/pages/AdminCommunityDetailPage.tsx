@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
@@ -16,6 +16,7 @@ import {
 } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { storageUrl } from '../../../lib/storage';
+import styles from '../styles/AdminShared.module.css';
 
 const ROLE_OWNER = 'owner';
 
@@ -36,7 +37,7 @@ export const AdminCommunityDetailPage = () => {
   const [membersError, setMembersError] = useState('');
   const [messagesError, setMessagesError] = useState('');
 
-  const fetchCommunity = async () => {
+  const fetchCommunity = useCallback(async () => {
     if (!id) return;
     try {
       const data = await getCommunities();
@@ -49,9 +50,9 @@ export const AdminCommunityDetailPage = () => {
     } catch {
       setError('コミュニティ情報の取得に失敗しました');
     }
-  };
+  }, [id]);
 
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     if (!id) return;
     try {
       const data = await getCommunityMembers(id);
@@ -59,33 +60,38 @@ export const AdminCommunityDetailPage = () => {
     } catch {
       setMembersError('メンバー一覧の取得に失敗しました');
     }
-  };
+  }, [id]);
 
-  const fetchMessages = async (roomID: string) => {
+  const fetchMessages = useCallback(async (roomID: string) => {
     try {
       const data = await listRoomMessages(roomID);
       setMessages(data.messages.items);
     } catch {
       setMessagesError('メッセージ一覧の取得に失敗しました');
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (community) {
+    if (!community) void Promise.resolve().then(fetchCommunity);
+  }, [community, fetchCommunity]);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      if (!community) return;
       setName(community.name);
       setDescription(community.description);
-      fetchMessages(community.roomID);
-    } else {
-      fetchCommunity();
-    }
-    fetchMembers();
-  }, [id]);
+    });
+  }, [community]);
+
+  useEffect(() => {
+    void Promise.resolve().then(fetchMembers);
+  }, [fetchMembers]);
 
   useEffect(() => {
     if (community?.roomID) {
-      fetchMessages(community.roomID);
+      void Promise.resolve().then(() => fetchMessages(community.roomID));
     }
-  }, [community?.roomID]);
+  }, [community?.roomID, fetchMessages]);
 
   const handleDeleteMessage = async (message: Message) => {
     if (!window.confirm('このメッセージを削除しますか？')) return;
@@ -162,17 +168,17 @@ export const AdminCommunityDetailPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <button onClick={() => navigate('/admin/communities')}><ChevronLeft /> 一覧に戻る</button>
         <h1>コミュニティ詳細</h1>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {success && <p style={{ color: 'green' }}>{success}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
+        {success && <p className={styles.successText}>{success}</p>}
 
         <h2>コミュニティ情報の編集</h2>
         <form
           onSubmit={handleUpdateSubmit}
-          style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px' }}
+          className={styles.formColumn}
         >
           <div>
             <label>名前</label><br />
@@ -184,16 +190,16 @@ export const AdminCommunityDetailPage = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              style={{ width: '100%' }}
+              className={styles.fullWidth}
             />
           </div>
           <button type="submit">保存</button>
         </form>
 
-        <hr style={{ margin: '2rem 0' }} />
+        <hr className={styles.divider} />
 
         <h2>メンバー一覧</h2>
-        {membersError && <p style={{ color: 'red' }}>{membersError}</p>}
+        {membersError && <p className={styles.errorText}>{membersError}</p>}
         {members.length > 0 ? (
           <table>
             <thead>
@@ -214,30 +220,20 @@ export const AdminCommunityDetailPage = () => {
                   </td>
                   <td>{member.user.email}</td>
                   <td>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        background: member.role === ROLE_OWNER ? '#ede9fe' : '#f1f5f9',
-                        color: member.role === ROLE_OWNER ? '#7c3aed' : '#64748b',
-                      }}
-                    >
+                    <span className={`${styles.roleBadge} ${member.role === ROLE_OWNER ? styles.roleBadgeOwner : styles.roleBadgeMember}`}>
                       {member.role === ROLE_OWNER ? 'オーナー' : 'メンバー'}
                     </span>
                   </td>
-                  <td style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <td className={styles.roleActions}>
                     <button
                       onClick={() => handleToggleRole(member)}
-                      style={{ color: member.role === ROLE_OWNER ? '#7c3aed' : '#2563eb' }}
+                      className={member.role === ROLE_OWNER ? styles.ownerAction : styles.memberAction}
                     >
                       {member.role === ROLE_OWNER ? '降格' : '昇格'}
                     </button>
                     <button
                       onClick={() => handleKick(member)}
-                      style={{ color: 'red' }}
+                      className={styles.dangerButton}
                     >
                       キック
                     </button>
@@ -250,40 +246,40 @@ export const AdminCommunityDetailPage = () => {
           !membersError && <p>メンバーはいません</p>
         )}
 
-        <hr style={{ margin: '2rem 0' }} />
+        <hr className={styles.divider} />
 
         <h2>メッセージ一覧</h2>
-        {messagesError && <p style={{ color: 'red' }}>{messagesError}</p>}
+        {messagesError && <p className={styles.errorText}>{messagesError}</p>}
         {messages.length > 0 ? (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>投稿者</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>内容</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>投稿日時</th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e2e8f0' }}>操作</th>
+                <th className={styles.tableHeader}>投稿者</th>
+                <th className={styles.tableHeader}>内容</th>
+                <th className={styles.tableHeader}>投稿日時</th>
+                <th className={styles.tableHeader}>操作</th>
               </tr>
             </thead>
             <tbody>
               {messages.map((message) => (
                 <tr key={message.ID}>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
+                  <td className={styles.tableCell}>
                     {message.user.name}
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: '4px' }}>
+                    <span className={styles.accountId}>
                       @{message.user.accountID}
                     </span>
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9', maxWidth: '400px', wordBreak: 'break-word' }}>
+                  <td className={`${styles.tableCell} ${styles.contentCell}`}>
                     {message.content && <div>{message.content}</div>}
                     {message.media && message.media.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: message.content ? '4px' : 0 }}>
+                      <div className={`${styles.mediaList} ${message.content ? styles.mediaListSpaced : ''}`}>
                         {message.media.map((m) =>
                           m.contentType.startsWith('image/') ? (
                             <a key={m.ID} href={storageUrl(m.url)} target="_blank" rel="noopener noreferrer">
                               <img
                                 src={storageUrl(m.url)}
                                 alt="添付画像"
-                                style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4 }}
+                                className={styles.mediaThumb}
                               />
                             </a>
                           ) : (
@@ -292,7 +288,7 @@ export const AdminCommunityDetailPage = () => {
                               href={storageUrl(m.url)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ fontSize: '0.8rem', color: '#3b82f6' }}
+                              className={styles.fileLink}
                             >
                               {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
                             </a>
@@ -301,11 +297,11 @@ export const AdminCommunityDetailPage = () => {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
+                  <td className={`${styles.tableCell} ${styles.nowrap}`}>
                     {new Date(message.createdAt).toLocaleString('ja-JP')}
                   </td>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
-                    <button onClick={() => handleDeleteMessage(message)} style={{ color: 'red' }}>
+                  <td className={styles.tableCell}>
+                    <button onClick={() => handleDeleteMessage(message)} className={styles.dangerButton}>
                       削除
                     </button>
                   </td>

@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCommunities, type Community } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
+import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
+import { AdminPagination } from '../components/molecules/AdminPagination';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminCommunityListPage = () => {
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -14,7 +17,7 @@ export const AdminCommunityListPage = () => {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, size = pageSize) => {
+  const loadPage = useCallback((p: number, size = pageSize) => {
     setError('');
     getCommunities(size, p * size)
       .then((data) => {
@@ -23,32 +26,23 @@ export const AdminCommunityListPage = () => {
         setPage(p);
       })
       .catch(() => setError('コミュニティ一覧の取得に失敗しました'));
-  };
+  }, [pageSize]);
 
   useEffect(() => {
-    loadPage(0);
-  }, [pageSize]);
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
 
   return (
     <div>
       <AdminHeader />
-      <main style={{ padding: '2rem' }}>
+      <main className={styles.page}>
         <h1>コミュニティ一覧</h1>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>全 {total} 件</p>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
-            表示件数
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              style={{ border: '1px solid #cbd5e1', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
-            >
-              {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
-            </select>
-          </label>
+        {error && <p className={styles.errorText}>{error}</p>}
+        <div className={styles.listMetaRow}>
+          <p className={styles.countText}>全 {total} 件</p>
+          <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
         </div>
-        <table>
+        <table className={styles.compactTable}>
           <thead>
             <tr>
               <th>名前</th>
@@ -63,7 +57,7 @@ export const AdminCommunityListPage = () => {
                 onClick={() =>
                   navigate(`/admin/communities/${community.ID}`, { state: { community } })
                 }
-                style={{ cursor: 'pointer' }}
+                className={styles.clickableRow}
               >
                 <td>{community.name}</td>
                 <td>{community.description}</td>
@@ -74,11 +68,12 @@ export const AdminCommunityListPage = () => {
         </table>
         {communities.length === 0 && !error && <p>コミュニティが見つかりませんでした</p>}
         {totalPages > 1 && (
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button onClick={() => loadPage(page - 1)} disabled={page === 0}>前へ</button>
-            <span>{page + 1} / {totalPages}</span>
-            <button onClick={() => loadPage(page + 1)} disabled={page >= totalPages - 1}>次へ</button>
-          </div>
+          <AdminPagination
+            page={page}
+            totalPages={totalPages}
+            onPrev={() => loadPage(page - 1)}
+            onNext={() => loadPage(page + 1)}
+          />
         )}
       </main>
     </div>

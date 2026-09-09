@@ -18,6 +18,19 @@
           );
       }
     </script>
+    <script>
+      // ちらつき防止: React が起動する前に data-theme 属性を同期的に確定させる。
+      // バックエンドへの問い合わせはしない（未認証でも即座に描画できる必要があるため）。
+      // 優先順位: 直近の明示的な選択(localStorage) > OS のダークモード設定 > light。
+      const savedTheme = localStorage.getItem('theme');
+      const resolvedTheme =
+        savedTheme === 'light' || savedTheme === 'dark'
+          ? savedTheme
+          : window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+      document.documentElement.setAttribute('data-theme', resolvedTheme);
+    </script>
     <meta name="theme-color" content="#ffffff" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

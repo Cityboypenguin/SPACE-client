@@ -1,8 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '../api/auth';
 import { getMyProfile } from '../api/profile';
 import { registerUnauthorizedHandler, registerTokenRefreshedHandler, registerMaintenanceHandler } from '../../../lib/graphql';
+import { AuthContext } from './authContextValue';
 import {
   ADMIN_REFRESH_TOKEN_KEY,
   ADMIN_TOKEN_KEY,
@@ -10,22 +11,6 @@ import {
   USER_REFRESH_TOKEN_KEY,
   USER_TOKEN_KEY,
 } from '../../../lib/authStorage';
-
-type AuthContextValue = {
-  token: string | null;
-  userId: string | null;
-  login: (token: string, refreshToken: string, userId: string) => void;
-  logout: () => Promise<void>;
-};
-
-const AuthContext = createContext<AuthContextValue>({
-  token: null,
-  userId: null,
-  login: () => {},
-  logout: async () => {},
-});
-
-export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(USER_TOKEN_KEY));

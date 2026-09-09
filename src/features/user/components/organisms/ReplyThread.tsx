@@ -49,7 +49,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
               className={styles.replyButton}
               onClick={(e) => { e.stopPropagation(); onReply?.(post); }}
             >
-              <img src={commentIcon} alt="返信" className={styles.commentIcon} />
+              <img src={commentIcon} alt="返信" className={`${styles.commentIcon} themed-icon`} />
               {countAllReplies(post)}
             </button>
             <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />

@@ -46,11 +46,17 @@ const CommunityEditPage = lazy(() =>
 const CommunityMembersPage = lazy(() =>
   import('../pages/CommunityMembersPage').then((m) => ({ default: m.CommunityMembersPage })),
 );
+const TimetablePage = lazy(() =>
+  import('../pages/TimetablePage').then((m) => ({ default: m.TimetablePage })),
+);
+const CourseSearchPage = lazy(() =>
+  import('../pages/CourseSearchPage').then((m) => ({ default: m.CourseSearchPage })),
+);
+const CourseRoomPage = lazy(() =>
+  import('../pages/CourseRoomPage').then((m) => ({ default: m.CourseRoomPage })),
+);
 const UserProfileEditPage = lazy(() =>
   import('../pages/UserProfileEditPage').then((m) => ({ default: m.UserProfileEditPage })),
-);
-const UserInfoEditPage = lazy(() =>
-  import('../pages/UserInfoEditPage').then((m) => ({ default: m.UserInfoEditPage })),
 );
 const PostListPage = lazy(() =>
   import('../pages/PostListPage').then((m) => ({ default: m.PostListPage })),
@@ -91,7 +97,7 @@ export const userRoutes = (
       <Route path="/mypage" element={<UserDashboard />} />
       <Route path="/mypage/settings" element={<UserSettingsPage />} />
       <Route path="/mypage/profile-edit" element={<UserProfileEditPage />} />
-      <Route path="/mypage/user-info-edit" element={<UserInfoEditPage />} />
+      <Route path="/mypage/user-info-edit" element={<UserProfileEditPage />} />
       <Route path="/mypage/favorites" element={<FavoriteUsersPage />} />
       <Route path="/mypage/followers" element={<FavoriteUsersPage mode="followers" />} />
       <Route path="/mypage/blocks" element={<BlockedUsersPage />} />
@@ -105,6 +111,9 @@ export const userRoutes = (
       <Route path="/community/chat/:roomId" element={<CommunityRoomPage />} />
       <Route path="/community/edit/:communityID" element={<CommunityEditPage />} />
       <Route path="/community/members/:communityID" element={<CommunityMembersPage />} />
+      <Route path="/timetable" element={<TimetablePage />} />
+      <Route path="/timetable/search" element={<CourseSearchPage />} />
+      <Route path="/courses/chat/:roomId" element={<CourseRoomPage />} />
       <Route path="/home" element={<PostListPage />} />
       <Route path="/posts/:id" element={<PostDetailPage />} />
       <Route path="/notifications" element={<NotificationListPage />} />

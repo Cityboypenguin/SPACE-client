@@ -1,15 +1,9 @@
 .container {
+  --chat-mobile-nav-height: 3.5rem;
   display: flex;
   flex-direction: column;
-  height: 100vh;
   height: 100dvh;
-}
-
-@media (max-width: 768px) {
-  .container {
-    height: calc(100vh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    height: calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  }
+  overflow: hidden;
 }
 
 .roomHeader {
@@ -17,12 +11,42 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
-  background: #fff;
+  background: var(--color-bg-elevated);
   z-index: 10;
   flex-shrink: 0;
+}
+
+.roomHeaderButton {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.avatarButton {
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.headerAvatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .roomTitle {
@@ -33,8 +57,60 @@
   min-width: 0;
 }
 
+.roomTitleFlex {
+  flex: 1;
+}
+
+.roomTitleBlock {
+  min-width: 0;
+  flex: 1;
+}
+
+.roomSubTitle {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roomTabs {
+  padding: 0.5rem 1.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.roomNotice {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: 0.8rem;
+  padding: 0.5rem 1.5rem;
+  flex-shrink: 0;
+}
+
 .backButton {
   cursor: pointer;
+}
+
+.pollButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.pollButtonBadge {
+  position: absolute;
+  top: -6px;
+  left: -6px;
 }
 
 .wsIndicator {
@@ -46,11 +122,11 @@
 }
 
 .wsConnected {
-  background-color: #22c55e;
+  background-color: var(--color-success);
 }
 
 .wsDisconnected {
-  background-color: #9ca3af;
+  background-color: var(--color-text-muted);
 }
 
 .messageList {
@@ -61,6 +137,25 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.scrollSentinel {
+  height: 1px;
+}
+
+.messageGroup {
+  display: contents;
+}
+
+.loadingText {
+  padding: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.errorText {
+  color: var(--color-danger);
 }
 
 .theirRow {
@@ -89,7 +184,7 @@
 
 .senderName {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--color-text-muted);
   margin-bottom: 2px;
   display: block;
   max-width: 100%;
@@ -107,18 +202,24 @@
 }
 
 .bubbleMine {
-  background-color: #646cff;
+  background-color: var(--color-primary);
   color: #fff;
 }
 
 .bubbleTheirs {
-  background-color: #e5e7eb;
-  color: #111;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
 }
 
 .timestamp {
   font-size: 0.7rem;
-  color: #aaa;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.editedLabel {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
@@ -126,9 +227,9 @@
   display: flex;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid var(--color-border);
   flex-shrink: 0;
-  background: #fff;
+  background: var(--color-bg-elevated);
 }
 
 .inputField {
@@ -141,6 +242,68 @@
   line-height: 1.5;
   vertical-align: middle;
   box-sizing: border-box;
+}
+
+.inputField:disabled {
+  cursor: default;
+}
+
+.inputField:not(:disabled) {
+  cursor: text;
+}
+
+.inputFieldWrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.charCount {
+  position: absolute;
+  right: 6px;
+  bottom: -1.1rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.charCountOver {
+  color: var(--color-danger);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.sendIconButton {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.sendIconButton:disabled {
+  cursor: default;
+}
+
+.sendIcon {
+  width: 28px;
+  height: 28px;
+  transition: filter 0.15s;
+}
+
+.sendIconDisabled {
+  filter: opacity(0.3);
+}
+
+.sendIconDark {
+  filter: invert(1);
+}
+
+.sendIconDisabled.sendIconDark {
+  filter: opacity(0.3) invert(1);
 }
 
 .messageActions {
@@ -165,6 +328,22 @@
   display: flex;
 }
 
+.messageContentWrap {
+  position: relative;
+  display: inline-flex;
+  max-width: min(80%, 42rem);
+  flex-direction: column;
+  gap: 0.1875rem;
+}
+
+.messageContentMine {
+  align-items: flex-end;
+}
+
+.messageContentTheirs {
+  align-items: flex-start;
+}
+
 .messageActionsVisible {
   display: flex;
 }
@@ -176,7 +355,7 @@
   padding: 2px 5px;
   border-radius: 4px;
   font-size: 0.8rem;
-  color: #bbb;
+  color: var(--color-text-muted);
   line-height: 1;
   transition: background 0.15s, color 0.15s;
 }
@@ -189,8 +368,8 @@
 }
 
 .actionBtn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #555;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .actionIcon {
@@ -214,7 +393,7 @@
     min-width: 36px;
     min-height: 36px;
     font-size: 1.1rem;
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--color-surface);
   }
 
   .actionBtnEdit {
@@ -235,7 +414,7 @@
 
 .editInput {
   border-radius: 12px;
-  border: 2px solid #646cff;
+  border: 2px solid var(--color-primary);
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
   outline: none;
@@ -257,7 +436,7 @@
   padding: 3px 10px;
   border-radius: 6px;
   border: none;
-  background: #646cff;
+  background: var(--color-primary);
   color: white;
   cursor: pointer;
 }
@@ -266,9 +445,9 @@
   font-size: 0.75rem;
   padding: 3px 10px;
   border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
-  color: #666;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 
@@ -276,7 +455,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.72rem;
   font-weight: 600;
   padding: 4px 0;
@@ -287,12 +466,12 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #ef4444;
+  background: var(--color-danger);
 }
 
 .readReceipt {
   font-size: 0.65rem;
-  color: #646cff;
+  color: var(--color-primary);
   margin-top: 1px;
   text-align: right;
 }
@@ -311,7 +490,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background: #646cff;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 20px;
@@ -320,4 +499,298 @@
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
+}
+
+/* 以下は ChatInput / ChatMessageBubble のインラインスタイルから抽出したクラス */
+
+.dragOverlayBorder {
+  border: 2px dashed var(--color-text-muted);
+  background: rgba(107, 114, 128, 0.08);
+}
+
+.dragOverlayText {
+  color: var(--color-text-muted);
+}
+
+.filePreviewImgBorder {
+  border: 1px solid var(--color-border);
+}
+
+.fileRemoveBtn {
+  background: var(--color-text-muted);
+  color: #fff;
+}
+
+.fileChip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.fileChipRemoveBtn {
+  color: var(--color-text-muted);
+}
+
+.attachBtnEnabled {
+  color: var(--color-text-muted);
+}
+
+.attachBtnDisabled {
+  color: var(--color-border);
+}
+
+.chatInputRoot {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dragOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  pointer-events: none;
+}
+
+.dragOverlayText {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.filePreviewList {
+  display: flex;
+  max-height: clamp(7rem, 18dvh, 8.125rem);
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  overflow-y: auto;
+  padding: 0.25rem 0.75rem 0;
+}
+
+.filePreviewThumb {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+}
+
+.filePreviewImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.fileRemoveButton {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.375rem;
+  display: flex;
+  width: 1.125rem;
+  height: 1.125rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.fileChipInner {
+  display: flex;
+  max-width: min(10rem, 100%);
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.fileChipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileChipRemoveButton {
+  flex-shrink: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.attachButton {
+  border: 0;
+  padding: 0 0.25rem;
+  background: none;
+  font-size: 1.2rem;
+}
+
+.mediaFileChipMine {
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  color: var(--color-text);
+}
+
+.mediaFileChipTheirs {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.messageLink {
+  color: inherit;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.messageMediaGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1875rem;
+}
+
+.messageMediaGridMine {
+  justify-content: flex-end;
+}
+
+.messageMediaGridTheirs {
+  justify-content: flex-start;
+}
+
+.messageMediaGridSingle {
+  max-width: min(12.5rem, 100%);
+}
+
+.messageMediaGridMultiple {
+  max-width: min(10rem, 100%);
+}
+
+.messageImageThumb {
+  display: block;
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 0.5rem;
+  cursor: zoom-in;
+  object-fit: cover;
+}
+
+.messageImageSingle {
+  width: 100%;
+  height: auto;
+  max-width: min(12.5rem, 100%);
+  max-height: 12.5rem;
+}
+
+.messageFileList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.messageFileListMine {
+  align-items: flex-end;
+}
+
+.messageFileListTheirs {
+  align-items: flex-start;
+}
+
+.messageFileLink {
+  text-decoration: none;
+}
+
+.messageFileChip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  padding: 0.3125rem 0.625rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.messageFileIcon {
+  font-size: 1rem;
+}
+
+.editingMediaWrap {
+  margin-top: 0.5rem;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: calc(100dvh - var(--chat-mobile-nav-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .roomHeader {
+    gap: 0.55rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .roomHeader > button:first-child {
+    flex-shrink: 0;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+  }
+
+  .roomTitle {
+    display: block;
+    font-size: 1rem;
+  }
+
+  .roomSubTitle {
+    font-size: 0.7rem;
+  }
+
+  .roomTabs {
+    padding: 0.35rem 0.75rem 0;
+  }
+
+  .roomNotice {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .pollButton {
+    min-height: 2.15rem;
+    padding: 4px 9px;
+    font-size: 0.78rem;
+  }
+
+  .messageList {
+    padding: 0.75rem;
+    gap: 0.45rem;
+  }
+
+  .bubble {
+    max-width: min(82vw, 100%);
+    padding: 0.5rem 0.65rem;
+    font-size: 0.92rem;
+  }
+
+  .inputForm {
+    padding: 0.55rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom));
+    gap: 0.35rem;
+  }
+
+  .inputField {
+    min-height: 38px;
+    max-height: 110px;
+    font-size: 1rem;
+  }
+
+  .scrollToLatest {
+    bottom: 8px;
+    max-width: calc(100vw - 2rem);
+  }
 }

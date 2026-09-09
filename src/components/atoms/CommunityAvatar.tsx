@@ -1,4 +1,6 @@
 import { storageUrl } from '../../lib/storage';
+import { AvatarFrame } from './AvatarFrame';
+import styles from './CommunityAvatar.module.css';
 
 type Props = {
   name: string;
@@ -12,19 +14,7 @@ export const CommunityAvatar = ({ name, src, directSrc, size = 40 }: Props) => {
   const resolvedSrc = directSrc ?? (!isNone ? storageUrl(src) : null);
 
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        overflow: 'hidden',
-        flexShrink: 0,
-        background: '#e2e8f0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <AvatarFrame size={size}>
       {resolvedSrc ? (
         <img
           src={resolvedSrc}
@@ -32,10 +22,10 @@ export const CommunityAvatar = ({ name, src, directSrc, size = 40 }: Props) => {
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
       ) : (
-        <span style={{ fontSize: size * 0.4, fontWeight: 700, color: '#64748b', userSelect: 'none' }}>
+        <span className={styles.initial} style={{ fontSize: size * 0.4 }}>
           {name.charAt(0) || '?'}
         </span>
       )}
-    </div>
+    </AvatarFrame>
   );
 };

@@ -7,7 +7,7 @@
       }
 
       .cls-1, .cls-2 {
-        fill: #fff;
+        fill: none;
         stroke: #231815;
         stroke-width: 30px;
       }

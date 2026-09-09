@@ -7,14 +7,16 @@ import {
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
 import { PostCard } from '../components/organisms/PostCard';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { Avatar } from '../../../components/atoms/Avatar';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { storageUrl } from '../../../lib/storage';
 import searchIconSvg from '../../../assets/パーツ_検索.svg';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './UserSearchPage.module.css';
 
 type Mode = 'user' | 'post';
@@ -296,7 +298,7 @@ export const UserSearchPage = () => {
 
         <form className={styles.searchForm} onSubmit={e => { e.preventDefault(); void handleSearch(); }}>
           <div className={styles.searchBar}>
-            <img src={searchIconSvg} alt="" className={styles.searchIcon} />
+            <img src={searchIconSvg} alt="" className={`${styles.searchIcon} themed-icon`} />
             <input
               type="text"
               className={styles.searchInput}
@@ -346,16 +348,16 @@ export const UserSearchPage = () => {
               </div>
               {searched && (
                 <>
-                  <div ref={userSentinelRef} style={{ height: '1px' }} />
-                  {loadingMore && <p className={styles.loadingText}>読み込み中...</p>}
+                  <ScrollSentinel ref={userSentinelRef} />
+                  {loadingMore && <StatusText style={{ padding: '1rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>}
                 </>
               )}
             </>
           ) : searched ? (
-            <p className={styles.emptyText}>該当するユーザーが見つかりませんでした</p>
+            <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>該当するユーザーが見つかりませんでした</StatusText>
           ) : null
         ) : postLoading ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '1rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>
         ) : displayedPosts.length > 0 ? (
           <>
             <div>
@@ -374,10 +376,10 @@ export const UserSearchPage = () => {
                 />
               ))}
             </div>
-            {searched && <div ref={postSentinelRef} style={{ height: '1px' }} />}
+            {searched && <ScrollSentinel ref={postSentinelRef} />}
           </>
         ) : searched ? (
-          <p className={styles.emptyText}>該当する投稿が見つかりませんでした</p>
+          <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>該当する投稿が見つかりませんでした</StatusText>
         ) : null}
       </main>
     </div>

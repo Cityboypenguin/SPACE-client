@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -11,6 +11,7 @@ import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
+import { DropdownMenu, DropdownMenuItem } from '../../../components/molecules/DropdownMenu';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import commentIcon from '../../../assets/パーツ_コメント.svg';
@@ -31,10 +32,10 @@ import {
   type Post,
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
 import { stableCacheOptions } from '../cache/swrOptions';
 import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
@@ -70,19 +71,6 @@ export const PostDetailPage = () => {
   const [isRootUpdating, setIsRootUpdating] = useState(false);
   const [rootUpdateError, setRootUpdateError] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
 
   const handleBlock = async (blockedUserId: string) => {
     const result = await AppSwal.fire({
@@ -344,59 +332,40 @@ export const PostDetailPage = () => {
                   </div>
 
                   {!isEditing && (
-                    <div className={styles.menuWrap} ref={menuRef}>
-                      <button
-                        className={styles.menuButton}
-                        onClick={() => setMenuOpen(v => !v)}
-                        aria-label="メニュー"
-                      >···</button>
-                      {menuOpen && (
-                        <div className={styles.dropdown}>
-                          {isMyPost ? (
-                            <>
-                              <button
-                                className={styles.dropdownItem}
-                                onClick={() => {
-                                  setMenuOpen(false);
-                                  setIsEditing(true);
-                                  setEditContent(post.content);
-                                  setEditSelectedFiles([]);
-                                  setEditDeletedMediaIDs([]);
-                                  setUpdateError('');
-                                }}
-                              >
-                                <img src={editIcon} alt="" className={styles.dropdownIcon} />
-                                編集
-                              </button>
-                              <button
-                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
-                                onClick={() => { setMenuOpen(false); handleDelete(); }}
-                              >
-                                <img src={deleteIcon} alt="" className={styles.dropdownIconDelete} />
-                                削除
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
-                                onClick={() => { setMenuOpen(false); handleBlock(post.user.ID); }}
-                              >
-                                <img src={redblockIcon} alt="" className={styles.dropdownIcon} />
-                                ブロック
-                              </button>
-                              <button
-                                className={styles.dropdownItem}
-                                onClick={() => { setMenuOpen(false); setReportTarget(post); }}
-                              >
-                                <img src={reportIcon} alt="" className={styles.dropdownIcon} />
-                                通報
-                              </button>
-                            </>
-                          )}
-                        </div>
+                    <DropdownMenu wrapClassName={styles.menuWrap}>
+                      {(close) => (
+                        isMyPost ? (
+                          <>
+                            <DropdownMenuItem
+                              icon={editIcon}
+                              themedIcon
+                              onClick={() => {
+                                close();
+                                setIsEditing(true);
+                                setEditContent(post.content);
+                                setEditSelectedFiles([]);
+                                setEditDeletedMediaIDs([]);
+                                setUpdateError('');
+                              }}
+                            >
+                              編集
+                            </DropdownMenuItem>
+                            <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); handleDelete(); }}>
+                              削除
+                            </DropdownMenuItem>
+                          </>
+                        ) : (
+                          <>
+                            <DropdownMenuItem icon={redblockIcon} danger onClick={() => { close(); handleBlock(post.user.ID); }}>
+                              ブロック
+                            </DropdownMenuItem>
+                            <DropdownMenuItem icon={reportIcon} themedIcon onClick={() => { close(); setReportTarget(post); }}>
+                              通報
+                            </DropdownMenuItem>
+                          </>
+                        )
                       )}
-                    </div>
+                    </DropdownMenu>
                   )}
                 </div>
 
@@ -442,7 +411,7 @@ export const PostDetailPage = () => {
 
                 <div className={styles.postStats}>
                   <span className={styles.replyCount}>
-                    <img src={commentIcon} alt="返信" className={styles.commentIcon} />
+                    <img src={commentIcon} alt="返信" className={`${styles.commentIcon} themed-icon`} />
                     <strong>{post.replyCount}</strong> 件の返信
                   </span>
                   <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />

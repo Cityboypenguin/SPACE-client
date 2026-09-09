@@ -6,9 +6,13 @@ import { ProfileCard } from '../components/organisms/ProfileCard';
 import { ScrollablePostsList } from '../components/organisms/ScrollablePostsList';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
+import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
+import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
+import { ProfilePillButton } from '../components/molecules/ProfilePillButton';
+import { DropdownMenu, DropdownMenuItem } from '../../../components/molecules/DropdownMenu';
 import { useProfile } from '../hooks/useProfile';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../context/useAuth';
+import { useToast } from '../../../context/useToast';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { getOrCreateDMRoom } from '../api/message';
@@ -21,8 +25,7 @@ import { staticCacheOptions } from '../cache/swrOptions';
 import redblockIcon from '../../../assets/パーツ_ブロック（赤）.svg';
 import blockIcon from '../../../assets/パーツ_ブロック.svg';
 import reportIcon from '../../../assets/パーツ_通報.svg';
-import favoriteIconOff from '../../../assets/パーツ_お気に入り.svg';
-import favoeirteIconOn from '../../../assets/パーツ_お気に入り（ON）.svg';
+import favoriteIconOn from '../../../assets/パーツ_お気に入り（ON）.svg';
 import dmIcon from '../../../assets/パーツ_メール.svg';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserPublicProfilePage.module.css';
@@ -39,15 +42,6 @@ export const UserPublicProfilePage = () => {
 
   // ── three-dot menu ────────────────────────────────────────────────────────
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [menuOpen]);
 
   // ── favorite / block ──────────────────────────────────────────────────────
   const { data: favoriteUsers, mutate: mutateFavorites } = useSWR(
@@ -67,6 +61,7 @@ export const UserPublicProfilePage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [dmLoading, setDmLoading] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isTimetableOpen, setIsTimetableOpen] = useState(false);
   const [reportingPostId, setReportingPostId] = useState<string | null>(null);
   const [reportingPostContent, setReportingPostContent] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
@@ -132,7 +127,7 @@ export const UserPublicProfilePage = () => {
 
   useEffect(() => {
     if (initialCache) return;
-    if (id) loadPosts(id, 0, true);
+    if (id) void Promise.resolve().then(() => loadPosts(id, 0, true));
   }, [id, loadPosts, initialCache]);
 
   const postsSentinelRef = useInfiniteScroll(
@@ -304,31 +299,31 @@ export const UserPublicProfilePage = () => {
     setPosts((prev) => prev.map((p) => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p));
   };
 
-  // ── right-side action buttons (passed to ProfileCard) ────────────────────
-  const rightActions = profile && !isMe ? (
+  // ── profile action buttons (passed to ProfileCard) ───────────────────────
+  const profileActions = profile && !isMe ? (
     <div className={styles.profileActions}>
       {!isBlocked && (
-        <button
-          className={`${styles.profileActionButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}
+        <ProfilePillButton
+          icon={favoriteIconOn}
+          label={isFavorited ? 'お気に入り解除' : 'お気に入り'}
           onClick={handleFavoriteToggle}
           disabled={actionLoading}
-        >
-          <img
-            src={isFavorited ? favoeirteIconOn : favoriteIconOff}
-            alt=""
-            className={`${styles.profileActionIcon}${isFavorited ? ` ${styles.profileActionIconFavorited}` : ''}`}
-          />
-          {isFavorited ? 'お気に入り解除' : 'お気に入り'}
-        </button>
+          className={`${styles.profileFavoriteButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}
+          iconClassName={`${styles.profileFavoriteIcon}${isFavorited ? ` ${styles.profileFavoriteIconFavorited}` : ''}`}
+        />
       )}
-      <button
-        className={styles.profileActionButton}
-        onClick={handleDM}
-        disabled={dmLoading}
-      >
-        <img src={dmIcon} alt="" className={styles.profileActionIcon} />
-        DMを開始
-      </button>
+      <div className={styles.profileActionPair}>
+        <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} />
+        <ProfilePillButton
+          icon={dmIcon}
+          onClick={handleDM}
+          disabled={dmLoading}
+          iconOnly
+          themedIcon
+          ariaLabel="DMを開始"
+          title="DMを開始"
+        />
+      </div>
     </div>
   ) : undefined;
 
@@ -341,43 +336,33 @@ export const UserPublicProfilePage = () => {
             <ChevronLeft />
           </button>
           {profile && !isMe && (
-            <div className={styles.menuWrap} ref={menuRef}>
-              <button
-                className={styles.menuButton}
-                onClick={() => setMenuOpen(v => !v)}
-                aria-label="メニュー"
-              >
-                ···
-              </button>
-              {menuOpen && (
-                <div className={styles.dropdown}>
-                  <button
-                    className={isBlocked ?  styles.dropdownItem : `${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+            <DropdownMenu triggerClassName={styles.menuButton} open={menuOpen} onOpenChange={setMenuOpen}>
+              {() => (
+                <>
+                  <DropdownMenuItem
+                    icon={isBlocked ? blockIcon : redblockIcon}
+                    themedIcon={isBlocked}
+                    danger={!isBlocked}
                     onClick={handleBlockToggle}
                     disabled={actionLoading}
                   >
-                    <img src={isBlocked ? blockIcon : redblockIcon} alt="" className={styles.dropdownIcon} />
                     {isBlocked ? 'ブロック解除' : 'ブロック'}
-                  </button>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={handleReportUser}
-                  >
-                    <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem icon={reportIcon} themedIcon onClick={handleReportUser}>
                     通報
-                  </button>
-                </div>
+                  </DropdownMenuItem>
+                </>
               )}
-            </div>
+            </DropdownMenu>
           )}
         </div>
 
-        {error && <p style={{ color: 'red', padding: '0 1rem' }}>{error}</p>}
-        {loading && <p style={{ color: '#94a3b8', padding: '1rem' }}>読み込み中...</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
+        {loading && <p className={styles.loadingText}>読み込み中...</p>}
 
         {profile && (
           <>
-            <ProfileCard profile={profile} rightActions={rightActions} />
+            <ProfileCard profile={profile} actions={profileActions} />
             <hr className={styles.divider} />
             <ScrollablePostsList
               posts={posts}
@@ -423,6 +408,15 @@ export const UserPublicProfilePage = () => {
           targetType="POST"
           targetID={reportingPostId}
           postContent={reportingPostContent}
+        />
+      )}
+
+      {profile && isTimetableOpen && (
+        <PublicTimetableOverlay
+          userId={profile.user.ID}
+          userName={profile.user.name}
+          isMe={isMe}
+          onClose={() => setIsTimetableOpen(false)}
         />
       )}
     </div>

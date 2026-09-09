@@ -149,6 +149,29 @@ const UpdateProfileDocument = graphql(`
   }
 `);
 
+const UpdateMyProfileDocument = graphql(`
+  mutation UpdateMyProfile($input: UpdateMyProfileInput!) {
+    updateMyProfile(input: $input) {
+      username
+      bio
+      avatarUrl
+      createdAt
+      updatedAt
+      user {
+        ID
+        accountID
+        name
+        email
+        role
+        status
+        avatarUrl
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`);
+
 export const getMyProfile = async () => {
   const token = getUserToken();
   if (!token) {
@@ -181,6 +204,14 @@ export const updateProfile = async (input: {
   bio?: string;
 }) => {
   return await requestDoc(UpdateProfileDocument, { input }, getUserToken());
+};
+
+export const updateMyProfileDetails = async (input: {
+  accountID?: string;
+  name?: string;
+  bio?: string;
+}) => {
+  return await requestDoc(UpdateMyProfileDocument, { input }, getUserToken());
 };
 
 export const getPresignedAvatarUploadUrl = async (contentType: string) => {

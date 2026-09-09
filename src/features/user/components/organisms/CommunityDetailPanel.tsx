@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
+import { useClickOutside } from '../../../../hooks/useClickOutside';
 import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
 import { storageUrl } from '../../../../lib/storage';
 import personIcon from '../../../../assets/パーツ_人間.svg';
@@ -25,24 +26,13 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
   const navigate = useNavigate();
   const [members, setMembers] = useState<CommunityMember[]>([]);
   const [showMenu, setShowMenu] = useState(false);
-  const menuWrapRef = useRef<HTMLDivElement>(null);
+  const menuWrapRef = useClickOutside<HTMLDivElement>(showMenu, () => setShowMenu(false));
 
   useEffect(() => {
     getCommunityMembers(community.ID)
       .then(setMembers)
       .catch(() => {});
   }, [community.ID]);
-
-  useEffect(() => {
-    if (!showMenu) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuWrapRef.current && !menuWrapRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showMenu]);
 
   const returnPath = `/community/chat/${community.roomID}`;
 
@@ -64,7 +54,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                     className={styles.menuItem} 
                     onClick={() => { setShowMenu(false); onReport();}}
                   >
-                  <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                  <img src={reportIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
                   通報
                   </button>
                   <button

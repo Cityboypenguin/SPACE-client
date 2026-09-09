@@ -11,13 +11,15 @@ import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
+import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import styles from '../components/ChatRoom.module.css';
+import pageStyles from './CommunityRoomPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
 
@@ -30,6 +32,7 @@ export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  useResetViewportScroll([roomId]);
   const locationState = location.state as { communityID?: string; community?: Community; showDetail?: boolean } | null;
   const { userId: currentUserID } = useAuth();
   const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
@@ -49,7 +52,6 @@ export const CommunityRoomPage = () => {
     newMessageCount,
     isAtBottom,
     scrollToLatest,
-    scrollToInitialPosition,
   } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
 
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -177,7 +179,7 @@ export const CommunityRoomPage = () => {
         <button onClick={() => navigate('/community')}><ChevronLeft /></button>
         <button
           onClick={() => openDetail()}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, flex: 1, overflow: 'hidden' }}
+          className={styles.roomHeaderButton}
         >
           <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
           <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
@@ -186,11 +188,11 @@ export const CommunityRoomPage = () => {
 
       <div className={styles.messageListWrapper}>
         <div className={styles.messageList} ref={messageListRef}>
-          <div ref={topSentinelRef} style={{ height: '1px' }} />
+          <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
-          {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
+          {(error || sendError) && <p className={pageStyles.errorText}>{error || sendError}</p>}
 
           {messages.map((msg, index) => {
             const isMine = msg.user.ID === currentUserID;
@@ -213,23 +215,23 @@ export const CommunityRoomPage = () => {
                   </div>
                 )}
                 <ChatMessageBubble
-                msg={msg}
-                isMine={isMine}
-                canDelete={isMine || isOwner}
-                isEditing={editingId === msg.ID}
-                editContent={editContent}
-                onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
-                onSaveEdit={() => handleSaveEdit(msg.ID)}
-                onCancelEdit={() => setEditingId(null)}
-                onEditContentChange={setEditContent}
-                onDelete={() => handleDelete(msg.ID)}
+                  msg={msg}
+                  isMine={isMine}
+                  canDelete={isMine || isOwner}
+                  isEditing={editingId === msg.ID}
+                  editContent={editContent}
+                  onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
+                  onSaveEdit={() => handleSaveEdit(msg.ID)}
+                  onCancelEdit={() => setEditingId(null)}
+                  onEditContentChange={setEditContent}
+                  onDelete={() => handleDelete(msg.ID)}
                 />
               </Fragment>
             );
           })}
-          <div ref={bottomSentinelRef} style={{ height: '1px' }} />
+          <div ref={bottomSentinelRef} className={styles.scrollSentinel} />
           {loadingNewer && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
           <div ref={bottomRef} />
         </div>

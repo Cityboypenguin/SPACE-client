@@ -1,14 +1,13 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { useAuth } from './AuthContext';
-import { useToast } from '../../../context/ToastContext';
+import { useAuth } from './useAuth';
+import { NotificationContext } from './notificationContextValue';
+import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
 import { emitUnreadRoomUpdate } from '../hooks/useUnreadSubscription';
 
@@ -25,28 +24,6 @@ type SSENotificationPayload = {
   targetID?: string;
 };
 
-type NotificationContextValue = {
-  unreadCount: number;
-  lastSseAt: number;
-  pendingTerms: TermsOfService | null;
-  consentChecking: boolean;
-  clearPendingTerms: () => void;
-  resetUnread: () => void;
-  decrementUnread: () => void;
-};
-
-const NotificationContext = createContext<NotificationContextValue>({
-  unreadCount: 0,
-  lastSseAt: 0,
-  pendingTerms: null,
-  consentChecking: false,
-  clearPendingTerms: () => {},
-  resetUnread: () => {},
-  decrementUnread: () => {},
-});
-
-export const useNotification = () => useContext(NotificationContext);
-
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const { token } = useAuth();
   const { addToast } = useToast();
@@ -55,21 +32,26 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [pendingTerms, setPendingTerms] = useState<TermsOfService | null>(null);
   const [consentChecking, setConsentChecking] = useState(false);
   const addToastRef = useRef(addToast);
-  addToastRef.current = addToast;
 
   useEffect(() => {
-    if (!token) {
-      setUnreadCount(0);
-      setPendingTerms(null);
-      return;
-    }
-    setConsentChecking(true);
-    getMyTermsConsentStatus()
-      .then((status) => {
-        setPendingTerms(!status.isConsented && status.currentTerms ? status.currentTerms : null);
-      })
-      .catch(() => {})
-      .finally(() => setConsentChecking(false));
+    addToastRef.current = addToast;
+  }, [addToast]);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      if (!token) {
+        setUnreadCount(0);
+        setPendingTerms(null);
+        return;
+      }
+      setConsentChecking(true);
+      getMyTermsConsentStatus()
+        .then((status) => {
+          setPendingTerms(!status.isConsented && status.currentTerms ? status.currentTerms : null);
+        })
+        .catch(() => {})
+        .finally(() => setConsentChecking(false));
+    });
   }, [token]);
 
   const clearPendingTerms = useCallback(() => setPendingTerms(null), []);

@@ -5,12 +5,13 @@ import { UserSidebar } from '../components/organisms/UserSidebar';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { CommunityBoard } from '../components/organisms/CommunityBoard';
 import { searchCommunities, joinCommunity, listMyCommunities, getRandomCommunities, type Community } from '../api/community';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
+import styles from './CommunityBoardListPage.module.css';
 
 export const CommunityBoardListPage = () => {
   const navigate = useNavigate();
@@ -132,27 +133,23 @@ export const CommunityBoardListPage = () => {
   return (
     <div>
       <UserSidebar />
-      <main style={{ padding: '2rem', maxWidth: '700px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+      <main className={styles.page}>
+        <div className={styles.header}>
           <button
             onClick={() => navigate('/community')}
           >
             <ChevronLeft /> 戻る
           </button>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', flex: 1 }}>コミュニティを探す</h1>
+          <h1 className={styles.title}>コミュニティを探す</h1>
           <button
             onClick={() => navigate('/community/create')}
-            style={{
-              background: '#f97316', color: '#fff', border: 'none',
-              borderRadius: 8, padding: '0.5rem 1rem',
-              fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-            }}
+            className={styles.createButton}
           >
             + 作成
           </button>
         </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div className={styles.searchBlock}>
           <IconSearchBar
             value={query}
             onChange={setQuery}
@@ -162,17 +159,17 @@ export const CommunityBoardListPage = () => {
           />
         </div>
 
-        {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
 
         {!searched && (
           <div>
-            <h2 style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '0.75rem' }}>おすすめのコミュニティ</h2>
+            <h2 className={styles.sectionTitle}>おすすめのコミュニティ</h2>
             {loadingRandom ? (
-              <p style={{ color: '#94a3b8' }}>読み込み中...</p>
+              <p className={styles.mutedText}>読み込み中...</p>
             ) : randomResults.length === 0 ? (
-              <p style={{ color: '#94a3b8' }}>おすすめのコミュニティはありません</p>
+              <p className={styles.mutedText}>おすすめのコミュニティはありません</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div className={styles.boardList}>
                 {randomResults.map((c) => (
                   <CommunityBoard
                     key={c.ID}
@@ -189,15 +186,15 @@ export const CommunityBoardListPage = () => {
         )}
 
         {searched && results.length === 0 && (
-          <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem 0' }}>
+          <p className={styles.emptyResultsText}>
             該当するコミュニティが見つかりませんでした
           </p>
         )}
 
         {searched && results.length > 0 && (
           <div>
-            <h2 style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '0.75rem' }}>検索結果</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <h2 className={styles.sectionTitle}>検索結果</h2>
+            <div className={styles.boardList}>
               {results.map((c) => (
                 <CommunityBoard
                   key={c.ID}
@@ -209,9 +206,9 @@ export const CommunityBoardListPage = () => {
                 />
               ))}
             </div>
-            <div ref={sentinelRef} style={{ height: '1px' }} />
+            <div ref={sentinelRef} className={styles.sentinel} />
             {loadingMore && (
-              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '0.5rem' }}>読み込み中...</p>
+              <p className={styles.loadingMoreText}>読み込み中...</p>
             )}
           </div>
         )}

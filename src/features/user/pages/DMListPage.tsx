@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
 import { Avatar } from '../../../components/atoms/Avatar';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { listMyDMRooms, deleteRoom, DELETED_ACCOUNT_ID, type Room } from '../api/message';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './DMListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -48,7 +50,7 @@ export const DMListPage = () => {
   }, []);
 
   useEffect(() => {
-    loadDMRooms(0, true);
+    void Promise.resolve().then(() => loadDMRooms(0, true));
   }, [loadDMRooms]);
 
   const sentinelRef = useInfiniteScroll(
@@ -118,11 +120,11 @@ export const DMListPage = () => {
         <h2 className={styles.sectionTitle}>DM</h2>
 
         {dmInitialLoading ? (
-          <p className={styles.empty}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>読み込み中...</StatusText>
         ) : filteredRooms.length === 0 ? (
-          <p className={styles.empty}>
+          <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>
             {query ? '該当するトークが見つかりませんでした' : 'DMがまだありません'}
-          </p>
+          </StatusText>
         ) : (
           <ul className={styles.dmList}>
             {filteredRooms.map((room) => {
@@ -171,9 +173,9 @@ export const DMListPage = () => {
                 </li>
               );
             })}
-            <div ref={sentinelRef} style={{ height: '1px' }} />
+            <ScrollSentinel ref={sentinelRef} />
             {dmLoadingMore && (
-              <p className={styles.empty}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             )}
           </ul>
         )}

@@ -3,14 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { updateMyProfile, deleteMyAccount } from '../api/profile';
 import { getCurrentTerms } from '../api/terms';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { UserListItem } from '../components/molecules/UserListItem';
+import { UserListItem } from '../../../components/molecules/UserListItem';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
+import { ToggleSwitch } from '../../../components/atoms/ToggleSwitch';
 import { TermsContent } from '../components/molecules/TermsContent';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
+import { useTheme } from '../../../context/useTheme';
+import type { Theme } from '../../../context/themeContextValue';
+import { getTimetableProfileVisibility, setTimetableProfileVisibility } from '../api/timetableVisibility';
 import { clearPostListCache, clearAllUserPostListCaches } from '../cache/postListCache';
 import { staticCacheOptions } from '../cache/swrOptions';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -19,7 +24,7 @@ import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { InquiryForm } from '../components/organisms/InquiryForm';
 import { AppSwal } from '../../../lib/swal';
 
-type View = 'general' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
+type View = 'general' | 'personal' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
 
 const LIMIT = 20;
 
@@ -123,7 +128,9 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
     }
   }, []);
 
-  useEffect(() => { loadUsers(0, true); }, [loadUsers]);
+  useEffect(() => {
+    void Promise.resolve().then(() => loadUsers(0, true));
+  }, [loadUsers]);
 
   const sentinelRef = useInfiniteScroll(
     useCallback(() => {
@@ -159,9 +166,9 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
         ブロックリスト
       </h2>
       {initialLoading ? (
-        <p style={{ color: '#94a3b8' }}>読み込み中...</p>
+        <p className={styles.mutedText}>読み込み中...</p>
       ) : users.length === 0 ? (
-        <p style={{ color: '#94a3b8' }}>ブロックしているユーザーはいません。</p>
+        <p className={styles.mutedText}>ブロックしているユーザーはいません。</p>
       ) : (
         <>
           <ul className={styles.blockList}>
@@ -175,8 +182,8 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
               />
             ))}
           </ul>
-          <div ref={sentinelRef} style={{ height: 1 }} />
-          {loadingMore && <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>}
+          <ScrollSentinel ref={sentinelRef} />
+          {loadingMore && <p className={styles.mutedTextCenter}>読み込み中...</p>}
         </>
       )}
     </>
@@ -186,7 +193,7 @@ const BlocksView = ({ onBack }: { onBack: () => void }) => {
 const TermsView = () => {
   const { data: terms } = useSWR('currentTerms', getCurrentTerms, staticCacheOptions);
 
-  if (!terms) return <p style={{ color: '#94a3b8' }}>読み込み中...</p>;
+  if (!terms) return <p className={styles.mutedText}>読み込み中...</p>;
 
   return (
     <div className={styles.termsWrap}>
@@ -196,10 +203,114 @@ const TermsView = () => {
   );
 };
 
+type PersonalSettingsFormProps = {
+  initialTheme: Theme;
+  initialTimetableVisible: boolean;
+  onSave: (settings: { theme: Theme; timetableVisible: boolean }) => Promise<void>;
+};
+
+const PersonalSettingsForm = ({ initialTheme, initialTimetableVisible, onSave }: PersonalSettingsFormProps) => {
+  const [draftTheme, setDraftTheme] = useState<Theme>(initialTheme);
+  const [draftTimetableVisible, setDraftTimetableVisible] = useState(initialTimetableVisible);
+  const [saving, setSaving] = useState(false);
+  const hasChanges = draftTheme !== initialTheme || draftTimetableVisible !== initialTimetableVisible;
+
+  const handleSave = async () => {
+    if (!hasChanges || saving) return;
+    setSaving(true);
+    try {
+      await onSave({ theme: draftTheme, timetableVisible: draftTimetableVisible });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className={styles.personalSettings}>
+      <div className={styles.toggleRow}>
+        <span className={styles.toggleLabel}>ダークモード</span>
+        <ToggleSwitch
+          checked={draftTheme === 'dark'}
+          onChange={(checked) => setDraftTheme(checked ? 'dark' : 'light')}
+          ariaLabel="ダークモード"
+        />
+      </div>
+
+      <div className={styles.toggleRow}>
+        <span className={styles.toggleLabel}>プロフィールに時間割を公開する</span>
+        <ToggleSwitch
+          checked={draftTimetableVisible}
+          onChange={setDraftTimetableVisible}
+          ariaLabel="プロフィールに時間割を公開する"
+        />
+      </div>
+
+      <button
+        type="button"
+        className={styles.submitBtn}
+        disabled={!hasChanges || saving}
+        onClick={() => void handleSave()}
+      >
+        {saving ? '保存中...' : '保存する'}
+      </button>
+    </div>
+  );
+};
+
+const PersonalSettingsView = ({ onBack }: { onBack: () => void }) => {
+  const { theme, setTheme } = useTheme();
+  const { addToast } = useToast();
+  const {
+    data: timetableVisible,
+    mutate: mutateTimetableVisible,
+    isLoading,
+  } = useSWR('timetable-profile-visibility', () => getTimetableProfileVisibility(), staticCacheOptions);
+  const isReady = timetableVisible != null;
+
+  const handleSave = async (settings: { theme: Theme; timetableVisible: boolean }) => {
+    try {
+      if (settings.theme !== theme) {
+        setTheme(settings.theme);
+      }
+      if (settings.timetableVisible !== timetableVisible) {
+        const saved = await setTimetableProfileVisibility(settings.timetableVisible);
+        mutateTimetableVisible(saved, { revalidate: false });
+      }
+      addToast('個人設定を保存しました', 'success');
+    } catch {
+      addToast('個人設定の保存に失敗しました', 'error');
+    }
+  };
+
+  return (
+    <>
+      <h2 className={styles.backTitle}>
+        <button onClick={onBack}><ChevronLeft /></button>
+        個人設定
+      </h2>
+
+      {!isReady && isLoading ? (
+        <p className={styles.mutedText}>読み込み中...</p>
+      ) : !isReady ? (
+        <p className={styles.errorMsg}>個人設定の読み込みに失敗しました</p>
+      ) : (
+        <PersonalSettingsForm
+          key={`${theme}:${timetableVisible}`}
+          initialTheme={theme}
+          initialTimetableVisible={timetableVisible}
+          onSave={handleSave}
+        />
+      )}
+    </>
+  );
+};
+
 const GeneralView = ({
+  onPersonalClick,
   onPasswordClick,
   onBlocksClick,
 }: {
+  onPersonalClick: () => void;
   onPasswordClick: () => void;
   onBlocksClick: () => void;
 }) => {
@@ -211,6 +322,8 @@ const GeneralView = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  useSWR('timetable-profile-visibility', () => getTimetableProfileVisibility(), staticCacheOptions);
 
   const handleClearCache = async () => {
     const result = await AppSwal.fire({
@@ -249,6 +362,10 @@ const GeneralView = ({
     <>
       <h2 className={styles.sectionTitle}>一般設定</h2>
       <div className={styles.subMenuList}>
+        <button className={styles.subMenuItem} onClick={onPersonalClick}>
+          個人設定
+          <span className={styles.subMenuArrow}>›</span>
+        </button>
         <button className={styles.subMenuItem} onClick={onPasswordClick}>
           パスワード変更
           <span className={styles.subMenuArrow}>›</span>
@@ -274,47 +391,29 @@ const GeneralView = ({
 
       {showDeleteConfirm && (
         <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-          }}
+          className={styles.modalOverlay}
           onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
         >
-          <div
-            style={{
-              background: '#fff', borderRadius: 12, padding: '2rem',
-              width: '90%', maxWidth: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              textAlign: 'center',
-            }}
-          >
-            <p style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: 600, color: '#1e293b' }}>
+          <div className={styles.modalCard}>
+            <p className={styles.modalTitle}>
               アカウントを削除しますか？
             </p>
-            <p style={{ margin: '0 0 1.5rem', fontSize: '0.85rem', color: '#64748b' }}>
+            <p className={styles.modalBody}>
               この操作は取り消せません。投稿・メッセージなどすべてのデータが削除されます。
             </p>
-            {deleteError && <p style={{ margin: '0 0 1rem', color: '#ef4444', fontSize: '0.85rem' }}>{deleteError}</p>}
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            {deleteError && <p className={styles.errorMsg} style={{ marginBottom: '1rem' }}>{deleteError}</p>}
+            <div className={styles.modalActions}>
               <button
                 onClick={() => { setShowDeleteConfirm(false); setDeleteError(''); }}
                 disabled={deleting}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: '1px solid #cbd5e1', background: '#fff',
-                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
-                }}
+                className={styles.modalCancelBtn}
               >
                 キャンセル
               </button>
               <button
                 onClick={() => void handleDeleteAccount()}
                 disabled={deleting}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: 'none', background: '#ef4444',
-                  cursor: deleting ? 'default' : 'pointer', fontWeight: 500, color: '#fff',
-                  opacity: deleting ? 0.6 : 1,
-                }}
+                className={styles.modalDangerBtn}
               >
                 {deleting ? '削除中...' : '削除する'}
               </button>
@@ -325,40 +424,20 @@ const GeneralView = ({
 
       {showLogoutConfirm && (
         <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-          }}
+          className={styles.modalOverlay}
           onClick={(e) => { if (e.target === e.currentTarget) setShowLogoutConfirm(false); }}
         >
-          <div
-            style={{
-              background: '#fff', borderRadius: 12, padding: '2rem',
-              width: '90%', maxWidth: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              textAlign: 'center',
-            }}
-          >
-            <p style={{ margin: '0 0 1.5rem', fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>
+          <div className={styles.modalCard}>
+            <p className={styles.modalTitle}>
               ログアウトしますか？
             </p>
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: '1px solid #cbd5e1', background: '#fff',
-                  cursor: 'pointer', fontWeight: 500, color: '#64748b',
-                }}
-              >
+            <div className={styles.modalActions}>
+              <button onClick={() => setShowLogoutConfirm(false)} className={styles.modalCancelBtn}>
                 キャンセル
               </button>
               <button
                 onClick={() => { setShowLogoutConfirm(false); void doLogout(); }}
-                style={{
-                  padding: '0.5rem 1.5rem', borderRadius: 8,
-                  border: 'none', background: '#ef4444',
-                  cursor: 'pointer', fontWeight: 500, color: '#fff',
-                }}
+                className={styles.modalDangerBtn}
               >
                 ログアウト
               </button>
@@ -379,7 +458,9 @@ export const UserSettingsPage = () => {
       <div className={styles.page}>
         {/* 左パネル */}
         <aside className={styles.leftPanel}>
-          <h1 className={styles.panelTitle}>設定</h1>
+          <div className={styles.panelHeader}>
+            <h1 className={styles.panelTitle}>設定</h1>
+          </div>
           <button
             className={`${styles.menuItem} ${view === 'general' || view === 'password' || view === 'blocks' ? styles.menuItemActive : ''}`}
             onClick={() => setView('general')}
@@ -407,10 +488,12 @@ export const UserSettingsPage = () => {
         <main className={styles.rightPanel}>
           {view === 'general' && (
             <GeneralView
+              onPersonalClick={() => setView('personal')}
               onPasswordClick={() => setView('password')}
               onBlocksClick={() => setView('blocks')}
             />
           )}
+          {view === 'personal' && <PersonalSettingsView onBack={() => setView('general')} />}
           {view === 'password' && <PasswordView onBack={() => setView('general')} />}
           {view === 'blocks' && <BlocksView onBack={() => setView('general')} />}
           {view === 'terms' && <TermsView />}

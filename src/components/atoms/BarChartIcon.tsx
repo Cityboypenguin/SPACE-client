@@ -1,0 +1,11 @@
+type Props = {
+  size?: number;
+};
+
+export const BarChartIcon = ({ size = 14 }: Props) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="9" width="3" height="6" rx="0.5" fill="currentColor" />
+    <rect x="6.5" y="5" width="3" height="10" rx="0.5" fill="currentColor" />
+    <rect x="12" y="1" width="3" height="14" rx="0.5" fill="currentColor" />
+  </svg>
+);

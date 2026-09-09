@@ -1,14 +1,20 @@
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ProfileCard } from '../components/organisms/ProfileCard';
 import { PostCard } from '../components/organisms/PostCard';
 import { PostComposer } from '../components/organisms/PostComposer';
 import { ReportModal } from '../components/organisms/ReportModal';
+import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
+import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
+import { ProfilePillButton } from '../components/molecules/ProfilePillButton';
+import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
+import favoriteIcon from '../../../assets/パーツ_お気に入り.svg';
 import { Tabs } from '../../../components/molecules/Tabs';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { useToast } from '../../../context/ToastContext';
-import { useAuth } from '../context/AuthContext';
+import { useToast } from '../../../context/useToast';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import {
@@ -22,7 +28,10 @@ import {
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
 import { createBlocker } from '../api/block';
+import { getTimetableProfileVisibility } from '../api/timetableVisibility';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
+import { staticCacheOptions } from '../cache/swrOptions';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './UserDashboard.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -36,6 +45,12 @@ export const UserDashboard = () => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<'own' | 'liked'>('own');
   const [flashMessage, setFlashMessage] = useState('');
+  const [isTimetableOpen, setIsTimetableOpen] = useState(false);
+  const { data: timetableVisible } = useSWR(
+    userId ? 'timetable-profile-visibility' : null,
+    () => getTimetableProfileVisibility(),
+    staticCacheOptions,
+  );
 
   // ── Own posts ────────────────────────────────────────────────────────────
   const [initialCache] = useState(() => userId ? getUserPostListCache(userId) : null);
@@ -101,8 +116,10 @@ export const UserDashboard = () => {
   // ── Flash message ────────────────────────────────────────────────────────
   useEffect(() => {
     if (location.state && (location.state as { message?: string }).message) {
-      setFlashMessage((location.state as { message: string }).message);
-      window.history.replaceState({}, document.title);
+      void Promise.resolve().then(() => {
+        setFlashMessage((location.state as { message: string }).message);
+        window.history.replaceState({}, document.title);
+      });
     }
   }, [location]);
 
@@ -129,7 +146,7 @@ export const UserDashboard = () => {
 
   useEffect(() => {
     if (initialCache) return;
-    if (userId) loadOwnPosts(userId, 0, true);
+    if (userId) void Promise.resolve().then(() => loadOwnPosts(userId, 0, true));
   }, [userId, loadOwnPosts, initialCache]);
 
   // ── Load liked posts ──────────────────────────────────────────────────────
@@ -291,10 +308,10 @@ export const UserDashboard = () => {
 
   const profileActions = (
     <div className={styles.actionButtons}>
-      <Link to="/mypage/profile-edit" className={styles.actionButton}>プロフィール編集</Link>
-      <Link to="/mypage/user-info-edit" className={styles.actionButton}>ユーザー情報の編集</Link>
-      <Link to="/mypage/favorites" className={styles.actionButton}>お気に入りリスト</Link>
-      {/* <Link to="/mypage/followers" className={styles.actionButton}>フォロワー</Link> */}
+      <ProfilePillButton to="/mypage/profile-edit" icon={editIcon} label="プロフィール編集" themedIcon compact />
+      <ProfilePillButton to="/mypage/favorites" icon={favoriteIcon} label="お気に入りリスト" themedIcon compact />
+      <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} compact />
+      {/* <ProfilePillButton to="/mypage/followers" icon={followerIcon} label="フォロワー" themedIcon /> */}
     </div>
   );
 
@@ -309,7 +326,7 @@ export const UserDashboard = () => {
         {flashMessage && <p className={styles.flashMessage}>{flashMessage}</p>}
 
         {profileLoading ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>
         ) : profile ? (
           <ProfileCard profile={profile} actions={profileActions} />
         ) : null}
@@ -324,9 +341,9 @@ export const UserDashboard = () => {
         />
 
         {isLoading ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>
         ) : displayedPosts.length === 0 ? (
-          <p className={styles.emptyText}>投稿がまだありません</p>
+          <StatusText style={{ padding: '2rem' }}>投稿がまだありません</StatusText>
         ) : (
           displayedPosts.map(post => (
             editingPost?.ID === post.ID ? (
@@ -372,7 +389,7 @@ export const UserDashboard = () => {
         <div ref={ownSentinelRef} />
         <div ref={likedSentinelRef} />
 
-        {isLoadingMore && <p className={styles.loadingText}>読み込み中...</p>}
+        {isLoadingMore && <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>}
 
         {reportingPostId && (
           <ReportModal
@@ -381,6 +398,16 @@ export const UserDashboard = () => {
             targetType="POST"
             targetID={reportingPostId}
             postContent={reportingPostContent}
+          />
+        )}
+
+        {profile && userId && isTimetableOpen && (
+          <PublicTimetableOverlay
+            userId={userId}
+            userName={profile.user.name}
+            isMe={true}
+            isProfileHidden={timetableVisible === false}
+            onClose={() => setIsTimetableOpen(false)}
           />
         )}
       </main>

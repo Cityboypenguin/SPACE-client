@@ -5,20 +5,24 @@ import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
+import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import { saveRecentDM } from '../../../lib/recentDM';
 import styles from '../components/ChatRoom.module.css';
+import pageStyles from './DMPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { Avatar } from '../../../components/atoms/Avatar';
+import { StatusText } from '../../../components/atoms/StatusText';
 import { storageUrl } from '../../../lib/storage';
 
 export const DMPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  useResetViewportScroll([roomId]);
   const { userId: currentUserID } = useAuth();
   const {
     room,
@@ -134,35 +138,22 @@ export const DMPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          aria-label="前のページに戻る"
-          style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-        >
+        <button type="button" onClick={() => navigate(-1)} aria-label="前のページに戻る">
           <ChevronLeft />
         </button>
-
         {partner ? (
           <button
             type="button"
             onClick={() => navigate(`/users/${partner.ID}`)}
             aria-label={`${partner.name} のマイページへ移動`}
-            style={{
-              padding: 0,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              lineHeight: 0,
-              flexShrink: 0,
-            }}
+            className={styles.avatarButton}
           >
             {partner.avatarUrl ? (
-              <img
-                src={storageUrl(partner.avatarUrl) ?? undefined}
-                alt={partner.name}
-                style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-              />
+            <img
+              src={storageUrl(partner.avatarUrl) ?? undefined}
+              alt={partner.name}
+              className={styles.headerAvatar}
+            />
             ) : (
               <Avatar name={partnerName} size={36} />
             )}
@@ -175,12 +166,12 @@ export const DMPage = () => {
 
       <div className={styles.messageListWrapper}>
         <div className={styles.messageList} ref={messageListRef}>
-          <div ref={topSentinelRef} style={{ height: '1px' }} />
+          <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <StatusText style={{ padding: '0.5rem', fontSize: '0.8rem' }}>読み込み中...</StatusText>
           )}
 
-          {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
+          {(error || sendError) && <p className={pageStyles.errorText}>{error || sendError}</p>}
 
           {messages.map((msg, index) => {
             const isMine = msg.user.ID === currentUserID;
@@ -228,9 +219,9 @@ export const DMPage = () => {
               </React.Fragment>
             );
           })}
-          <div ref={bottomSentinelRef} style={{ height: '1px' }} />
+          <div ref={bottomSentinelRef} className={styles.scrollSentinel} />
           {loadingNewer && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <StatusText style={{ padding: '0.5rem', fontSize: '0.8rem' }}>読み込み中...</StatusText>
           )}
           <div ref={bottomRef} />
         </div>
@@ -239,17 +230,7 @@ export const DMPage = () => {
       </div>
 
       {isBlocked && (
-        <div
-          style={{
-            padding: '12px',
-            margin: '0 16px 16px',
-            textAlign: 'center',
-            backgroundColor: '#fee2e2',
-            color: '#dc2626',
-            borderRadius: '8px',
-            fontSize: '0.875rem',
-          }}
-        >
+        <div className={pageStyles.blockedBanner}>
           ブロック設定により、現在メッセージを送受信できません。
         </div>
       )}

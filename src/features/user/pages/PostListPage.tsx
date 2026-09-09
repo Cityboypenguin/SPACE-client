@@ -7,7 +7,8 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './PostListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -26,13 +27,14 @@ import {
 import { uploadMediaFiles } from '../api/media';
 import { extractHashtags } from '../../../lib/hashtags';
 import { createBlocker } from '../api/block';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useFollowFeed } from '../hooks/useFollowFeed';
 import { useHashtagSuggestions } from '../hooks/useHashtagSuggestions';
 import { HashtagSuggestionList } from '../components/molecules/HashtagSuggestionList';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { Footer } from '../../../components/organisms/Footer';
 
 const LIMIT = 20;
@@ -264,7 +266,7 @@ export const PostListPage = () => {
   useEffect(() => {
     feedLoadedAtRef.current = new Date();
     if (initialCache) return;
-    loadPosts(0, 'initial');
+    void Promise.resolve().then(() => loadPosts(0, 'initial'));
   }, [loadPosts, initialCache]);
 
   // スクロール位置の復元（描画前に実行してちらつきを防ぐ）
@@ -587,19 +589,15 @@ export const PostListPage = () => {
           </div>
         )}
 
-        <div style={{ position: 'relative' }}>
-          <div className={styles.searchBar}>
-            <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
-            <input
-              className={styles.searchInput}
-              type="text"
-              placeholder="search"
+        <div className={styles.searchWrap}>
+          <div className={styles.searchBarArea}>
+            <IconSearchBar
               value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
+              placeholder="search"
+              onChange={(value) => { setSearchQuery(value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
               onFocus={() => { setSearchFocused(true); setSuggestDismissed(false); }}
               onBlur={() => setSearchFocused(false)}
+              onClear={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); setSuggestDismissed(true); }}
               onKeyDown={e => {
                 // IME変換中の Enter 等は確定操作なので横取りしない。
                 if (e.nativeEvent.isComposing) return;
@@ -623,16 +621,9 @@ export const PostListPage = () => {
                 }
               }}
             />
-            {searchQuery && (
-              <button
-                className={styles.searchClear}
-                onClick={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); setSuggestDismissed(true); }}
-                aria-label="クリア"
-              >✕</button>
-            )}
           </div>
           {showSuggestions && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>
+            <div className={styles.searchSuggestions}>
               <HashtagSuggestionList
                 suggestions={suggestions}
                 activeIndex={Math.min(suggestActiveIndex, suggestions.length - 1)}
@@ -677,7 +668,7 @@ export const PostListPage = () => {
         {loadError && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
         {(isTabLoading || searchLoading) ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>
         ) : (
           <>
             {displayedPosts.map((post) =>
@@ -721,16 +712,16 @@ export const PostListPage = () => {
               )
             )}
             {displayedPosts.length === 0 && (
-              <p className={styles.emptyText}>
+              <StatusText style={{ padding: '2rem' }}>
                 {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'フォロー中のユーザーの投稿がありません' : '投稿がまだありません'}
-              </p>
+              </StatusText>
             )}
             <div ref={recommendedSentinelRef} className={styles.sentinel} />
             <div ref={followSentinelRef} className={styles.sentinel} />
             <div ref={searchSentinelRef} className={styles.sentinel} />
-            {isTabLoadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
+            {isTabLoadingMore && <StatusText style={{ padding: '1rem' }}>読み込み中...</StatusText>}
             {!isSearching && !hasMore && displayedPosts.length > 0 && (
-              <p className={styles.allLoadedText}>すべての投稿を表示しました</p>
+              <StatusText style={{ padding: '1rem', fontSize: '0.875rem' }}>すべての投稿を表示しました</StatusText>
             )}
           </>
         )}

@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, type ReactNode } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
-import { useToast } from '../../../../context/ToastContext';
+import { useToast } from '../../../../context/useToast';
 import { useHashtagSuggestions } from '../../hooks/useHashtagSuggestions';
 import { HashtagSuggestionList } from '../molecules/HashtagSuggestionList';
 import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
@@ -17,7 +17,6 @@ const MAX_IMAGES = 4;
 //   マーカー "#"（直後に空白なし）が本文先頭 or 直前が空白のときのみ、最初の空白までをタグとして着色。
 const HASHTAG_HL_REGEX = /#[^\s]+/g;
 const WHITESPACE_REGEX = /\s/;
-const HASHTAG_COLOR = '#1d9bf0';
 
 // キャレット位置(caret)から、いま編集中のハッシュタグトークンを取り出す。
 // 返り値: { query: "#"の後ろ〜caretの文字列, start: "#"の位置, end: トークン末尾 } / なければ null。
@@ -48,7 +47,7 @@ function renderHashtagHighlight(text: string): ReactNode[] {
       nodes.push(text.slice(lastIndex, start));
     }
     nodes.push(
-      <span key={key++} style={{ color: HASHTAG_COLOR }}>{match[0]}</span>,
+      <span key={key++} className={styles.hashtagHighlight}>{match[0]}</span>,
     );
     lastIndex = start + match[0].length;
   }
@@ -275,25 +274,10 @@ export const PostComposer = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: 'relative' }} // オーバーレイ表示の基準点にするため追加
     >
       {/* ▼ 追加: ドラッグ中のオーバーレイUI */}
       {isDragging && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            border: '2px dashed #6b7280',
-            borderRadius: 8,
-            background: 'rgba(107, 114, 128, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            pointerEvents: 'none',
-          }}
-        >
-        </div>
+        <div className={styles.dragOverlay} />
       )}
 
       {userId && userName ? (
@@ -301,14 +285,7 @@ export const PostComposer = ({
       ) : userName ? (
         <Avatar name={userName} size={iconSize} />
       ) : (
-        <div
-          style={{
-            width: iconSize, height: iconSize, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#646cff,#a78bfa)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontSize: iconSize >= 40 ? '1.2rem' : '1rem', flexShrink: 0,
-          }}
-        >✍️</div>
+        <Avatar name="投稿" size={iconSize} />
       )}
       <div className={styles.inner}>
         {!isEmbedded && userName && (
@@ -373,7 +350,7 @@ export const PostComposer = ({
             className={`${styles.textarea} ${styles.textareaHighlighted} ${large ? styles.textareaLarge : styles.textareaSmall}`}
           />
           {showSuggestions && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>
+            <div className={styles.suggestionPopover}>
               <HashtagSuggestionList
                 suggestions={suggestions}
                 activeIndex={Math.min(suggestActiveIndex, suggestions.length - 1)}
@@ -435,7 +412,7 @@ export const PostComposer = ({
               multiple /* ← ▼ 追加: ファイル選択ダイアログで複数選択を許可 */
               accept={ACCEPTED_IMAGE_TYPES.join(',')}
               onChange={handleFileChange}
-              style={{ display: 'none' }}
+              className={styles.hiddenInput}
             />
           )}
           {onCancel && (
@@ -456,14 +433,13 @@ export const PostComposer = ({
               disabled={submitting}
               title={`写真を追加 (最大${MAX_IMAGES}枚)`}
             >
-              <img src={cameraIcon} alt="写真を追加" className={styles.cameraIcon} />
+              <img src={cameraIcon} alt="写真を追加" className={`${styles.cameraIcon} themed-icon`} />
             </button>
           )}
           <button
             onClick={onSubmit}
             disabled={!canSubmit}
-            className={`${styles.submitButton} ${large ? styles.submitButtonLarge : styles.submitButtonSmall}`}
-            style={{ background: canSubmit ? '#FF7430' : '#F89150', cursor: canSubmit ? 'pointer' : 'default' }}
+            className={`${styles.submitButton} ${large ? styles.submitButtonLarge : styles.submitButtonSmall} ${canSubmit ? styles.submitButtonActive : styles.submitButtonDisabled}`}
           >
             {submitting ? submittingLabel : submitLabel}
           </button>

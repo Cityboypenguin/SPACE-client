@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Pagination } from '../components/molecules/Pagination';
-import { useNotification } from '../context/NotificationContext';
+import { useNotification } from '../context/useNotification';
 import {
   listMyNotificationGroups,
   listMyNotifications,
@@ -21,6 +21,7 @@ import { storageUrl } from '../../../lib/storage';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import senshuIcon from '../../../assets/Senshu-Universe.svg';
 import { Tabs } from '../../../components/molecules/Tabs';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './NotificationListPage.module.css';
 import  mail  from '../../../assets/パーツ_メール.svg';
 import favorite from '../../../assets/パーツ_いいね.svg';
@@ -36,37 +37,37 @@ type ViewingActor = { actor: NotificationActor; type: string };
 
 function HeartIcon() {
   return (
-    <img src={favorite} alt="Favorite" width="20" height="20" />
+    <img src={favorite} alt="Favorite" width="20" height="20" className="themed-icon" />
   );
 }
 
 function ChatIcon() {
   return (
-    <img src={mail} alt="Mail" width="20" height="20" />
+    <img src={mail} alt="Mail" width="20" height="20" className="themed-icon" />
   );
 }
 
 function ReplyIcon() {
   return (
-    <img src={reply} alt="Reply" width="20" height="20" />
+    <img src={reply} alt="Reply" width="20" height="20" className="themed-icon" />
   );
 }
 
 function GroupIcon() {
   return (
-    <img src={community} alt="Community" width="20" height="20" />
+    <img src={community} alt="Community" width="20" height="20" className="themed-icon" />
   );
 }
 
 function BellIcon() {
   return (
-    <img src={notification} alt="Notification" width="20" height="20" />
+    <img src={notification} alt="Notification" width="20" height="20" className="themed-icon" />
   );
 }
 
 function PersonIcon() {
   return (
-    <img src={person} alt="Follow" width="20" height="20" />
+    <img src={person} alt="Follow" width="20" height="20" className="themed-icon" />
   );
 }
 
@@ -116,10 +117,12 @@ export const NotificationListPage = () => {
   );
 
   useEffect(() => {
-    setNotifPage(0);
-    setAnnouncePage(0);
-    setSelectMode(false);
-    setSelectedIds(new Set());
+    void Promise.resolve().then(() => {
+      setNotifPage(0);
+      setAnnouncePage(0);
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    });
   }, [pageSize]);
 
   useEffect(() => {
@@ -400,7 +403,7 @@ export const NotificationListPage = () => {
           <>
             {notifError && <p className={styles.error}>{notifError}</p>}
             {actorNotifs.length === 0 ? (
-              <p className={styles.empty}>通知はありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>通知はありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {actorNotifs.map((n) => (
@@ -451,9 +454,9 @@ export const NotificationListPage = () => {
           <>
             {notifError && <p className={styles.error}>{notifError}</p>}
             {notifLoading ? (
-              <p className={styles.loading}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             ) : pagedGroups.length === 0 ? (
-              <p className={styles.empty}>通知はありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>通知はありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {pagedGroups.map((group) => {
@@ -534,9 +537,9 @@ export const NotificationListPage = () => {
         {tab === 'announcements' && (
           <>
             {announceLoading ? (
-              <p className={styles.loading}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             ) : announceList.length === 0 ? (
-              <p className={styles.empty}>お知らせはありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>お知らせはありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {announceList.map((a) => (
