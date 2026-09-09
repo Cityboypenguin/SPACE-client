@@ -7,6 +7,7 @@ import { useHashtagSuggestions } from '../../hooks/useHashtagSuggestions';
 import { HashtagSuggestionList } from '../molecules/HashtagSuggestionList';
 import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
 import styles from './PostComposer.module.css';
+import { type Media } from '../../../../lib/media';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -55,14 +56,6 @@ function renderHashtagHighlight(text: string): ReactNode[] {
   return nodes;
 }
 
-type MinimalMedia = {
-  ID: string;
-  url: string;
-  contentType: string;
-  width?: number | null;
-  height?: number | null;
-};
-
 type Props = {
   value: string;
   onChange: (val: string) => void;
@@ -80,7 +73,7 @@ type Props = {
   accountId?: string;
   selectedFiles?: File[];
   onFileSelect?: (files: File[]) => void;
-  existingMedia?: MinimalMedia[];
+  existingMedia?: Media[];
   deletedMediaIDs?: string[];
   onDeleteExistingMedia?: (id: string) => void;
   onCancel?: () => void;

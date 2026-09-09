@@ -1,5 +1,6 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
+import { type Media } from '../../../lib/media';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -16,7 +17,7 @@ export type Message = {
   roomID: string;
   user: MessageUser;
   content: string;
-  media: { ID: string; url: string; contentType: string; width?: number | null; height?: number | null }[];
+  media: Media[];
   createdAt: string;
   updatedAt: string;
 };
@@ -151,11 +152,7 @@ const ListRoomMessagesDocument = graphql(`
         }
         content
         media {
-          ID
-          url
-          contentType
-          width
-          height
+          ...MediaFields
         }
         createdAt
         updatedAt

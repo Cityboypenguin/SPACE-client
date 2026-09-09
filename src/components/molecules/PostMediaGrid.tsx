@@ -1,18 +1,10 @@
 import { useState, type CSSProperties } from 'react';
 import { ImageLightbox } from '../organisms/ImageLightbox';
 import { storageUrl } from '../../lib/storage';
+import { type Media } from '../../lib/media';
 import styles from './PostMediaGrid.module.css';
 
-type MediaItem = {
-  ID: string;
-  url: string;
-  contentType: string;
-  // 画像の実寸。寸法を持たないメディアや、埋め戻し前の古いレコードでは null。
-  width?: number | null;
-  height?: number | null;
-};
-
-export const PostMediaGrid = ({ media, large = false }: { media: MediaItem[]; large?: boolean }) => {
+export const PostMediaGrid = ({ media, large = false }: { media: Media[]; large?: boolean }) => {
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   
   const images = media.filter((m) => m.contentType.startsWith('image/'));

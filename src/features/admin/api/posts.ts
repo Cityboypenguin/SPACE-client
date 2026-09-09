@@ -1,5 +1,6 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
+import { type Media as SharedMedia } from '../../../lib/media';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -18,13 +19,8 @@ export type PostFavorite = {
   };
 };
 
-export type Media = {
-  ID: string;
-  url: string;
-  contentType: string;
-  // 画像の実寸。寸法を持たないメディアや、埋め戻し前の古いレコードでは null。
-  width?: number | null;
-  height?: number | null;
+// 管理画面では作成日時も表示するため、共有の Media に足して使う。
+export type Media = SharedMedia & {
   createdAt: string;
 };
 
@@ -64,11 +60,7 @@ export const AdminPostFieldsFragment = graphql(`
       }
     }
     media {
-      ID
-      url
-      contentType
-      width
-      height
+      ...MediaFields
       createdAt
     }
   }

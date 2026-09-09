@@ -56,11 +56,7 @@ export const QUESTION_FIELDS = `
     total
   }
   media {
-    ID
-    url
-    contentType
-    width
-    height
+    ...MediaFields
   }
   createdAt
   updatedAt
@@ -77,11 +73,7 @@ export const ANSWER_FIELDS = `
   }
   body
   media {
-    ID
-    url
-    contentType
-    width
-    height
+    ...MediaFields
   }
   createdAt
   isMine
@@ -112,11 +104,7 @@ const QuestionsDocument = graphql(`
           total
         }
         media {
-          ID
-          url
-          contentType
-          width
-          height
+          ...MediaFields
         }
         createdAt
         updatedAt
@@ -148,11 +136,7 @@ const CreateQuestionDocument = graphql(`
         total
       }
       media {
-        ID
-        url
-        contentType
-        width
-        height
+        ...MediaFields
       }
       createdAt
       updatedAt
@@ -189,11 +173,7 @@ const AnswerQuestionDocument = graphql(`
       }
       body
       media {
-        ID
-        url
-        contentType
-        width
-        height
+        ...MediaFields
       }
       createdAt
       isMine
@@ -285,11 +265,7 @@ const QuestionAnswersDocument = graphql(`
           }
           body
           media {
-            ID
-            url
-            contentType
-            width
-            height
+            ...MediaFields
           }
           createdAt
           isMine

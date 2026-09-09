@@ -2,6 +2,7 @@ import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { storageUrl } from '../../../lib/storage';
 import { getUserToken } from './auth';
+import { MEDIA_FIELDS_RAW, type Media, type MediaInput } from '../../../lib/media';
 
 export type MessageUser = {
   ID: string;
@@ -12,22 +13,7 @@ export type MessageUser = {
 
 export const DELETED_ACCOUNT_ID = 'deleted-account';
 
-export type Media = {
-  ID: string;
-  url: string;
-  contentType: string;
-  // 画像の実寸。表示側がロード前に領域を確保するために使う。
-  // 寸法を持たないメディアや、埋め戻し前の古いレコードでは null。
-  width?: number | null;
-  height?: number | null;
-};
-
-export type MediaInput = {
-  objectKey: string;
-  contentType: string;
-  width?: number;
-  height?: number;
-};
+export type { Media, MediaInput };
 
 export type Message = {
   ID: string;
@@ -64,13 +50,7 @@ export const MESSAGE_FIELDS = `
     avatarUrl
   }
   content
-  media {
-    ID
-    url
-    contentType
-    width
-    height
-  }
+  media {${MEDIA_FIELDS_RAW}}
   createdAt
   updatedAt
   isMine
@@ -116,11 +96,7 @@ const SendMessageDocument = graphql(`
       }
       content
       media {
-        ID
-        url
-        contentType
-        width
-        height
+        ...MediaFields
       }
       createdAt
       updatedAt
@@ -142,11 +118,7 @@ const UpdateMessageDocument = graphql(`
       }
       content
       media {
-        ID
-        url
-        contentType
-        width
-        height
+        ...MediaFields
       }
       createdAt
       updatedAt
@@ -181,11 +153,7 @@ const ListMessagesDocument = graphql(`
         }
         content
         media {
-          ID
-          url
-          contentType
-          width
-          height
+          ...MediaFields
         }
         createdAt
         updatedAt

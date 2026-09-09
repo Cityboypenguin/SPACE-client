@@ -76,11 +76,7 @@ const MyNotificationsDocument = graphql(`
             accountID
           }
           media {
-            ID
-            url
-            contentType
-            width
-            height
+            ...MediaFields
           }
         }
         message
@@ -116,11 +112,7 @@ const MyNotificationGroupsDocument = graphql(`
             accountID
           }
           media {
-            ID
-            url
-            contentType
-            width
-            height
+            ...MediaFields
           }
         }
         message
@@ -157,11 +149,7 @@ const NotificationDocument = graphql(`
           accountID
         }
         media {
-          ID
-          url
-          contentType
-          width
-          height
+          ...MediaFields
         }
       }
       message

@@ -1,7 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
-import { type Media, type MediaInput } from './message';
+import { type Media, type MediaInput } from '../../../lib/media';
 
 export type { Media, MediaInput };
 
@@ -58,11 +58,7 @@ export const PostFieldsFragment = graphql(`
       }
     }
     media {
-      ID
-      url
-      contentType
-      width
-      height
+      ...MediaFields
     }
   }
 `);
