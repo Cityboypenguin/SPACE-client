@@ -3,7 +3,6 @@ import { ChatMessageBubble } from '../molecules/ChatMessageBubble';
 import { ChatInput } from '../molecules/ChatInput';
 import { ChatDateSeparator } from '../../../../components/atoms/ChatDateSeparator';
 import { NewMessagesBadge } from '../molecules/NewMessagesBadge';
-import { useAuth } from '../../context/useAuth';
 import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
 import { useChatScroll } from '../../hooks/useChatScroll';
@@ -17,7 +16,6 @@ type Props = {
 };
 
 export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
-  const { userId: currentUserID } = useAuth();
   const { messages, error, addMessage, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const {
     content, setContent,
@@ -29,7 +27,7 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
-  const { bottomRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
+  const { bottomRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, roomId, hasMoreAfter);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);

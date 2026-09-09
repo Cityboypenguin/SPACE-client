@@ -51,12 +51,7 @@ export const DMPage = () => {
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
-  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(
-    messages,
-    currentUserID,
-    roomId,
-    hasMoreAfter
-  );
+  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, roomId, hasMoreAfter);
 
   // 双方向スクロールページング
   const messageListRef = useRef<HTMLDivElement>(null);

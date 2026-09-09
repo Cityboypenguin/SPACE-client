@@ -12,7 +12,7 @@ import {
   createCourse,
   deleteCourse,
   type CourseImportStatus,
-  type Course,
+  type CourseWithRegisteredCount,
 } from '../api/courses';
 import { subscribeToAdminGraphQL } from '../api/adminGraphqlWs';
 import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '../../user/components/timetableConstants';
@@ -66,7 +66,7 @@ export const AdminCourseManagementPage = () => {
   const [filterKeyword, setFilterKeyword] = useState('');
   const [appliedFilter, setAppliedFilter] = useState<{ year?: number; semester?: string; dayOfWeek?: string; keyword?: string }>({});
   const [listOffset, setListOffset] = useState(0);
-  const [courseItems, setCourseItems] = useState<Course[]>([]);
+  const [courseItems, setCourseItems] = useState<CourseWithRegisteredCount[]>([]);
   const [courseTotal, setCourseTotal] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState('');
@@ -208,7 +208,7 @@ export const AdminCourseManagementPage = () => {
     }
   };
 
-  const handleDeleteCourse = async (course: Course, e: { stopPropagation(): void }) => {
+  const handleDeleteCourse = async (course: CourseWithRegisteredCount, e: { stopPropagation(): void }) => {
     e.stopPropagation();
     const warning = course.registeredCount > 0
       ? `この授業は${course.registeredCount}人が時間割に登録しています。削除するとその登録・チャット履歴（メッセージ・質問・投票）が全て失われます。`

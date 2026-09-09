@@ -1,144 +1,173 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type Message } from '../api/message';
 import { storageUrl } from '../../../lib/storage';
 
-export const useChatScroll = (
-  messages: Message[],
-  currentUserID: string | null | undefined,
-  roomId?: string,
-  hasMoreAfter?: boolean
-) => {
+// スクロール制御のための可変値。描画には使わないが、ルームを切り替えたら必ず初期状態に
+// 戻す必要がある（前のルームの「初回スクロール済み」や「既読件数」を引き継ぐと、
+// 新しいルームで初期スクロールが走らない・未読バッジが誤った件数になる）。
+type RoomScrollState = {
+  /** そのルームでの初回スクロール（未読位置 or 最下部）が完了したか */
+  initialScrolled: boolean;
+  /** 最下部を表示中か */
+  atBottom: boolean;
+  /** ユーザーが目にしたとみなせるメッセージ件数 */
+  seenCount: number;
+  /** 末尾メッセージ ID。プリペンド（過去の読み込み）とアペンド（新着）の区別に使う */
+  lastTailId: string | undefined;
+};
+
+const createRoomScrollState = (): RoomScrollState => ({
+  initialScrolled: false,
+  atBottom: false,
+  seenCount: 0,
+  lastTailId: undefined,
+});
+
+// 自分の発言かどうかは Message.isMine が持つため、閲覧者の ID は受け取らない。
+export const useChatScroll = (messages: Message[], roomId?: string, hasMoreAfter?: boolean) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const firstUnreadRef = useRef<HTMLDivElement>(null);
 
-  // 初回表示完了フラグ
-  const initialScrolledRef = useRef(false);
+  // ルームに紐づく可変状態は「どのルームのものか」ごと保持し、参照時に roomId のズレを見て
+  // 作り直す。リセットをレンダー中の副作用ではなく参照時の遅延初期化にすることで、
+  // 破棄されたレンダーでリセットだけが適用される事故が起きない。getRoomState() は
+  // 常に effect / イベントハンドラの中から呼ぶこと（レンダー中に呼んではいけない）。
+  const roomStateRef = useRef<{ roomId: string | undefined; state: RoomScrollState } | null>(null);
+  // roomId が変わったときだけ関数の同一性が変わるため、これを依存に含めた effect は
+  // ルーム切り替えで必ず再実行される。
+  const getRoomState = useCallback((): RoomScrollState => {
+    if (!roomStateRef.current || roomStateRef.current.roomId !== roomId) {
+      roomStateRef.current = { roomId, state: createRoomScrollState() };
+    }
+    return roomStateRef.current.state;
+  }, [roomId]);
 
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(false);
-  const isAtBottomRef = useRef(false);
-  const seenCountRef = useRef(0);
-  const lastKnownTailIdRef = useRef<string | undefined>(undefined);
-  const prevRoomIdRef = useRef<string | undefined>(roomId);
 
-  // ルーム切り替え時に状態を完全初期化
-  if (prevRoomIdRef.current !== roomId) {
-    prevRoomIdRef.current = roomId;
-    initialScrolledRef.current = false;
-    isAtBottomRef.current = false;
-    seenCountRef.current = 0;
-    lastKnownTailIdRef.current = undefined;
-    if (newMessageCount !== 0) {
-      setNewMessageCount(0);
-    }
+  // 表示に使う state のルーム切り替えリセット。レンダー中の setState は
+  // 「props の変化に合わせて state を調整する」React 公式のパターンで、コミット前に
+  // 再レンダーされるため、切り替え直後に前のルームのバッジが一瞬見えることがない。
+  const [renderedRoomId, setRenderedRoomId] = useState(roomId);
+  if (renderedRoomId !== roomId) {
+    setRenderedRoomId(roomId);
+    setNewMessageCount(0);
+    setIsAtBottom(false);
   }
 
-  // 1. 最下部スクロール（状況に応じて未読位置か最下部かを判定）
-  const scrollToInitialPosition = () => {
+  // 未読があれば未読の先頭へ、なければ最下部へ寄せる
+  const scrollToInitialPosition = useCallback(() => {
     if (firstUnreadRef.current) {
       firstUnreadRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
     } else {
       bottomRef.current?.scrollIntoView({ behavior: 'auto' });
     }
-  };
+  }, []);
 
-  // 2. 初回メッセージ読み込み時のスクロール決定（初回取得分の画像のみロード完了を待つ）
+  // 初回表示。画像の高さが確定する前にスクロールすると位置がずれるため、
+  // 初回取得分に含まれる画像のロード完了を待ってから位置を決める。
   useEffect(() => {
-    if (messages.length === 0 || initialScrolledRef.current) return;
+    const roomState = getRoomState();
+    if (messages.length === 0 || roomState.initialScrolled) return;
 
-    seenCountRef.current = messages.length;
-    lastKnownTailIdRef.current = messages[messages.length - 1]?.ID;
+    roomState.seenCount = messages.length;
+    roomState.lastTailId = messages[messages.length - 1]?.ID;
 
-    // 初回取得されたメッセージ内の画像URLのみ抽出
     const initialImageUrls = messages
       .flatMap((msg) => msg.media ?? [])
       .filter((media) => media.contentType.startsWith('image/'))
       .map((media) => storageUrl(media.url));
 
-    let isMounted = true;
-
     if (initialImageUrls.length === 0) {
       scrollToInitialPosition();
-      initialScrolledRef.current = true;
+      roomState.initialScrolled = true;
       return;
     }
 
-    // 初回取得分の画像のみ事前ロード
-    Promise.all(
-      initialImageUrls.map((url) => {
-        return new Promise<void>((resolve) => {
-          const img = new Image();
-          img.src = url;
-          // ロード成功・失敗どちらでも進行させる
-          img.onload = () => resolve();
-          img.onerror = () => resolve();
-        });
-      })
+    let cancelled = false;
+
+    void Promise.all(
+      initialImageUrls.map(
+        (url) =>
+          new Promise<void>((resolve) => {
+            const img = new Image();
+            img.src = url;
+            // ロード成功・失敗どちらでも先に進める（失敗した画像で待ち続けない）
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          }),
+      ),
     ).then(() => {
-      if (!isMounted || initialScrolledRef.current) return;
-      
-      // 画像ロード完了後に画面の高さが確定した状態でスクロールを実行
+      // ロード中にルームが切り替わった場合は、新しいルームの表示を動かさない
+      if (cancelled || roomState.initialScrolled) return;
       scrollToInitialPosition();
-      initialScrolledRef.current = true;
+      roomState.initialScrolled = true;
     });
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [messages]);
+  }, [messages, getRoomState, scrollToInitialPosition]);
 
-  // 3. 最下部領域の交差検知（初回スクロール完了後のみ有効）
+  // 最下部の可視判定。初回スクロールが終わるまでは、途中経過の位置を
+  // 「ユーザーが最下部を見ている」と誤認しないよう無視する。
   useEffect(() => {
     const el = bottomRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!initialScrolledRef.current) return;
+        const roomState = getRoomState();
+        if (!roomState.initialScrolled) return;
         const atBottom = entry.isIntersecting;
-        isAtBottomRef.current = atBottom;
+        roomState.atBottom = atBottom;
         setIsAtBottom(atBottom);
         if (atBottom) {
-          seenCountRef.current = messages.length;
+          roomState.seenCount = messages.length;
           setNewMessageCount(0);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [messages.length]);
+  }, [messages.length, getRoomState]);
 
-  // 4. リアルタイムでメッセージが追加された時の処理
+  // 末尾に新着が追加されたときのみ処理（プリペンドはスキップ）
+  // - 歴史閲覧中（hasMoreAfter=true）はページング中のためスクロール抑制
+  // - 一番下を見ているとき、または自分のメッセージなら自動スクロール
+  // - それ以外は未読バッジをインクリメント
   useEffect(() => {
-    if (!initialScrolledRef.current || messages.length === 0) return;
+    const roomState = getRoomState();
+    if (!roomState.initialScrolled || messages.length === 0) return;
 
     const tail = messages[messages.length - 1];
     if (!tail) return;
 
-    if (tail.ID === lastKnownTailIdRef.current) return;
-    lastKnownTailIdRef.current = tail.ID;
+    // 末尾 ID が変わっていない = 上方向のプリペンドのみ → スクロール不要
+    if (tail.ID === roomState.lastTailId) return;
+    roomState.lastTailId = tail.ID;
 
     if (hasMoreAfter) {
-      const unseen = messages.length - seenCountRef.current;
+      const unseen = messages.length - roomState.seenCount;
       setNewMessageCount(unseen > 0 ? unseen : 0);
       return;
     }
 
-    if (isAtBottomRef.current || tail.isMine) {
+    if (roomState.atBottom || tail.isMine) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      seenCountRef.current = messages.length;
+      roomState.seenCount = messages.length;
       setNewMessageCount(0);
     } else {
-      const unseen = messages.length - seenCountRef.current;
+      const unseen = messages.length - roomState.seenCount;
       setNewMessageCount(unseen > 0 ? unseen : 0);
     }
-  }, [messages, currentUserID, hasMoreAfter]);
+  }, [messages, hasMoreAfter, getRoomState]);
 
-  const scrollToLatest = () => {
+  const scrollToLatest = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    seenCountRef.current = messages.length;
+    getRoomState().seenCount = messages.length;
     setNewMessageCount(0);
-  };
+  }, [getRoomState, messages.length]);
 
   return {
     bottomRef,

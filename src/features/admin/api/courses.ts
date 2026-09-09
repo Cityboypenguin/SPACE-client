@@ -34,6 +34,12 @@ export type Course = {
   year: number;
   semester: string;
   createdAt: string;
+};
+
+// registeredCount（その授業を時間割に登録している人数）はサーバー側で都度集計されるため、
+// 実際に表示する一覧・作成のレスポンスでのみ選択している。個別取得や時間割経由の参照は
+// 集計を必要としないので、選択セットに合わせて基本形の Course と型を分けておく。
+export type CourseWithRegisteredCount = Course & {
   registeredCount: number;
 };
 
@@ -47,7 +53,7 @@ export type AdminCreateCourseInput = {
 };
 
 export type CoursePage = {
-  items: Course[];
+  items: CourseWithRegisteredCount[];
   total: number;
 };
 
@@ -140,7 +146,7 @@ const AdminCreateCourseDocument = graphql(`
   }
 `);
 
-export const createCourse = async (input: AdminCreateCourseInput): Promise<Course> => {
+export const createCourse = async (input: AdminCreateCourseInput): Promise<CourseWithRegisteredCount> => {
   const data = await requestDoc(AdminCreateCourseDocument, { input }, getAdminToken());
   return data.adminCreateCourse;
 };

@@ -52,7 +52,7 @@ export const CommunityRoomPage = () => {
     newMessageCount,
     isAtBottom,
     scrollToLatest,
-  } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
+  } = useChatScroll(messages, roomId, hasMoreAfter);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
