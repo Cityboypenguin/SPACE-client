@@ -1,4 +1,4 @@
-import { request } from './graphql';
+import { API_URL } from './graphql';
 import { USER_TOKEN_KEY } from './authStorage';
 import type { Media } from './media';
 
@@ -41,9 +41,15 @@ export const reportDimensionsOnLoad = (media: Media) => {
     if (!token) return;
 
     reported.add(media.ID);
-    // 表示の付随処理なので、失敗しても画面には影響させない。
+    // 共有の request() は使わない。あれは 401 を受けるとトークン更新を試み、
+    // 失敗すればアプリ全体をログアウトさせる。画像を眺めているだけの付随処理が
+    // ログアウトを引き起こしてよいはずがないので、素の fetch で投げっぱなしにする。
     // 次の機会に再送できるよう、失敗時は送信済みの印を戻す。
-    void request(MUTATION, { mediaID: media.ID, width, height }, token).catch(() => {
+    void fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ query: MUTATION, variables: { mediaID: media.ID, width, height } }),
+    }).catch(() => {
       reported.delete(media.ID);
     });
   };
