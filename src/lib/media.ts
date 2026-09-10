@@ -50,3 +50,10 @@ const mediaFieldNames = MediaFieldsFragment.definitions.flatMap((definition) => 
 
 /** 生のクエリ文字列に `media {${MEDIA_FIELDS_RAW}}` の形で埋め込む。 */
 export const MEDIA_FIELDS_RAW = `\n    ${mediaFieldNames.join('\n    ')}\n  `;
+
+/**
+ * ロード前に確保しておく表示領域の縦横比。
+ * 寸法が分かっていないメディアでは undefined を返し、確保をしない。
+ */
+export const reservedAspectRatio = (media: Media): string | undefined =>
+  media.width && media.height ? `${media.width} / ${media.height}` : undefined;

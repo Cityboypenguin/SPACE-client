@@ -1,7 +1,8 @@
 import { useState, type CSSProperties } from 'react';
 import { ImageLightbox } from '../organisms/ImageLightbox';
 import { storageUrl } from '../../lib/storage';
-import { type Media } from '../../lib/media';
+import { type Media, reservedAspectRatio } from '../../lib/media';
+import { reportDimensionsOnLoad } from '../../lib/reportMediaDimensions';
 import styles from './PostMediaGrid.module.css';
 
 export const PostMediaGrid = ({ media, large = false }: { media: Media[]; large?: boolean }) => {
@@ -45,17 +46,17 @@ export const PostMediaGrid = ({ media, large = false }: { media: Media[]; large?
         <div className={gridClassName} style={mediaVars}>
           {images.map((m, i) => {
             const url = storageUrl(m.url);
-            // 1枚のときだけ高さが縦横比で決まる（複数枚は固定高）。寸法が分かっていれば
-            // ロード前に同じ比率の領域を確保し、ロード完了時のレイアウト移動をなくす。
-            const reservedAspectRatio =
-              count === 1 && m.width && m.height ? `${m.width} / ${m.height}` : undefined;
+            // 1枚のときだけ高さが縦横比で決まる（複数枚は固定高）ので、そこだけ
+            // ロード前に領域を確保し、ロード完了時のレイアウト移動をなくす。
+            const aspectRatio = count === 1 ? reservedAspectRatio(m) : undefined;
             return (
               <img
                 key={m.ID}
                 src={url}
                 alt="添付画像"
                 className={imageClassName(i)}
-                style={reservedAspectRatio ? { aspectRatio: reservedAspectRatio } : undefined}
+                style={aspectRatio ? { aspectRatio } : undefined}
+                onLoad={reportDimensionsOnLoad(m)}
                 onClick={(e) => { e.stopPropagation(); setActiveImageIndex(i); }}
               />
             );
