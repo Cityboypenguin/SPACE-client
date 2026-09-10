@@ -175,6 +175,11 @@ export const useChatScroll = ({ messages, containerRef, roomId, hasMoreAfter }: 
     if (tail.ID === roomState.lastTailId) return;
     roomState.lastTailId = tail.ID;
 
+    // 新着が来た時点で初回表示の追従は役目を終える。ここで降ろさないと、
+    // 新着に合わせて動かした直後に初回分の画像がロードされたとき、
+    // 追従が初期位置（未読の先頭）へ引き戻してしまう。
+    roomState.initialPhaseDone = true;
+
     if (hasMoreAfter) {
       const unseen = messages.length - roomState.seenCount;
       setNewMessageCount(unseen > 0 ? unseen : 0);
