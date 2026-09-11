@@ -70,13 +70,14 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
     return poll.options.reduce((a, b) => (b.voteCount > a.voteCount ? b : a)).ID;
   }, [poll.options, totalVotes]);
 
-  // 選択肢を押した瞬間に投票を確定する(送信ボタンは無し)。複数選択可の投票では
-  // 選択済みの選択肢をもう一度押すと選択解除として再送信する。
+  // 選択肢を押した瞬間に投票を確定する(送信ボタンは無し)。選択済みの選択肢をもう一度
+  // 押すと選択解除として再送信する(選択が空になれば投票の取り消しになる)。
   const selectOption = async (optionID: string) => {
     if (!canVote || voting) return;
+    const isAlreadySelected = selected.includes(optionID);
     const next = poll.allowMultipleChoice
-      ? (selected.includes(optionID) ? selected.filter((id) => id !== optionID) : [...selected, optionID])
-      : [optionID];
+      ? (isAlreadySelected ? selected.filter((id) => id !== optionID) : [...selected, optionID])
+      : (isAlreadySelected ? [] : [optionID]);
     setSelected(next);
     setVoting(true);
     setError('');
@@ -163,7 +164,7 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
         })}
       </div>
 
-      <p className={styles.respondedCount}>{totalVotes}人が回答済み</p>
+      <p className={styles.respondedCount}>{poll.voterCount}人が回答済み</p>
 
       {error && <p className={styles.cardError}>{error}</p>}
     </div>

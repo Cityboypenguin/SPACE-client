@@ -123,19 +123,21 @@ type Props = {
   onDelete: () => void;
   isReadByPartner?: boolean;
   isAnonymousAuthor?: boolean;
+  // 書き込み不可のルーム(履修をやめた授業・終了した学期)では自分のメッセージでも編集させない。
+  editable?: boolean;
 };
 
 export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
-  onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor,
+  onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor, editable = true,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
-  const canEdit = isMine && msg.content.trim() !== '';
+  const canEdit = editable && isMine && msg.content.trim() !== '';
   const canShowActions = (canEdit || canDelete) && !isEditing;
   const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 

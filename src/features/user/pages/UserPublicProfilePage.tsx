@@ -305,7 +305,7 @@ export const UserPublicProfilePage = () => {
       {!isBlocked && (
         <ProfilePillButton
           icon={favoriteIconOn}
-          label={isFavorited ? 'お気に入り解除' : 'お気に入り'}
+          label={isFavorited ? 'お気に入り解除' : 'お気に入り登録'}
           onClick={handleFavoriteToggle}
           disabled={actionLoading}
           className={`${styles.profileFavoriteButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}
@@ -313,7 +313,7 @@ export const UserPublicProfilePage = () => {
         />
       )}
       <div className={styles.profileActionPair}>
-        <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} />
+        {!isBlocked && <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} />}
         <ProfilePillButton
           icon={dmIcon}
           onClick={handleDM}

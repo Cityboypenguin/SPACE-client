@@ -6,6 +6,7 @@ import {
 } from '../api/question';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { MEDIA_FIELDS_RAW } from '../../../lib/media';
 
 const QUESTION_ADDED_SUBSCRIPTION = `
   subscription QuestionAdded($roomID: ID!) {
@@ -15,13 +16,15 @@ const QUESTION_ADDED_SUBSCRIPTION = `
   }
 `;
 
-// questionUpdated は selectBestAnswer/cancelBestAnswer によってのみ発火し、
-// isAnswered と bestAnswer だけが変わる。質問一覧を開いている閲覧者全員に
-// 配信されるため、変わらない情報は含めない。
+// questionUpdated は selectBestAnswer/cancelBestAnswer(isAnswered と bestAnswer が
+// 変わる)と updateQuestion(本文と添付写真が変わる)で発火する。質問一覧を開いている
+// 閲覧者全員に配信されるため、変わらない投稿者情報や回答数は含めない。
 const QUESTION_UPDATED_SUBSCRIPTION = `
   subscription QuestionUpdated($roomID: ID!) {
     questionUpdated(roomID: $roomID) {
       ID
+      body
+      media {${MEDIA_FIELDS_RAW}}
       isAnswered
       bestAnswer {
         ID
@@ -41,7 +44,7 @@ const QUESTION_DELETED_SUBSCRIPTION = `
 `;
 
 type QuestionAddedData = { questionAdded: Question };
-type QuestionUpdatedData = { questionUpdated: QuestionBestAnswerUpdate };
+type QuestionUpdatedData = { questionUpdated: QuestionBestAnswerUpdate & QuestionBodyUpdate };
 type QuestionDeletedData = { questionDeleted: Pick<Question, 'ID'> };
 
 const PAGE_SIZE = 50;

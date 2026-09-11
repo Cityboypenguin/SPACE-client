@@ -17,6 +17,7 @@ const POLL_UPDATED_SUBSCRIPTION = `
   subscription PollUpdated($pollID: ID!) {
     pollUpdated(pollID: $pollID) {
       ID
+      voterCount
       options {
         ID
         label

@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { Pagination } from '../components/molecules/Pagination';
 import { searchCourses, type Course, type SearchCoursesResult } from '../api/course';
 import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '../components/timetableConstants';
 import styles from '../components/CourseSearch.module.css';
+
+const DEFAULT_PAGE_SIZE = 50;
+
+type SearchQuery = { dayOfWeek: string; period: number; keyword?: string };
 
 export const CourseSearchPage = () => {
   const navigate = useNavigate();
@@ -14,52 +19,64 @@ export const CourseSearchPage = () => {
   const [dayOfWeek, setDayOfWeek] = useState(locationState?.dayOfWeek ?? TIMETABLE_DAYS[0]);
   const [period, setPeriod] = useState(locationState?.period ?? TIMETABLE_PERIODS[0]);
   const [keyword, setKeyword] = useState('');
+  // ページ移動では「検索」を押した時点の条件のまま取得し直す(フォームを書き換えただけで
+  // ページを移動すると、表示中の結果と条件が食い違うため)。
+  // コマをクリックして遷移してきた場合（曜日・時限が指定済み）は、最初からその
+  // コマの授業を表示する。ページを開いた直後にもう一度「検索」を押させない。
+  const [query, setQuery] = useState<SearchQuery | null>(() => (
+    locationState?.dayOfWeek && locationState?.period
+      ? { dayOfWeek: locationState.dayOfWeek, period: locationState.period }
+      : null
+  ));
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [result, setResult] = useState<SearchCoursesResult | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
 
-  const runSearch = async () => {
-    setSearching(true);
-    setError('');
-    try {
-      const data = await searchCourses(dayOfWeek, period, keyword.trim() || undefined);
-      setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '授業の検索に失敗しました。');
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const handleSearchSubmit = (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    void runSearch();
-  };
-
-  // コマをクリックして遷移してきた場合（曜日・時限が指定済み）は、最初からその
-  // コマの授業を表示する。ページを開いた直後にもう一度「検索」を押させない。
   useEffect(() => {
-    if (!locationState?.dayOfWeek || !locationState?.period) return;
+    if (!query) return;
+    let active = true;
     (async () => {
       setSearching(true);
       setError('');
       try {
-        const data = await searchCourses(locationState.dayOfWeek!, locationState.period!, undefined);
-        setResult(data);
+        const data = await searchCourses(query.dayOfWeek, query.period, query.keyword, pageSize, page * pageSize);
+        if (active) setResult(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : '授業の検索に失敗しました。');
+        if (active) setError(err instanceof Error ? err.message : '授業の検索に失敗しました。');
       } finally {
-        setSearching(false);
+        if (active) setSearching(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => { active = false; };
+  }, [query, page, pageSize]);
+
+  const handleSearchSubmit = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    setQuery({ dayOfWeek, period, keyword: keyword.trim() || undefined });
+    setPage(0);
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    setPage(nextPage);
+    window.scrollTo(0, 0);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setPage(0);
+  };
 
   // ここでは registerTimetableEntry は呼ばない。選んだ授業は時間割の編集モードの
   // 下書きに追加されるだけで、実際の登録は編集モードの「完了」時にまとめて行う。
   const handleSelect = (course: Course) => {
     navigate('/timetable', { state: { pickedCourse: course } });
   };
+
+  const totalPages = result ? Math.max(1, Math.ceil(result.total / pageSize)) : 1;
+  const rangeStart = page * pageSize + 1;
+  const rangeEnd = page * pageSize + (result?.items.length ?? 0);
 
   return (
     <div>
@@ -99,29 +116,41 @@ export const CourseSearchPage = () => {
 
         {result && (
           <>
-            <p className={styles.resultCount}>{result.total}件中 {result.items.length}件を表示</p>
             {result.items.length === 0 ? (
-              <p className={styles.empty}>該当する授業が見つかりませんでした。</p>
+              <>
+                <p className={styles.resultCount}>{result.total}件</p>
+                <p className={styles.empty}>該当する授業が見つかりませんでした。</p>
+              </>
             ) : (
-              <ul className={styles.list}>
-                {result.items.map((course) => (
-                  <li key={course.ID} className={styles.item}>
-                    <div className={styles.itemBody}>
-                      <div className={styles.itemName}>{course.courseName}</div>
-                      <div className={styles.itemMeta}>{course.teacherName} ・ {course.dayOfWeek}曜{course.period}限</div>
-                    </div>
-                    <div className={styles.itemActions}>
-                      <button
-                        type="button"
-                        className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
-                        onClick={() => handleSelect(course)}
-                      >
-                        この授業を選択
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <p className={styles.resultCount}>{result.total}件中 {rangeStart}〜{rangeEnd}件を表示</p>
+                <ul className={styles.list}>
+                  {result.items.map((course) => (
+                    <li key={course.ID} className={styles.item}>
+                      <div className={styles.itemBody}>
+                        <div className={styles.itemName}>{course.courseName}</div>
+                        <div className={styles.itemMeta}>{course.teacherName} ・ {course.dayOfWeek}曜{course.period}限</div>
+                      </div>
+                      <div className={styles.itemActions}>
+                        <button
+                          type="button"
+                          className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
+                          onClick={() => handleSelect(course)}
+                        >
+                          この授業を選択
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              </>
             )}
           </>
         )}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { TimetableGrid } from '../components/TimetableGrid';
 import { TIMETABLE_DAYS } from '../components/timetableConstants';
@@ -40,6 +40,7 @@ const buildDraftFromEntries = (entries: TimetableEntry[]): TimetableDraft => {
 export const TimetablePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { mutate: mutateCache } = useSWRConfig();
 
   const { data: currentSemester } = useSWR('current-semester', () => getCurrentSemester(), semesterCacheOptions);
   const { data: courseYears } = useSWR('course-years', () => getCourseYears(), staticCacheOptions);
@@ -133,6 +134,9 @@ export const TimetablePage = () => {
         setEditMode(true);
         return;
       }
+      // 「破棄して最初から」を明示的に押した時だけ下書きを捨てる。背景クリック・Esc・
+      // ×での閉じは編集を始めること自体のキャンセルとして扱い、下書きも残す。
+      if (result.dismiss !== AppSwal.DismissReason.cancel) return;
       clearTimetableDraft(viewYear, viewSemester);
     }
 
@@ -200,6 +204,9 @@ export const TimetablePage = () => {
       clearTimetableDraft(viewYear, viewSemester);
       setEditMode(false);
       void mutate();
+      // 授業チャット(CourseRoomPage)は履修中かどうかを 'my-timetable' キャッシュで判定する
+      // ため、履修をやめた直後に古いキャッシュで書き込み可能と表示されないよう更新する。
+      void mutateCache('my-timetable');
     } catch (err) {
       setCommitError(err instanceof Error ? err.message : '時間割の保存に失敗しました。');
     } finally {

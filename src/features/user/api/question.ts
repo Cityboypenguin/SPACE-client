@@ -144,15 +144,18 @@ const CreateQuestionDocument = graphql(`
   }
 `);
 
-const UPDATE_QUESTION_MUTATION = `
-  mutation UpdateQuestion($id: ID!, $body: String!) {
-    updateQuestion(id: $id, body: $body) {
+const UpdateQuestionDocument = graphql(`
+  mutation UpdateQuestion($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {
+    updateQuestion(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {
       ID
       body
+      media {
+        ...MediaFields
+      }
       updatedAt
     }
   }
-`;
+`);
 
 const DELETE_QUESTION_MUTATION = `
   mutation DeleteQuestion($id: ID!) {
@@ -215,10 +218,13 @@ const CancelBestAnswerDocument = graphql(`
 `);
 
 const UpdateAnswerDocument = graphql(`
-  mutation UpdateAnswer($id: ID!, $body: String!) {
-    updateAnswer(id: $id, body: $body) {
+  mutation UpdateAnswer($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {
+    updateAnswer(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {
       ID
       body
+      media {
+        ...MediaFields
+      }
     }
   }
 `);
@@ -285,8 +291,10 @@ export type AnswerPage = { items: Answer[]; total: number };
 // (answers を含まない)。呼び出し側は既存の Question に上書きマージして使う。
 export type QuestionBestAnswerUpdate = Pick<Question, 'ID' | 'isAnswered' | 'bestAnswer' | 'updatedAt'>;
 export type AnswerLikeUpdate = Pick<Answer, 'ID' | 'likeCount' | 'likedByMe'>;
-export type AnswerBodyUpdate = Pick<Answer, 'ID' | 'body'>;
-export type QuestionBodyUpdate = Pick<Question, 'ID' | 'body' | 'updatedAt'>;
+// updateAnswer の応答は本文と添付写真だけを含む部分オブジェクト。
+export type AnswerBodyUpdate = Pick<Answer, 'ID' | 'body' | 'media'>;
+// updateQuestion の応答は本文と添付写真だけを含む部分オブジェクト。
+export type QuestionBodyUpdate = Pick<Question, 'ID' | 'body' | 'media' | 'updatedAt'>;
 
 export const listQuestions = async (roomID: string, limit = 50, offset = 0): Promise<QuestionPage> => {
   const data = await requestDoc(QuestionsDocument, { roomID, limit, offset }, getUserToken());
@@ -298,12 +306,12 @@ export const createQuestion = async (roomID: string, body: string, mediaInputs?:
   return data.createQuestion;
 };
 
-export const updateQuestionBody = async (id: string, body: string): Promise<QuestionBodyUpdate> => {
-  const data = await request<{ updateQuestion: QuestionBodyUpdate }>(
-    UPDATE_QUESTION_MUTATION,
-    { id, body },
-    getUserToken(),
-  );
+export const updateQuestionBody = async (
+  id: string,
+  body: string,
+  deletedMediaIDs: string[] = [],
+): Promise<QuestionBodyUpdate> => {
+  const data = await requestDoc(UpdateQuestionDocument, { id, body, deletedMediaIDs }, getUserToken());
   return data.updateQuestion;
 };
 
@@ -327,8 +335,12 @@ export const cancelBestAnswer = async (questionID: string): Promise<QuestionBest
   return data.cancelBestAnswer;
 };
 
-export const updateAnswer = async (id: string, body: string): Promise<AnswerBodyUpdate> => {
-  const data = await requestDoc(UpdateAnswerDocument, { id, body }, getUserToken());
+export const updateAnswer = async (
+  id: string,
+  body: string,
+  deletedMediaIDs: string[] = [],
+): Promise<AnswerBodyUpdate> => {
+  const data = await requestDoc(UpdateAnswerDocument, { id, body, deletedMediaIDs }, getUserToken());
   return data.updateAnswer;
 };
 

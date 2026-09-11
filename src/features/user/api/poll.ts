@@ -21,6 +21,8 @@ export type Poll = {
   question: string;
   allowMultipleChoice: boolean;
   options: PollOption[];
+  // 投票したユーザーの人数(複数選択では voteCount の合計と一致しない)。
+  voterCount: number;
   deadline?: string | null;
   createdAt: string;
   isMine: boolean;
@@ -47,6 +49,7 @@ export const POLL_FIELDS = `
     voteCount
     votedByMe
   }
+  voterCount
   deadline
   createdAt
   isMine
@@ -73,6 +76,7 @@ const PollsDocument = graphql(`
           voteCount
           votedByMe
         }
+        voterCount
         deadline
         createdAt
         isMine
@@ -103,6 +107,7 @@ const CreatePollDocument = graphql(`
         voteCount
         votedByMe
       }
+      voterCount
       deadline
       createdAt
       isMine
@@ -110,12 +115,13 @@ const CreatePollDocument = graphql(`
   }
 `);
 
-// 投票では options(得票数/自分の投票状況)しか変わらないため、変わらない
+// 投票では options(得票数/自分の投票状況)と投票者数しか変わらないため、変わらない
 // user/question/allowMultipleChoice 等は再取得しない。
 const VotePollDocument = graphql(`
   mutation VotePoll($pollID: ID!, $optionIDs: [ID!]!) {
     votePoll(pollID: $pollID, optionIDs: $optionIDs) {
       ID
+      voterCount
       options {
         ID
         label
@@ -134,9 +140,9 @@ const DeletePollDocument = graphql(`
 
 export type PollPage = { items: Poll[]; total: number; unvotedTotal: number };
 
-// votePoll/pollUpdated の応答は options(得票数)だけを含む部分オブジェクト。
+// votePoll/pollUpdated の応答は options(得票数)と投票者数だけを含む部分オブジェクト。
 // 呼び出し側は既存の Poll に上書きマージして使う。
-export type PollVoteUpdate = Pick<Poll, 'ID' | 'options'>;
+export type PollVoteUpdate = Pick<Poll, 'ID' | 'options' | 'voterCount'>;
 
 export const listPolls = async (roomID: string, limit = 50, offset = 0): Promise<PollPage> => {
   const data = await requestDoc(PollsDocument, { roomID, limit, offset }, getUserToken());

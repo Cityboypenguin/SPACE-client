@@ -92,6 +92,7 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
                   msg={msg}
                   isMine={msg.isMine}
                   canDelete={msg.isMine}
+                  editable={roomWritable}
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
                   isAnonymousAuthor={isAnonymousUser(msg.user)}

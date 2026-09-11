@@ -69,8 +69,8 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
     updateQuestion(updated);
   };
 
-  const handleUpdateQuestion = async (questionID: string, body: string) => {
-    const updated = await updateQuestionBody(questionID, body);
+  const handleUpdateQuestion = async (questionID: string, body: string, deletedMediaIDs: string[]) => {
+    const updated = await updateQuestionBody(questionID, body, deletedMediaIDs);
     updateQuestion(updated);
   };
 
@@ -79,8 +79,8 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
     removeQuestion(questionID);
   };
 
-  const handleUpdateAnswer = async (_questionID: string, answerID: string, body: string) => {
-    const updated = await updateAnswer(answerID, body);
+  const handleUpdateAnswer = async (_questionID: string, answerID: string, body: string, deletedMediaIDs: string[]) => {
+    const updated = await updateAnswer(answerID, body, deletedMediaIDs);
     answersState.updateAnswer(updated);
   };
 

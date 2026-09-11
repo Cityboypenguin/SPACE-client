@@ -13,12 +13,14 @@ import styles from '../QuestionBox.module.css';
 
 type Props = {
   answer: Answer;
+  // 書き込み不可のルーム(履修をやめた授業・終了した学期)では編集・いいねをさせない(削除は可)。
+  roomWritable: boolean;
   isBest: boolean;
   canSelectBest: boolean;
   canCancelBest: boolean;
   onSelectBest: () => Promise<void>;
   onCancelBest: () => Promise<void>;
-  onUpdate: (body: string) => Promise<void>;
+  onUpdate: (body: string, deletedMediaIDs: string[]) => Promise<void>;
   onDelete: () => Promise<void>;
   onLike: () => Promise<void>;
   onUnlike: () => Promise<void>;
@@ -28,18 +30,31 @@ type Props = {
 };
 
 export const AnswerItem = ({
-  answer, isBest, canSelectBest, canCancelBest,
+  answer, roomWritable, isBest, canSelectBest, canCancelBest,
   onSelectBest, onCancelBest, onUpdate, onDelete, onLike, onUnlike, rootRef,
 }: Props) => {
   const { theme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [editBody, setEditBody] = useState(answer.body);
+  // 編集中に外した写真。「保存」を押すまでは実際には削除しない。
+  const [editDeletedMediaIDs, setEditDeletedMediaIDs] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   // ベストアンサーに選ばれている間は編集・削除できない。
   const canEditOrDelete = answer.isMine && !isBest;
+  const canEdit = canEditOrDelete && roomWritable;
   const hasMenuActions = canEditOrDelete;
+
+  const editRemainingMedia = answer.media.filter((m) => !editDeletedMediaIDs.includes(m.ID));
+  // 投稿時と同じく、本文か写真のどちらかが残っていれば保存できる。
+  const canSaveEdit = !busy && (editBody.trim() !== '' || editRemainingMedia.length > 0);
+
+  const startEditing = () => {
+    setEditBody(answer.body);
+    setEditDeletedMediaIDs([]);
+    setEditing(true);
+  };
 
   const handleSelectBest = async () => {
     setBusy(true);
@@ -67,11 +82,11 @@ export const AnswerItem = ({
 
   const handleSaveEdit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!editBody.trim() || busy) return;
+    if (!canSaveEdit) return;
     setBusy(true);
     setError('');
     try {
-      await onUpdate(editBody.trim());
+      await onUpdate(editBody.trim(), editDeletedMediaIDs);
       setEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : '回答の編集に失敗しました。');
@@ -121,9 +136,11 @@ export const AnswerItem = ({
           {(close) => (
             canEditOrDelete && (
               <>
-                <DropdownMenuItem icon={editIcon} themedIcon onClick={() => { close(); setEditing(true); }}>
-                  編集
-                </DropdownMenuItem>
+                {canEdit && (
+                  <DropdownMenuItem icon={editIcon} themedIcon onClick={() => { close(); startEditing(); }}>
+                    編集
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); void handleDelete(); }}>
                   削除
                 </DropdownMenuItem>
@@ -142,20 +159,20 @@ export const AnswerItem = ({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
-                if (editBody.trim()) handleSaveEdit({ preventDefault: () => { } });
+                if (canSaveEdit) handleSaveEdit({ preventDefault: () => { } });
               }
             }}
             disabled={busy}
             maxLength={1000}
             className={styles.textarea}
           />
-          <button type="submit" disabled={busy || !editBody.trim()} className={styles.submitButton}>
+          <button type="submit" disabled={!canSaveEdit} className={styles.submitButton}>
             保存
           </button>
           <button
             type="button"
             disabled={busy}
-            onClick={() => { setEditing(false); setEditBody(answer.body); setError(''); }}
+            onClick={() => { setEditing(false); setEditBody(answer.body); setEditDeletedMediaIDs([]); setError(''); }}
             className={styles.toggleButton}
           >
             キャンセル
@@ -163,6 +180,25 @@ export const AnswerItem = ({
         </form>
       ) : (
         <ClampedText text={answer.body} maxLines={6} className={styles.answerBody} />
+      )}
+
+      {editing && editRemainingMedia.length > 0 && (
+        <div className={styles.mediaPreviewRow}>
+          {editRemainingMedia.map((m) => (
+            <div key={m.ID} className={styles.mediaThumb}>
+              <img src={m.url} alt="" className={styles.mediaThumbImg} />
+              <button
+                type="button"
+                className={styles.mediaThumbRemove}
+                onClick={() => setEditDeletedMediaIDs((prev) => [...prev, m.ID])}
+                disabled={busy}
+                aria-label="この写真を外す"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
       )}
 
       {!editing && answer.media.length > 0 && (
@@ -200,7 +236,7 @@ export const AnswerItem = ({
           <button
             type="button"
             className={styles.likeButton}
-            disabled={busy}
+            disabled={busy || !roomWritable}
             onClick={handleToggleLike}
           >
             <img

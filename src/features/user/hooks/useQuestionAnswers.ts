@@ -6,6 +6,7 @@ import {
 } from '../api/question';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { MEDIA_FIELDS_RAW } from '../../../lib/media';
 
 const ANSWER_ADDED_SUBSCRIPTION = `
   subscription AnswerAdded($questionID: ID!) {
@@ -15,13 +16,14 @@ const ANSWER_ADDED_SUBSCRIPTION = `
   }
 `;
 
-// answerUpdated は「いいね」(高頻度)と「編集」の両方で発火し、質問を開いている
-// 閲覧者全員に配信されるため、変わりうるフィールドだけに絞る(user 等は含めない)。
+// answerUpdated は「いいね」(高頻度)と「編集」(本文・添付写真)の両方で発火し、質問を
+// 開いている閲覧者全員に配信されるため、変わりうるフィールドだけに絞る(user 等は含めない)。
 const ANSWER_UPDATED_SUBSCRIPTION = `
   subscription AnswerUpdated($questionID: ID!) {
     answerUpdated(questionID: $questionID) {
       ID
       body
+      media {${MEDIA_FIELDS_RAW}}
       likeCount
       likedByMe
     }

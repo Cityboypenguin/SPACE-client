@@ -77,7 +77,7 @@ export const CreatePollForm = ({ onCreate }: Props) => {
 
   return (
     <form onSubmit={handleSubmit} className={styles.formCard}>
-      <p className={styles.formTitle}>質問内容</p>
+      <p className={styles.formTitle}>投票内容</p>
       <input
         type="text"
         value={question}
