@@ -2,6 +2,7 @@ import { request, requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 import { type MessageUser, type Media, type MediaInput } from './message';
+import { MEDIA_FIELDS_RAW } from '../../../lib/media';
 
 export type { Media, MediaInput };
 
@@ -55,9 +56,7 @@ export const QUESTION_FIELDS = `
   answers(limit: 0) {
     total
   }
-  media {
-    ...MediaFields
-  }
+  media {${MEDIA_FIELDS_RAW}}
   createdAt
   updatedAt
 `;
@@ -72,9 +71,7 @@ export const ANSWER_FIELDS = `
     avatarUrl
   }
   body
-  media {
-    ...MediaFields
-  }
+  media {${MEDIA_FIELDS_RAW}}
   createdAt
   isMine
   likeCount

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ChatMessageBubble } from '../molecules/ChatMessageBubble';
 import { ChatInput } from '../molecules/ChatInput';
 import { ChatDateSeparator } from '../../../../components/atoms/ChatDateSeparator';
+import { ChatUnreadSeparator } from '../../../../components/atoms/ChatUnreadSeparator';
 import { NewMessagesBadge } from '../molecules/NewMessagesBadge';
 import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
@@ -16,7 +17,7 @@ type Props = {
 };
 
 export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
-  const { messages, error, addMessage, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+  const { messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -31,7 +32,7 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
-  const { bottomRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll({
+  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll({
     messages,
     containerRef: messageListRef,
     roomId,
@@ -39,6 +40,9 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
   });
 
   const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
+
+  // ルームを開いた時点の既読位置。開いている間に既読が進んでも区切り線は動かさない(DM・コミュニティと同じ)。
+  const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
 
   const loadOlderWithScrollRestore = async () => {
     beginRestore();
@@ -82,12 +86,19 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
 
           {messages.map((msg, index) => {
             const prevMsg = index > 0 ? messages[index - 1] : null;
+            const msgTimeMs = new Date(msg.createdAt).getTime();
+            const prevMsgTimeMs = prevMsg ? new Date(prevMsg.createdAt).getTime() : null;
+            // 授業チャットは匿名表示のため、自分の投稿かどうかは user.ID ではなく isMine で判定する。
+            const isFirstUnread = !msg.isMine && initialLastReadAtMs !== null
+              && msgTimeMs > initialLastReadAtMs
+              && (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
             return (
               <div key={msg.ID} className={styles.messageGroup}>
                 <ChatDateSeparator
                   currentCreatedAt={msg.createdAt}
                   prevCreatedAt={prevMsg?.createdAt}
                 />
+                {isFirstUnread && <ChatUnreadSeparator ref={firstUnreadRef} />}
                 <ChatMessageBubble
                   msg={msg}
                   isMine={msg.isMine}

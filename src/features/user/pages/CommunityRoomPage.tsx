@@ -6,6 +6,7 @@ import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPan
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
+import { ChatUnreadSeparator } from '../../../components/atoms/ChatUnreadSeparator';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
@@ -214,11 +215,7 @@ export const CommunityRoomPage = () => {
                   currentCreatedAt={msg.createdAt}
                   prevCreatedAt={prevMsg?.createdAt}
                 />
-                {isFirstUnread && (
-                  <div ref={firstUnreadRef} className={styles.unreadSeparator}>
-                    未読メッセージ
-                  </div>
-                )}
+                {isFirstUnread && <ChatUnreadSeparator ref={firstUnreadRef} />}
                 <ChatMessageBubble
                   msg={msg}
                   isMine={isMine}

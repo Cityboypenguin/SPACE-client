@@ -1,0 +1,17 @@
+.separator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-danger);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-danger);
+}

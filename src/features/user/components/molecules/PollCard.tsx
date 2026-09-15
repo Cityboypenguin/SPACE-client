@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { type Poll } from '../../api/poll';
 import { BarChartIcon } from '../../../../components/atoms/BarChartIcon';
+import { AppSwal } from '../../../../lib/swal';
 import styles from '../PollBox.module.css';
 
 type Props = {
@@ -92,7 +93,14 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
   };
 
   const handleDelete = async () => {
-    if (deleting || !window.confirm('この投票を削除しますか?')) return;
+    if (deleting) return;
+    const result = await AppSwal.fire({
+      text: 'この投票を削除しますか？',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
+      showCancelButton: true,
+    });
+    if (!result.isConfirmed) return;
     setDeleting(true);
     setError('');
     try {

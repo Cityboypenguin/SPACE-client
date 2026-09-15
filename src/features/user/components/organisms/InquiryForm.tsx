@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Modal } from '../../../../components/molecules/Modal';
 import { createInquiry, type InquiryCategory } from '../../api/inquiry';
 import styles from '../../pages/InquiryPage.module.css';
 
@@ -56,19 +57,18 @@ export const InquiryForm = ({ onSubmitted, onComplete }: Props) => {
     }
   };
 
+  // 画面中央への配置とカードの背景は Modal 側が持つ(InquiryPage の完了表示と同じ見た目にする)。
   if (submitted && onComplete) {
     return (
-      <div className={styles.overlay}>
-        <div className={styles.modal}>
-          <p className={styles.modalText}>
-            送信が完了しました。<br />
-            お問い合わせいただきありがとうございます。
-          </p>
-          <button className={styles.modalBackBtn} onClick={onComplete}>
-            戻る
-          </button>
-        </div>
-      </div>
+      <Modal overlayClassName={styles.overlay} className={styles.modal}>
+        <p className={styles.modalText}>
+          送信が完了しました。<br />
+          お問い合わせいただきありがとうございます。
+        </p>
+        <button className={styles.modalBackBtn} onClick={onComplete}>
+          戻る
+        </button>
+      </Modal>
     );
   }
 

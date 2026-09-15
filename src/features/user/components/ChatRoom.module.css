@@ -451,24 +451,6 @@
   cursor: pointer;
 }
 
-.unreadSeparator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--color-danger);
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 4px 0;
-}
-
-.unreadSeparator::before,
-.unreadSeparator::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--color-danger);
-}
-
 .readReceipt {
   font-size: 0.65rem;
   color: var(--color-primary);

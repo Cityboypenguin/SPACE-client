@@ -176,7 +176,7 @@
   padding: 0.45rem 1.25rem;
   border-radius: 999px;
   cursor: pointer;
-  background: #fff;
+  background: var(--color-bg-elevated);
   border: 1.5px solid var(--color-border);
   color: var(--color-text);
   font-weight: 600;
