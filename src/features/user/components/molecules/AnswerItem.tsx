@@ -13,7 +13,9 @@ import styles from '../QuestionBox.module.css';
 
 type Props = {
   answer: Answer;
-  // 書き込み不可のルーム(履修をやめた授業・終了した学期)では編集・いいねをさせない(削除は可)。
+  // 書き込み不可のルーム(履修をやめた授業・終了した学期)では編集・いいねをさせない。
+  // 削除はメニューに出したままにしてあるが、サーバー側でも同様に拒否されるため、
+  // 押すとエラーメッセージが出る(投票の削除と同じ挙動)。
   roomWritable: boolean;
   isBest: boolean;
   canSelectBest: boolean;
