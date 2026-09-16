@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  メンション通知用アイコン。"@" をモチーフにした線画。
+  他の パーツ_*.svg と同じく黒(#231815)のモノクロで描き、ダークテーマでは
+  img.themed-icon の filter: invert(1) で白線になる（src/index.css 参照）。
+  内側の円が "a" のボウル、そこから右へ伸びるフックが外周リングにつながり、
+  リングは右下を開いたまま終わる（"@" の書き終わり）。
+-->
+<svg id="_レイヤー_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512">
+  <g fill="none" stroke="#231815" stroke-width="42" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="256" cy="256" r="86"/>
+    <path d="M342,170 V288 a60,60 0 0 0 120,0 V256 a206,206 0 1 0 -79,162"/>
+  </g>
+</svg>

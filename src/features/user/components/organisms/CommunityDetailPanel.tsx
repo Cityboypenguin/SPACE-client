@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
 import { useClickOutside } from '../../../../hooks/useClickOutside';
-import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
+import { getCommunityMembers, type Community } from '../../api/community';
+import { staticCacheOptions } from '../../cache/swrOptions';
+import { communityMembersKey } from '../../cache/communityMembers';
 import { storageUrl } from '../../../../lib/storage';
 import personIcon from '../../../../assets/パーツ_人間.svg';
 import redLeaveIcon from '../../../../assets/パーツ_退出（赤）.svg';
@@ -24,15 +27,17 @@ type Props = {
 
 export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, onLeave, onReport }: Props) => {
   const navigate = useNavigate();
-  const [members, setMembers] = useState<CommunityMember[]>([]);
   const [showMenu, setShowMenu] = useState(false);
   const menuWrapRef = useClickOutside<HTMLDivElement>(showMenu, () => setShowMenu(false));
 
-  useEffect(() => {
-    getCommunityMembers(community.ID)
-      .then(setMembers)
-      .catch(() => {});
-  }, [community.ID]);
+  // このパネルは開閉のたびにマウントされるので、素の useEffect だと開くたびに
+  // 同じ問い合わせが飛ぶ。共通キーのキャッシュから描画し、再取得はメンバーを
+  // 変更した側の invalidateCommunityMembers() に任せる。
+  const { data: members = [] } = useSWR(
+    communityMembersKey(community.ID),
+    ([, cid]: [string, string]) => getCommunityMembers(cid),
+    staticCacheOptions,
+  );
 
   const returnPath = `/community/chat/${community.roomID}`;
 

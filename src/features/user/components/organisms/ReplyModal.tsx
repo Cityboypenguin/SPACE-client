@@ -9,6 +9,7 @@ import { storageUrl } from '../../../../lib/storage';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './ReplyModal.module.css';
 import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
+import { useMentionNavigation } from '../../hooks/useMentionNavigation';
 
 type Props = {
   post: Post;
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userName }: Props) => {
+  const { currentUserID, onMentionClick } = useMentionNavigation();
   const [content, setContent] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -64,7 +66,16 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
                 <span className={styles.previewAccount}>@{post.user.accountID}</span>
                 <span className={styles.previewAccount}> · {formatTime(post.createdAt)}</span>
               </div>
-              {post.content && <p className={styles.previewContent}>{renderTextWithLinks({ text: post.content })}</p>}
+              {post.content && (
+                <p className={styles.previewContent}>
+                  {renderTextWithLinks({
+                    text: post.content,
+                    mentions: post.mentions,
+                    currentUserID,
+                    onMentionClick,
+                  })}
+                </p>
+              )}
               {post.media && post.media.length > 0 && (
                 <div className={styles.previewImages}>
                   {post.media.filter(m => m.contentType.startsWith('image/')).slice(0, 4).map((m) => (

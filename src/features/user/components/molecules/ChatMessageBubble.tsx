@@ -14,8 +14,8 @@ import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { reservedAspectRatio } from '../../../../lib/media';
 import { reportDimensionsOnLoad } from '../../../../lib/reportMediaDimensions';
 import styles from '../ChatRoom.module.css';
-
-const URL_REGEX = /(https?:\/\/[^\s 《》「」（）、。！？]+)/g;
+import { renderChatText } from '../../../../lib/renderTextWithLinks';
+import { useMentionNavigation } from '../../hooks/useMentionNavigation';
 
 // これより長く触れていたら「タップ」ではなく長押しとみなし、メニューを開かない。
 // 長押しは OS 標準のテキスト選択（コピー）に使ってもらう。
@@ -23,26 +23,6 @@ const TAP_MAX_DURATION_MS = 400;
 
 // マウスではなく指で操作する端末か。長押しやテキスト選択の扱いを分けるのに使う。
 const isCoarsePointer = () => window.matchMedia('(pointer: coarse)').matches;
-
-const renderWithLinks = (text: string) => {
-  const parts = text.split(URL_REGEX);
-  return parts.map((part, i) =>
-    URL_REGEX.test(part) ? (
-      <a
-        key={i}
-        href={part}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={styles.messageLink}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {part}
-      </a>
-    ) : (
-      part
-    )
-  );
-};
 
 const getFileIcon = (contentType: string): string => {
   if (contentType.includes('word')) return '📝';
@@ -200,6 +180,7 @@ export const ChatMessageBubble = ({
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { currentUserID, onMentionClick } = useMentionNavigation();
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
   const canEdit = editable && isMine && msg.content.trim() !== '';
@@ -207,6 +188,16 @@ export const ChatMessageBubble = ({
   const canShowActions = (canEdit || canDelete || canReply) && !isEditing;
   const isReply = !!msg.replyToID;
   const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
+
+  // チャット本文の描画。URL とメンションだけを扱う（ハッシュタグは renderChatText 側で対象外）。
+  const renderMessageBody = (text: string) => renderChatText({
+    text,
+    linkClassName: styles.messageLink,
+    mentions: msg.mentions,
+    currentUserID,
+    onMentionClick,
+    stopPropagation: true,
+  });
 
   const [menuOpen, setMenuOpen] = useState(false);
   // タップとスクロール／スワイプを見分けるための記録。
@@ -408,12 +399,12 @@ export const ChatMessageBubble = ({
             {isReply ? (
               <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
                 <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
-                {hasText && renderWithLinks(msg.content)}
+                {hasText && renderMessageBody(msg.content)}
               </div>
             ) : (
               hasText && (
                 <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                  {renderWithLinks(msg.content)}
+                  {renderMessageBody(msg.content)}
                 </div>
               )
             )}

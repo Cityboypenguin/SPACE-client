@@ -16,7 +16,7 @@ import {
   type NotificationActor,
 } from '../api/notification';
 import { listAnnouncements } from '../api/announcement';
-import { MESSAGE_REPLY_TYPE, replyNotificationLink } from '../lib/replyNotification';
+import { MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
@@ -28,6 +28,7 @@ import  mail  from '../../../assets/パーツ_メール.svg';
 import favorite from '../../../assets/パーツ_いいね.svg';
 import community from '../../../assets/パーツ_コミュニティマーク.svg';
 import reply from '../../../assets/パーツ_コメント.svg';
+import mention from '../../../assets/パーツ_メンション.svg';
 import notification from '../../../assets/パーツ_通知.svg';
 import person from '../../../assets/パーツ_お気に入り.svg';
 import { AppSwal } from '../../../lib/swal';
@@ -72,10 +73,18 @@ function PersonIcon() {
   );
 }
 
+function MentionIcon() {
+  return (
+    <img src={mention} alt="Mention" width="20" height="20" className="themed-icon" />
+  );
+}
+
 const TYPE_ICON: Record<string, ReactNode> = {
   favorite: <HeartIcon />,
   reply: <ReplyIcon />,
   [MESSAGE_REPLY_TYPE]: <ReplyIcon />,
+  [MENTION_TYPE]: <MentionIcon />,
+  [MESSAGE_MENTION_TYPE]: <MentionIcon />,
   dm: <ChatIcon />,
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
@@ -222,7 +231,7 @@ export const NotificationListPage = () => {
 
   const openGroup = (group: (typeof pagedGroups)[number]) => {
     // 返信通知は通知詳細を挟まず、該当メッセージまでジャンプして開く
-    const replyLink = group.type === MESSAGE_REPLY_TYPE
+    const replyLink = isMessageJumpNotification(group.type)
       ? replyNotificationLink(group.targetMessage?.room.type, group.targetMessage?.roomID, group.targetMessage?.ID)
       : null;
     if (group.type === 'dm' && group.actor) {

@@ -1,6 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
+import { invalidateCommunityMembers } from '../cache/communityMembers';
 
 export type Community = {
   ID: string;
@@ -22,7 +23,6 @@ export type CommunityMember = {
     ID: string;
     accountID: string;
     name: string;
-    email: string;
     avatarUrl?: string | null;
   };
   role: string;
@@ -109,7 +109,6 @@ const GetCommunityMembersDocument = graphql(`
         ID
         accountID
         name
-        email
         avatarUrl
       }
       role
@@ -235,16 +234,22 @@ export const updateCommunityInfo = async (
   return data.updateCommunity;
 };
 
+// 以下のメンバー変更系は、成功後に必ずメンバー一覧のキャッシュを捨てる。
+// 呼び出し側で無効化を書き忘れると古い一覧が残り続けるため、ここに寄せている
+// （メンバー一覧は revalidateIfStale: false で読んでいる。cache/communityMembers.ts 参照）。
 export const kickUserFromCommunity = async (communityID: string, userID: string): Promise<void> => {
   await requestDoc(KickUserFromCommunityDocument, { communityID, userID }, getUserToken());
+  await invalidateCommunityMembers(communityID);
 };
 
 export const promoteToCommunityOwner = async (communityID: string, userID: string): Promise<void> => {
   await requestDoc(PromoteToCommunityOwnerDocument, { communityID, userID }, getUserToken());
+  await invalidateCommunityMembers(communityID);
 };
 
 export const demoteFromCommunityOwner = async (communityID: string, userID: string): Promise<void> => {
   await requestDoc(DemoteFromCommunityOwnerDocument, { communityID, userID }, getUserToken());
+  await invalidateCommunityMembers(communityID);
 };
 
 export const updateCommunityMembers = async (
@@ -252,6 +257,7 @@ export const updateCommunityMembers = async (
   updates: CommunityMemberUpdateInput[],
 ): Promise<void> => {
   await requestDoc(UpdateCommunityMembersDocument, { communityID, updates }, getUserToken());
+  await invalidateCommunityMembers(communityID);
 };
 
 export const getRandomCommunities = async (limit: number): Promise<Community[]> => {

@@ -39,8 +39,10 @@ import { useToast } from '../../../context/useToast';
 import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postListCache';
 import { stableCacheOptions } from '../cache/swrOptions';
 import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
+import { useMentionNavigation } from '../hooks/useMentionNavigation';
 
 export const PostDetailPage = () => {
+  const { currentUserID, onMentionClick } = useMentionNavigation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userId } = useAuth();
@@ -398,7 +400,16 @@ export const PostDetailPage = () => {
                     />
                   </div>
                 ) : (
-                  post.content && <p className={styles.postContent}>{renderTextWithLinks({ text: post.content })}</p>
+                  post.content && (
+                    <p className={styles.postContent}>
+                      {renderTextWithLinks({
+                        text: post.content,
+                        mentions: post.mentions,
+                        currentUserID,
+                        onMentionClick,
+                      })}
+                    </p>
+                  )
                 )}
 
                 {!isEditing && post.media && post.media.length > 0 && (

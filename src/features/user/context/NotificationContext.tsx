@@ -10,7 +10,7 @@ import { NotificationContext } from './notificationContextValue';
 import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
 import { emitUnreadRoomUpdate } from '../hooks/useUnreadSubscription';
-import { MESSAGE_REPLY_TYPE, replyNotificationLink } from '../lib/replyNotification';
+import { isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 
 import { SSE_URL, refreshUserAccessToken } from '../../../lib/graphql';
 import { USER_TOKEN_KEY } from '../../../lib/authStorage';
@@ -164,8 +164,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           } else if (payload.type === 'dm' && payload.targetType === 'room' && payload.targetID) {
             // DM は通知詳細をスキップして個別 DM ルームへ直行（通知一覧のタップ挙動と揃える）
             link = `/dm/${payload.targetID}`;
-          } else if (payload.type === MESSAGE_REPLY_TYPE) {
-            // 返信通知はルームを開いて該当メッセージまでジャンプする
+          } else if (isMessageJumpNotification(payload.type)) {
+            // 返信・チャットのメンション通知はルームを開いて該当メッセージまでジャンプする
             link = replyNotificationLink(payload.roomType, payload.roomID, payload.targetID) ?? link;
           }
           console.log('[SSE] calling addToast:', payload.message, link);

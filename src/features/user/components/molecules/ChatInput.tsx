@@ -6,6 +6,8 @@ import { MAX_MESSAGE_LENGTH, countMessageLength } from '../../constants/chat';
 import { type Message } from '../../api/message';
 import { storageUrl } from '../../../../lib/storage';
 import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
+import { MentionSuggestionList } from './MentionSuggestionList';
+import { applyMention, getActiveNameMention, type MentionCandidate } from '../../../../lib/mentions';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -16,6 +18,18 @@ const ACCEPTED_FILE_TYPES = [
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
+const MENTION_SUGGEST_LIMIT = 8;
+
+// 入力中の "@クエリ" に対する候補を、ルームのメンバーから前方一致で絞り込む。
+// メンバー一覧は取得済みなのでサーバーには問い合わせない（通信ゼロ）。
+// 候補が尽きればサジェストは自然に閉じるので、"@" のあとに普通の文章を書いた場合も邪魔しない。
+const filterMentionCandidates = (candidates: MentionCandidate[], query: string): MentionCandidate[] => {
+  if (query === '') return candidates.slice(0, MENTION_SUGGEST_LIMIT);
+  const lower = query.toLowerCase();
+  return candidates
+    .filter((c) => c.name.toLowerCase().startsWith(lower) || c.accountID.toLowerCase().startsWith(lower))
+    .slice(0, MENTION_SUGGEST_LIMIT);
+};
 
 // 返信先バーに出す1行プレビュー。本文が無いときは添付の種類で代替する。
 const replyPreviewText = (msg: Message): string => {
@@ -38,15 +52,72 @@ type Props = {
   // 返信中のメッセージ。指定すると入力欄の上に返信先バーを表示する。
   replyTarget?: Message | null;
   onCancelReply?: () => void;
+  // メンション候補（コミュニティのみ）。onMentionSelect を渡したルームだけが
+  // メンション対応とみなされる。
+  // コミュニティのメンションは "@表示名" で本文からは終端を決められないため、
+  // ここで選んだ相手だけが onMentionSelect 経由で送信対象になる。
+  mentionCandidates?: MentionCandidate[];
+  onMentionSelect?: (candidate: MentionCandidate) => void;
+  // "@" を打ち始めた瞬間に1回だけ呼ばれる。候補一覧を取り直してもらうためのフック。
+  // チャットを開いたまま新しいメンバーが入ってきても、次にメンションを打ち始めた
+  // 時点で候補に現れるようにする。
+  onMentionQueryStart?: () => void;
 };
 
-export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked, replyTarget, onCancelReply }: Props) => {
+export const ChatInput = ({
+  value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
+  replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryStart,
+}: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const { theme } = useTheme();
+
+  // メンションサジェストの状態（PostComposer と同じ構造）。
+  const [caretPos, setCaretPos] = useState(0);
+  const [suggestDismissed, setSuggestDismissed] = useState(false);
+  const [suggestActiveIndex, setSuggestActiveIndex] = useState(0);
+
+  // メンション対応かどうかは候補の件数ではなく onMentionSelect の有無で決める。
+  // 件数で判定すると「候補がまだ空 → 入力中と判定されない → 取り直しも走らない」と
+  // いう膠着が起きるため（初回ロード中や、新メンバー加入前のキャッシュがある場合）。
+  const mentionsEnabled = !!onMentionSelect;
+  const activeMention = mentionsEnabled && !suggestDismissed
+    ? getActiveNameMention(value, caretPos)
+    : null;
+  const mentionSuggestions = activeMention
+    ? filterMentionCandidates(mentionCandidates, activeMention.query)
+    : [];
+  const showMentionSuggestions = mentionSuggestions.length > 0;
+
+  // "@" を打ち始めた立ち上がりでだけ候補の取り直しを依頼する（入力のたびには呼ばない）。
+  const mentionQueryStartedRef = useRef(false);
+  useEffect(() => {
+    const started = activeMention !== null;
+    if (started && !mentionQueryStartedRef.current) {
+      onMentionQueryStart?.();
+    }
+    mentionQueryStartedRef.current = started;
+  }, [activeMention, onMentionQueryStart]);
+
+  const selectMentionSuggestion = (candidate: MentionCandidate) => {
+    if (!activeMention) return;
+    // コミュニティのメンションは "@表示名"。選んだ相手を親に伝えて送信対象に含めてもらう。
+    const { value: newValue, caret } = applyMention(value, activeMention, candidate.name);
+    onChange(newValue);
+    onMentionSelect?.(candidate);
+    setSuggestDismissed(true);
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        el.selectionStart = el.selectionEnd = caret;
+        setCaretPos(caret);
+      }
+    });
+  };
 
   useEffect(() => {
     if (value === '' && textareaRef.current) {
@@ -265,17 +336,57 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           className={styles.hiddenInput}
         />
         <div className={styles.inputFieldWrap}>
+          {showMentionSuggestions && (
+            <div className={styles.mentionSuggestionPopover}>
+              <MentionSuggestionList
+                suggestions={mentionSuggestions}
+                activeIndex={Math.min(suggestActiveIndex, mentionSuggestions.length - 1)}
+                onSelect={selectMentionSuggestion}
+                onHover={setSuggestActiveIndex}
+              />
+            </div>
+          )}
           <textarea
             ref={textareaRef}
             value={value}
             rows={1}
             onChange={(e) => {
               onChange(e.target.value);
+              setCaretPos(e.target.selectionStart ?? 0);
+              setSuggestDismissed(false);
+              setSuggestActiveIndex(0);
               e.target.style.height = 'auto';
               e.target.style.height = `${e.target.scrollHeight}px`;
             }}
+            onKeyUp={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
+            onClick={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
             onPaste={handlePaste}
             onKeyDown={(e) => {
+              // 候補が出ているあいだは、送信・改行より先にサジェスト操作を優先する。
+              // IME変換中の Enter 等は確定操作なので横取りしない。
+              if (showMentionSuggestions && !e.nativeEvent.isComposing) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSuggestActiveIndex((prev) => {
+                    const clamped = Math.min(prev, mentionSuggestions.length - 1);
+                    return e.key === 'ArrowDown'
+                      ? Math.min(clamped + 1, mentionSuggestions.length - 1)
+                      : Math.max(clamped - 1, 0);
+                  });
+                  return;
+                }
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                  // 候補が出ているときの Enter は確定（送信も改行もしない）。
+                  e.preventDefault();
+                  const chosen = mentionSuggestions[Math.min(suggestActiveIndex, mentionSuggestions.length - 1)];
+                  if (chosen) selectMentionSuggestion(chosen);
+                  return;
+                }
+                if (e.key === 'Escape') {
+                  setSuggestDismissed(true);
+                  return;
+                }
+              }
               // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
               // Enterは改行として扱い、送信は送信ボタンのみで行う。
               // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても

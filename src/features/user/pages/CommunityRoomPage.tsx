@@ -10,6 +10,7 @@ import { ChatUnreadSeparator } from '../../../components/atoms/ChatUnreadSeparat
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
+import { getMentionCandidates } from '../api/message';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useAuth } from '../context/useAuth';
@@ -20,6 +21,7 @@ import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../hooks/useScrollToMessage';
 import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
+import { invalidateCommunityMembers } from '../cache/communityMembers';
 import styles from '../components/ChatRoom.module.css';
 import pageStyles from './CommunityRoomPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -49,6 +51,7 @@ export const CommunityRoomPage = () => {
     editingId, setEditingId,
     editContent, setEditContent,
     replyTarget, setReplyTarget,
+    addPendingMention,
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
@@ -163,6 +166,17 @@ export const CommunityRoomPage = () => {
   );
   const isOwner = role === 'owner';
 
+  // メンションのサジェスト候補。基本は1回取ればよいのでローカルで前方一致させる
+  // （入力のたびにサーバーへ問い合わせない）。
+  // 除外条件（自分自身・凍結・ブロック）はサーバー側で送信時の検証と揃えて適用済み。
+  // メンバーの増減はこの画面を開いたままでも起きるので、ユーザーが "@" を打ち始めた
+  // タイミングで取り直す（ChatInput の onMentionQueryStart）。
+  const { data: mentionCandidates, mutate: refreshMentionCandidates } = useSWR(
+    roomId ? ['mention-candidates', roomId] : null,
+    ([, rid]: [string, string]) => getMentionCandidates(rid),
+    stableCacheOptions,
+  );
+
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
     const result = await AppSwal.fire({
@@ -175,6 +189,8 @@ export const CommunityRoomPage = () => {
     setLeaveError('');
     try {
       await leaveCommunity(roomId, currentUserID);
+      // 退出でメンバーが減るので、メンバー一覧のキャッシュを捨てる。
+      if (communityID) await invalidateCommunityMembers(communityID);
       void mutateCommunities();
       navigate('/community', { replace: true });
     } catch (err) {
@@ -236,7 +252,7 @@ export const CommunityRoomPage = () => {
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
                   onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
-                  onSaveEdit={() => handleSaveEdit(msg.ID)}
+                  onSaveEdit={() => handleSaveEdit(msg.ID, msg.mentions)}
                   onCancelEdit={() => setEditingId(null)}
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
@@ -265,6 +281,9 @@ export const CommunityRoomPage = () => {
         disabled={sending}
         replyTarget={replyTarget}
         onCancelReply={() => setReplyTarget(null)}
+        mentionCandidates={mentionCandidates ?? []}
+        onMentionSelect={addPendingMention}
+        onMentionQueryStart={refreshMentionCandidates}
       />
 
       {showDetail && community && (

@@ -9,6 +9,7 @@ import { countAllReplies } from '../../../../lib/postUtils';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
 import styles from './ReplyThread.module.css';
 import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
+import { useMentionNavigation } from '../../hooks/useMentionNavigation';
 
 type Props = {
   post: Post;
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }: Props) => {
+  const { onMentionClick } = useMentionNavigation();
   const navigate = useNavigate();
   const replies = (post.replies ?? []).filter(r => r.user != null);
 
@@ -38,7 +40,14 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
             timestamp={formatTime(post.createdAt)}
             small
           />
-          <p className={styles.content}>{renderTextWithLinks({ text: post.content })}</p>
+          <p className={styles.content}>
+            {renderTextWithLinks({
+              text: post.content,
+              mentions: post.mentions,
+              currentUserID: currentUserId,
+              onMentionClick,
+            })}
+          </p>
           {post.media && post.media.length > 0 && (
             <div className={styles.mediaWrapper}>
               <PostMediaGrid media={post.media} />

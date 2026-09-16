@@ -10,7 +10,7 @@ import {
   deleteNotifications,
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
-import { MESSAGE_REPLY_TYPE, replyNotificationLink } from '../lib/replyNotification';
+import { MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { stableCacheOptions } from '../cache/swrOptions';
 import styles from './NotificationDetailPage.module.css';
@@ -20,6 +20,8 @@ const TYPE_LABEL: Record<string, string> = {
   favorite: 'いいね',
   reply: '返信',
   [MESSAGE_REPLY_TYPE]: 'チャットの返信',
+  [MENTION_TYPE]: 'メンション',
+  [MESSAGE_MENTION_TYPE]: 'チャットのメンション',
   dm: 'DM',
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
@@ -30,6 +32,8 @@ const TYPE_LABEL: Record<string, string> = {
 const ACTION_LABEL: Record<string, string> = {
   dm: 'DMへいく',
   [MESSAGE_REPLY_TYPE]: 'メッセージへいく',
+  [MESSAGE_MENTION_TYPE]: 'メッセージへいく',
+  [MENTION_TYPE]: '投稿へいく',
   favorite: '投稿へいく',
   reply: '投稿へいく',
   community_kick: 'コミュニティへいく',
@@ -92,9 +96,9 @@ export const NotificationDetailPage = () => {
     }
   };
 
-  // 返信通知は「ルームを開いて該当メッセージへジャンプ」なので、targetType だけでは
-  // パスが決まらない（ルーム種別が要る）。targetMessage から組み立てる。
-  const replyLink = notification?.type === MESSAGE_REPLY_TYPE
+  // 返信・チャットのメンション通知は「ルームを開いて該当メッセージへジャンプ」なので、
+  // targetType だけではパスが決まらない（ルーム種別が要る）。targetMessage から組み立てる。
+  const replyLink = notification && isMessageJumpNotification(notification.type)
     ? replyNotificationLink(
         notification.targetMessage?.room.type,
         notification.targetMessage?.roomID,

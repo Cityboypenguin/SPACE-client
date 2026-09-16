@@ -5,3 +5,27 @@
 .hashtagClickable {
   cursor: pointer;
 }
+
+/* メンション。配色はホスト側から --mention-* で上書きできるようにしている。
+   チャットの吹き出しのように地の背景色が変わる場所では、--color-link (#646cff) が
+   自分の吹き出し (--color-primary #3b82f6) にほぼ同化して読めなくなるため。 */
+.mention {
+  color: var(--mention-color, var(--color-link));
+  background: var(--mention-bg, transparent);
+  text-decoration: var(--mention-decoration, none);
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.mentionClickable {
+  cursor: pointer;
+}
+
+/* 自分宛のメンションは背景を敷いて、流れる本文の中でも気づけるようにする。
+   色も別に上書きできるようにしている（下地を敷くと地と文字が近づいて対比が落ちる
+   ことがあり、その場合は文字側を濃くして補うため）。 */
+.mentionSelf {
+  color: var(--mention-self-color, var(--mention-color, var(--color-link)));
+  background: var(--mention-self-bg, color-mix(in srgb, var(--color-link) 16%, transparent));
+}

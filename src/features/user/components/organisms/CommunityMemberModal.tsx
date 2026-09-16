@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
-import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
+import useSWR from 'swr';
+import { getCommunityMembers, type Community } from '../../api/community';
+import { staticCacheOptions } from '../../cache/swrOptions';
+import { communityMembersKey } from '../../cache/communityMembers';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { Modal, ModalCloseButton } from '../../../../components/molecules/Modal';
@@ -21,18 +23,12 @@ type Props = {
 };
 
 export const CommunityMembersModal = ({ community, onClose }: Props) => {
-  const [members, setMembers] = useState<CommunityMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    void Promise.resolve().then(() => {
-      getCommunityMembers(community.ID)
-        .then((data) => setMembers(data))
-        .catch(() => setError('メンバー一覧の取得に失敗しました'))
-        .finally(() => setLoading(false));
-    });
-  }, [community.ID]);
+  // 詳細パネル・設定モーダルと同じキャッシュを共有する。開き直しても取り直さない。
+  const { data: members = [], isLoading: loading, error } = useSWR(
+    communityMembersKey(community.ID),
+    ([, cid]: [string, string]) => getCommunityMembers(cid),
+    staticCacheOptions,
+  );
 
   return (
     <Modal onClose={onClose} overlayClassName={styles.overlay} className={styles.modal}>
@@ -43,7 +39,7 @@ export const CommunityMembersModal = ({ community, onClose }: Props) => {
 
       <div className={styles.body}>
         {loading && <p className={styles.loadingText}>読み込み中...</p>}
-        {error && <p className={styles.errorText}>{error}</p>}
+        {error && <p className={styles.errorText}>メンバー一覧の取得に失敗しました</p>}
 
         {!loading && !error && (
           <ul className={styles.memberList}>

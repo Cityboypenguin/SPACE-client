@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
+import useSWR from 'swr';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
@@ -17,6 +18,8 @@ import {
   type CommunityMember,
 } from '../../api/community';
 import { uploadAvatarToStorage } from '../../api/profile';
+import { staticCacheOptions } from '../../cache/swrOptions';
+import { communityMembersKey } from '../../cache/communityMembers';
 import { storageUrl } from '../../../../lib/storage';
 import { AppSwal } from '../../../../lib/swal';
 import styles from './CommunitySettingsModal.module.css';
@@ -33,7 +36,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [tab, setTab] = useState<'info' | 'members'>('info');
   const [name, setName] = useState(community.name);
   const [description, setDescription] = useState(community.description);
-  const [members, setMembers] = useState<CommunityMember[]>([]);
+
   const [infoError, setInfoError] = useState('');
   const [infoSuccess, setInfoSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
@@ -51,11 +54,13 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    getCommunityMembers(community.ID)
-      .then(setMembers)
-      .catch(() => setMembersError('メンバー一覧の取得に失敗しました'));
-  }, [community.ID]);
+  // 詳細パネル・メンバーモーダルと同じキャッシュを共有する。開き直しても取り直さない。
+  // メンバーを変更したときだけ mutate で取り直す（下の kick/promote/demote）。
+  const { data: members = [], error: membersLoadError } = useSWR(
+    communityMembersKey(community.ID),
+    ([, cid]: [string, string]) => getCommunityMembers(cid),
+    staticCacheOptions,
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,8 +127,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     });
     if (!result.isConfirmed) return;
     try {
+      // API 側がメンバー一覧のキャッシュを捨てるので、この画面も含めて自動で更新される。
       await kickUserFromCommunity(community.ID, member.user.ID);
-      setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
     } catch (err) {
       setMembersError(toUserMessage(err, 'メンバーの削除に失敗しました。時間をおいてから再度お試しください。'));
     }
@@ -139,9 +144,6 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     if (!result.isConfirmed) return;
     try {
       await promoteToCommunityOwner(community.ID, member.user.ID);
-      setMembers((prev) =>
-        prev.map((m) => (m.user.ID === member.user.ID ? { ...m, role: ROLE_OWNER } : m)),
-      );
     } catch (err) {
       setMembersError(toUserMessage(err, 'オーナーへの昇格に失敗しました。時間をおいてから再度お試しください。'));
     }
@@ -157,9 +159,6 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     if (!result.isConfirmed) return;
     try {
       await demoteFromCommunityOwner(community.ID, member.user.ID);
-      setMembers((prev) =>
-        prev.map((m) => (m.user.ID === member.user.ID ? { ...m, role: 'member' } : m)),
-      );
     } catch (err) {
       setMembersError(toUserMessage(err, 'メンバーへの降格に失敗しました。時間をおいてから再度お試しください。'));
     }
@@ -261,7 +260,11 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
 
           {tab === 'members' && (
             <div>
-              {membersError && <p className={`${styles.errorText} ${styles.errorTextSpaced}`}>{membersError}</p>}
+              {(membersError || membersLoadError) && (
+                <p className={`${styles.errorText} ${styles.errorTextSpaced}`}>
+                  {membersError || 'メンバー一覧の取得に失敗しました'}
+                </p>
+              )}
               <div
                 className={styles.membersHeaderDivider}
               >

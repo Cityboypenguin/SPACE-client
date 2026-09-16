@@ -14,6 +14,7 @@ import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './PostCard.module.css';
 import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
+import { useMentionNavigation } from '../../hooks/useMentionNavigation';
 
 type Props = {
   post: Post;
@@ -28,6 +29,7 @@ type Props = {
 };
 
 export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBlock, onReport, onEdit, onDelete }: Props) => {
+  const { onMentionClick } = useMentionNavigation();
   const isOwnPost = post.user.ID === currentUserId;
   const [expanded, setExpanded] = useState(false);
   const [isClamped, setIsClamped] = useState(false);
@@ -93,7 +95,13 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
               ref={contentRef}
               className={`${styles.content} ${!expanded ? styles.contentClamped : ''}`}
             >
-              {renderTextWithLinks({ text: post.content, onHashtagClick: handleHashtagClick })}
+              {renderTextWithLinks({
+                text: post.content,
+                onHashtagClick: handleHashtagClick,
+                mentions: post.mentions,
+                currentUserID: currentUserId,
+                onMentionClick,
+              })}
             </p>
             {isClamped && !expanded && (
               <button className={styles.expandButton} onClick={handleExpand}>もっと見る</button>

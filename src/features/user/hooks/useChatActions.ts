@@ -8,6 +8,7 @@ import {
 import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { AppSwal } from '../../../lib/swal';
+import { containsMentionText, type Mention, type MentionCandidate } from '../../../lib/mentions';
 
 export const useChatActions = (
   roomId: string | undefined,
@@ -21,6 +22,15 @@ export const useChatActions = (
   const [editContent, setEditContent] = useState('');
   // 返信先として選択中のメッセージ。送信・キャンセルでクリアする。
   const [replyTarget, setReplyTarget] = useState<Message | null>(null);
+  // サジェストから選んだメンション先。コミュニティの "@表示名" は本文からは
+  // 終端を決められないため、選択した相手をここに控えて送信時に渡す。
+  const [pendingMentions, setPendingMentions] = useState<MentionCandidate[]>([]);
+
+  const addPendingMention = (candidate: MentionCandidate) => {
+    setPendingMentions((prev) => (
+      prev.some((m) => m.ID === candidate.ID) ? prev : [...prev, candidate]
+    ));
+  };
 
   const handleSend = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -32,10 +42,16 @@ export const useChatActions = (
     setSendError('');
     try {
       const mediaInputs = await uploadMediaFiles(selectedFiles);
-      const data = await sendMessage(roomId, content.trim(), mediaInputs, replyTarget?.ID ?? null);
+      const trimmed = content.trim();
+      // 選択後に本文を書き換えて "@表示名" が消えた相手は送らない（サーバーでも同じ検証をする）。
+      const mentionUserIDs = pendingMentions
+        .filter((m) => containsMentionText(trimmed, m.name))
+        .map((m) => m.ID);
+      const data = await sendMessage(roomId, trimmed, mediaInputs, replyTarget?.ID ?? null, mentionUserIDs);
       setContent('');
       setSelectedFiles([]);
       setReplyTarget(null);
+      setPendingMentions([]);
       addMessage(data.sendMessage);
     } catch (err) {
       setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
@@ -60,10 +76,16 @@ export const useChatActions = (
     }
   };
 
-  const handleSaveEdit = async (msgId: string) => {
+  // existingMentions には編集前のメッセージのメンションを渡す。
+  // 編集画面にはサジェストが無いので、本文に残っている分だけをそのまま維持する。
+  const handleSaveEdit = async (msgId: string, existingMentions: Mention[] = []) => {
     if (!roomId || !editContent.trim()) return;
     try {
-      await updateMessage(roomId, msgId, editContent.trim());
+      const trimmed = editContent.trim();
+      const mentionUserIDs = existingMentions
+        .filter((m) => containsMentionText(trimmed, m.text))
+        .map((m) => m.user.ID);
+      await updateMessage(roomId, msgId, trimmed, mentionUserIDs);
       setEditingId(null);
     } catch (err) {
       setSendError(toUserMessage(err, 'メッセージの編集に失敗しました。時間をおいてから再度お試しください。'));
@@ -83,6 +105,7 @@ export const useChatActions = (
     setEditContent,
     replyTarget,
     setReplyTarget,
+    addPendingMention,
     handleSend,
     handleDelete,
     handleSaveEdit,

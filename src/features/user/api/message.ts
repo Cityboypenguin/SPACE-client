@@ -3,6 +3,7 @@ import { graphql } from '../../../generated';
 import { storageUrl } from '../../../lib/storage';
 import { getUserToken } from './auth';
 import { MEDIA_FIELDS_RAW, type Media, type MediaInput } from '../../../lib/media';
+import { type Mention, type MentionCandidate } from '../../../lib/mentions';
 
 export type MessageUser = {
   ID: string;
@@ -36,6 +37,8 @@ export type Message = {
   // replyToID があるのに replyTo が null なら、返信先は削除済み。
   replyToID?: string | null;
   replyTo?: ReplyTarget | null;
+  // 本文中のメンション（コミュニティのみ）。表示側は text を本文と突き合わせて着色する。
+  mentions: Mention[];
 };
 
 export type Room = {
@@ -79,6 +82,15 @@ export const MESSAGE_FIELDS = `
     media {${MEDIA_FIELDS_RAW}}
     isMine
   }
+  mentions {
+    user {
+      ID
+      name
+      accountID
+      avatarUrl
+    }
+    text
+  }
 `;
 
 const MarkRoomAsReadDocument = graphql(`
@@ -109,8 +121,8 @@ const GetOrCreateDMRoomDocument = graphql(`
 `);
 
 const SendMessageDocument = graphql(`
-  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $replyToID: ID) {
-    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, replyToID: $replyToID) {
+  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $mentionUserIDs: [ID!], $replyToID: ID) {
+    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID) {
       ID
       roomID
       user {
@@ -140,14 +152,23 @@ const SendMessageDocument = graphql(`
           ...MediaFields
         }
         isMine
+      }
+      mentions {
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        text
       }
     }
   }
 `);
 
 const UpdateMessageDocument = graphql(`
-  mutation UpdateMessage($roomID: ID!, $id: ID!, $content: String!) {
-    updateMessage(roomID: $roomID, id: $id, content: $content) {
+  mutation UpdateMessage($roomID: ID!, $id: ID!, $content: String!, $mentionUserIDs: [ID!]) {
+    updateMessage(roomID: $roomID, id: $id, content: $content, mentionUserIDs: $mentionUserIDs) {
       ID
       roomID
       user {
@@ -177,6 +198,15 @@ const UpdateMessageDocument = graphql(`
           ...MediaFields
         }
         isMine
+      }
+      mentions {
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        text
       }
     }
   }
@@ -227,6 +257,15 @@ const ListMessagesDocument = graphql(`
             ...MediaFields
           }
           isMine
+        }
+        mentions {
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          text
         }
       }
       hasMoreBefore
@@ -286,6 +325,17 @@ const MyDMRoomsDocument = graphql(`
   }
 `);
 
+const MentionCandidatesDocument = graphql(`
+  query MentionCandidates($roomID: ID!) {
+    mentionCandidates(roomID: $roomID) {
+      ID
+      name
+      accountID
+      avatarUrl
+    }
+  }
+`);
+
 const PresignedMediaUploadUrlDocument = graphql(`
   query PresignedMediaUploadUrl($contentType: String!) {
     presignedMediaUploadUrl(contentType: $contentType) {
@@ -294,6 +344,15 @@ const PresignedMediaUploadUrlDocument = graphql(`
     }
   }
 `);
+
+// コミュニティチャットの "@表示名" メンションでサジェストに出せる相手。
+// サーバー側が送信時の検証とまったく同じ条件（メンバー・凍結・ブロック・自分自身）で
+// 絞り込んで返すので、クライアントは前方一致で絞るだけでよい。
+// コミュニティ以外のルームでは空配列が返る。
+export const getMentionCandidates = async (roomID: string): Promise<MentionCandidate[]> => {
+  const data = await requestDoc(MentionCandidatesDocument, { roomID }, getUserToken());
+  return data.mentionCandidates;
+};
 
 export const markRoomAsRead = async (roomID: string) => {
   const token = getUserToken();
@@ -310,9 +369,11 @@ export const sendMessage = async (
   content: string,
   mediaInputs?: MediaInput[],
   replyToID?: string | null,
+  // メンション先のユーザーID（コミュニティのみ）。サジェストから選んだ相手だけを渡す。
+  mentionUserIDs?: string[],
 ) => {
   const token = getUserToken();
-  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, replyToID }, token);
+  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, mentionUserIDs, replyToID }, token);
 };
 
 export type ListMessagesOptions = {
@@ -343,9 +404,14 @@ export const getRoom = async (id: string) => {
   return await requestDoc(GetRoomDocument, { id }, getUserToken());
 };
 
-export const updateMessage = async (roomID: string, id: string, content: string) => {
+export const updateMessage = async (
+  roomID: string,
+  id: string,
+  content: string,
+  mentionUserIDs?: string[],
+) => {
   const token = getUserToken();
-  return await requestDoc(UpdateMessageDocument, { roomID, id, content }, token);
+  return await requestDoc(UpdateMessageDocument, { roomID, id, content, mentionUserIDs }, token);
 };
 
 export const deleteMessage = async (roomID: string, id: string) => {

@@ -11,6 +11,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
+import { invalidateCommunityMembers } from '../cache/communityMembers';
 import styles from './CommunityBoardListPage.module.css';
 
 export const CommunityBoardListPage = () => {
@@ -109,6 +110,8 @@ export const CommunityBoardListPage = () => {
   const handleJoin = useCallback(async (community: Community) => {
     try {
       await joinCommunity(community.roomID);
+      // 参加でメンバーが増えるので、メンバー一覧のキャッシュを捨てる。
+      await invalidateCommunityMembers(community.ID);
       const joinedCommunity = {
         ...community,
         isMember: true,

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCommunityMembers, type Community } from '../../api/community';
+import { type Community } from '../../api/community';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
@@ -19,23 +19,14 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
   const [expanded, setExpanded] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
-  const [fetchedMemberCount, setFetchedMemberCount] = useState<number | null>(null);
   const [localJoinedCommunityID, setLocalJoinedCommunityID] = useState<string | null>(null);
 
   const locallyJoined = localJoinedCommunityID === community.ID;
   const joinedState = joined || community.isMember || locallyJoined;
-  const memberCount = community.memberCount ?? fetchedMemberCount;
-  const shownMemberCount = memberCount === null
-    ? null
-    : memberCount + (locallyJoined && !joined && !community.isMember ? 1 : 0);
-
-  useEffect(() => {
-    if (expanded && memberCount === null) {
-      getCommunityMembers(community.ID)
-        .then((members) => setFetchedMemberCount(members.length))
-        .catch(() => console.error('メンバー数の取得に失敗しました'));
-    }
-  }, [expanded, community.ID, memberCount]);
+  // memberCount は GraphQL の Community.memberCount (Int!) なので常に入っている。
+  // この場で参加したときだけ、一覧を取り直さずに自分のぶんを足して見せる。
+  const shownMemberCount = community.memberCount
+    + (locallyJoined && !joined && !community.isMember ? 1 : 0);
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -88,14 +79,12 @@ export const CommunityBoard = ({ community, onJoin, joined = false, onReport}: P
           onClick={(e) => e.stopPropagation()}
           className={styles.expandedSection}
         >
-          {shownMemberCount !== null && (
-            <div className={styles.memberCountRow}>
-              <span className={styles.memberCountLabel}>メンバー数:</span>
-              <span className={styles.memberCountBadge}>
-                {shownMemberCount} 人
-              </span>
-            </div>
-          )}
+          <div className={styles.memberCountRow}>
+            <span className={styles.memberCountLabel}>メンバー数:</span>
+            <span className={styles.memberCountBadge}>
+              {shownMemberCount} 人
+            </span>
+          </div>
           <p className={styles.description}>
             {renderTextWithLinks({
               text: community.description,

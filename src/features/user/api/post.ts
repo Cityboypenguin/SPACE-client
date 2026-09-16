@@ -2,6 +2,7 @@ import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 import { type Media, type MediaInput } from '../../../lib/media';
+import { type Mention } from '../../../lib/mentions';
 
 export type { Media, MediaInput };
 
@@ -32,6 +33,8 @@ export type Post = {
   parent?: Post | null;
   replies: Post[];
   media: Media[];
+  // 本文中のメンション。表示側は text を本文と突き合わせて着色・リンク化する。
+  mentions: Mention[];
 };
 
 // PostFields は投稿ツリー(返信の再帰的な入れ子)全体で繰り返し使われる共通フィールド選択。
@@ -59,6 +62,15 @@ export const PostFieldsFragment = graphql(`
     }
     media {
       ...MediaFields
+    }
+    mentions {
+      user {
+        ID
+        name
+        accountID
+        avatarUrl
+      }
+      text
     }
   }
 `);
@@ -317,6 +329,30 @@ export const getPopularHashtags = async (): Promise<{ items: HashtagSuggestion[]
     items: data.popularHashtags.items as HashtagSuggestion[],
     total: data.popularHashtags.total,
   };
+};
+
+const SuggestUsersDocument = graphql(`
+  query SuggestUsers($prefix: String!, $limit: Int) {
+    suggestUsers(prefix: $prefix, limit: $limit) {
+      ID
+      name
+      accountID
+      avatarUrl
+    }
+  }
+`);
+
+// メンションのサジェスト候補1件。ハッシュタグの HashtagSuggestion に対応する。
+export type UserSuggestion = {
+  ID: string;
+  name: string;
+  accountID: string;
+  avatarUrl?: string | null;
+};
+
+export const suggestUsers = async (prefix: string, limit = 8): Promise<UserSuggestion[]> => {
+  const data = await requestDoc(SuggestUsersDocument, { prefix, limit }, getUserToken());
+  return data.suggestUsers as UserSuggestion[];
 };
 
 const SuggestHashtagsDocument = graphql(`
