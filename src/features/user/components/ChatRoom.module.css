@@ -206,8 +206,10 @@
   color: #fff;
 }
 
+/* 相手の吹き出し。ライトでは背景(--color-bg)が白で --color-bg-elevated と
+   同色になり境目が消えるため、専用の一段沈んだ色を使う。 */
 .bubbleTheirs {
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bubble-theirs);
   color: var(--color-text);
 }
 
@@ -775,4 +777,174 @@
     bottom: 8px;
     max-width: calc(100vw - 2rem);
   }
+}
+
+/* ===== 引用返信 ===== */
+
+/*
+ * 返信先プレビュー。LINE と同じくバブルの内側（本文の上）に収める角丸カード。
+ * 吹き出しの色が自分（primary）と相手（bg-elevated）で違うので、背景は
+ * それぞれに合わせて出し分ける。文字色は不透明度で調整しており、
+ * テーマごとに色を用意しなくても明暗どちらでも読める。
+ */
+.replyQuote {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  /* プロジェクト全体の box-sizing リセットが無いため、width:100% と padding が
+     足し算にならないようここで指定する（無いと吹き出しから横にはみ出す）。 */
+  box-sizing: border-box;
+}
+
+.replyQuoteMine {
+  background: var(--color-quote-on-primary);
+}
+
+.replyQuoteTheirs {
+  background: var(--color-quote-bg);
+}
+
+/* 返信先が削除済み。ジャンプ先がないので button ではなく div で出す */
+.replyQuoteDeleted {
+  cursor: default;
+}
+
+.replyQuoteDeleted .replyQuoteText {
+  font-style: italic;
+}
+
+.replyQuoteBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.replyQuoteName {
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replyQuoteMine .replyQuoteName {
+  color: #fff;
+}
+
+/* 長い返信先は2行で打ち切る（LINE と同じ） */
+.replyQuoteText {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--color-text);
+  opacity: 0.65;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.replyQuoteMine .replyQuoteText {
+  color: #fff;
+  opacity: 0.85;
+}
+
+.replyQuoteThumb {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+/*
+ * ジャンプ先の一時ハイライト。実際のアニメーションは useScrollToMessage が
+ * Web Animations API で直接かけるので、ここでは角丸だけ用意しておく
+ * （同じメッセージを続けてタップしても必ず光らせたいため、クラスの付け外しに
+ *  依存する CSS アニメーションは使わない）。
+ */
+.messageHighlightTarget {
+  border-radius: 12px;
+}
+
+/* 入力欄の上に出す「〜に返信」バー */
+.replyComposer {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+/* 返信であることは左の矢印アイコンで示す（縦線は使わない） */
+.replyComposerIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--color-primary);
+}
+
+.replyComposerBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.replyComposerLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replyComposerText {
+  font-size: 0.75rem;
+  color: var(--color-text);
+  opacity: 0.65;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replyComposerThumb {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.replyComposerCancel {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.replyComposerCancel:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
 }

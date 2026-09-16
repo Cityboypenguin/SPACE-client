@@ -3,6 +3,9 @@ import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
 import { useTheme } from '../../../../context/useTheme';
 import { MAX_MESSAGE_LENGTH, countMessageLength } from '../../constants/chat';
+import { type Message } from '../../api/message';
+import { storageUrl } from '../../../../lib/storage';
+import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -14,6 +17,16 @@ const ACCEPTED_FILE_TYPES = [
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
 
+// 返信先バーに出す1行プレビュー。本文が無いときは添付の種類で代替する。
+const replyPreviewText = (msg: Message): string => {
+  if (msg.content.trim() !== '') return msg.content;
+  const imageCount = msg.media.filter((m) => m.contentType.startsWith('image/')).length;
+  const fileCount = msg.media.length - imageCount;
+  if (imageCount > 0) return `画像${imageCount}件`;
+  if (fileCount > 0) return `ファイル${fileCount}件`;
+  return '';
+};
+
 type Props = {
   value: string;
   onChange: (val: string) => void;
@@ -22,9 +35,12 @@ type Props = {
   selectedFiles: File[];
   disabled?: boolean;
   isBlocked?: boolean;
+  // 返信中のメッセージ。指定すると入力欄の上に返信先バーを表示する。
+  replyTarget?: Message | null;
+  onCancelReply?: () => void;
 };
 
-export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked }: Props) => {
+export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked, replyTarget, onCancelReply }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
@@ -45,6 +61,11 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     }
     prevDisabledRef.current = disabled;
   }, [disabled]);
+
+  // 返信ボタンを押したらそのまま入力できるようフォーカスを移す
+  useEffect(() => {
+    if (replyTarget) textareaRef.current?.focus();
+  }, [replyTarget]);
 
   useEffect(() => {
     const urls = selectedFiles.map((file) =>
@@ -120,6 +141,8 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     addFiles(imageFiles);
   };
 
+  const replyThumbnail = replyTarget?.media.find((m) => m.contentType.startsWith('image/'));
+
   const messageLength = countMessageLength(value);
   const isOverLimit = messageLength > MAX_MESSAGE_LENGTH;
   // 上限の90%を超えたあたりから残り文字数を意識してもらうためカウンタを表示する。
@@ -150,6 +173,28 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           <span className={styles.dragOverlayText}>
             ここにドロップ
           </span>
+        </div>
+      )}
+      {replyTarget && (
+        <div className={styles.replyComposer}>
+          <span className={styles.replyComposerIcon}><ReplyArrow /></span>
+          <div className={styles.replyComposerBody}>
+            <span className={styles.replyComposerLabel}>
+              {replyTarget.isMine ? '自分' : replyTarget.user.name}に返信
+            </span>
+            <span className={styles.replyComposerText}>{replyPreviewText(replyTarget)}</span>
+          </div>
+          {replyThumbnail && (
+            <img src={storageUrl(replyThumbnail.url)} alt="" className={styles.replyComposerThumb} />
+          )}
+          <button
+            type="button"
+            onClick={onCancelReply}
+            title="返信をやめる"
+            className={styles.replyComposerCancel}
+          >
+            ✕
+          </button>
         </div>
       )}
       {selectedFiles.length > 0 && (

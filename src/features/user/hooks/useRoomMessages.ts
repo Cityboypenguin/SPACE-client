@@ -50,7 +50,18 @@ type State = {
   partnerLastReadAt: string | null;
 };
 
-export const useRoomMessages = (roomId: string | undefined) => {
+// 返信通知から開いたときなど、特定メッセージを中心にルームを開く指定。
+type UseRoomMessagesOptions = {
+  aroundMessageId?: string | null;
+};
+
+// around 指定でルームを開く／ジャンプするときに前後何件読むか。
+const AROUND_LIMIT = 25;
+
+export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMessagesOptions) => {
+  const aroundMessageId = options?.aroundMessageId ?? null;
+  // ジャンプ先のメッセージID。読み込み完了後にページ側がスクロール・ハイライトして clear する。
+  const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
   const [state, setState] = useState<State>({
     room: null,
     messages: [],
@@ -63,6 +74,13 @@ export const useRoomMessages = (roomId: string | undefined) => {
   const [hasMoreAfter, setHasMoreAfter] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loadingNewer, setLoadingNewer] = useState(false);
+
+  // jumpToMessage から最新の messages を読むための参照（依存配列に messages を
+  // 入れると、ジャンプのたびに購読が張り直されてしまうため）
+  const messagesRef = useRef<Message[]>([]);
+  useEffect(() => {
+    messagesRef.current = state.messages;
+  }, [state.messages]);
 
   const markedAsRead = useRef(false);
   const loadingOlderRef = useRef(false);
@@ -85,6 +103,7 @@ export const useRoomMessages = (roomId: string | undefined) => {
       setHasMoreBefore(false);
       setHasMoreAfter(false);
       hasMoreAfterRef.current = false;
+      setPendingScrollId(null);
     });
 
     (async () => {
@@ -99,7 +118,15 @@ export const useRoomMessages = (roomId: string | undefined) => {
         let moreBefore: boolean;
         let moreAfter: boolean;
 
-        if (unreadCount > 0 && lastReadAt) {
+        if (aroundMessageId) {
+          // 返信通知などから特定メッセージを指定して開いた場合は、未読起点ではなく
+          // そのメッセージを中心に読む。
+          const result = await listMessages(roomId, AROUND_LIMIT, { around: aroundMessageId });
+          if (!active) return;
+          messages = result.items;
+          moreBefore = result.hasMoreBefore;
+          moreAfter = result.hasMoreAfter;
+        } else if (unreadCount > 0 && lastReadAt) {
           // 未読あり: 未読開始点の前後25件ずつ取得
           const unreadResult = await listMessages(roomId, 25, { afterTime: lastReadAt });
           if (!active) return;
@@ -142,6 +169,7 @@ export const useRoomMessages = (roomId: string | undefined) => {
         setHasMoreBefore(moreBefore);
         setHasMoreAfter(moreAfter);
         hasMoreAfterRef.current = moreAfter;
+        if (aroundMessageId) setPendingScrollId(aroundMessageId);
 
         if (!markedAsRead.current) {
           markedAsRead.current = true;
@@ -155,7 +183,7 @@ export const useRoomMessages = (roomId: string | undefined) => {
     })();
 
     return () => { active = false; };
-  }, [roomId]);
+  }, [roomId, aroundMessageId]);
 
   // 上スクロール: 古いメッセージを50件追加取得
   const loadOlderMessages = useCallback(async () => {
@@ -299,6 +327,30 @@ export const useRoomMessages = (roomId: string | undefined) => {
     return () => unsubscribe();
   }, [roomId]);
 
+  // 引用のタップや返信通知からのジャンプ。すでに読み込み済みならスクロールするだけ、
+  // まだ読み込んでいない古いメッセージなら around で読み直してから中央に表示する。
+  const jumpToMessage = useCallback(async (messageId: string) => {
+    if (!roomId) return;
+    if (messagesRef.current.some((m) => m.ID === messageId)) {
+      setPendingScrollId(messageId);
+      return;
+    }
+    try {
+      const result = await listMessages(roomId, AROUND_LIMIT, { around: messageId });
+      oldestIDRef.current = result.items[0]?.ID;
+      newestIDRef.current = result.items[result.items.length - 1]?.ID;
+      setState((prev) => ({ ...prev, messages: result.items }));
+      setHasMoreBefore(result.hasMoreBefore);
+      setHasMoreAfter(result.hasMoreAfter);
+      hasMoreAfterRef.current = result.hasMoreAfter;
+      setPendingScrollId(messageId);
+    } catch {
+      // ジャンプに失敗しても、開いているルームの表示はそのまま維持する
+    }
+  }, [roomId]);
+
+  const clearPendingScroll = useCallback(() => setPendingScrollId(null), []);
+
   const addMessage = (msg: Message) => {
     setState((prev) => ({
       ...prev,
@@ -318,5 +370,8 @@ export const useRoomMessages = (roomId: string | undefined) => {
     loadOlderMessages,
     loadNewerMessages,
     addMessage,
+    pendingScrollId,
+    jumpToMessage,
+    clearPendingScroll,
   };
 };

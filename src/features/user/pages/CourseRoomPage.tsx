@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CourseChatTab } from '../components/organisms/CourseChatTab';
@@ -28,6 +28,9 @@ export const CourseRoomPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as { course?: Course; year?: number; semester?: string } | null;
+  // 返信通知からは ?messageID=... 付きで開かれ、そのメッセージを中心に表示する。
+  const [searchParams] = useSearchParams();
+  const aroundMessageId = searchParams.get('messageID');
   const [activeTab, setActiveTab] = useState<TabKey>('chat');
   const [isPollView, setIsPollView] = useState(false);
   // 質問箱で開いていた質問は、チャットタブへ切り替えて戻ってきても復元できるよう
@@ -153,7 +156,9 @@ export const CourseRoomPage = () => {
             </div>
           )}
 
-          {activeTab === 'chat' && <CourseChatTab roomId={roomId} roomWritable={isWritable} />}
+          {activeTab === 'chat' && (
+            <CourseChatTab roomId={roomId} roomWritable={isWritable} aroundMessageId={aroundMessageId} />
+          )}
           {activeTab === 'question' && (
             <QuestionList
               roomId={roomId}

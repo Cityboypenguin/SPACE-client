@@ -196,6 +196,17 @@ export const useChatScroll = ({ messages, containerRef, roomId, hasMoreAfter }: 
     }
   }, [messages, hasMoreAfter, getRoomState]);
 
+  // 引用タップ・返信通知のジャンプなど、別のスクロール制御に位置決めを譲るための解除。
+  // これを呼ばないと、初回表示の追従（画像ロード時の repin）がジャンプ先から
+  // 未読先頭・最下部へ引き戻してしまう。
+  const releaseAutoScroll = useCallback(() => {
+    const roomState = getRoomState();
+    roomState.initialScrolled = true;
+    roomState.initialPhaseDone = true;
+    roomState.seenCount = messages.length;
+    roomState.lastTailId = messages[messages.length - 1]?.ID;
+  }, [getRoomState, messages]);
+
   const scrollToLatest = useCallback(() => {
     // ユーザーの明示的な操作なので、初回の追従フェーズは終了させる
     const roomState = getRoomState();
@@ -211,5 +222,6 @@ export const useChatScroll = ({ messages, containerRef, roomId, hasMoreAfter }: 
     newMessageCount,
     isAtBottom,
     scrollToLatest,
+    releaseAutoScroll,
   };
 };

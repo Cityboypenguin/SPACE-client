@@ -19,6 +19,8 @@ export const useChatActions = (
   const [sendError, setSendError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  // 返信先として選択中のメッセージ。送信・キャンセルでクリアする。
+  const [replyTarget, setReplyTarget] = useState<Message | null>(null);
 
   const handleSend = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -30,9 +32,10 @@ export const useChatActions = (
     setSendError('');
     try {
       const mediaInputs = await uploadMediaFiles(selectedFiles);
-      const data = await sendMessage(roomId, content.trim(), mediaInputs);
+      const data = await sendMessage(roomId, content.trim(), mediaInputs, replyTarget?.ID ?? null);
       setContent('');
       setSelectedFiles([]);
+      setReplyTarget(null);
       addMessage(data.sendMessage);
     } catch (err) {
       setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
@@ -78,6 +81,8 @@ export const useChatActions = (
     setEditingId,
     editContent,
     setEditContent,
+    replyTarget,
+    setReplyTarget,
     handleSend,
     handleDelete,
     handleSaveEdit,

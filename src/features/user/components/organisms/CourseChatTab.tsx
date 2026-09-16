@@ -8,16 +8,19 @@ import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
 import { useChatScroll } from '../../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../../hooks/useScrollRestoreOnPrepend';
+import { useScrollToMessage } from '../../hooks/useScrollToMessage';
 import { isAnonymousUser } from '../../lib/anonymous';
 import styles from '../ChatRoom.module.css';
 
 type Props = {
   roomId: string;
   roomWritable: boolean;
+  // 返信通知から開いたときのジャンプ先メッセージID
+  aroundMessageId?: string | null;
 };
 
-export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
-  const { messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) => {
+  const { messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -25,6 +28,7 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
     sendError,
     editingId, setEditingId,
     editContent, setEditContent,
+    replyTarget, setReplyTarget,
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
@@ -32,7 +36,7 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
-  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll({
+  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest, releaseAutoScroll } = useChatScroll({
     messages,
     containerRef: messageListRef,
     roomId,
@@ -40,6 +44,14 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
   });
 
   const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
+
+  useScrollToMessage({
+    containerRef: messageListRef,
+    pendingScrollId,
+    onScrolled: clearPendingScroll,
+    messageCount: messages.length,
+    releaseAutoScroll,
+  });
 
   // ルームを開いた時点の既読位置。開いている間に既読が進んでも区切り線は動かさない(DM・コミュニティと同じ)。
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
@@ -112,6 +124,8 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
                   onCancelEdit={() => setEditingId(null)}
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
+                  onReply={roomWritable ? () => setReplyTarget(msg) : undefined}
+                  onJumpToMessage={jumpToMessage}
                 />
               </div>
             );
@@ -134,6 +148,8 @@ export const CourseChatTab = ({ roomId, roomWritable }: Props) => {
           onFileSelect={setSelectedFiles}
           selectedFiles={selectedFiles}
           disabled={sending}
+          replyTarget={replyTarget}
+          onCancelReply={() => setReplyTarget(null)}
         />
       )}
     </>

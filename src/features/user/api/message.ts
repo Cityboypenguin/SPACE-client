@@ -15,6 +15,15 @@ export const DELETED_ACCOUNT_ID = 'deleted-account';
 
 export type { Media, MediaInput };
 
+// 引用返信の返信先として表示する最小限の情報。返信先の返信先までは辿らない（1階層）。
+export type ReplyTarget = {
+  ID: string;
+  user: MessageUser;
+  content: string;
+  media: Media[];
+  isMine: boolean;
+};
+
 export type Message = {
   ID: string;
   roomID: string;
@@ -24,6 +33,9 @@ export type Message = {
   createdAt: string;
   updatedAt: string;
   isMine: boolean;
+  // replyToID があるのに replyTo が null なら、返信先は削除済み。
+  replyToID?: string | null;
+  replyTo?: ReplyTarget | null;
 };
 
 export type Room = {
@@ -54,6 +66,19 @@ export const MESSAGE_FIELDS = `
   createdAt
   updatedAt
   isMine
+  replyToID
+  replyTo {
+    ID
+    user {
+      ID
+      name
+      accountID
+      avatarUrl
+    }
+    content
+    media {${MEDIA_FIELDS_RAW}}
+    isMine
+  }
 `;
 
 const MarkRoomAsReadDocument = graphql(`
@@ -84,8 +109,8 @@ const GetOrCreateDMRoomDocument = graphql(`
 `);
 
 const SendMessageDocument = graphql(`
-  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!]) {
-    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs) {
+  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $replyToID: ID) {
+    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, replyToID: $replyToID) {
       ID
       roomID
       user {
@@ -101,6 +126,21 @@ const SendMessageDocument = graphql(`
       createdAt
       updatedAt
       isMine
+      replyToID
+      replyTo {
+        ID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        content
+        media {
+          ...MediaFields
+        }
+        isMine
+      }
     }
   }
 `);
@@ -123,6 +163,21 @@ const UpdateMessageDocument = graphql(`
       createdAt
       updatedAt
       isMine
+      replyToID
+      replyTo {
+        ID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        content
+        media {
+          ...MediaFields
+        }
+        isMine
+      }
     }
   }
 `);
@@ -140,8 +195,8 @@ const DeleteRoomDocument = graphql(`
 `);
 
 const ListMessagesDocument = graphql(`
-  query ListMessages($roomID: ID!, $limit: Int, $before: ID, $after: ID, $afterTime: String) {
-    messages(roomID: $roomID, limit: $limit, before: $before, after: $after, afterTime: $afterTime) {
+  query ListMessages($roomID: ID!, $limit: Int, $before: ID, $after: ID, $afterTime: String, $around: ID) {
+    messages(roomID: $roomID, limit: $limit, before: $before, after: $after, afterTime: $afterTime, around: $around) {
       items {
         ID
         roomID
@@ -158,6 +213,21 @@ const ListMessagesDocument = graphql(`
         createdAt
         updatedAt
         isMine
+        replyToID
+        replyTo {
+          ID
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          content
+          media {
+            ...MediaFields
+          }
+          isMine
+        }
       }
       hasMoreBefore
       hasMoreAfter
@@ -235,15 +305,22 @@ export const getOrCreateDMRoom = async (targetUserID: string) => {
   return await requestDoc(GetOrCreateDMRoomDocument, { targetUserID }, token);
 };
 
-export const sendMessage = async (roomID: string, content: string, mediaInputs?: MediaInput[]) => {
+export const sendMessage = async (
+  roomID: string,
+  content: string,
+  mediaInputs?: MediaInput[],
+  replyToID?: string | null,
+) => {
   const token = getUserToken();
-  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs }, token);
+  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, replyToID }, token);
 };
 
 export type ListMessagesOptions = {
   before?: string;
   after?: string;
   afterTime?: string;
+  // 指定メッセージを中心に前後 limit 件ずつ取得する（引用タップ・返信通知のジャンプ用）
+  around?: string;
 };
 
 export const listMessages = async (roomID: string, limit = 50, options?: ListMessagesOptions): Promise<MessagePage> => {
@@ -255,6 +332,7 @@ export const listMessages = async (roomID: string, limit = 50, options?: ListMes
       ...(options?.before ? { before: options.before } : {}),
       ...(options?.after ? { after: options.after } : {}),
       ...(options?.afterTime ? { afterTime: options.afterTime } : {}),
+      ...(options?.around ? { around: options.around } : {}),
     },
     getUserToken(),
   );

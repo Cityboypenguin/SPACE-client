@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
@@ -17,6 +17,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
+import { useScrollToMessage } from '../hooks/useScrollToMessage';
 import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import styles from '../components/ChatRoom.module.css';
@@ -36,7 +37,10 @@ export const CommunityRoomPage = () => {
   useResetViewportScroll([roomId]);
   const locationState = location.state as { communityID?: string; community?: Community; showDetail?: boolean } | null;
   const { userId: currentUserID } = useAuth();
-  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+  // 返信通知からは ?messageID=... 付きで開かれ、そのメッセージを中心に表示する。
+  const [searchParams] = useSearchParams();
+  const aroundMessageId = searchParams.get('messageID');
+  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -44,6 +48,7 @@ export const CommunityRoomPage = () => {
     sendError,
     editingId, setEditingId,
     editContent, setEditContent,
+    replyTarget, setReplyTarget,
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
@@ -56,7 +61,7 @@ export const CommunityRoomPage = () => {
     firstUnreadRef,
     newMessageCount,
     isAtBottom,
-    scrollToLatest,
+    scrollToLatest, releaseAutoScroll,
   } = useChatScroll({
     messages,
     containerRef: messageListRef,
@@ -65,6 +70,14 @@ export const CommunityRoomPage = () => {
   });
 
   const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
+
+  useScrollToMessage({
+    containerRef: messageListRef,
+    pendingScrollId,
+    onScrolled: clearPendingScroll,
+    messageCount: messages.length,
+    releaseAutoScroll,
+  });
 
   const loadOlderWithScrollRestore = async () => {
     beginRestore();
@@ -227,6 +240,8 @@ export const CommunityRoomPage = () => {
                   onCancelEdit={() => setEditingId(null)}
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
+                  onReply={() => setReplyTarget(msg)}
+                  onJumpToMessage={jumpToMessage}
                 />
               </Fragment>
             );
@@ -248,6 +263,8 @@ export const CommunityRoomPage = () => {
         onFileSelect={setSelectedFiles}
         selectedFiles={selectedFiles}
         disabled={sending}
+        replyTarget={replyTarget}
+        onCancelReply={() => setReplyTarget(null)}
       />
 
       {showDetail && community && (

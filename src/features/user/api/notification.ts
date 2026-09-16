@@ -22,6 +22,13 @@ export type NotificationTargetPost = {
   media: Media[];
 };
 
+// 返信通知の遷移先。ルーム種別でチャット画面のパスが変わるため room も引く。
+export type NotificationTargetMessage = {
+  ID: string;
+  roomID: string;
+  room: { ID: string; type: string };
+};
+
 export type Notification = {
   ID: string;
   type: string;
@@ -29,6 +36,7 @@ export type Notification = {
   targetType?: string | null;
   targetID?: string | null;
   targetPost?: NotificationTargetPost | null;
+  targetMessage?: NotificationTargetMessage | null;
   message: string;
   isRead: boolean;
   createdAt: string;
@@ -43,6 +51,7 @@ export type NotificationGroup = {
   targetType?: string | null;
   targetID?: string | null;
   targetPost?: NotificationTargetPost | null;
+  targetMessage?: NotificationTargetMessage | null;
   message: string;
   createdAt: string;
   count: number;
@@ -77,6 +86,14 @@ const MyNotificationsDocument = graphql(`
           }
           media {
             ...MediaFields
+          }
+        }
+        targetMessage {
+          ID
+          roomID
+          room {
+            ID
+            type
           }
         }
         message
@@ -115,6 +132,14 @@ const MyNotificationGroupsDocument = graphql(`
             ...MediaFields
           }
         }
+        targetMessage {
+          ID
+          roomID
+          room {
+            ID
+            type
+          }
+        }
         message
         createdAt
         count
@@ -150,6 +175,14 @@ const NotificationDocument = graphql(`
         }
         media {
           ...MediaFields
+        }
+      }
+      targetMessage {
+        ID
+        roomID
+        room {
+          ID
+          type
         }
       }
       message

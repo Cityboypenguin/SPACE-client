@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ImageLightbox } from '../../../../components/organisms/ImageLightbox';
 import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
-import { type Message, type Media } from '../../api/message';
+import { type Message, type Media, type ReplyTarget } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
@@ -110,6 +110,56 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
   );
 };
 
+// 引用返信の返信先プレビュー。LINE と同じくバブルの内側（本文の上）に収め、
+// タップで元メッセージへジャンプする。返信先に画像があればサムネイルを右に出す。
+// replyTo が null（= 返信先が削除済み）のときは削除表示にし、タップは無効。
+const ReplyQuote = ({
+  replyTo,
+  isMine,
+  onJump,
+}: {
+  replyTo: ReplyTarget | null | undefined;
+  isMine: boolean;
+  onJump?: (messageId: string) => void;
+}) => {
+  const toneClass = isMine ? styles.replyQuoteMine : styles.replyQuoteTheirs;
+
+  if (!replyTo) {
+    return (
+      <div className={`${styles.replyQuote} ${toneClass} ${styles.replyQuoteDeleted}`}>
+        <span className={styles.replyQuoteText}>削除されたメッセージ</span>
+      </div>
+    );
+  }
+
+  const thumbnail = replyTo.media.find((m) => m.contentType.startsWith('image/'));
+  const fileCount = replyTo.media.filter((m) => !m.contentType.startsWith('image/')).length;
+  const imageCount = replyTo.media.length - fileCount;
+  const preview = replyTo.content.trim() !== ''
+    ? replyTo.content
+    : imageCount > 0
+      ? `画像${imageCount}件`
+      : fileCount > 0
+        ? `ファイル${fileCount}件`
+        : '';
+
+  return (
+    <button
+      type="button"
+      className={`${styles.replyQuote} ${toneClass}`}
+      onClick={() => onJump?.(replyTo.ID)}
+    >
+      <span className={styles.replyQuoteBody}>
+        <span className={styles.replyQuoteName}>{replyTo.isMine ? '自分' : replyTo.user.name}</span>
+        <span className={styles.replyQuoteText}>{preview}</span>
+      </span>
+      {thumbnail && (
+        <img src={storageUrl(thumbnail.url)} alt="" className={styles.replyQuoteThumb} />
+      )}
+    </button>
+  );
+};
+
 type Props = {
   msg: Message;
   isMine: boolean;
@@ -123,6 +173,9 @@ type Props = {
   onDelete: () => void;
   isReadByPartner?: boolean;
   isAnonymousAuthor?: boolean;
+  // 引用返信。書き込み不可のルームでは onReply を渡さず返信ボタンを出さない。
+  onReply?: () => void;
+  onJumpToMessage?: (messageId: string) => void;
   // 書き込み不可のルーム(履修をやめた授業・終了した学期)では自分のメッセージでも編集させない。
   editable?: boolean;
 };
@@ -131,6 +184,7 @@ export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
   onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor, editable = true,
+  onReply, onJumpToMessage,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -138,7 +192,9 @@ export const ChatMessageBubble = ({
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
   const canEdit = editable && isMine && msg.content.trim() !== '';
-  const canShowActions = (canEdit || canDelete) && !isEditing;
+  const canReply = !!onReply && !isEditing;
+  const canShowActions = (canEdit || canDelete || canReply) && !isEditing;
+  const isReply = !!msg.replyToID;
   const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 
   const [showActions, setShowActions] = useState(false);
@@ -206,6 +262,13 @@ export const ChatMessageBubble = ({
           <div
             className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight} ${showActions ? styles.messageActionsVisible : ''}`}
           >
+            {canReply && (
+              <button
+                className={styles.actionBtn}
+                onClick={() => { setShowActions(false); onReply?.(); }}
+                title="返信"
+              >↩</button>
+            )}
             {canEdit && (
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
@@ -257,10 +320,21 @@ export const ChatMessageBubble = ({
           </div>
         ) : (
           <>
-            {hasText && (
+            {/*
+              * 返信のときは、本文が空（画像のみ）でも引用を入れるためにバブルを出す。
+              * 返信でない場合の見た目は従来どおり（本文があるときだけバブル）。
+              */}
+            {isReply ? (
               <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                {renderWithLinks(msg.content)}
+                <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
+                {hasText && renderWithLinks(msg.content)}
               </div>
+            ) : (
+              hasText && (
+                <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
+                  {renderWithLinks(msg.content)}
+                </div>
+              )
             )}
             {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
           </>
@@ -279,10 +353,12 @@ export const ChatMessageBubble = ({
     </div>
   );
 
-  if (isMine) return bubbleContent;
+  if (isMine) {
+    return <div data-message-id={msg.ID} className={styles.messageHighlightTarget}>{bubbleContent}</div>;
+  }
 
   return (
-    <div className={styles.theirRow}>
+    <div className={`${styles.theirRow} ${styles.messageHighlightTarget}`} data-message-id={msg.ID}>
       {isAnonymousAuthor ? (
         <Avatar name={msg.user.name} size={32} />
       ) : (

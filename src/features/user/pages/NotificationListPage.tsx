@@ -16,6 +16,7 @@ import {
   type NotificationActor,
 } from '../api/notification';
 import { listAnnouncements } from '../api/announcement';
+import { MESSAGE_REPLY_TYPE, replyNotificationLink } from '../lib/replyNotification';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
@@ -74,6 +75,7 @@ function PersonIcon() {
 const TYPE_ICON: Record<string, ReactNode> = {
   favorite: <HeartIcon />,
   reply: <ReplyIcon />,
+  [MESSAGE_REPLY_TYPE]: <ReplyIcon />,
   dm: <ChatIcon />,
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
@@ -219,6 +221,10 @@ export const NotificationListPage = () => {
   };
 
   const openGroup = (group: (typeof pagedGroups)[number]) => {
+    // 返信通知は通知詳細を挟まず、該当メッセージまでジャンプして開く
+    const replyLink = group.type === MESSAGE_REPLY_TYPE
+      ? replyNotificationLink(group.targetMessage?.room.type, group.targetMessage?.roomID, group.targetMessage?.ID)
+      : null;
     if (group.type === 'dm' && group.actor) {
       setActorPage(0);
       setViewingActor({ actor: group.actor, type: group.type });
@@ -234,7 +240,7 @@ export const NotificationListPage = () => {
       );
       decrementUnread();
     }
-    navigate(`/notifications/${group.latestID}`);
+    navigate(replyLink ?? `/notifications/${group.latestID}`);
   };
 
   const handleMarkActorAllRead = async () => {

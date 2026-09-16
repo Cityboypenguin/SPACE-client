@@ -6,6 +6,14 @@
   --color-bg: #ffffff;
   --color-bg-elevated: #ffffff;
   --color-surface: #ffffff;
+  /* 相手の吹き出し。--color-bg / --color-bg-elevated と同色だと境目が消えるため別に持つ */
+  --color-bubble-theirs: #f1f5f9;
+  /* 引用返信カードの背景。相手の吹き出しの上に一段乗せる */
+  --color-quote-bg: #ffffff;
+  /* 自分の吹き出し(--color-primary)の上に重ねる引用カードの色。ライトでは
+     primary が濃いので白を重ねて明るく、ダークでは primary が明るいので
+     黒を重ねて暗くする（どちらも白文字が乗る前提）。 */
+  --color-quote-on-primary: rgba(255, 255, 255, 0.22);
   --color-border: #e2e8f0;
   --color-text: #1e293b;
   --color-text-muted: #94a3b8;
@@ -41,6 +49,9 @@
     --color-bg: #0f172a;
     --color-bg-elevated: #1e293b;
     --color-surface: #1e293b;
+    --color-bubble-theirs: #1e293b;
+    --color-quote-bg: #334155;
+    --color-quote-on-primary: rgba(0, 0, 0, 0.18);
     --color-border: #334155;
     --color-text: #e2e8f0;
     --color-text-muted: #94a3b8;
@@ -67,6 +78,9 @@
   --color-bg: #0f172a;
   --color-bg-elevated: #1e293b;
   --color-surface: #1e293b;
+  --color-bubble-theirs: #1e293b;
+  --color-quote-bg: #334155;
+  --color-quote-on-primary: rgba(0, 0, 0, 0.18);
   --color-border: #334155;
   --color-text: #e2e8f0;
   --color-text-muted: #94a3b8;
@@ -91,6 +105,14 @@
   --color-bg: #ffffff;
   --color-bg-elevated: #ffffff;
   --color-surface: #ffffff;
+  /* 引用返信カードの背景。吹き出し(--color-bg-elevated)との差が要るため、
+     同値の --color-surface とは別に持つ。 */
+  --color-bubble-theirs: #f1f5f9;
+  --color-quote-bg: #ffffff;
+  /* 自分の吹き出し(--color-primary)の上に重ねる引用カードの色。ライトでは
+     primary が濃いので白を重ねて明るく、ダークでは primary が明るいので
+     黒を重ねて暗くする（どちらも白文字が乗る前提）。 */
+  --color-quote-on-primary: rgba(255, 255, 255, 0.22);
   --color-border: #e2e8f0;
   --color-text: #1e293b;
   --color-text-muted: #94a3b8;

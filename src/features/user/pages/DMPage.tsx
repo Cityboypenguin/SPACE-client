@@ -11,6 +11,7 @@ import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
+import { useScrollToMessage } from '../hooks/useScrollToMessage';
 import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import { saveRecentDM } from '../../../lib/recentDM';
 import styles from '../components/ChatRoom.module.css';
@@ -38,6 +39,9 @@ export const DMPage = () => {
     loadingNewer,
     loadOlderMessages,
     loadNewerMessages,
+    pendingScrollId,
+    jumpToMessage,
+    clearPendingScroll,
   } = useRoomMessages(roomId);
 
   const partner = room?.user.find((u) => u.ID !== currentUserID);
@@ -49,6 +53,7 @@ export const DMPage = () => {
     sendError,
     editingId, setEditingId,
     editContent, setEditContent,
+    replyTarget, setReplyTarget,
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
@@ -57,7 +62,7 @@ export const DMPage = () => {
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
-  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll({
+  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest, releaseAutoScroll } = useChatScroll({
     messages,
     containerRef: messageListRef,
     roomId,
@@ -65,6 +70,14 @@ export const DMPage = () => {
   });
 
   const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
+
+  useScrollToMessage({
+    containerRef: messageListRef,
+    pendingScrollId,
+    onScrolled: clearPendingScroll,
+    messageCount: messages.length,
+    releaseAutoScroll,
+  });
 
   const loadOlderWithScrollRestore = useCallback(async () => {
     beginRestore();
@@ -212,6 +225,8 @@ export const DMPage = () => {
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
                   isReadByPartner={isLastReadByPartner}
+                  onReply={isBlocked ? undefined : () => setReplyTarget(msg)}
+                  onJumpToMessage={jumpToMessage}
                 />
               </React.Fragment>
             );
@@ -240,6 +255,8 @@ export const DMPage = () => {
         selectedFiles={selectedFiles}
         disabled={sending}
         isBlocked={isBlocked}
+        replyTarget={replyTarget}
+        onCancelReply={() => setReplyTarget(null)}
       />
     </div>
   );
