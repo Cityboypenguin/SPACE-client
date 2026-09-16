@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ImageLightbox } from '../../../../components/organisms/ImageLightbox';
 import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
@@ -6,11 +6,23 @@ import { type Message, type Media, type ReplyTarget } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
+import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
+import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
+import { useSwipeToReply } from '../../hooks/useSwipeToReply';
+import replyMenuIcon from '../../../../assets/パーツ_コメント.svg';
+import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { reservedAspectRatio } from '../../../../lib/media';
 import { reportDimensionsOnLoad } from '../../../../lib/reportMediaDimensions';
 import styles from '../ChatRoom.module.css';
 
 const URL_REGEX = /(https?:\/\/[^\s 《》「」（）、。！？]+)/g;
+
+// これより長く触れていたら「タップ」ではなく長押しとみなし、メニューを開かない。
+// 長押しは OS 標準のテキスト選択（コピー）に使ってもらう。
+const TAP_MAX_DURATION_MS = 400;
+
+// マウスではなく指で操作する端末か。長押しやテキスト選択の扱いを分けるのに使う。
+const isCoarsePointer = () => window.matchMedia('(pointer: coarse)').matches;
 
 const renderWithLinks = (text: string) => {
   const parts = text.split(URL_REGEX);
@@ -188,7 +200,6 @@ export const ChatMessageBubble = ({
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
   const canEdit = editable && isMine && msg.content.trim() !== '';
@@ -197,9 +208,13 @@ export const ChatMessageBubble = ({
   const isReply = !!msg.replyToID;
   const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 
-  const [showActions, setShowActions] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // タップとスクロール／スワイプを見分けるための記録。
+  const touchStartedAt = useRef(0);
+  const movedDuringTouch = useRef(false);
+  // メニューを上下どちらに開くか。一覧の上端・下端で見切れないよう実測して決める。
+  const [openUpward, setOpenUpward] = useState(true);
+  const menuAnchorRef = useRef<HTMLSpanElement>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -209,36 +224,123 @@ export const ChatMessageBubble = ({
     el.style.height = `${el.scrollHeight}px`;
   }, [isEditing]);
 
-  const clearLongPressTimer = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
+  // 開いた直後に、メニューの実寸とスクロール領域の余白を測って向きを決める。
+  // 描画前に確定させたいので useLayoutEffect（useEffect だと一瞬反対側に出る）。
+  useLayoutEffect(() => {
+    if (!menuOpen) return;
+    const anchor = menuAnchorRef.current;
+    const dropdown = anchor?.querySelector<HTMLElement>(`.${styles.messageMenuDropdown}`);
+    if (!anchor || !dropdown) return;
 
-  const handleTouchStart = () => {
-    if (!canShowActions) return;
-    clearLongPressTimer();
-    longPressTimer.current = setTimeout(() => setShowActions(true), 500);
-  };
+    const anchorRect = anchor.getBoundingClientRect();
+    // 見切れの境界はビューポートではなくメッセージ一覧（スクロール領域）
+    const scroller = anchor.closest<HTMLElement>(`.${styles.messageList}`);
+    const bounds = scroller
+      ? scroller.getBoundingClientRect()
+      : { top: 0, bottom: window.innerHeight };
+    const needed = dropdown.offsetHeight + 4;
+    const roomAbove = anchorRect.top - bounds.top;
+    const roomBelow = bounds.bottom - anchorRect.bottom;
+    // 上に入るなら上（吹き出しを隠しにくい）。入らないなら広い方へ。
+    setOpenUpward(roomAbove >= needed || roomAbove >= roomBelow);
+  }, [menuOpen]);
 
+  // DropdownMenu の useClickOutside は mousedown しか見ていないので、
+  // タッチ端末での「外側をタップして閉じる」ぶんはここで面倒を見る。
+  // メニュー自身へのタッチで閉じてしまうと、項目に click が届く前に
+  // アンマウントされて「押せないメニュー」になるので、内側は除外する。
   useEffect(() => {
-    if (!showActions) return;
-    const handleOutside = (e: Event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setShowActions(false);
-      }
+    if (!menuOpen) return;
+    const closeIfOutside = (e: TouchEvent) => {
+      const anchor = menuAnchorRef.current;
+      if (anchor && e.target instanceof Node && anchor.contains(e.target)) return;
+      setMenuOpen(false);
     };
-    document.addEventListener('touchstart', handleOutside);
-    document.addEventListener('mousedown', handleOutside);
-    return () => {
-      document.removeEventListener('touchstart', handleOutside);
-      document.removeEventListener('mousedown', handleOutside);
-    };
-  }, [showActions]);
+    document.addEventListener('touchstart', closeIfOutside);
+    return () => document.removeEventListener('touchstart', closeIfOutside);
+  }, [menuOpen]);
+
+  // バブルを内側（画面中央側）へ引くと返信。自分の発言は右寄せなので左へ、
+  // 相手の発言は左寄せなので右へ動かす。
+  const swipe = useSwipeToReply({
+    enabled: canReply,
+    direction: isMine ? -1 : 1,
+    onReply: () => onReply?.(),
+    onMoveBeyondSlop: () => { movedDuringTouch.current = true; },
+  });
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartedAt.current = Date.now();
+    movedDuringTouch.current = false;
+    swipe.handlers.onTouchStart(e);
+  };
+
+  // タッチ端末はタップでメニューを開く。長押しは OS 標準のテキスト選択に譲るため、
+  // 自前では拾わない。スクロール・スワイプ後や、リンク／画像／引用のタップは除く。
+  const handleClick = (e: React.MouseEvent) => {
+    if (!canShowActions || !isCoarsePointer()) return;
+    if (movedDuringTouch.current) return;
+    if (Date.now() - touchStartedAt.current > TAP_MAX_DURATION_MS) return;
+    if ((e.target as HTMLElement).closest('a, button, img, textarea')) return;
+    setMenuOpen(true);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (!canShowActions) return;
+    // ブラウザ標準のメニューではなく、「···」と同じメニューを出す
+    e.preventDefault();
+    setMenuOpen(true);
+  };
+
+  // DropdownMenu 自身の .wrap は position: relative を持つので、浮かせる位置指定は
+  // 上書きせず外側の span で行う（同じプロパティをクラス1つ同士で争わせない）。
+  const actionMenu = canShowActions && (
+    <span
+      ref={menuAnchorRef}
+      className={`${styles.messageMenu} ${isMine ? styles.messageMenuLeft : styles.messageMenuRight}`}
+    >
+      <DropdownMenu
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        ariaLabel="メッセージの操作"
+        triggerClassName={styles.messageMenuTrigger}
+        dropdownClassName={`${styles.messageMenuDropdown} ${openUpward ? styles.messageMenuDropdownUp : styles.messageMenuDropdownDown}`}
+      >
+        {(close) => (
+          <>
+            {canReply && (
+              <DropdownMenuItem icon={replyMenuIcon} themedIcon onClick={() => { close(); onReply?.(); }}>
+                返信
+              </DropdownMenuItem>
+            )}
+            {canEdit && (
+              <DropdownMenuItem icon={editIcon} themedIcon onClick={() => { close(); onStartEdit(); }}>
+                編集
+              </DropdownMenuItem>
+            )}
+            {canDelete && (
+              <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); onDelete(); }}>
+                削除
+              </DropdownMenuItem>
+            )}
+          </>
+        )}
+      </DropdownMenu>
+    </span>
+  );
 
   const bubbleContent = (
     <div className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}>
+      {/* スワイプで引いたぶんだけ現れる返信アイコン。バブルが退いた側に出す */}
+      {swipe.offset !== 0 && (
+        <span
+          className={`${styles.swipeReplyHint} ${isMine ? styles.swipeReplyHintRight : styles.swipeReplyHintLeft} ${swipe.isReady ? styles.swipeReplyHintReady : ''}`}
+          style={{ opacity: swipe.progress }}
+          aria-hidden="true"
+        >
+          <ReplyArrow size={18} />
+        </span>
+      )}
       {!isMine && (
         <span
           className={styles.senderName}
@@ -250,41 +352,20 @@ export const ChatMessageBubble = ({
       )}
 
       <div
-        ref={wrapperRef}
         onTouchStart={handleTouchStart}
-        onTouchEnd={clearLongPressTimer}
-        onTouchMove={clearLongPressTimer}
-        onTouchCancel={clearLongPressTimer}
-        onContextMenu={(e) => { if (canShowActions) e.preventDefault(); }}
+        onTouchEnd={swipe.handlers.onTouchEnd}
+        onTouchMove={swipe.handlers.onTouchMove}
+        onTouchCancel={swipe.handlers.onTouchCancel}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
         className={`${styles.messageContentWrap} ${isMine ? styles.messageContentMine : styles.messageContentTheirs}`}
+        style={{
+          transform: swipe.offset !== 0 ? `translateX(${swipe.offset}px)` : undefined,
+          // 指を離したときだけ滑らかに戻す（ドラッグ中は指に追従させる）
+          transition: swipe.offset === 0 ? 'transform 0.18s ease-out' : undefined,
+        }}
       >
-        {canShowActions && (
-          <div
-            className={`${styles.messageActions} ${isMine ? styles.messageActionsLeft : styles.messageActionsRight} ${showActions ? styles.messageActionsVisible : ''}`}
-          >
-            {canReply && (
-              <button
-                className={styles.actionBtn}
-                onClick={() => { setShowActions(false); onReply?.(); }}
-                title="返信"
-              >↩</button>
-            )}
-            {canEdit && (
-              <button
-                className={`${styles.actionBtn} ${styles.actionBtnEdit}`}
-                onClick={() => { setShowActions(false); onStartEdit(); }}
-                title="編集"
-              ><img src={editIcon} alt="編集" className={`${styles.actionIcon} themed-icon`} /></button>
-            )}
-            {canDelete && (
-              <button
-                className={styles.actionBtn}
-                onClick={() => { setShowActions(false); onDelete(); }}
-                title="削除"
-              >✕</button>
-            )}
-          </div>
-        )}
+        {actionMenu}
         {isEditing ? (
           <div className={styles.editWrapper}>
             <textarea

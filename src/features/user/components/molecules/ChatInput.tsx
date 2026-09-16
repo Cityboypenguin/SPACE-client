@@ -189,7 +189,15 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           )}
           <button
             type="button"
-            onClick={onCancelReply}
+            // ボタンにフォーカスが移ると入力欄が blur してソフトウェアキーボードが
+            // 閉じてしまう。mousedown の既定動作（フォーカス移動）を止めたうえで、
+            // 念のため入力欄へフォーカスを戻す。タップ操作の延長なので
+            // iOS でもキーボードは開いたままになる。
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              onCancelReply?.();
+              textareaRef.current?.focus();
+            }}
             title="返信をやめる"
             className={styles.replyComposerCancel}
           >

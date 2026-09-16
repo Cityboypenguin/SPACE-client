@@ -172,6 +172,8 @@
 .messageBubble {
   display: flex;
   flex-direction: column;
+  /* スワイプ返信のインジケーターを吹き出しの外側へ置くための基準 */
+  position: relative;
 }
 
 .mine {
@@ -308,26 +310,73 @@
   filter: opacity(0.3) invert(1);
 }
 
-.messageActions {
+/*
+ * メッセージの操作メニュー（返信・編集・削除）。共通の DropdownMenu を使い、
+ * ここでは「吹き出しの横に浮かせる」「ホバー中だけ出す」ぶんだけ上書きする。
+ * PC はホバーで出る「···」か右クリック、タッチ端末は長押しで開く。
+ */
+.messageMenu {
   position: absolute;
+  /* 吹き出しの高さの中心に合わせる */
   top: 50%;
   transform: translateY(-50%);
-  display: none;
-  flex-direction: column;
-  gap: 2px;
-  z-index: 1;
+  z-index: 2;
 }
 
-.messageActionsLeft {
+.messageMenuLeft {
   right: calc(100% + 2px);
 }
 
-.messageActionsRight {
+.messageMenuRight {
   left: calc(100% + 2px);
 }
 
-.messageBubble:hover .messageActions {
-  display: flex;
+/*
+ * 既定では隠しておき、吹き出しにホバーしたときとメニューを開いている間だけ見せる。
+ * display ではなく opacity で消すのは、閉じている間もドロップダウンの
+ * アンカー位置を保つため（長押し・右クリックはホバー無しで開く）。
+ */
+.messageMenuTrigger {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+.messageBubble:hover .messageMenuTrigger {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * 開く向きは ChatMessageBubble が実測して決める（一覧の上端・下端で見切れるため）。
+ * DropdownMenu 側の .dropdown も top を持っており、クラス1つ同士だとどちらが勝つかが
+ * バンドル順まかせになるので、子孫セレクタで確実に上書きする。
+ */
+.messageMenu .messageMenuDropdownUp {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.messageMenu .messageMenuDropdownDown {
+  top: calc(100% + 4px);
+  bottom: auto;
+}
+
+/*
+ * 相手の発言では「···」が吹き出しの右側に出る。DropdownMenu 既定の right: 0 のままだと
+ * そこから左へ広がって吹き出しに被るので、右へ開くようにする。
+ */
+.messageMenuRight .messageMenuDropdown {
+  right: auto;
+  left: 0;
+}
+
+/* タッチ端末はホバーが無いので「···」は出さない（長押しで開く） */
+/* タッチ端末はホバーが無いので「···」は出さない（バブルのタップで開く） */
+@media (pointer: coarse) {
+  .messageMenuTrigger {
+    display: none;
+  }
 }
 
 .messageContentWrap {
@@ -336,6 +385,8 @@
   max-width: min(80%, 42rem);
   flex-direction: column;
   gap: 0.1875rem;
+  /* 縦スクロールはブラウザに任せ、横方向だけスワイプ返信で使う */
+  touch-action: pan-y;
 }
 
 .messageContentMine {
@@ -346,66 +397,28 @@
   align-items: flex-start;
 }
 
-.messageActionsVisible {
-  display: flex;
-}
-
-.actionBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px 5px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  line-height: 1;
-  transition: background 0.15s, color 0.15s;
-}
-
-.actionBtnEdit {
-  padding: 1px;
+/* スワイプ返信で、バブルが退いた側に現れる返信アイコン */
+.swipeReplyHint {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
-  justify-content: center;
+  color: var(--color-text-muted);
+  pointer-events: none;
 }
 
-.actionBtn:hover {
-  background: var(--color-surface);
-  color: var(--color-text);
+.swipeReplyHintLeft {
+  left: 0;
 }
 
-.actionIcon {
-  width: 14px;
-  height: 14px;
+.swipeReplyHintRight {
+  right: 0;
 }
 
-/*
- * タッチデバイス向けの調整。画面幅ではなくポインタ種別で判定することで、
- * PCでウィンドウを小さくした場合は引き続きホバー操作のまま使えるようにする。
- * 表示/非表示自体は ChatMessageBubble の長押し(タッチ)操作で .messageActionsVisible を
- * 切り替えることで制御し、ここではタップしやすいよう領域だけを拡大する。
- */
-@media (pointer: coarse) {
-  .messageActions {
-    gap: 4px;
-  }
-
-  .actionBtn {
-    padding: 8px;
-    min-width: 36px;
-    min-height: 36px;
-    font-size: 1.1rem;
-    background: var(--color-surface);
-  }
-
-  .actionBtnEdit {
-    padding: 8px;
-  }
-
-  .actionIcon {
-    width: 18px;
-    height: 18px;
-  }
+/* 返信が成立する距離まで引けたことを色で示す */
+.swipeReplyHintReady {
+  color: var(--color-primary);
 }
 
 .editWrapper {
