@@ -39,7 +39,7 @@ import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postLis
 import { stableCacheOptions } from '../cache/swrOptions';
 import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
 
-const scrollCache = new Map<string, number>();
+const detailScrollCache = new Map<string, number>();
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -90,11 +90,15 @@ export const PostDetailPage = () => {
   useEffect(() => {
     if (isLoading || !id) return;
     const timer = requestAnimationFrame(() => {
-      if (navigationType === 'POP') {
-        const savedY = scrollCache.get(id) ?? 0;
+      // 「戻る(POP)」かつ「詳細画面のキャッシュがある」場合のみ復元
+      if (navigationType === 'POP' && detailScrollCache.has(id)) {
+        const savedY = detailScrollCache.get(id) ?? 0;
         window.scrollTo(0, savedY);
       } else {
+        // 「一覧からの遷移(PUSH)」や「新規詳細への遷移」は必ず最上部(0, 0)
         window.scrollTo(0, 0);
+        // 一覧から来た場合などに備えて過去のキャッシュをクリア
+        detailScrollCache.delete(id);
       }
     });
     return () => cancelAnimationFrame(timer);
@@ -104,7 +108,7 @@ export const PostDetailPage = () => {
     if (!id) return;
     const onScroll = () => {
       if (window.scrollY > 0) {
-        scrollCache.set(id, window.scrollY);
+        detailScrollCache.set(id, window.scrollY);
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
