@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useNavigationType } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostComposer } from '../components/organisms/PostComposer';
@@ -39,9 +39,12 @@ import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postLis
 import { stableCacheOptions } from '../cache/swrOptions';
 import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
 
+const scrollCache = new Map<string, number>();
+
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
   const { addToast } = useToast();
@@ -83,6 +86,30 @@ export const PostDetailPage = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (isLoading || !id) return;
+    const timer = requestAnimationFrame(() => {
+      if (navigationType === 'POP') {
+        const savedY = scrollCache.get(id) ?? 0;
+        window.scrollTo(0, savedY);
+      } else {
+        window.scrollTo(0, 0);
+      }
+    });
+    return () => cancelAnimationFrame(timer);
+  }, [id, isLoading, navigationType]);
+
+  useEffect(() => {
+    if (!id) return;
+    const onScroll = () => {
+      if (window.scrollY > 0) {
+        scrollCache.set(id, window.scrollY);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [id]);
 
   const handleBlock = async (blockedUserId: string) => {
     const result = await AppSwal.fire({

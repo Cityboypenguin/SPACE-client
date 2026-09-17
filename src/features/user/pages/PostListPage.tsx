@@ -101,23 +101,38 @@ export const PostListPage = () => {
   const postsRef = useRef(posts);
   const totalRef = useRef(total);
   const scrollYRef = useRef(initialCache?.scrollY ?? 0);
+  const isNavigatingRef = useRef(false);
+
+    // 追加: ブラウザ標準のスクロール復元を無効化
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    return () => {
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'auto';
+      }
+    };
+  }, []);
   useEffect(() => { postsRef.current = posts; }, [posts]);
   useEffect(() => { totalRef.current = total; }, [total]);
-
   useEffect(() => {
     const onScroll = () => {
+      if (isNavigatingRef.current) return; // 遷移中はスクロール位置を更新しない
       const currentY = window.scrollY;
-      const scrollingUp = currentY < lastScrollYRef.current;
 
+      if (currentY > 0) {
+        scrollYRef.current = currentY;
+      }
+
+      const scrollingUp = currentY < lastScrollYRef.current;
       if (currentY < 50) {
         setShowScrollTop(true);
       } else if (currentY > 300) {
         setShowScrollTop(scrollingUp);
       }
-      // 50〜300px は状態を変えない（バウンス時のちらつき防止）
 
       lastScrollYRef.current = currentY;
-      scrollYRef.current = currentY;
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -269,8 +284,12 @@ export const PostListPage = () => {
 
   // スクロール位置の復元（描画前に実行してちらつきを防ぐ）
   useLayoutEffect(() => {
-    if (!initialCache) return;
-    window.scrollTo(0, initialCache.scrollY);
+    if (!initialCache || initialCache.scrollY === 0) return;
+
+    const timer = requestAnimationFrame(() => {
+      window.scrollTo(0, initialCache.scrollY);
+    });
+    return () => cancelAnimationFrame(timer);
   }, [initialCache]);
 
   // アンマウント時にキャッシュ保存
@@ -316,6 +335,7 @@ export const PostListPage = () => {
   );
 
   const handlePostClick = (postId: string) => {
+    isNavigatingRef.current = true; // 画面遷移フラグをセット
     savePostListCache({
       posts: postsRef.current,
       total: totalRef.current,
@@ -326,7 +346,7 @@ export const PostListPage = () => {
     });
     navigate(`/posts/${postId}`);
   };
-
+  
   const handlePost = async () => {
     if ((!content.trim() && selectedFiles.length === 0) || posting) return;
     setPosting(true);
