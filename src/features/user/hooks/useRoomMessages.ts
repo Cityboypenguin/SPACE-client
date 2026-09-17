@@ -112,6 +112,7 @@ export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMes
         if (!active) return;
 
         const lastReadAt = roomData.room?.lastReadAt ?? null;
+        const lastReadMessageID = roomData.room?.lastReadMessageID ?? null;
         const unreadCount = roomData.room?.unreadCount ?? 0;
 
         let messages: Message[];
@@ -126,9 +127,22 @@ export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMes
           messages = result.items;
           moreBefore = result.hasMoreBefore;
           moreAfter = result.hasMoreAfter;
-        } else if (unreadCount > 0 && lastReadAt) {
-          // 未読あり: 未読開始点の前後25件ずつ取得
-          const unreadResult = await listMessages(roomId, 25, { afterTime: lastReadAt });
+        } else if (unreadCount > 0 && (lastReadMessageID || lastReadAt)) {
+          // 未読あり: 未読開始点の前後25件ずつ取得。
+          //
+          // 起点は既読位置のメッセージID。unreadCount もサーバ側で同じIDを起点に
+          // 数えているので、「未読は1件なのに未読ページは0件」という食い違いが出ない。
+          // 時刻（lastReadAt）を afterTime に渡していた頃は、既読を打った秒と同じ秒に
+          // 届いたメッセージが件数には入るのにページには出てこなかった（時刻は秒解像度で、
+          // 同じ秒の中の前後関係を表せないため）。
+          //
+          // lastReadMessageID が null になるのは、069 のバックフィル対象外だった行
+          // （既読時刻を持たないなど）や、まだ ID で既読を打ち直していない古い行。
+          // そのときだけ従来の afterTime に落とす（サーバ側の未読件数も同じ順序で
+          // ID → 時刻とフォールバックするので、起点の選び方が両者で揃う）。
+          const unreadResult = lastReadMessageID
+            ? await listMessages(roomId, 25, { after: lastReadMessageID })
+            : await listMessages(roomId, 25, { afterTime: lastReadAt ?? undefined });
           if (!active) return;
 
           if (unreadResult.items.length > 0) {
@@ -173,7 +187,16 @@ export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMes
 
         if (!markedAsRead.current) {
           markedAsRead.current = true;
-          await markRoomAsRead(roomId).catch(() => {});
+          // 既読位置として送るのは「この初期ロードで画面に載せた最後のメッセージ」。
+          // messages はここで組み立て終えた配列そのもので、setState の反映を待たずに
+          // 読めるため、送るIDと表示した内容がずれない（newestIDRef を読むと、
+          // 直後に走りうる loadNewerMessages やサブスクリプションが書き換えた値を
+          // 拾ってしまい、まだ描画していないメッセージまで既読にしかねない）。
+          //
+          // 未読が25件を超えていて moreAfter が立っている場合、ここで既読にするのは
+          // 読み込んだぶんまで。残りはスクロールで追いついたときに既読になる。
+          const lastShownID = messages[messages.length - 1]?.ID;
+          await markRoomAsRead(roomId, lastShownID).catch(() => {});
         }
       } catch (err) {
         if (!active) return;
@@ -255,7 +278,13 @@ export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMes
           return { ...prev, wsConnected: true, messages: [...prev.messages, newMsg] };
         });
         newestIDRef.current = newMsg.ID;
-        markRoomAsRead(roomId).catch(() => {});
+        // 既読位置は「いま受け取って画面に足したメッセージ」。ここに来るのは
+        // hasMoreAfterRef が false のとき（＝末尾を表示している）だけなので、この
+        // メッセージが表示済みの最後になる。newMsg.ID を直接渡すのは、state の更新が
+        // 非同期で newestIDRef も他の経路が書き換えうるため（読み取った状態と送るIDを
+        // ずらさない）。既に表示済みで重複だったとしても、サーバ側の既読位置は
+        // 前にしか進まないので実害はない。
+        markRoomAsRead(roomId, newMsg.ID).catch(() => {});
       },
       (err) => {
         console.error('[useRoomMessages] subscription error:', err);

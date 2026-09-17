@@ -48,6 +48,9 @@ export type Room = {
   user: MessageUser[];
   isMessagingDisabled: boolean;
   lastReadAt?: string | null;
+  // 既読位置のメッセージID。未読ページの取得（messages(after:)）はこれを起点にする。
+  // まだ一度も読んでいない、またはサーバ側で既読位置を時刻でしか持っていない行では null。
+  lastReadMessageID?: string | null;
   unreadCount: number;
   partnerLastReadAt?: string | null;
   lastMessage?: string | null;
@@ -94,8 +97,8 @@ export const MESSAGE_FIELDS = `
 `;
 
 const MarkRoomAsReadDocument = graphql(`
-  mutation MarkRoomAsRead($roomID: ID!) {
-    markRoomAsRead(roomID: $roomID)
+  mutation MarkRoomAsRead($roomID: ID!, $lastReadMessageID: ID) {
+    markRoomAsRead(roomID: $roomID, lastReadMessageID: $lastReadMessageID)
   }
 `);
 
@@ -113,6 +116,7 @@ const GetOrCreateDMRoomDocument = graphql(`
       }
       isMessagingDisabled
       lastReadAt
+      lastReadMessageID
       unreadCount
       partnerLastReadAt
       content
@@ -294,6 +298,7 @@ const GetRoomDocument = graphql(`
       }
       isMessagingDisabled
       lastReadAt
+      lastReadMessageID
       unreadCount
       partnerLastReadAt
       content
@@ -316,6 +321,7 @@ const MyDMRoomsDocument = graphql(`
         }
         isMessagingDisabled
         lastReadAt
+        lastReadMessageID
         unreadCount
         partnerLastReadAt
         content
@@ -354,9 +360,14 @@ export const getMentionCandidates = async (roomID: string): Promise<MentionCandi
   return data.mentionCandidates;
 };
 
-export const markRoomAsRead = async (roomID: string) => {
+// lastReadMessageID には「画面に実際に出したうちの最後のメッセージID」を渡す。
+// 省略するとサーバがリクエスト到着時点の最新メッセージを既読位置にするため、
+// こちらがまだ描画していない新着まで既読になり、そのぶんが未読から落ちる。
+// 呼び出し側は「いま state に入っている最後」ではなく「この処理で表示したことが
+// 確定している最後」を渡すこと（useRoomMessages.ts のコメント参照）。
+export const markRoomAsRead = async (roomID: string, lastReadMessageID?: string | null) => {
   const token = getUserToken();
-  return await requestDoc(MarkRoomAsReadDocument, { roomID }, token);
+  return await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
 };
 
 export const getOrCreateDMRoom = async (targetUserID: string) => {

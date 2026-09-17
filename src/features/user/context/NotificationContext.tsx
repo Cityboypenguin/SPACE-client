@@ -9,7 +9,7 @@ import { useAuth } from './useAuth';
 import { NotificationContext } from './notificationContextValue';
 import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
-import { emitUnreadRoomUpdate } from '../hooks/useUnreadSubscription';
+import { emitRoomChanged, type RoomChangedEvent } from '../hooks/useUnreadSubscription';
 import { isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 
 import { SSE_URL, refreshUserAccessToken } from '../../../lib/graphql';
@@ -138,10 +138,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
       source.addEventListener('terms_updated', refreshConsent);
 
-      source.addEventListener('unread_room', (e: MessageEvent) => {
+      // room_changed は「このルームが更新された」という事実だけを運ぶ（未読数は載らない）。
+      // 旧 unread_room は購読しない: サーバはもう送らないし、仮に古いサーバへ繋いでも
+      // unreadCount だけを頼りにした更新は今の一覧の作りと噛み合わない。
+      source.addEventListener('room_changed', (e: MessageEvent) => {
         try {
-          const payload = JSON.parse(e.data as string) as { roomID: string; unreadCount: number };
-          emitUnreadRoomUpdate(payload);
+          emitRoomChanged(JSON.parse(e.data as string) as RoomChangedEvent);
         } catch {
           // ignore malformed event
         }
