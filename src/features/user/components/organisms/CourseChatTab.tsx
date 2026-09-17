@@ -10,6 +10,7 @@ import { useChatScroll } from '../../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../../hooks/useScrollToMessage';
 import { isAnonymousUser } from '../../lib/anonymous';
+import { findFirstUnreadIndex, isSameMessageGroup } from '../../lib/messageGrouping';
 import styles from '../ChatRoom.module.css';
 
 type Props = {
@@ -55,6 +56,8 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
 
   // ルームを開いた時点の既読位置。開いている間に既読が進んでも区切り線は動かさない(DM・コミュニティと同じ)。
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
+  // 授業チャットは匿名表示のため、自分の投稿かどうかは user.ID ではなく isMine で判定する。
+  const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.isMine);
 
   const loadOlderWithScrollRestore = async () => {
     beginRestore();
@@ -98,12 +101,11 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
 
           {messages.map((msg, index) => {
             const prevMsg = index > 0 ? messages[index - 1] : null;
-            const msgTimeMs = new Date(msg.createdAt).getTime();
-            const prevMsgTimeMs = prevMsg ? new Date(prevMsg.createdAt).getTime() : null;
-            // 授業チャットは匿名表示のため、自分の投稿かどうかは user.ID ではなく isMine で判定する。
-            const isFirstUnread = !msg.isMine && initialLastReadAtMs !== null
-              && msgTimeMs > initialLastReadAtMs
-              && (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
+            const nextMsg = index + 1 < messages.length ? messages[index + 1] : null;
+            const isFirstUnread = index === firstUnreadIndex;
+            // 未読区切り線をまたぐところではまとまりを切る
+            const isGroupStart = isFirstUnread || !isSameMessageGroup(prevMsg, msg);
+            const isGroupEnd = index + 1 === firstUnreadIndex || !isSameMessageGroup(msg, nextMsg);
             return (
               <div key={msg.ID} className={styles.messageGroup}>
                 <ChatDateSeparator
@@ -126,6 +128,8 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
                   onDelete={() => handleDelete(msg.ID)}
                   onReply={roomWritable ? () => setReplyTarget(msg) : undefined}
                   onJumpToMessage={jumpToMessage}
+                  isGroupStart={isGroupStart}
+                  isGroupEnd={isGroupEnd}
                 />
               </div>
             );

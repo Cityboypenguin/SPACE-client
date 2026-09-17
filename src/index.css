@@ -8,12 +8,18 @@
   --color-surface: #ffffff;
   /* 相手の吹き出し。--color-bg / --color-bg-elevated と同色だと境目が消えるため別に持つ */
   --color-bubble-theirs: #f1f5f9;
-  /* 引用返信カードの背景。相手の吹き出しの上に一段乗せる */
-  --color-quote-bg: #ffffff;
-  /* 自分の吹き出し(--color-primary)の上に重ねる引用カードの色。ライトでは
-     primary が濃いので白を重ねて明るく、ダークでは primary が明るいので
-     黒を重ねて暗くする（どちらも白文字が乗る前提）。 */
-  --color-quote-on-primary: rgba(255, 255, 255, 0.22);
+  /* 引用返信カードの背景。返信元だと分かるよう、乗せる吹き出しより一段濃くする */
+  --color-quote-bg: #e2e8f0;
+  /* 引用カードに出す返信先の名前。一段濃くなった地の上でも読めるよう
+     primary より濃い青にする（#2563eb on #e2e8f0 で 4.2:1）。 */
+  --color-quote-name: #2563eb;
+  /* 吹き出しの外に出る時刻・編集済み・「···」の色。--color-text-muted (#94a3b8) は
+     白地で 2.6:1 しかなく読み取りづらいので、一段はっきりした色を別に持つ。 */
+  --color-chat-meta: #64748b;
+  /* 自分の吹き出し(--color-primary)の上に重ねる引用カードの色。吹き出しより
+     濃く見せたいので黒を薄く重ねる。乗る文字は白のままなので、明るくするより
+     対比も上がる（ライトの primary #3b82f6 上で 3.68:1 → 5.59:1）。 */
+  --color-quote-on-primary: rgba(0, 0, 0, 0.22);
   --color-border: #e2e8f0;
   --color-text: #1e293b;
   --color-text-muted: #94a3b8;
@@ -50,8 +56,10 @@
     --color-bg-elevated: #1e293b;
     --color-surface: #1e293b;
     --color-bubble-theirs: #1e293b;
-    --color-quote-bg: #334155;
-    --color-quote-on-primary: rgba(0, 0, 0, 0.18);
+    --color-quote-bg: #0f172a;
+    --color-quote-name: #93c5fd;
+    --color-chat-meta: #cbd5e1;
+    --color-quote-on-primary: rgba(0, 0, 0, 0.22);
     --color-border: #334155;
     --color-text: #e2e8f0;
     --color-text-muted: #94a3b8;
@@ -79,8 +87,10 @@
   --color-bg-elevated: #1e293b;
   --color-surface: #1e293b;
   --color-bubble-theirs: #1e293b;
-  --color-quote-bg: #334155;
-  --color-quote-on-primary: rgba(0, 0, 0, 0.18);
+  --color-quote-bg: #0f172a;
+  --color-quote-name: #93c5fd;
+  --color-chat-meta: #cbd5e1;
+  --color-quote-on-primary: rgba(0, 0, 0, 0.22);
   --color-border: #334155;
   --color-text: #e2e8f0;
   --color-text-muted: #94a3b8;
@@ -108,11 +118,17 @@
   /* 引用返信カードの背景。吹き出し(--color-bg-elevated)との差が要るため、
      同値の --color-surface とは別に持つ。 */
   --color-bubble-theirs: #f1f5f9;
-  --color-quote-bg: #ffffff;
-  /* 自分の吹き出し(--color-primary)の上に重ねる引用カードの色。ライトでは
-     primary が濃いので白を重ねて明るく、ダークでは primary が明るいので
-     黒を重ねて暗くする（どちらも白文字が乗る前提）。 */
-  --color-quote-on-primary: rgba(255, 255, 255, 0.22);
+  --color-quote-bg: #e2e8f0;
+  /* 引用カードに出す返信先の名前。一段濃くなった地の上でも読めるよう
+     primary より濃い青にする（#2563eb on #e2e8f0 で 4.2:1）。 */
+  --color-quote-name: #2563eb;
+  /* 吹き出しの外に出る時刻・編集済み・「···」の色。--color-text-muted (#94a3b8) は
+     白地で 2.6:1 しかなく読み取りづらいので、一段はっきりした色を別に持つ。 */
+  --color-chat-meta: #64748b;
+  /* 自分の吹き出し(--color-primary)の上に重ねる引用カードの色。吹き出しより
+     濃く見せたいので黒を薄く重ねる。乗る文字は白のままなので、明るくするより
+     対比も上がる（ライトの primary #3b82f6 上で 3.68:1 → 5.59:1）。 */
+  --color-quote-on-primary: rgba(0, 0, 0, 0.22);
   --color-border: #e2e8f0;
   --color-text: #1e293b;
   --color-text-muted: #94a3b8;

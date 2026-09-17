@@ -2,9 +2,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ImageLightbox } from '../../../../components/organisms/ImageLightbox';
 import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
-import { type Message, type Media, type ReplyTarget } from '../../api/message';
+import { type Message, type Media, type MessageUser, type ReplyTarget } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
+import humanIcon from '../../../../assets/パーツ_人間.svg';
+import { isAnonymousUser } from '../../lib/anonymous';
 import { storageUrl } from '../../../../lib/storage';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
@@ -102,6 +104,23 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
   );
 };
 
+// 引用カードに出す返信先のアイコン。カード全体が <button> なので、<div> を含む
+// Avatar / <a> を張る UserAvatar ではなく画像1枚で組む（ボタンの中に置ける要素で
+// 収める・引用のタップがプロフィール遷移に化けないようにする、の両方が理由）。
+// 授業チャットの匿名投稿者は avatarUrl を持たないため、既定の人型アイコンが出る。
+const ReplyQuoteAvatar = ({ user }: { user: MessageUser }) => {
+  const url = isAnonymousUser(user) ? null : storageUrl(user.avatarUrl);
+  return (
+    <span className={styles.replyQuoteAvatar}>
+      <img
+        src={url ?? humanIcon}
+        alt=""
+        className={url ? styles.replyQuoteAvatarImg : styles.replyQuoteAvatarDefault}
+      />
+    </span>
+  );
+};
+
 // 引用返信の返信先プレビュー。LINE と同じくバブルの内側（本文の上）に収め、
 // タップで元メッセージへジャンプする。返信先に画像があればサムネイルを右に出す。
 // replyTo が null（= 返信先が削除済み）のときは削除表示にし、タップは無効。
@@ -142,7 +161,11 @@ const ReplyQuote = ({
       onClick={() => onJump?.(replyTo.ID)}
     >
       <span className={styles.replyQuoteBody}>
-        <span className={styles.replyQuoteName}>{replyTo.isMine ? '自分' : replyTo.user.name}</span>
+        {/* 自分の発言への返信でも「自分」ではなく名前を出す（誰への返信かが一目で分かるように） */}
+        <span className={styles.replyQuoteHeader}>
+          <ReplyQuoteAvatar user={replyTo.user} />
+          <span className={styles.replyQuoteName}>{replyTo.user.name}</span>
+        </span>
         <span className={styles.replyQuoteText}>{preview}</span>
       </span>
       {thumbnail && (
@@ -170,13 +193,17 @@ type Props = {
   onJumpToMessage?: (messageId: string) => void;
   // 書き込み不可のルーム(履修をやめた授業・終了した学期)では自分のメッセージでも編集させない。
   editable?: boolean;
+  // 同じ人が同じ分に続けて投稿したメッセージのまとまり（LINE 方式）における位置。
+  // 先頭だけアイコンと名前を出し、末尾だけ時刻を出す。渡されなければ単独扱い。
+  isGroupStart?: boolean;
+  isGroupEnd?: boolean;
 };
 
 export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
   onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor, editable = true,
-  onReply, onJumpToMessage,
+  onReply, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -203,8 +230,9 @@ export const ChatMessageBubble = ({
   // タップとスクロール／スワイプを見分けるための記録。
   const touchStartedAt = useRef(0);
   const movedDuringTouch = useRef(false);
-  // メニューを上下どちらに開くか。一覧の上端・下端で見切れないよう実測して決める。
+  // メニューをどちらへ開くか。一覧の端で見切れないよう、上下・左右とも実測して決める。
   const [openUpward, setOpenUpward] = useState(true);
+  const [alignStart, setAlignStart] = useState(true);
   const menuAnchorRef = useRef<HTMLSpanElement>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -228,12 +256,20 @@ export const ChatMessageBubble = ({
     const scroller = anchor.closest<HTMLElement>(`.${styles.messageList}`);
     const bounds = scroller
       ? scroller.getBoundingClientRect()
-      : { top: 0, bottom: window.innerHeight };
-    const needed = dropdown.offsetHeight + 4;
+      : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
+
+    const neededHeight = dropdown.offsetHeight + 4;
     const roomAbove = anchorRect.top - bounds.top;
     const roomBelow = bounds.bottom - anchorRect.bottom;
     // 上に入るなら上（吹き出しを隠しにくい）。入らないなら広い方へ。
-    setOpenUpward(roomAbove >= needed || roomAbove >= roomBelow);
+    setOpenUpward(roomAbove >= neededHeight || roomAbove >= roomBelow);
+
+    // 左右も同じ考え方で決める。時刻列は一覧の端に寄っているので、既定の向きに
+    // 任せると自分の発言（左端）でも相手の発言（右端）でも外へはみ出しうる。
+    const neededWidth = dropdown.offsetWidth;
+    const roomFromLeft = bounds.right - anchorRect.left;
+    const roomFromRight = anchorRect.right - bounds.left;
+    setAlignStart(roomFromLeft >= neededWidth || roomFromLeft >= roomFromRight);
   }, [menuOpen]);
 
   // DropdownMenu の useClickOutside は mousedown しか見ていないので、
@@ -283,8 +319,9 @@ export const ChatMessageBubble = ({
     setMenuOpen(true);
   };
 
-  // DropdownMenu 自身の .wrap は position: relative を持つので、浮かせる位置指定は
-  // 上書きせず外側の span で行う（同じプロパティをクラス1つ同士で争わせない）。
+  // 吹き出しの外側、時刻の真上に浮かせる。DropdownMenu 自身の .wrap は
+  // position: relative を持つので、位置指定は上書きせず外側の span で行う
+  // （同じプロパティをクラス1つ同士で争わせない）。
   const actionMenu = canShowActions && (
     <span
       ref={menuAnchorRef}
@@ -295,7 +332,7 @@ export const ChatMessageBubble = ({
         onOpenChange={setMenuOpen}
         ariaLabel="メッセージの操作"
         triggerClassName={styles.messageMenuTrigger}
-        dropdownClassName={`${styles.messageMenuDropdown} ${openUpward ? styles.messageMenuDropdownUp : styles.messageMenuDropdownDown}`}
+        dropdownClassName={`${styles.messageMenuDropdown} ${openUpward ? styles.messageMenuDropdownUp : styles.messageMenuDropdownDown} ${alignStart ? styles.messageMenuDropdownStart : styles.messageMenuDropdownEnd}`}
       >
         {(close) => (
           <>
@@ -320,6 +357,25 @@ export const ChatMessageBubble = ({
     </span>
   );
 
+  // 吹き出しの外側に置く情報。下から時刻・既読・編集済みと積み、
+  // ホバー時だけ出るミートボールはその上（絶対配置なので行の高さを増やさない）。
+  const messageMeta = (
+    <div className={`${styles.messageMeta} ${isMine ? styles.messageMetaMine : styles.messageMetaTheirs}`}>
+      {actionMenu}
+      {isEdited && !isEditing && (
+        <span className={styles.editedLabel}>編集済み</span>
+      )}
+      {isMine && isReadByPartner && (
+        <span className={styles.readReceipt}>既読</span>
+      )}
+      {isGroupEnd && (
+        <span className={styles.timestamp}>
+          {new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      )}
+    </div>
+  );
+
   const bubbleContent = (
     <div className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}>
       {/* スワイプで引いたぶんだけ現れる返信アイコン。バブルが退いた側に出す */}
@@ -332,7 +388,7 @@ export const ChatMessageBubble = ({
           <ReplyArrow size={18} />
         </span>
       )}
-      {!isMine && (
+      {!isMine && isGroupStart && (
         <span
           className={styles.senderName}
           onClick={isAnonymousAuthor ? undefined : () => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
@@ -343,98 +399,105 @@ export const ChatMessageBubble = ({
       )}
 
       <div
-        onTouchStart={handleTouchStart}
-        onTouchEnd={swipe.handlers.onTouchEnd}
-        onTouchMove={swipe.handlers.onTouchMove}
-        onTouchCancel={swipe.handlers.onTouchCancel}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-        className={`${styles.messageContentWrap} ${isMine ? styles.messageContentMine : styles.messageContentTheirs}`}
+        className={`${styles.messageRow} ${isMine ? styles.messageRowMine : styles.messageRowTheirs}`}
         style={{
+          // スワイプ返信では時刻ごと引く（吹き出しだけ動かすと時刻の上に重なる）
           transform: swipe.offset !== 0 ? `translateX(${swipe.offset}px)` : undefined,
           // 指を離したときだけ滑らかに戻す（ドラッグ中は指に追従させる）
           transition: swipe.offset === 0 ? 'transform 0.18s ease-out' : undefined,
         }}
       >
-        {actionMenu}
-        {isEditing ? (
-          <div className={styles.editWrapper}>
-            <textarea
-              ref={editTextareaRef}
-              className={styles.editInput}
-              value={editContent}
-              rows={1}
-              onChange={(e) => {
-                onEditContentChange(e.target.value);
-                e.target.style.height = 'auto';
-                e.target.style.height = `${e.target.scrollHeight}px`;
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') { onCancelEdit(); return; }
-                const isTouch = window.matchMedia('(pointer: coarse)').matches;
-                if (isTouch) return;
-                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  onSaveEdit();
-                }
-              }}
-              autoFocus
-            />
-            <div className={styles.editActions}>
-              <button className={styles.editSaveBtn} onClick={onSaveEdit}>保存</button>
-              <button className={styles.editCancelBtn} onClick={onCancelEdit}>キャンセル</button>
-            </div>
-            {hasMedia && (
-              <div className={styles.editingMediaWrap}>
-                <MediaList mediaItems={msg.media} isMine={isMine} />
+        {isMine && messageMeta}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={swipe.handlers.onTouchEnd}
+          onTouchMove={swipe.handlers.onTouchMove}
+          onTouchCancel={swipe.handlers.onTouchCancel}
+          onClick={handleClick}
+          onContextMenu={handleContextMenu}
+          className={`${styles.messageContentWrap} ${isMine ? styles.messageContentMine : styles.messageContentTheirs}`}
+        >
+          {isEditing ? (
+            <div className={styles.editWrapper}>
+              <textarea
+                ref={editTextareaRef}
+                className={styles.editInput}
+                value={editContent}
+                rows={1}
+                onChange={(e) => {
+                  onEditContentChange(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { onCancelEdit(); return; }
+                  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+                  if (isTouch) return;
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    onSaveEdit();
+                  }
+                }}
+                autoFocus
+              />
+              <div className={styles.editActions}>
+                <button className={styles.editSaveBtn} onClick={onSaveEdit}>保存</button>
+                <button className={styles.editCancelBtn} onClick={onCancelEdit}>キャンセル</button>
               </div>
-            )}
-          </div>
-        ) : (
-          <>
-            {/*
-              * 返信のときは、本文が空（画像のみ）でも引用を入れるためにバブルを出す。
-              * 返信でない場合の見た目は従来どおり（本文があるときだけバブル）。
-              */}
-            {isReply ? (
-              <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
-                {hasText && renderMessageBody(msg.content)}
-              </div>
-            ) : (
-              hasText && (
-                <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                  {renderMessageBody(msg.content)}
+              {hasMedia && (
+                <div className={styles.editingMediaWrap}>
+                  <MediaList mediaItems={msg.media} isMine={isMine} />
                 </div>
-              )
-            )}
-            {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
-          </>
-        )}
+              )}
+            </div>
+          ) : (
+            <>
+              {/*
+                * 返信のときは、本文が空（画像のみ）でも引用を入れるためにバブルを出す。
+                * 返信でない場合の見た目は従来どおり（本文があるときだけバブル）。
+                */}
+              {isReply ? (
+                <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
+                  <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
+                  {hasText && renderMessageBody(msg.content)}
+                </div>
+              ) : (
+                hasText && (
+                  <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
+                    {renderMessageBody(msg.content)}
+                  </div>
+                )
+              )}
+              {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
+            </>
+          )}
+        </div>
+        {!isMine && messageMeta}
       </div>
-
-      {isEdited && !isEditing && (
-        <span className={styles.editedLabel}>編集済み</span>
-      )}
-      <span className={styles.timestamp}>
-        {new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
-      </span>
-      {isMine && isReadByPartner && (
-        <span className={styles.readReceipt}>既読</span>
-      )}
     </div>
   );
 
+  const groupStartClass = isGroupStart ? styles.messageGroupStart : '';
+
   if (isMine) {
-    return <div data-message-id={msg.ID} className={styles.messageHighlightTarget}>{bubbleContent}</div>;
+    return (
+      <div data-message-id={msg.ID} className={`${styles.messageHighlightTarget} ${groupStartClass}`}>
+        {bubbleContent}
+      </div>
+    );
   }
 
   return (
-    <div className={`${styles.theirRow} ${styles.messageHighlightTarget}`} data-message-id={msg.ID}>
-      {isAnonymousAuthor ? (
-        <Avatar name={msg.user.name} size={32} />
+    <div className={`${styles.theirRow} ${styles.messageHighlightTarget} ${groupStartClass}`} data-message-id={msg.ID}>
+      {/* 続きのメッセージではアイコンを出さないが、吹き出しの左端は揃えたいので場所だけ空ける */}
+      {isGroupStart ? (
+        isAnonymousAuthor ? (
+          <Avatar name={msg.user.name} size={32} />
+        ) : (
+          <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
+        )
       ) : (
-        <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
+        <span className={styles.avatarSpacer} aria-hidden="true" />
       )}
       <div className={styles.theirContent}>{bubbleContent}</div>
     </div>

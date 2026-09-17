@@ -7,6 +7,7 @@ import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { ChatUnreadSeparator } from '../../../components/atoms/ChatUnreadSeparator';
+import { findFirstUnreadIndex, isSameMessageGroup } from '../lib/messageGrouping';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
@@ -205,6 +206,7 @@ export const CommunityRoomPage = () => {
   }, [error, navigate]);
 
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
+  const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.user.ID === currentUserID);
 
   return (
     <div className={styles.container}>
@@ -232,11 +234,11 @@ export const CommunityRoomPage = () => {
           {messages.map((msg, index) => {
             const isMine = msg.user.ID === currentUserID;
             const prevMsg = index > 0 ? messages[index - 1] : null;
-            const msgTimeMs = new Date(msg.createdAt).getTime();
-            const prevMsgTimeMs = prevMsg ? new Date(prevMsg.createdAt).getTime() : null;
-            const isFirstUnread = !isMine && initialLastReadAtMs !== null
-              && msgTimeMs > initialLastReadAtMs
-              && (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
+            const nextMsg = index + 1 < messages.length ? messages[index + 1] : null;
+            const isFirstUnread = index === firstUnreadIndex;
+            // 未読区切り線をまたぐところではまとまりを切る
+            const isGroupStart = isFirstUnread || !isSameMessageGroup(prevMsg, msg);
+            const isGroupEnd = index + 1 === firstUnreadIndex || !isSameMessageGroup(msg, nextMsg);
 
             return (
               <Fragment key={msg.ID}>
@@ -258,6 +260,8 @@ export const CommunityRoomPage = () => {
                   onDelete={() => handleDelete(msg.ID)}
                   onReply={() => setReplyTarget(msg)}
                   onJumpToMessage={jumpToMessage}
+                  isGroupStart={isGroupStart}
+                  isGroupEnd={isGroupEnd}
                 />
               </Fragment>
             );

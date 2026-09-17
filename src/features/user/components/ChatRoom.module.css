@@ -136,7 +136,22 @@
   padding: 1rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  /* まとまりの中の行間。まとまりの切れ目は .messageGroupStart が上に足す */
+  gap: 0.125rem;
+}
+
+/*
+ * 同じ人が同じ分に続けて投稿したメッセージは詰めて出すので、間隔を空けるのは
+ * まとまりの先頭だけ。gap(0.125rem) と合わせて従来どおりの 0.5rem になる。
+ */
+.messageGroupStart {
+  margin-top: 0.375rem;
+}
+
+/* 続きのメッセージでアイコンの場所だけ空けるための余白（UserAvatar と同じ 32px） */
+.avatarSpacer {
+  width: 32px;
+  flex-shrink: 0;
 }
 
 .scrollSentinel {
@@ -196,8 +211,10 @@
 }
 
 .bubble {
+  /* 引用カードを吹き出しの端まで広げるのに使うので変数で持つ */
+  --bubble-pad-x: 0.75rem;
   max-width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem var(--bubble-pad-x);
   border-radius: 12px;
   word-break: break-word;
   white-space: pre-wrap;
@@ -233,14 +250,16 @@
 
 .timestamp {
   font-size: 0.7rem;
-  color: var(--color-text-muted);
-  margin-top: 2px;
+  line-height: 1.2;
+  color: var(--color-chat-meta);
+  white-space: nowrap;
 }
 
 .editedLabel {
   font-size: 0.7rem;
-  color: var(--color-text-muted);
-  margin-top: 2px;
+  line-height: 1.2;
+  color: var(--color-chat-meta);
+  white-space: nowrap;
 }
 
 .inputForm {
@@ -328,23 +347,26 @@
 
 /*
  * メッセージの操作メニュー（返信・編集・削除）。共通の DropdownMenu を使い、
- * ここでは「吹き出しの横に浮かせる」「ホバー中だけ出す」ぶんだけ上書きする。
- * PC はホバーで出る「···」か右クリック、タッチ端末は長押しで開く。
+ * ここでは「時刻の真上に浮かせる」「ホバー中だけ出す」ぶんだけ上書きする。
+ * PC はホバーで出る「···」か右クリック、タッチ端末は吹き出しのタップで開く。
+ *
+ * 絶対配置にしているのは、「···」が出ていない間も行の高さを増やさないため
+ * （flow に置くと1行メッセージでも時刻＋アイコンぶんの高さになってしまう）。
  */
 .messageMenu {
   position: absolute;
-  /* 吹き出しの高さの中心に合わせる */
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: calc(100% + 2px);
   z-index: 2;
 }
 
+/* 自分の発言では時刻列が吹き出しの左にあるので、吹き出し寄り（右）に揃える */
 .messageMenuLeft {
-  right: calc(100% + 2px);
+  right: 0;
 }
 
+/* 相手の発言では時刻列が吹き出しの右にあるので、吹き出し寄り（左）に揃える */
 .messageMenuRight {
-  left: calc(100% + 2px);
+  left: 0;
 }
 
 /*
@@ -356,6 +378,12 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s;
+}
+
+/* DropdownMenu 側の .trigger も color を持つ（クラス1つ同士だとバンドル順で
+   どちらが勝つか変わる）ので、子孫セレクタにして確実に上書きする。 */
+.messageMenu .messageMenuTrigger {
+  color: var(--color-chat-meta);
 }
 
 .messageBubble:hover .messageMenuTrigger {
@@ -378,13 +406,15 @@
   bottom: auto;
 }
 
-/*
- * 相手の発言では「···」が吹き出しの右側に出る。DropdownMenu 既定の right: 0 のままだと
- * そこから左へ広がって吹き出しに被るので、右へ開くようにする。
- */
-.messageMenuRight .messageMenuDropdown {
-  right: auto;
+/* 左右の向きも ChatMessageBubble が実測して決める（上下と同じ理由） */
+.messageMenu .messageMenuDropdownStart {
   left: 0;
+  right: auto;
+}
+
+.messageMenu .messageMenuDropdownEnd {
+  left: auto;
+  right: 0;
 }
 
 /* タッチ端末はホバーが無いので「···」は出さない（長押しで開く） */
@@ -393,6 +423,44 @@
   .messageMenuTrigger {
     display: none;
   }
+}
+
+/*
+ * 吹き出しと、その外側の時刻列を横に並べる行。時刻は吹き出しの下端に揃えたいので
+ * align-items: flex-end。自分の発言は時刻列が左、相手の発言は右（＝どちらも
+ * 画面の内側・空いている側）に来る。
+ */
+.messageRow {
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+  gap: 0.375rem;
+}
+
+.messageRowMine {
+  justify-content: flex-end;
+}
+
+.messageRowTheirs {
+  justify-content: flex-start;
+}
+
+/* 吹き出しの外側に置く時刻・既読・編集済みの列。ミートボールの位置基準も兼ねる */
+.messageMeta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 1px;
+  padding-bottom: 2px;
+}
+
+.messageMetaMine {
+  align-items: flex-end;
+}
+
+.messageMetaTheirs {
+  align-items: flex-start;
 }
 
 .messageContentWrap {
@@ -484,9 +552,9 @@
 
 .readReceipt {
   font-size: 0.65rem;
+  line-height: 1.2;
   color: var(--color-primary);
-  margin-top: 1px;
-  text-align: right;
+  white-space: nowrap;
 }
 
 .messageListWrapper {
@@ -782,12 +850,12 @@
 
   .messageList {
     padding: 0.75rem;
-    gap: 0.45rem;
+    gap: 0.125rem;
   }
 
   .bubble {
+    --bubble-pad-x: 0.65rem;
     max-width: min(82vw, 100%);
-    padding: 0.5rem 0.65rem;
     font-size: 0.92rem;
   }
 
@@ -812,16 +880,22 @@
 
 /*
  * 返信先プレビュー。LINE と同じくバブルの内側（本文の上）に収める角丸カード。
- * 吹き出しの色が自分（primary）と相手（bg-elevated）で違うので、背景は
+ * 「返信元」だと分かるよう、乗っている吹き出しより一段濃い色にする。
+ * 吹き出しの色が自分（primary）と相手（bubble-theirs）で違うので、背景は
  * それぞれに合わせて出し分ける。文字色は不透明度で調整しており、
  * テーマごとに色を用意しなくても明暗どちらでも読める。
  */
 .replyQuote {
+  /* 吹き出しの内側の端から、この距離だけ残して広げる */
+  --quote-inset: 4px;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  width: 100%;
-  margin-bottom: 0.375rem;
+  /* 吹き出しの左右パディングをはみ出して、端ぎりぎりまで幅を使う。
+     はみ出し量を padding から計算しているので、モバイルで padding が
+     変わってもカードと吹き出しの余白は 4px のまま保たれる。 */
+  width: calc(100% + 2 * (var(--bubble-pad-x) - var(--quote-inset)));
+  margin: 0 calc(var(--quote-inset) - var(--bubble-pad-x)) 0.375rem;
   padding: 0.375rem 0.5rem;
   border: none;
   border-radius: 8px;
@@ -859,11 +933,45 @@
   gap: 1px;
 }
 
+/* 返信先のアイコンと名前。誰への返信かを一目で分かるようにする */
+.replyQuoteHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* AvatarFrame 相当の丸枠。<button> の中に置くので div ではなく span で組む */
+.replyQuoteAvatar {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.replyQuoteAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 既定の人型アイコン。Avatar と同じく枠より少し大きく見せる */
+.replyQuoteAvatarDefault {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+}
+
 .replyQuoteName {
   font-size: 0.7rem;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--color-primary);
+  color: var(--color-quote-name);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -878,7 +986,8 @@
   font-size: 0.75rem;
   line-height: 1.35;
   color: var(--color-text);
-  opacity: 0.65;
+  /* 地が一段濃くなったぶん、薄めすぎると読めないので不透明度を上げる */
+  opacity: 0.78;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
