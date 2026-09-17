@@ -81,7 +81,7 @@ export const PostListPage = () => {
   const [searchFocused, setSearchFocused] = useState(false);
   const [suggestDismissed, setSuggestDismissed] = useState(false);
   const [suggestActiveIndex, setSuggestActiveIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'recommended' | 'favorites'>('recommended');
+  const [activeTab, setActiveTab] = useState<'recommended' | 'favorites' | 'newest'>('recommended');
 
   // 検索ボックスが "#..." のとき、入力中のタグ本体（"#"の後〜最初の空白まで）をサジェスト対象にする。
   const searchHashtagQuery = (() => {
@@ -315,7 +315,7 @@ export const PostListPage = () => {
       }
     }, [loadPosts]),
     loadingMore,
-    activeTab === 'recommended' && !isSearching && posts.length < total,
+    (activeTab === 'recommended' || activeTab === 'newest') && !isSearching && posts.length < total,
   );
 
   const followSentinelRef = useInfiniteScroll(
@@ -515,7 +515,9 @@ export const PostListPage = () => {
     ? searchResults.slice(0, searchDisplayedCount)
     : activeTab === 'favorites'
       ? followFeed.posts
-      : posts;
+      : activeTab === 'newest'
+        ? [...posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        : posts;
 
   const isTabLoading = activeTab === 'favorites' ? followFeed.initialLoading : initialLoading;
   const isTabLoadingMore = activeTab === 'favorites' ? followFeed.loadingMore : loadingMore;
@@ -686,6 +688,7 @@ export const PostListPage = () => {
           <Tabs
             tabs={[
               { key: 'recommended', label: 'おすすめ' },
+              { key: 'newest', label: '新しい順' },
               { key: 'favorites', label: 'お気に入り' },
             ]}
             activeTab={activeTab}
