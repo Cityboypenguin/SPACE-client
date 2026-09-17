@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { AvatarFrame } from '../../../../components/atoms/AvatarFrame';
 import { storageUrl } from '../../../../lib/storage';
@@ -16,6 +17,12 @@ type Props = {
 // メンションのサジェスト候補を表示するドロップダウン（表示のみ）。
 // 構造・キー操作は HashtagSuggestionList と揃えてある。
 export const MentionSuggestionList = ({ suggestions, activeIndex, onSelect, onHover }: Props) => {
+  const activeItemRef = useRef<HTMLLIElement | null>(null);
+
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex]);
+
   if (suggestions.length === 0) return null;
 
   return (
@@ -23,6 +30,7 @@ export const MentionSuggestionList = ({ suggestions, activeIndex, onSelect, onHo
       {suggestions.map((s, i) => (
         <li
           key={s.ID}
+          ref={i === activeIndex ? activeItemRef : null}
           role="option"
           aria-selected={i === activeIndex}
           className={`${styles.item} ${i === activeIndex ? styles.itemActive : ''}`}

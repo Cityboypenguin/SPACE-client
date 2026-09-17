@@ -12,17 +12,28 @@
 }
 
 .item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
+  border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   user-select: none;
 }
 
 .itemActive {
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+
+.itemActive .name {
+  color: var(--color-primary-hover);
+}
+
+.itemActive .accountID {
+  color: var(--color-text);
 }
 
 .avatarImage {

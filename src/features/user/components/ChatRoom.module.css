@@ -225,14 +225,11 @@
   background-color: var(--color-primary);
   color: #fff;
 
-  /* メンションの既定色 --color-link (#646cff) は、この吹き出しの地 --color-primary
-     (#3b82f6) とほぼ同色で読めない。.messageLink と同じく地の文字色(白)を継ぎ、
-     クリックできることは下線で示す。
-     自分宛だけは黒を薄く重ねたチップで沈ませる（白を重ねると白文字とのコントラストが
-     3.68:1 → 2.94:1 と下がるため、明るくするのではなく暗くする。黒22%なら 5.59:1）。 */
-  --mention-color: currentColor;
-  --mention-decoration: underline;
-  --mention-self-bg: color-mix(in srgb, #000 22%, transparent);
+  /* URL は白い下線付きテキスト、メンションは白地の青いラベルとして区別する。 */
+  --mention-color: #1d4ed8;
+  --mention-bg: color-mix(in srgb, #fff 90%, transparent);
+  --mention-self-color: #1e3a8a;
+  --mention-self-bg: #fff;
 }
 
 /* 相手の吹き出し。ライトでは背景(--color-bg)が白で --color-bg-elevated と
@@ -241,11 +238,10 @@
   background-color: var(--color-bubble-theirs);
   color: var(--color-text);
 
-  /* こちらは地が薄い(#f1f5f9 / ダークは #1e293b)ので、メンションは既定のリンク色のまま読める。
-     自分宛は下地を敷いて目立たせるが、リンク色を濃く重ねると文字と地が近づいて
-     かえって対比が落ちる(3.73:1 → 3.03:1)。下地は薄めにして、文字側を一段濃い
-     --color-link-hover にすることで、素の状態より対比を上げる(3.89:1)。 */
-  --mention-self-bg: color-mix(in srgb, var(--color-link) 14%, transparent);
+  /* 本文とは文字色と背景色を変え、下線付きの URL とも形で区別する。 */
+  --mention-color: var(--color-link-hover);
+  --mention-bg: color-mix(in srgb, var(--color-link) 14%, transparent);
+  --mention-self-bg: color-mix(in srgb, var(--color-link) 24%, transparent);
   --mention-self-color: var(--color-link-hover);
 }
 

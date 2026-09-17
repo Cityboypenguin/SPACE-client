@@ -6,16 +6,17 @@
   cursor: pointer;
 }
 
-/* メンション。配色はホスト側から --mention-* で上書きできるようにしている。
-   チャットの吹き出しのように地の背景色が変わる場所では、--color-link (#646cff) が
-   自分の吹き出し (--color-primary #3b82f6) にほぼ同化して読めなくなるため。 */
+/* URL と見分けやすいよう、メンションは下線ではなく色付きラベルで示す。
+   配色は背景の異なるホスト側から --mention-* で上書きできる。 */
 .mention {
   color: var(--mention-color, var(--color-link));
-  background: var(--mention-bg, transparent);
+  background: var(--mention-bg, color-mix(in srgb, var(--color-link) 12%, transparent));
   text-decoration: var(--mention-decoration, none);
   font-weight: 600;
   border-radius: 4px;
   padding: 0 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .mentionClickable {
