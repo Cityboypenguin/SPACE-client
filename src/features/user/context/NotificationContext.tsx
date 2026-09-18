@@ -11,7 +11,7 @@ import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
 import { emitRoomChanged, type RoomChangedEvent } from '../hooks/useUnreadSubscription';
 import { isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
-import { getUnreadNotificationCount } from '../api/notification';
+import { getUnreadNotificationCount, issueNotificationStreamTicket } from '../api/notification';
 
 import { SSE_URL, refreshUserAccessToken } from '../../../lib/graphql';
 import { USER_TOKEN_KEY } from '../../../lib/authStorage';
@@ -119,16 +119,37 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     // 初回接続は [token] useEffect 側がすでに consent を確認済みなのでスキップする
     let isFirstConnect = true;
 
-    const connect = () => {
+    // 接続は「チケットを1枚もらう → それを付けて EventSource を張る」の2段階。
+    //
+    // 以前はアクセストークンをそのまま ?token= に載せていたが、URL はアクセスログ・
+    // プロキシ・監視基盤に残るため、拾われると有効期限まで使い回せてしまっていた。
+    // チケットは1回使ったら無効・30秒で失効するので、URL に残っても再利用できない。
+    //
+    // チケットは使い捨てなので、**接続のたびに必ず取り直す**（再接続でも同じ）。
+    // 取得は非同期なので、await の前後で stopped を見直してから副作用を起こすこと
+    // （cleanup 後に張られたゾンビ接続を防ぐ）。
+    const connect = async () => {
       if (stopped) return;
       clearReconnectTimer();
       closeES(); // 再接続の直前に必ず古い接続を閉じてゾンビ接続を防ぐ
 
-      // 常に localStorage の最新トークンで張る（リフレッシュ後の新トークンを確実に使う）
+      // 常に localStorage の最新トークンで発行する（リフレッシュ後の新トークンを確実に使う）
       const current = localStorage.getItem(USER_TOKEN_KEY);
       if (!current) return;
 
-      const source = new EventSource(`${SSE_URL}?token=${encodeURIComponent(current)}`);
+      let ticket: string;
+      try {
+        ticket = await issueNotificationStreamTicket();
+      } catch (err) {
+        // トークンが切れている等で発行に失敗した場合。scheduleReconnect は再接続前に
+        // アクセストークンをリフレッシュするので、そのまま任せれば復帰できる。
+        console.warn('[SSE] failed to issue stream ticket, scheduling reconnect', err);
+        scheduleReconnect();
+        return;
+      }
+      if (stopped) return; // 発行を待っている間に cleanup された
+
+      const source = new EventSource(`${SSE_URL}?ticket=${encodeURIComponent(ticket)}`);
       es = source;
 
       source.addEventListener('connected', () => {
@@ -217,7 +238,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         // 再接続の前に必ずアクセストークンを更新してから張り直す
         await refreshUserAccessToken();
         if (stopped) return;
-        connect();
+        void connect();
       }, backoff);
     };
 
@@ -235,7 +256,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             if (stopped) return;
             await refreshUserAccessToken();
             if (stopped) return;
-            connect();
+            void connect();
           }, 0);
         }
       } else {
@@ -249,7 +270,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
-    connect();
+    void connect();
 
     return () => {
       stopped = true;

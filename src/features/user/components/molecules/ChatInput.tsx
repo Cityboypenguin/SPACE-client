@@ -18,19 +18,6 @@ const ACCEPTED_FILE_TYPES = [
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
-const MENTION_SUGGEST_LIMIT = 8;
-
-// 入力中の "@クエリ" に対する候補を、ルームのメンバーから前方一致で絞り込む。
-// メンバー一覧は取得済みなのでサーバーには問い合わせない（通信ゼロ）。
-// 候補が尽きればサジェストは自然に閉じるので、"@" のあとに普通の文章を書いた場合も邪魔しない。
-const filterMentionCandidates = (candidates: MentionCandidate[], query: string): MentionCandidate[] => {
-  if (query === '') return candidates.slice(0, MENTION_SUGGEST_LIMIT);
-  const lower = query.toLowerCase();
-  return candidates
-    .filter((c) => c.name.toLowerCase().startsWith(lower) || c.accountID.toLowerCase().startsWith(lower))
-    .slice(0, MENTION_SUGGEST_LIMIT);
-};
-
 // 返信先バーに出す1行プレビュー。本文が無いときは添付の種類で代替する。
 const replyPreviewText = (msg: Message): string => {
   if (msg.content.trim() !== '') return msg.content;
@@ -58,15 +45,13 @@ type Props = {
   // ここで選んだ相手だけが onMentionSelect 経由で送信対象になる。
   mentionCandidates?: MentionCandidate[];
   onMentionSelect?: (candidate: MentionCandidate) => void;
-  // "@" を打ち始めた瞬間に1回だけ呼ばれる。候補一覧を取り直してもらうためのフック。
-  // チャットを開いたまま新しいメンバーが入ってきても、次にメンションを打ち始めた
-  // 時点で候補に現れるようにする。
-  onMentionQueryStart?: () => void;
+  // 入力中の表示名 prefix。null はメンション入力中でないことを表す。
+  onMentionQueryChange?: (query: string | null) => void;
 };
 
 export const ChatInput = ({
   value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
-  replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryStart,
+  replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryChange,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -87,20 +72,12 @@ export const ChatInput = ({
   const activeMention = mentionsEnabled && !suggestDismissed
     ? getActiveNameMention(value, caretPos)
     : null;
-  const mentionSuggestions = activeMention
-    ? filterMentionCandidates(mentionCandidates, activeMention.query)
-    : [];
+  const mentionSuggestions = activeMention ? mentionCandidates : [];
   const showMentionSuggestions = mentionSuggestions.length > 0;
 
-  // "@" を打ち始めた立ち上がりでだけ候補の取り直しを依頼する（入力のたびには呼ばない）。
-  const mentionQueryStartedRef = useRef(false);
   useEffect(() => {
-    const started = activeMention !== null;
-    if (started && !mentionQueryStartedRef.current) {
-      onMentionQueryStart?.();
-    }
-    mentionQueryStartedRef.current = started;
-  }, [activeMention, onMentionQueryStart]);
+    onMentionQueryChange?.(activeMention?.query ?? null);
+  }, [activeMention?.query, onMentionQueryChange]);
 
   const selectMentionSuggestion = (candidate: MentionCandidate) => {
     if (!activeMention) return;

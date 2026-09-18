@@ -5,7 +5,7 @@ import { AdminPostCard } from '../components/organisms/AdminPostCard';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
-import { getPostByID, adminDeletePost, type Post, type Media } from '../api/posts';
+import { getPostByID, getPostReplies, adminDeletePost, type Post, type Media } from '../api/posts';
 import { useToast } from '../../../context/useToast';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
@@ -19,13 +19,18 @@ export const AdminPostDetailPage = () => {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [loadingMoreReplies, setLoadingMoreReplies] = useState(false);
+  const [hasMoreReplies, setHasMoreReplies] = useState(false);
   const { addToast } = useToast();
 
   const loadPost = useCallback((postId: string) => {
     setLoading(true);
     setError('');
     getPostByID(postId)
-      .then(setPost)
+      .then(result => {
+        setPost(result);
+        setHasMoreReplies((result?.replies?.length ?? 0) >= 50);
+      })
       .catch(() => setError('投稿の読み込みに失敗しました'))
       .finally(() => setLoading(false));
   }, []);
@@ -52,12 +57,26 @@ export const AdminPostDetailPage = () => {
       await adminDeletePost(replyId);
       setPost(prev => prev ? {
         ...prev,
-        replies: prev.replies.map(r => r.ID === replyId ? { ...r, deletedAt: new Date().toISOString() } : r)
+        replies: (prev.replies ?? []).map(r => r.ID === replyId ? { ...r, deletedAt: new Date().toISOString() } : r)
       } : null);
       addToast('削除しました', 'success');
     } catch (err) {
       console.error(err);
       addToast('削除に失敗しました', 'error');
+    }
+  };
+
+  const handleLoadMoreReplies = async () => {
+    if (!post || loadingMoreReplies) return;
+    setLoadingMoreReplies(true);
+    try {
+      const next = await getPostReplies(post.ID, 50, post.replies?.length ?? 0);
+      setPost(current => current ? { ...current, replies: [...(current.replies ?? []), ...next] } : null);
+      setHasMoreReplies(next.length === 50);
+    } catch {
+      addToast('返信の読み込みに失敗しました', 'error');
+    } finally {
+      setLoadingMoreReplies(false);
     }
   };
 
@@ -155,9 +174,9 @@ export const AdminPostDetailPage = () => {
             </div>
 
             {/* 🛡 返信一覧 */}
-            {post.replies.length > 0 && (
+            {(post.replies ?? []).length > 0 && (
               <div>
-                {post.replies.map((reply) => (
+                {(post.replies ?? []).map((reply) => (
                   <AdminPostCard
                     key={reply.ID}
                     post={reply}
@@ -166,6 +185,16 @@ export const AdminPostDetailPage = () => {
                   />
                 ))}
               </div>
+            )}
+            {hasMoreReplies && (
+              <button
+                type="button"
+                className={styles.outlinePrimaryButton}
+                onClick={() => void handleLoadMoreReplies()}
+                disabled={loadingMoreReplies}
+              >
+                {loadingMoreReplies ? '読み込み中...' : 'さらに返信を表示'}
+              </button>
             )}
           </>
         )}

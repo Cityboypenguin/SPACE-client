@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import useSWR from 'swr';
 import { getCommunityMembers, type Community } from '../../api/community';
 import { staticCacheOptions } from '../../cache/swrOptions';
@@ -23,17 +24,21 @@ type Props = {
 };
 
 export const CommunityMembersModal = ({ community, onClose }: Props) => {
+  const pageSize = 50;
+  const [offset, setOffset] = useState(0);
   // 詳細パネル・設定モーダルと同じキャッシュを共有する。開き直しても取り直さない。
-  const { data: members = [], isLoading: loading, error } = useSWR(
-    communityMembersKey(community.ID),
-    ([, cid]: [string, string]) => getCommunityMembers(cid),
+  const { data, isLoading: loading, error } = useSWR(
+    communityMembersKey(community.ID, pageSize, offset),
+    ([, cid, limit, pageOffset]: [string, string, number, number]) => getCommunityMembers(cid, limit, pageOffset),
     staticCacheOptions,
   );
+  const members = data?.items ?? [];
+  const total = data?.total ?? 0;
 
   return (
     <Modal onClose={onClose} overlayClassName={styles.overlay} className={styles.modal}>
       <div className={styles.header}>
-        <h3 className={styles.title}>メンバー一覧 ({members.length})</h3>
+        <h3 className={styles.title}>メンバー一覧 ({total})</h3>
         <ModalCloseButton onClick={onClose} />
       </div>
 
@@ -66,6 +71,12 @@ export const CommunityMembersModal = ({ community, onClose }: Props) => {
               </li>
             ))}
           </ul>
+        )}
+        {!loading && !error && total > pageSize && (
+          <div>
+            <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - pageSize))}>前へ</button>
+            <button disabled={offset + pageSize >= total} onClick={() => setOffset(offset + pageSize)}>次へ</button>
+          </div>
         )}
       </div>
     </Modal>

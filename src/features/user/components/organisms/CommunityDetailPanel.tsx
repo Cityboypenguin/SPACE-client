@@ -33,11 +33,12 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
   // このパネルは開閉のたびにマウントされるので、素の useEffect だと開くたびに
   // 同じ問い合わせが飛ぶ。共通キーのキャッシュから描画し、再取得はメンバーを
   // 変更した側の invalidateCommunityMembers() に任せる。
-  const { data: members = [] } = useSWR(
-    communityMembersKey(community.ID),
-    ([, cid]: [string, string]) => getCommunityMembers(cid),
+  const { data: memberPage } = useSWR(
+    communityMembersKey(community.ID, 10, 0),
+    ([, cid, limit, offset]: [string, string, number, number]) => getCommunityMembers(cid, limit, offset),
     staticCacheOptions,
   );
+  const members = memberPage?.items ?? [];
 
   const returnPath = `/community/chat/${community.roomID}`;
 
@@ -89,7 +90,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
           <p className={styles.communityName}>{community.name}</p>
           <p className={styles.memberCount}>
             <img src={personIcon} alt="メンバー数" className={styles.memberIcon} />
-            {members.length}
+            {memberPage?.total ?? community.memberCount}
           </p>
           {leaveError && <p className={styles.leaveError}>{leaveError}</p>}
           <p className={styles.descLabel}>紹介文</p>

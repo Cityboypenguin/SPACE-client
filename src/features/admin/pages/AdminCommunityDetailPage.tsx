@@ -36,6 +36,9 @@ export const AdminCommunityDetailPage = () => {
   const [success, setSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
   const [messagesError, setMessagesError] = useState('');
+  const [memberOffset, setMemberOffset] = useState(0);
+  const [memberTotal, setMemberTotal] = useState(0);
+  const memberPageSize = 50;
 
   const fetchCommunity = useCallback(async () => {
     if (!id) return;
@@ -55,12 +58,13 @@ export const AdminCommunityDetailPage = () => {
   const fetchMembers = useCallback(async () => {
     if (!id) return;
     try {
-      const data = await getCommunityMembers(id);
-      setMembers(data.getCommunityMembers);
+      const data = await getCommunityMembers(id, memberPageSize, memberOffset);
+      setMembers(data.communityMembers.items);
+      setMemberTotal(data.communityMembers.total);
     } catch {
       setMembersError('メンバー一覧の取得に失敗しました');
     }
-  }, [id]);
+  }, [id, memberOffset]);
 
   const fetchMessages = useCallback(async (roomID: string) => {
     try {
@@ -120,14 +124,8 @@ export const AdminCommunityDetailPage = () => {
     }
   };
 
-  const ownerCount = members.filter((m) => m.role === ROLE_OWNER).length;
-
   const handleKick = async (member: CommunityMember) => {
     if (!id) return;
-    if (member.role === ROLE_OWNER && ownerCount <= 1) {
-      setError('オーナーが1人しかいないためキックできません。先に別のメンバーをオーナーに昇格させてください。');
-      return;
-    }
     if (!window.confirm(`${member.user.name} をコミュニティから削除しますか？`)) return;
     try {
       await kickUserFromCommunity(id, member.user.ID);
@@ -140,10 +138,6 @@ export const AdminCommunityDetailPage = () => {
   const handleToggleRole = async (member: CommunityMember) => {
     if (!id) return;
     const isOwner = member.role === ROLE_OWNER;
-    if (isOwner && ownerCount <= 1) {
-      setError('オーナーが1人しかいないため降格できません。先に別のメンバーをオーナーに昇格させてください。');
-      return;
-    }
     const label = isOwner ? 'メンバーに降格' : 'オーナーに昇格';
     if (!window.confirm(`${member.user.name} を${label}しますか？`)) return;
     setError('');
@@ -206,7 +200,6 @@ export const AdminCommunityDetailPage = () => {
               <tr>
                 <th>ユーザーID</th>
                 <th>名前</th>
-                <th>メールアドレス</th>
                 <th>ロール</th>
                 <th>操作</th>
               </tr>
@@ -218,7 +211,6 @@ export const AdminCommunityDetailPage = () => {
                   <td>
                     {member.user.name}
                   </td>
-                  <td>{member.user.email}</td>
                   <td>
                     <span className={`${styles.roleBadge} ${member.role === ROLE_OWNER ? styles.roleBadgeOwner : styles.roleBadgeMember}`}>
                       {member.role === ROLE_OWNER ? 'オーナー' : 'メンバー'}
@@ -244,6 +236,13 @@ export const AdminCommunityDetailPage = () => {
           </table>
         ) : (
           !membersError && <p>メンバーはいません</p>
+        )}
+        {memberTotal > memberPageSize && (
+          <div className={styles.pagination}>
+            <button disabled={memberOffset === 0} onClick={() => setMemberOffset(Math.max(0, memberOffset - memberPageSize))}>前へ</button>
+            <span>{Math.floor(memberOffset / memberPageSize) + 1} / {Math.ceil(memberTotal / memberPageSize)}</span>
+            <button disabled={memberOffset + memberPageSize >= memberTotal} onClick={() => setMemberOffset(memberOffset + memberPageSize)}>次へ</button>
+          </div>
         )}
 
         <hr className={styles.divider} />

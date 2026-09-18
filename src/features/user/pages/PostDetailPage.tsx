@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostComposer } from '../components/organisms/PostComposer';
-import { ReplyThread } from '../components/organisms/ReplyThread';
+import { ReplyList } from '../components/organisms/ReplyThread';
 import { PostCard } from '../components/organisms/PostCard';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
@@ -454,15 +454,14 @@ export const PostDetailPage = () => {
             )}
 
             {/* 🛡 ⭕️ 返信一覧（削除済みのリプライを除外して表示） */}
-            {post.replies && post.replies.length > 0 && (
-              <div>
-                {post.replies
-                  .filter(reply => reply.deletedAt == null) // ここで削除済みを除外
-                  .map((reply) => (
-                    <ReplyThread key={reply.ID} post={reply} currentUserId={userId} onLike={handleLike} onReply={setReplyingTo} />
-                  ))}
-              </div>
-            )}
+            <ReplyList
+              parentID={post.ID}
+              initialReplies={post.replies}
+              knownReplyCount={post.replyCount}
+              currentUserId={userId}
+              onLike={handleLike}
+              onReply={setReplyingTo}
+            />
 
             {replyingTo && (
               <ReplyModal

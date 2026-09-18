@@ -33,11 +33,13 @@ export type Community = {
 
 export type CommunityPage = { items: Community[]; total: number };
 
+// Room.user / CommunityMember.user は GraphQL 上は公開型の User なので
+// email を持たない。管理画面で連絡先が要るときは、そのユーザーの
+// getUserByID（UserAccount）を引くこと。
 export type RoomUser = {
   ID: string;
   accountID: string;
   name: string;
-  email: string;
 };
 
 export type CommunityMember = {
@@ -80,37 +82,24 @@ const UpdateCommunityDocument = graphql(`
   }
 `);
 
-const KickUserFromCommunityDocument = graphql(`
-  mutation KickUserFromCommunity($communityID: ID!, $userID: ID!) {
-    kickUserFromCommunity(communityID: $communityID, userID: $userID)
-  }
-`);
-
-const GetRoomDocument = graphql(`
-  query AdminGetRoom($id: ID!) {
-    room(id: $id) {
-      ID
-      name
-      user {
-        ID
-        accountID
-        name
-        email
-      }
-    }
+const UpdateCommunityMembersDocument = graphql(`
+  mutation AdminUpdateCommunityMembers($communityID: ID!, $updates: [CommunityMemberUpdateInput!]!) {
+    updateCommunityMembers(communityID: $communityID, updates: $updates)
   }
 `);
 
 const GetCommunityMembersDocument = graphql(`
-  query AdminGetCommunityMembers($communityID: ID!) {
-    getCommunityMembers(communityID: $communityID) {
-      user {
-        ID
-        accountID
-        name
-        email
+  query AdminCommunityMembers($communityID: ID!, $limit: Int!, $offset: Int!) {
+    communityMembers(communityID: $communityID, limit: $limit, offset: $offset) {
+      items {
+        user {
+          ID
+          accountID
+          name
+        }
+        role
       }
-      role
+      total
     }
   }
 `);
@@ -127,15 +116,11 @@ export const updateCommunity = async (
 };
 
 export const kickUserFromCommunity = async (communityID: string, userID: string) => {
-  return await requestDoc(KickUserFromCommunityDocument, { communityID, userID }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'KICK' }] }, getAdminToken());
 };
 
-export const getCommunityRoom = async (roomID: string) => {
-  return await requestDoc(GetRoomDocument, { id: roomID }, getAdminToken());
-};
-
-export const getCommunityMembers = async (communityID: string) => {
-  return await requestDoc(GetCommunityMembersDocument, { communityID }, getAdminToken());
+export const getCommunityMembers = async (communityID: string, limit = 50, offset = 0) => {
+  return await requestDoc(GetCommunityMembersDocument, { communityID, limit, offset }, getAdminToken());
 };
 
 const ListRoomMessagesDocument = graphql(`
@@ -161,24 +146,12 @@ const ListRoomMessagesDocument = graphql(`
   }
 `);
 
-const PromoteToCommunityOwnerDocument = graphql(`
-  mutation PromoteToCommunityOwner($communityID: ID!, $userID: ID!) {
-    promoteToCommunityOwner(communityID: $communityID, userID: $userID)
-  }
-`);
-
-const DemoteFromCommunityOwnerDocument = graphql(`
-  mutation DemoteFromCommunityOwner($communityID: ID!, $userID: ID!) {
-    demoteFromCommunityOwner(communityID: $communityID, userID: $userID)
-  }
-`);
-
 export const promoteToCommunityOwner = async (communityID: string, userID: string) => {
-  return await requestDoc(PromoteToCommunityOwnerDocument, { communityID, userID }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'PROMOTE' }] }, getAdminToken());
 };
 
 export const demoteFromCommunityOwner = async (communityID: string, userID: string) => {
-  return await requestDoc(DemoteFromCommunityOwnerDocument, { communityID, userID }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'DEMOTE' }] }, getAdminToken());
 };
 
 const DeleteMessageDocument = graphql(`

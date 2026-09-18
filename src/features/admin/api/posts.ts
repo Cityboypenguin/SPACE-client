@@ -35,7 +35,7 @@ export type Post = {
   favorites: PostFavorite[];
   rootPost?: Post | null;
   parent?: Post | null;
-  replies: Post[];
+  replies?: Post[];
   media: Media[];
 };
 
@@ -73,9 +73,6 @@ const GetAdminPostsDocument = graphql(`
     posts(limit: $limit, offset: $offset) {
       items {
         ...AdminPostFields
-        replies {
-          ID
-        }
       }
       total
     }
@@ -89,20 +86,18 @@ const GetPostByIDIncludeDeletedDocument = graphql(`
       rootPost {
         ...AdminPostFields
       }
-      replies {
+      replies(limit: 50) {
         ...AdminPostFields
-        replies {
-          ...AdminPostFields
-          replies {
-            ...AdminPostFields
-            replies {
-              ...AdminPostFields
-              replies {
-                ID
-              }
-            }
-          }
-        }
+      }
+    }
+  }
+`);
+
+const GetAdminPostRepliesDocument = graphql(`
+  query GetAdminPostReplies($id: ID!, $limit: Int!, $offset: Int!) {
+    getPostByIDIncludeDeleted(id: $id) {
+      replies(limit: $limit, offset: $offset) {
+        ...AdminPostFields
       }
     }
   }
@@ -122,6 +117,11 @@ export const getPosts = async (limit = 20, offset = 0): Promise<PostPage> => {
 export const getPostByID = async (id: string): Promise<Post | null> => {
   const data = await requestDoc(GetPostByIDIncludeDeletedDocument, { id }, getAdminToken());
   return (data.getPostByIDIncludeDeleted as Post | null) ?? null;
+};
+
+export const getPostReplies = async (id: string, limit = 50, offset = 0): Promise<Post[]> => {
+  const data = await requestDoc(GetAdminPostRepliesDocument, { id, limit, offset }, getAdminToken());
+  return (data.getPostByIDIncludeDeleted?.replies as Post[] | undefined) ?? [];
 };
 
 export const adminDeletePost = async (id: string): Promise<void> => {

@@ -1,5 +1,5 @@
 type PostWithReplies = {
-  replies: PostWithReplies[];
+  replies?: PostWithReplies[];
 };
 
 export const countAllReplies = (post: PostWithReplies): number => {

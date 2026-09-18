@@ -198,6 +198,18 @@ const MyUnreadNotificationCountDocument = graphql(`
   }
 `);
 
+// SSE(/events) へ繋ぐための使い捨てチケット。
+//
+// ブラウザ標準の EventSource はカスタムヘッダーを送れないため、認証情報は URL に
+// 載せるしかない。以前はアクセストークンをそのまま ?token= に載せていたが、URL は
+// アクセスログ・プロキシ・監視基盤に残るので、拾われると有効期限まで使い回せてしまう。
+// 代わりに「1回使ったら無効・30秒で失効」するチケットを載せる。
+const IssueNotificationStreamTicketDocument = graphql(`
+  mutation IssueNotificationStreamTicket {
+    issueNotificationStreamTicket
+  }
+`);
+
 const MarkNotificationAsReadDocument = graphql(`
   mutation MarkNotificationAsRead($id: ID!) {
     markNotificationAsRead(id: $id)
@@ -239,6 +251,13 @@ export const getNotification = async (id: string): Promise<Notification | null> 
 export const getUnreadNotificationCount = async (): Promise<number> => {
   const data = await requestDoc(MyUnreadNotificationCountDocument, {}, getUserToken());
   return data.myUnreadNotificationCount;
+};
+
+// チケットは使い捨てなので、接続のたび（再接続も含め）に取り直すこと。
+// 使い回すと 401 になる。
+export const issueNotificationStreamTicket = async (): Promise<string> => {
+  const data = await requestDoc(IssueNotificationStreamTicketDocument, {}, getUserToken());
+  return data.issueNotificationStreamTicket;
 };
 
 export const markNotificationAsRead = async (id: string): Promise<void> => {

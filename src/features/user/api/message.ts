@@ -332,8 +332,8 @@ const MyDMRoomsDocument = graphql(`
 `);
 
 const MentionCandidatesDocument = graphql(`
-  query MentionCandidates($roomID: ID!) {
-    mentionCandidates(roomID: $roomID) {
+  query MentionCandidates($roomID: ID!, $prefix: String!, $limit: Int!) {
+    mentionCandidates(roomID: $roomID, prefix: $prefix, limit: $limit) {
       ID
       name
       accountID
@@ -353,10 +353,14 @@ const PresignedMediaUploadUrlDocument = graphql(`
 
 // コミュニティチャットの "@表示名" メンションでサジェストに出せる相手。
 // サーバー側が送信時の検証とまったく同じ条件（メンバー・凍結・ブロック・自分自身）で
-// 絞り込んで返すので、クライアントは前方一致で絞るだけでよい。
+// prefix に前方一致する候補だけを上限付きで返す。
 // コミュニティ以外のルームでは空配列が返る。
-export const getMentionCandidates = async (roomID: string): Promise<MentionCandidate[]> => {
-  const data = await requestDoc(MentionCandidatesDocument, { roomID }, getUserToken());
+export const getMentionCandidates = async (
+  roomID: string,
+  prefix: string,
+  limit = 8,
+): Promise<MentionCandidate[]> => {
+  const data = await requestDoc(MentionCandidatesDocument, { roomID, prefix, limit }, getUserToken());
   return data.mentionCandidates;
 };
 

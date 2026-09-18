@@ -40,6 +40,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [infoError, setInfoError] = useState('');
   const [infoSuccess, setInfoSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
+  const [memberOffset, setMemberOffset] = useState(0);
+  const memberPageSize = 50;
   const hasValidAvatar =
     community.avatarURL && 
     community.avatarURL !== '' && 
@@ -56,11 +58,12 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
 
   // 詳細パネル・メンバーモーダルと同じキャッシュを共有する。開き直しても取り直さない。
   // メンバーを変更したときだけ mutate で取り直す（下の kick/promote/demote）。
-  const { data: members = [], error: membersLoadError } = useSWR(
-    communityMembersKey(community.ID),
-    ([, cid]: [string, string]) => getCommunityMembers(cid),
+  const { data: memberPage, error: membersLoadError } = useSWR(
+    communityMembersKey(community.ID, memberPageSize, memberOffset),
+    ([, cid, limit, offset]: [string, string, number, number]) => getCommunityMembers(cid, limit, offset),
     staticCacheOptions,
   );
+  const members = memberPage?.items ?? [];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -272,7 +275,7 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                   現在のメンバー
                 </span>
                 <span className={styles.memberCountBadge}>
-                  {members.length} 人
+                  {memberPage?.total ?? 0} 人
                 </span>
               </div>
               {members.length === 0 ? (
@@ -329,6 +332,12 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                     </li>
                   ))}
                 </ul>
+              )}
+              {(memberPage?.total ?? 0) > memberPageSize && (
+                <div>
+                  <button disabled={memberOffset === 0} onClick={() => setMemberOffset(Math.max(0, memberOffset - memberPageSize))}>前へ</button>
+                  <button disabled={memberOffset + memberPageSize >= (memberPage?.total ?? 0)} onClick={() => setMemberOffset(memberOffset + memberPageSize)}>次へ</button>
+                </div>
               )}
             </div>
           )}

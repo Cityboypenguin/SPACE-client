@@ -31,6 +31,8 @@ export const CommunityMembersPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const pageSize = 50;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -39,15 +41,15 @@ export const CommunityMembersPage = () => {
   // 詳細パネル・各モーダルと同じキャッシュを共有する。ただしここは編集画面なので
   // マウント時の再検証は残し、必ず最新から編集を始める（その結果は共有キャッシュにも入る）。
   const { data, isLoading: loading, error: loadError } = useSWR(
-    communityID ? communityMembersKey(communityID) : null,
-    ([, cid]: [string, string]) => getCommunityMembers(cid),
+    communityID ? communityMembersKey(communityID, pageSize, offset) : null,
+    ([, cid, limit, pageOffset]: [string, string, number, number]) => getCommunityMembers(cid, limit, pageOffset),
     stableCacheOptions,
   );
 
   // 編集中の下書き。null のあいだはサーバーの値をそのまま見せる。
   // 「保存前の値」は常にサーバー由来の data 側なので、差分計算の基準がぶれない。
   const [draft, setDraft] = useState<CommunityMember[] | null>(null);
-  const originalMembers = useMemo(() => data ?? [], [data]);
+  const originalMembers = useMemo(() => data?.items ?? [], [data]);
   const members = draft ?? originalMembers;
 
   const hasChanges = useMemo(() => {
@@ -158,6 +160,13 @@ export const CommunityMembersPage = () => {
                 </li>
               ))}
             </ul>
+            {(data?.total ?? 0) > pageSize && !hasChanges && (
+              <div className={styles.pagination}>
+                <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - pageSize))}>前へ</button>
+                <span>{Math.floor(offset / pageSize) + 1} / {Math.ceil((data?.total ?? 0) / pageSize)}</span>
+                <button disabled={offset + pageSize >= (data?.total ?? 0)} onClick={() => setOffset(offset + pageSize)}>次へ</button>
+              </div>
+            )}
             <div className={styles.footer}>
               <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
                 {saving ? '保存中...' : '保存'}

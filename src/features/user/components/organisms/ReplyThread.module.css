@@ -90,6 +90,29 @@
   margin-left: calc(1rem + 19px);
 }
 
+.loadMoreButton {
+  display: block;
+  margin: 0.5rem 1rem 0.75rem;
+  padding: 0.35rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.loadMoreButton:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.loadError {
+  margin: 0.25rem 1rem 0.75rem;
+  color: var(--color-danger);
+  font-size: 0.82rem;
+}
+
 /* 最後以外の子: 自分の高さ全体にガイド線を引く */
 .replies > .replyWrapper::before {
   content: '';

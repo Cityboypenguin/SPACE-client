@@ -64,7 +64,12 @@ export const UserSearchPage = () => {
   const [recentUsers, setRecentUsers] = useState<UserProfile[]>(() => uniqueByID(loadRecent<UserProfile>('user')));
 
   const [allPostResults, setAllPostResults] = useState<Post[]>([]);
-  const [postDisplayedCount, setPostDisplayedCount] = useState(LIMIT);
+  // 投稿検索はサーバー側でページングする（ユーザー検索が最初からそうであるのと同じ）。
+  // 以前は全件を受け取って slice していたので、ヒットが増えるほど見えないぶんまで
+  // 毎回転送していた。searchPosts は total を返さない（[Post!]! なので数える先が
+  // 無い）ので、「次があるか」は「最後に受け取った件数が LIMIT と同じか」で持つ。
+  const [postHasMore, setPostHasMore] = useState(false);
+  const [postLoadingMore, setPostLoadingMore] = useState(false);
   const [postLoading, setPostLoading] = useState(false);
   const [recentPosts, setRecentPosts] = useState<Post[]>(() => loadRecent<Post>('post'));
 
@@ -146,21 +151,47 @@ export const UserSearchPage = () => {
     }
   }, [currentUserId]);
 
+  // fetchPostPage は「ハッシュタグ検索か通常検索か」の振り分けを1箇所に閉じ込める。
+  // 初回とページ追加で別々に書くと、片方だけ引数を直し忘れる。
+  const fetchPostPage = useCallback(async (trimmed: string, offset: number): Promise<Post[]> => {
+    const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
+    return hashtagMatch
+      ? await searchPostsByHashtag(hashtagMatch[1], LIMIT, offset)
+      : await searchPosts(trimmed, LIMIT, offset);
+  }, []);
+
   const runPostSearch = useCallback(async (rawQuery: string) => {
     const trimmed = rawQuery.trim();
     setAllPostResults([]);
-    setPostDisplayedCount(LIMIT);
+    setPostHasMore(false);
     setPostLoading(true);
     try {
-      const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
-      const posts = hashtagMatch
-        ? await searchPostsByHashtag(hashtagMatch[1])
-        : await searchPosts(trimmed);
+      const posts = await fetchPostPage(trimmed, 0);
       setAllPostResults(posts);
+      setPostHasMore(posts.length === LIMIT);
     } catch { /* noop */ } finally {
       setPostLoading(false);
     }
-  }, []);
+  }, [fetchPostPage]);
+
+  // 検索結果の続きを読む。offset には「いま出ている件数」をそのまま渡す。
+  const loadMorePosts = useCallback(async () => {
+    if (postLoadingMore || !postHasMore) return;
+    const trimmed = activeKeyword.trim();
+    if (!trimmed) return;
+
+    setPostLoadingMore(true);
+    try {
+      const next = await fetchPostPage(trimmed, allPostResults.length);
+      setPostHasMore(next.length === LIMIT);
+      setAllPostResults(prev => uniqueByID([...prev, ...next]));
+    } catch {
+      // 続きが読めなかっただけなので、いま出ている結果はそのまま残す。
+      setPostHasMore(false);
+    } finally {
+      setPostLoadingMore(false);
+    }
+  }, [activeKeyword, allPostResults.length, fetchPostPage, postHasMore, postLoadingMore]);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -182,7 +213,7 @@ export const UserSearchPage = () => {
     setSearched(false);
     setUserResults([]);
     setAllPostResults([]);
-    setPostDisplayedCount(LIMIT);
+    setPostHasMore(false);
     setActiveKeyword('');
     setUserTotal(0);
     setUserLoadedCount(0);
@@ -196,7 +227,7 @@ export const UserSearchPage = () => {
     setQuery('');
     setUserResults([]);
     setAllPostResults([]);
-    setPostDisplayedCount(LIMIT);
+    setPostHasMore(false);
     setActiveKeyword('');
     setUserTotal(0);
     setUserLoadedCount(0);
@@ -214,10 +245,10 @@ export const UserSearchPage = () => {
 
   const postSentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setPostDisplayedCount(prev => prev + LIMIT);
-    }, []),
-    false,
-    searched && mode === 'post' && postDisplayedCount < allPostResults.length,
+      void loadMorePosts();
+    }, [loadMorePosts]),
+    postLoadingMore,
+    searched && mode === 'post' && postHasMore,
   );
 
   const handleLike = useCallback(async (postId: string, isLiked: boolean) => {
@@ -254,7 +285,7 @@ export const UserSearchPage = () => {
   }, [replyingTo]);
 
   const displayedUsers = searched ? userResults : recentUsers;
-  const displayedPosts = searched ? allPostResults.slice(0, postDisplayedCount) : recentPosts;
+  const displayedPosts = searched ? allPostResults : recentPosts;
   const showRecent = !searched && (mode === 'user' ? recentUsers.length > 0 : recentPosts.length > 0);
 
   return (

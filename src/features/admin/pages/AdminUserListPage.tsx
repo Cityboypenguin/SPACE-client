@@ -44,8 +44,8 @@ export const AdminUserListPage = () => {
     }
     try {
       const data = await searchUsers(query);
-      setUsers(data.searchUsers.items);
-      setTotal(data.searchUsers.total);
+      setUsers(data.adminSearchUsers.items);
+      setTotal(data.adminSearchUsers.total);
       setIsSearching(true);
     } catch {
       setError('検索に失敗しました');

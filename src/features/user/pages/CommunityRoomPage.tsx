@@ -167,14 +167,10 @@ export const CommunityRoomPage = () => {
   );
   const isOwner = role === 'owner';
 
-  // メンションのサジェスト候補。基本は1回取ればよいのでローカルで前方一致させる
-  // （入力のたびにサーバーへ問い合わせない）。
-  // 除外条件（自分自身・凍結・ブロック）はサーバー側で送信時の検証と揃えて適用済み。
-  // メンバーの増減はこの画面を開いたままでも起きるので、ユーザーが "@" を打ち始めた
-  // タイミングで取り直す（ChatInput の onMentionQueryStart）。
-  const { data: mentionCandidates, mutate: refreshMentionCandidates } = useSWR(
-    roomId ? ['mention-candidates', roomId] : null,
-    ([, rid]: [string, string]) => getMentionCandidates(rid),
+  const [mentionPrefix, setMentionPrefix] = useState<string | null>(null);
+  const { data: mentionCandidates } = useSWR(
+    roomId && mentionPrefix !== null ? ['mention-candidates', roomId, mentionPrefix] : null,
+    ([, rid, prefix]: [string, string, string]) => getMentionCandidates(rid, prefix),
     stableCacheOptions,
   );
 
@@ -287,7 +283,7 @@ export const CommunityRoomPage = () => {
         onCancelReply={() => setReplyTarget(null)}
         mentionCandidates={mentionCandidates ?? []}
         onMentionSelect={addPendingMention}
-        onMentionQueryStart={refreshMentionCandidates}
+        onMentionQueryChange={setMentionPrefix}
       />
 
       {showDetail && community && (

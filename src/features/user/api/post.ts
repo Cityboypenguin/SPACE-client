@@ -31,7 +31,7 @@ export type Post = {
   user: PostUser;
   favorites: PostFavorite[];
   parent?: Post | null;
-  replies: Post[];
+  replies?: Post[];
   media: Media[];
   // 本文中のメンション。表示側は text を本文と突き合わせて着色・リンク化する。
   mentions: Mention[];
@@ -80,9 +80,6 @@ const TopLevelPostsDocument = graphql(`
     topLevelPosts(limit: $limit, offset: $offset) {
       items {
         ...PostFields
-        replies {
-          ID
-        }
       }
       total
     }
@@ -96,20 +93,18 @@ const GetPostByIDDocument = graphql(`
       rootPost {
         ...PostFields
       }
-      replies {
+      replies(limit: 50) {
         ...PostFields
-        replies {
-          ...PostFields
-          replies {
-            ...PostFields
-            replies {
-              ...PostFields
-              replies {
-                ID
-              }
-            }
-          }
-        }
+      }
+    }
+  }
+`);
+
+const GetPostRepliesDocument = graphql(`
+  query GetPostReplies($id: ID!, $limit: Int!, $offset: Int!) {
+    getPostByID(id: $id) {
+      replies(limit: $limit, offset: $offset) {
+        ...PostFields
       }
     }
   }
@@ -120,9 +115,6 @@ const GetPostsByUserIDDocument = graphql(`
     getPostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
       items {
         ...PostFields
-        replies {
-          ID
-        }
       }
       total
     }
@@ -134,9 +126,6 @@ const GetFavoritePostsByUserIDDocument = graphql(`
     getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {
       items {
         ...PostFields
-        replies {
-          ID
-        }
       }
       total
     }
@@ -147,9 +136,6 @@ const CreatePostDocument = graphql(`
   mutation CreatePost($input: CreatePostInput!) {
     createPost(input: $input) {
       ...PostFields
-      replies {
-        ID
-      }
     }
   }
 `);
@@ -158,9 +144,6 @@ const UpdatePostDocument = graphql(`
   mutation UpdatePost($input: UpdatePostInput!) {
     updatePost(input: $input) {
       ...PostFields
-      replies {
-        ID
-      }
     }
   }
 `);
@@ -201,6 +184,11 @@ export const getTopLevelPosts = async (limit = 20, offset = 0): Promise<PostPage
 export const getPostByID = async (id: string): Promise<Post | null> => {
   const data = await requestDoc(GetPostByIDDocument, { id }, getUserToken());
   return (data.getPostByID as Post | null) ?? null;
+};
+
+export const getPostReplies = async (id: string, limit = 50, offset = 0): Promise<Post[]> => {
+  const data = await requestDoc(GetPostRepliesDocument, { id, limit, offset }, getUserToken());
+  return (data.getPostByID?.replies as Post[] | undefined) ?? [];
 };
 
 export const createPost = async (content: string, parentId?: string, mediaInputs?: MediaInput[]): Promise<Post> => {
@@ -272,35 +260,36 @@ export const getNewFeedPostsCount = async (since: Date): Promise<number> => {
   return data.newFeedPostsCount;
 };
 
+// 投稿検索はサーバー側でページングする。以前は引数が無く、条件に当たった投稿が
+// 全件返ってきたのを画面側が slice して出していた（＝ヒットが増えるほど、見えない
+// ぶんまで毎回転送していた）。
+//
+// searchPosts は PostPage ではなく [Post!]! を返すので total が無い。「次がまだ
+// あるか」は「返ってきた件数が limit と同じか」で判断すること（SEARCH_PAGE_SIZE
+// 未満なら最後のページ）。
 const SearchPostsDocument = graphql(`
-  query SearchPosts($keyword: String!) {
-    searchPosts(keyword: $keyword) {
+  query SearchPosts($keyword: String!, $limit: Int!, $offset: Int!) {
+    searchPosts(keyword: $keyword, limit: $limit, offset: $offset) {
       ...PostFields
-      replies {
-        ID
-      }
     }
   }
 `);
 
-export const searchPosts = async (keyword: string): Promise<Post[]> => {
-  const data = await requestDoc(SearchPostsDocument, { keyword }, getUserToken());
+export const searchPosts = async (keyword: string, limit: number, offset: number): Promise<Post[]> => {
+  const data = await requestDoc(SearchPostsDocument, { keyword, limit, offset }, getUserToken());
   return data.searchPosts as Post[];
 };
 
 const SearchPostsByHashtagDocument = graphql(`
-  query SearchPostsByHashtag($tag: String!) {
-    searchPostsByHashtag(tag: $tag) {
+  query SearchPostsByHashtag($tag: String!, $limit: Int!, $offset: Int!) {
+    searchPostsByHashtag(tag: $tag, limit: $limit, offset: $offset) {
       ...PostFields
-      replies {
-        ID
-      }
     }
   }
 `);
 
-export const searchPostsByHashtag = async (tag: string): Promise<Post[]> => {
-  const data = await requestDoc(SearchPostsByHashtagDocument, { tag }, getUserToken());
+export const searchPostsByHashtag = async (tag: string, limit: number, offset: number): Promise<Post[]> => {
+  const data = await requestDoc(SearchPostsByHashtagDocument, { tag, limit, offset }, getUserToken());
   return data.searchPostsByHashtag as Post[];
 };
 
@@ -375,9 +364,6 @@ const FollowersTopLevelPostsDocument = graphql(`
     followersTopLevelPosts(userID: $userID, limit: $limit, offset: $offset) {
       items {
         ...PostFields
-        replies {
-          ID
-        }
       }
       total
     }

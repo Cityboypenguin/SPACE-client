@@ -6,8 +6,8 @@ import { mutate } from 'swr';
 // 素の useEffect で取りに行くと同じ問い合わせが毎回飛ぶ。共通キー + revalidateIfStale:false
 // （staticCacheOptions）でキャッシュを効かせ、代わりにメンバーを変更した側から
 // invalidateCommunityMembers() で明示的に捨てる。
-export const communityMembersKey = (communityID: string) =>
-  ['community-members', communityID] as const;
+export const communityMembersKey = (communityID: string, limit = 50, offset = 0) =>
+  ['community-members', communityID, limit, offset] as const;
 
 export const invalidateCommunityMembers = (communityID: string) =>
-  mutate(communityMembersKey(communityID));
+  mutate((key) => Array.isArray(key) && key[0] === 'community-members' && key[1] === communityID);

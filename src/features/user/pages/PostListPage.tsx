@@ -78,7 +78,18 @@ export const PostListPage = () => {
   // Enter を押すまでは表示中の投稿(タイムライン)を検索結果に切り替えない。
   const [submittedQuery, setSubmittedQuery] = useState(initialCache?.searchQuery ?? '');
   const [searchResults, setSearchResults] = useState<Post[]>(initialCache?.searchResults ?? []);
-  const [searchDisplayedCount, setSearchDisplayedCount] = useState(LIMIT);
+  // 検索結果はサーバー側でページングする。以前は全件を受け取って slice していたので、
+  // ヒットが増えるほど見えないぶんまで毎回転送していた。
+  //
+  // searchPosts は total を返さない（[Post!]! なので数える先が無い）ため、
+  // 「次があるか」は「最後に受け取った件数が LIMIT と同じか」で持つ。
+  // キャッシュから戻ったときも同じ判定でよい（ちょうど LIMIT の倍数で終わっていた
+  // 場合だけ空振りの1回が増えるが、次のページが0件と分かった時点で止まる）。
+  const [searchHasMore, setSearchHasMore] = useState(
+    (initialCache?.searchResults?.length ?? 0) > 0 &&
+    (initialCache?.searchResults?.length ?? 0) % LIMIT === 0,
+  );
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [suggestDismissed, setSuggestDismissed] = useState(false);
@@ -125,29 +136,60 @@ export const PostListPage = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // fetchSearchPage は「ハッシュタグ検索か通常検索か」の振り分けを1箇所に閉じ込める。
+  // 初回とページ追加で別々に書くと、片方だけ引数を直し忘れる。
+  const fetchSearchPage = useCallback(async (trimmed: string, offset: number): Promise<Post[]> => {
+    const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
+    return hashtagMatch
+      ? await searchPostsByHashtag(hashtagMatch[1], LIMIT, offset)
+      : await searchPosts(trimmed, LIMIT, offset);
+  }, []);
+
   const handleSearch = useCallback(async (keyword: string) => {
     const trimmed = keyword.trim();
     // Enter を押したこのタイミングで初めて検索結果表示へ切り替える。
     setSubmittedQuery(trimmed);
     if (!trimmed) {
       setSearchResults([]);
-      setSearchDisplayedCount(LIMIT);
+      setSearchHasMore(false);
       return;
     }
     setSearchLoading(true);
-    setSearchDisplayedCount(LIMIT);
     try {
-      const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
-      const results = hashtagMatch
-        ? await searchPostsByHashtag(hashtagMatch[1])
-        : await searchPosts(trimmed);
+      const results = await fetchSearchPage(trimmed, 0);
       setSearchResults(results);
+      setSearchHasMore(results.length === LIMIT);
     } catch {
       setSearchResults([]);
+      setSearchHasMore(false);
     } finally {
       setSearchLoading(false);
     }
-  }, []);
+  }, [fetchSearchPage]);
+
+  // 検索結果の続きを読む。offset には「いま画面に出ている件数」をそのまま渡す。
+  // 投稿直後に先頭へ差し込まれたぶん（postMatchesSearch の分岐）も件数に入るので
+  // 1件ぶんずれることがあるが、ずれるのは境界の重複だけで、下の dedupe が吸収する。
+  const loadMoreSearchResults = useCallback(async () => {
+    if (searchLoadingMore || !searchHasMore) return;
+    const trimmed = submittedQuery.trim();
+    if (!trimmed) return;
+
+    setSearchLoadingMore(true);
+    try {
+      const next = await fetchSearchPage(trimmed, searchResults.length);
+      setSearchHasMore(next.length === LIMIT);
+      setSearchResults(prev => {
+        const seen = new Set(prev.map(p => p.ID));
+        return [...prev, ...next.filter(p => !seen.has(p.ID))];
+      });
+    } catch {
+      // 続きが読めなかっただけなので、いま出ている結果はそのまま残す。
+      setSearchHasMore(false);
+    } finally {
+      setSearchLoadingMore(false);
+    }
+  }, [fetchSearchPage, searchHasMore, searchLoadingMore, searchResults.length, submittedQuery]);
 
   const handleSelectHashtag = useCallback((tag: string) => {
     setSearchQuery(`#${tag}`);
@@ -311,10 +353,10 @@ export const PostListPage = () => {
 
   const searchSentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setSearchDisplayedCount(prev => prev + LIMIT);
-    }, []),
-    false,
-    isSearching && searchDisplayedCount < searchResults.length,
+      void loadMoreSearchResults();
+    }, [loadMoreSearchResults]),
+    searchLoadingMore,
+    isSearching && searchHasMore,
   );
 
   const handlePostClick = (postId: string) => {
@@ -494,18 +536,23 @@ export const PostListPage = () => {
   };
 
   const displayedPosts = isSearching
-    ? searchResults.slice(0, searchDisplayedCount)
+    ? searchResults
     : activeTab === 'favorites'
       ? followFeed.posts
       : posts;
 
   const isTabLoading = activeTab === 'favorites' ? followFeed.initialLoading : initialLoading;
-  const isTabLoadingMore = activeTab === 'favorites' ? followFeed.loadingMore : loadingMore;
-  const hasMore = !isSearching && (
-    activeTab === 'favorites'
+  const isTabLoadingMore = isSearching
+    ? searchLoadingMore
+    : activeTab === 'favorites' ? followFeed.loadingMore : loadingMore;
+  // 検索もサーバー側ページングになったので、タイムラインと同じく「まだ続きがあるか」を
+  // 持てる。以前は全件を受け取っていて末尾が常に分かっていたため、検索中は
+  // この判定を外していた。
+  const hasMore = isSearching
+    ? searchHasMore
+    : activeTab === 'favorites'
       ? followFeed.posts.length < followFeed.total
-      : posts.length < total
-  );
+      : posts.length < total;
 
   return (
     <div>
@@ -720,8 +767,10 @@ export const PostListPage = () => {
             <div ref={followSentinelRef} className={styles.sentinel} />
             <div ref={searchSentinelRef} className={styles.sentinel} />
             {isTabLoadingMore && <StatusText style={{ padding: '1rem' }}>読み込み中...</StatusText>}
-            {!isSearching && !hasMore && displayedPosts.length > 0 && (
-              <StatusText style={{ padding: '1rem', fontSize: '0.875rem' }}>すべての投稿を表示しました</StatusText>
+            {!hasMore && displayedPosts.length > 0 && (
+              <StatusText style={{ padding: '1rem', fontSize: '0.875rem' }}>
+                {isSearching ? 'すべての検索結果を表示しました' : 'すべての投稿を表示しました'}
+              </StatusText>
             )}
           </>
         )}
