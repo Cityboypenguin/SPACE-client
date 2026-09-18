@@ -455,6 +455,7 @@ export const PostDetailPage = () => {
 
             {/* 🛡 ⭕️ 返信一覧（削除済みのリプライを除外して表示） */}
             <ReplyList
+              key={post.ID}
               parentID={post.ID}
               initialReplies={post.replies}
               knownReplyCount={post.replyCount}
