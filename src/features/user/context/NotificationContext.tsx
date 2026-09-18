@@ -11,6 +11,7 @@ import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
 import { emitRoomChanged, type RoomChangedEvent } from '../hooks/useUnreadSubscription';
 import { isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
+import { getUnreadNotificationCount } from '../api/notification';
 
 import { SSE_URL, refreshUserAccessToken } from '../../../lib/graphql';
 import { USER_TOKEN_KEY } from '../../../lib/authStorage';
@@ -41,6 +42,19 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     addToastRef.current = addToast;
   }, [addToast]);
 
+  // ベルの未読数はサーバから配られない（サーバは「変わった」という事実だけを送る）。
+  // 必要になったこちらが myUnreadNotificationCount を取りに行く。room_changed で
+  // ルームの未読数を配るのをやめたのと同じ方針で、数字の出どころを1つに保つ。
+  //
+  // 失敗したら今の数字を据え置く（0 に落とさない）。サーバが 0 を送っていた頃は
+  // 「DB が不調なときほどベルが静か」になっていたので、取れないときは黙って
+  // 古い数字のままにして、次のきっかけで取り直す。
+  const refreshUnreadCount = useCallback(() => {
+    getUnreadNotificationCount()
+      .then(setUnreadCount)
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     void Promise.resolve().then(() => {
       if (!token) {
@@ -48,6 +62,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         setPendingTerms(null);
         return;
       }
+      refreshUnreadCount();
       setConsentChecking(true);
       getMyTermsConsentStatus()
         .then((status) => {
@@ -56,7 +71,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         .catch(() => {})
         .finally(() => setConsentChecking(false));
     });
-  }, [token]);
+  }, [token, refreshUnreadCount]);
 
   const clearPendingTerms = useCallback(() => setPendingTerms(null), []);
   const resetUnread = useCallback(() => setUnreadCount(0), []);
@@ -120,20 +135,22 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         console.log('[SSE] connected');
         retryCount = 0; // 正常接続でバックオフをリセット
         if (isFirstConnect) {
+          // 初回接続は [token] useEffect 側が consent も未読数も取得済み
           isFirstConnect = false;
           return;
         }
+        // 再接続。切れている間に増減したぶんをここで取り直す
+        // （サーバは接続時に未読数を送らない。数えられなかった時に 0 を送る＝嘘をつく
+        //  作りだったのをやめ、取得はクライアントの責任に寄せた）。
+        refreshUnreadCount();
         refreshConsent();
       });
 
-      source.addEventListener('sync', (e: MessageEvent) => {
+      // 通知の状態が変わった、という事実だけが届く（数字は載らない）。
+      // 送られてくるのは主に「自分の別のタブ・別の端末で既読にした」とき。
+      source.addEventListener('notifications_changed', () => {
         retryCount = 0;
-        try {
-          const payload = JSON.parse(e.data as string) as { unreadCount: number };
-          setUnreadCount(payload.unreadCount);
-        } catch {
-          // ignore malformed event
-        }
+        refreshUnreadCount();
       });
 
       source.addEventListener('terms_updated', refreshConsent);
@@ -241,7 +258,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       if (hiddenCloseTimer) clearTimeout(hiddenCloseTimer);
       closeES();
     };
-  }, [token]);
+  }, [token, refreshUnreadCount]);
 
   return (
     <NotificationContext.Provider value={{ unreadCount, lastSseAt, pendingTerms, consentChecking, clearPendingTerms, resetUnread, decrementUnread }}>
