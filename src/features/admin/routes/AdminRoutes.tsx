@@ -1,31 +1,33 @@
+import { lazy } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { AdminLoginForm } from '../components/organisms/AdminLoginForm';
-import { AdminDashboard } from '../pages/AdminDashboard';
-import { AdminRegisterPage } from '../pages/AdminRegisterPage';
-import { AdminUserListPage } from '../pages/AdminUserListPage';
-import { AdminUserDetailPage } from '../pages/AdminUserDetailPage';
-import { AdminUserEditPage } from '../pages/AdminUserEditPage';
-import { AdminUserProfilePage } from '../pages/AdminUserProfilePage';
 import { AdminProtectedRoute } from './AdminProtectedRoute';
-import { AdminAdministratorListPage } from '../pages/AdminAdministratorsListPage';
-import { AdminCommunityListPage } from '../pages/AdminCommunityListPage';
-import { AdminCommunityDetailPage } from '../pages/AdminCommunityDetailPage';
-import { AdminPostListPage } from '../pages/AdminPostListPage';
-import { AdminPostDetailPage } from '../pages/AdminPostDetailPage';
-import { AdminAdministratorEditPage } from '../pages/AdminAdministratorEditPage';
-import { ReportsPage } from '../pages/AdminReportListPage';
-import { AdminInquiryListPage } from '../pages/AdminInquiryListPage';
-import { AdminInquiryDetailPage } from '../pages/AdminInquiryDetailPage';
-import { AdminAnnouncementListPage } from '../pages/AdminAnnouncementListPage';
-import { AdminAnnouncementCreatePage } from '../pages/AdminAnnouncementCreatePage';
-import { AdminAnnouncementDetailPage } from '../pages/AdminAnnouncementDetailPage';
-import { AdminTermsCreatePage } from '../pages/AdminTermsCreatePage';
-import { AdminTermsListPage } from '../pages/AdminTermsListPage';
-import { AdminTermsDetailPage } from '../pages/AdminTermsDetailPage';
-import { AdminMaintenancePage } from '../pages/AdminMaintenancePage';
-import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
-import { AdminCourseManagementPage } from '../pages/AdminCourseManagementPage';
-import { AdminCourseChatDetailPage } from '../pages/AdminCourseChatDetailPage';
+
+const AdminDashboard = lazy(() => import('../pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const AdminRegisterPage = lazy(() => import('../pages/AdminRegisterPage').then((m) => ({ default: m.AdminRegisterPage })));
+const AdminUserListPage = lazy(() => import('../pages/AdminUserListPage').then((m) => ({ default: m.AdminUserListPage })));
+const AdminUserDetailPage = lazy(() => import('../pages/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })));
+const AdminUserEditPage = lazy(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })));
+const AdminUserProfilePage = lazy(() => import('../pages/AdminUserProfilePage').then((m) => ({ default: m.AdminUserProfilePage })));
+const AdminAdministratorListPage = lazy(() => import('../pages/AdminAdministratorsListPage').then((m) => ({ default: m.AdminAdministratorListPage })));
+const AdminAdministratorEditPage = lazy(() => import('../pages/AdminAdministratorEditPage').then((m) => ({ default: m.AdminAdministratorEditPage })));
+const AdminCommunityListPage = lazy(() => import('../pages/AdminCommunityListPage').then((m) => ({ default: m.AdminCommunityListPage })));
+const AdminCommunityDetailPage = lazy(() => import('../pages/AdminCommunityDetailPage').then((m) => ({ default: m.AdminCommunityDetailPage })));
+const AdminPostListPage = lazy(() => import('../pages/AdminPostListPage').then((m) => ({ default: m.AdminPostListPage })));
+const AdminPostDetailPage = lazy(() => import('../pages/AdminPostDetailPage').then((m) => ({ default: m.AdminPostDetailPage })));
+const ReportsPage = lazy(() => import('../pages/AdminReportListPage').then((m) => ({ default: m.ReportsPage })));
+const AdminInquiryListPage = lazy(() => import('../pages/AdminInquiryListPage').then((m) => ({ default: m.AdminInquiryListPage })));
+const AdminInquiryDetailPage = lazy(() => import('../pages/AdminInquiryDetailPage').then((m) => ({ default: m.AdminInquiryDetailPage })));
+const AdminAnnouncementListPage = lazy(() => import('../pages/AdminAnnouncementListPage').then((m) => ({ default: m.AdminAnnouncementListPage })));
+const AdminAnnouncementCreatePage = lazy(() => import('../pages/AdminAnnouncementCreatePage').then((m) => ({ default: m.AdminAnnouncementCreatePage })));
+const AdminAnnouncementDetailPage = lazy(() => import('../pages/AdminAnnouncementDetailPage').then((m) => ({ default: m.AdminAnnouncementDetailPage })));
+const AdminTermsCreatePage = lazy(() => import('../pages/AdminTermsCreatePage').then((m) => ({ default: m.AdminTermsCreatePage })));
+const AdminTermsListPage = lazy(() => import('../pages/AdminTermsListPage').then((m) => ({ default: m.AdminTermsListPage })));
+const AdminTermsDetailPage = lazy(() => import('../pages/AdminTermsDetailPage').then((m) => ({ default: m.AdminTermsDetailPage })));
+const AdminMaintenancePage = lazy(() => import('../pages/AdminMaintenancePage').then((m) => ({ default: m.AdminMaintenancePage })));
+const AdminAnalyticsPage = lazy(() => import('../pages/AdminAnalyticsPage').then((m) => ({ default: m.AdminAnalyticsPage })));
+const AdminCourseManagementPage = lazy(() => import('../pages/AdminCourseManagementPage').then((m) => ({ default: m.AdminCourseManagementPage })));
+const AdminCourseChatDetailPage = lazy(() => import('../pages/AdminCourseChatDetailPage').then((m) => ({ default: m.AdminCourseChatDetailPage })));
 
 export const AdminRoutes = () => {
   return (
@@ -101,14 +103,6 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminCommunityDetailPage />
-          </AdminProtectedRoute>
-        }
-      />
-      <Route
-        path="posts"
-        element={
-          <AdminProtectedRoute>
-            <AdminPostListPage />
           </AdminProtectedRoute>
         }
       />

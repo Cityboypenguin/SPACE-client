@@ -87,6 +87,37 @@ const PollsDocument = graphql(`
   }
 `);
 
+const MorePollsDocument = graphql(`
+  query MorePolls($roomID: ID!, $limit: Int, $offset: Int) {
+    polls(roomID: $roomID, limit: $limit, offset: $offset) {
+      items {
+        ID
+        roomID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+          role
+        }
+        question
+        allowMultipleChoice
+        options {
+          ID
+          label
+          voteCount
+          votedByMe
+        }
+        voterCount
+        deadline
+        createdAt
+        isMine
+      }
+      total
+    }
+  }
+`);
+
 const CreatePollDocument = graphql(`
   mutation CreatePoll($roomID: ID!, $question: String!, $options: [String!]!, $allowMultipleChoice: Boolean, $deadline: String) {
     createPoll(roomID: $roomID, question: $question, options: $options, allowMultipleChoice: $allowMultipleChoice, deadline: $deadline) {
@@ -139,6 +170,7 @@ const DeletePollDocument = graphql(`
 `);
 
 export type PollPage = { items: Poll[]; total: number; unvotedTotal: number };
+export type MorePollPage = Pick<PollPage, 'items' | 'total'>;
 
 // votePoll/pollUpdated の応答は options(得票数)と投票者数だけを含む部分オブジェクト。
 // 呼び出し側は既存の Poll に上書きマージして使う。
@@ -146,6 +178,11 @@ export type PollVoteUpdate = Pick<Poll, 'ID' | 'options' | 'voterCount'>;
 
 export const listPolls = async (roomID: string, limit = 50, offset = 0): Promise<PollPage> => {
   const data = await requestDoc(PollsDocument, { roomID, limit, offset }, getUserToken());
+  return data.polls;
+};
+
+export const listMorePolls = async (roomID: string, limit = 50, offset = 0): Promise<MorePollPage> => {
+  const data = await requestDoc(MorePollsDocument, { roomID, limit, offset }, getUserToken());
   return data.polls;
 };
 

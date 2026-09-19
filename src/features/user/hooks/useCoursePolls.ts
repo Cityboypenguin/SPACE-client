@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { listPolls, type Poll, type PollVoteUpdate, POLL_FIELDS } from '../api/poll';
+import { listMorePolls, listPolls, type Poll, type PollVoteUpdate, POLL_FIELDS } from '../api/poll';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 import { toUserMessage } from '../../../lib/errorMessages';
 
@@ -91,13 +91,12 @@ export const useCoursePolls = (roomId: string | undefined) => {
     if (!roomId || loadingMore) return;
     setLoadingMore(true);
     try {
-      const page = await listPolls(roomId, PAGE_SIZE, offsetRef.current);
+      const page = await listMorePolls(roomId, PAGE_SIZE, offsetRef.current);
       offsetRef.current += page.items.length;
       setState((prev) => ({
         ...prev,
         polls: [...prev.polls, ...page.items.filter((p) => !prev.polls.some((e) => e.ID === p.ID))],
         total: page.total,
-        unvotedTotal: page.unvotedTotal,
       }));
     } finally {
       setLoadingMore(false);
