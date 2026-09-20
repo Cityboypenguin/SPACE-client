@@ -124,8 +124,8 @@ export const getCommunityMembers = async (communityID: string, limit = 50, offse
 };
 
 const ListRoomMessagesDocument = graphql(`
-  query AdminListMessages($roomID: ID!, $limit: Int) {
-    messages(roomID: $roomID, limit: $limit) {
+  query AdminListMessages($roomID: ID!, $limit: Int, $before: ID) {
+    messages(roomID: $roomID, limit: $limit, before: $before) {
       items {
         ID
         roomID
@@ -142,6 +142,7 @@ const ListRoomMessagesDocument = graphql(`
         createdAt
         updatedAt
       }
+      hasMoreBefore
     }
   }
 `);
@@ -160,9 +161,34 @@ const DeleteMessageDocument = graphql(`
   }
 `);
 
-export const listRoomMessages = async (roomID: string, limit = 200): Promise<{ messages: { items: Message[] } }> => {
-  const data = await requestDoc(ListRoomMessagesDocument, { roomID, limit }, getAdminToken());
-  return data as { messages: { items: Message[] } };
+// adminMessagePageSize は管理画面が一度に読むメッセージ数。
+//
+// 以前は 200 件を一度に取り、ページ送りを持っていなかった。ルームが育つほど
+// 1回の応答が重くなり、しかも 200 件を超えたぶんは管理画面から一切辿れなかった
+// （古いメッセージを見る手段が無かった）。
+export const adminMessagePageSize = 50;
+
+/**
+ * ルームのメッセージを新しい側から1ページぶん読む。
+ *
+ * before には「いま持っている中で一番古いメッセージのID」を渡す。offset ではなく
+ * カーソルなのは、messages が元からカーソル方式だから（深いページでも費用が
+ * 増えず、読んでいる間に新着が入っても取りこぼし・重複が起きない）。
+ *
+ * items は常に古い順で返る。hasMoreBefore は「このページより古いメッセージが
+ * まだあるか」の実測値。
+ */
+export const listRoomMessages = async (
+  roomID: string,
+  limit = adminMessagePageSize,
+  before?: string,
+): Promise<{ messages: { items: Message[]; hasMoreBefore: boolean } }> => {
+  const data = await requestDoc(
+    ListRoomMessagesDocument,
+    { roomID, limit, ...(before ? { before } : {}) },
+    getAdminToken(),
+  );
+  return data as { messages: { items: Message[]; hasMoreBefore: boolean } };
 };
 
 export const adminDeleteMessage = async (roomID: string, messageID: string) => {

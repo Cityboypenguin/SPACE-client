@@ -176,13 +176,13 @@ export const useCourseQuestions = (roomId: string | undefined) => {
     }));
   }, []);
 
-  // 回答の投稿・削除は質問一覧側の件数(answers.total)だけを増減させる。回答本体は
+  // 回答の投稿・削除は質問一覧側の件数(answerCount)だけを増減させる。回答本体は
   // 質問詳細を開いている間 useQuestionAnswers が個別に持つ。
   const bumpAnswerCount = useCallback((questionID: string, delta: number) => {
     setState((prev) => ({
       ...prev,
       questions: prev.questions.map((q) =>
-        q.ID === questionID ? { ...q, answers: { total: Math.max(0, q.answers.total + delta) } } : q,
+        q.ID === questionID ? { ...q, answerCount: Math.max(0, q.answerCount + delta) } : q,
       ),
     }));
   }, []);

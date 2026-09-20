@@ -19,7 +19,7 @@ const formatRelativeTime = (value: string) => {
 
 export const QuestionCard = ({ question, onOpen }: Props) => {
   const bestAnswer = question.bestAnswer;
-  const otherAnswers = Math.max(0, question.answers.total - (bestAnswer ? 1 : 0));
+  const otherAnswers = Math.max(0, question.answerCount - (bestAnswer ? 1 : 0));
 
   return (
     <div role="button" tabIndex={0} className={styles.card} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}>
@@ -40,7 +40,7 @@ export const QuestionCard = ({ question, onOpen }: Props) => {
         </span>
       )}
       <span className={styles.cardAnswerCount}>
-        {otherAnswers > 0 ? `他 ${otherAnswers} 件の回答` : `${question.answers.total}件の回答`}
+        {otherAnswers > 0 ? `他 ${otherAnswers} 件の回答` : `${question.answerCount}件の回答`}
       </span>
     </div>
   );

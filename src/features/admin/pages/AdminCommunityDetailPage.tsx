@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
@@ -9,6 +9,7 @@ import {
   promoteToCommunityOwner,
   demoteFromCommunityOwner,
   listRoomMessages,
+  adminMessagePageSize,
   adminDeleteMessage,
   type Community,
   type CommunityMember,
@@ -36,6 +37,17 @@ export const AdminCommunityDetailPage = () => {
   const [success, setSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
   const [messagesError, setMessagesError] = useState('');
+  // メッセージはカーソル方式で古い側へ辿る（messages クエリが before を取るため）。
+  // 総件数は返らないので「まだ古いものがあるか」だけを持つ。
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  // 継ぎ足しの起点。messages そのものを見ると、配列が変わるたびに
+  // loadOlderMessages が作り直される（＝ボタンの再生成が毎回走る）。
+  // 必要なのは「一番古いID」の1つだけなので、それだけを持つ。
+  const [oldestMessageID, setOldestMessageID] = useState<string | null>(null);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+  // 二重押しの防止は ref で持つ。state を判定に使うと、それが依存に入って
+  // loadOlderMessages が読み込みのたびに作り直される。
+  const loadingOlderRef = useRef(false);
   const [memberOffset, setMemberOffset] = useState(0);
   const [memberTotal, setMemberTotal] = useState(0);
   const memberPageSize = 50;
@@ -70,10 +82,33 @@ export const AdminCommunityDetailPage = () => {
     try {
       const data = await listRoomMessages(roomID);
       setMessages(data.messages.items);
+      setHasOlderMessages(data.messages.hasMoreBefore);
+      setOldestMessageID(data.messages.items[0]?.ID ?? null);
     } catch {
       setMessagesError('メッセージ一覧の取得に失敗しました');
     }
   }, []);
+
+  // 古い側を1ページぶん継ぎ足す。items は常に古い順で返るので、
+  // いま持っている中で一番古い ID を before に渡し、返ってきたぶんを前へ足す。
+  const roomID = community?.roomID;
+  const loadOlderMessages = useCallback(async () => {
+    if (!roomID || !oldestMessageID || loadingOlderRef.current) return;
+    loadingOlderRef.current = true;
+    setLoadingOlderMessages(true);
+    try {
+      const data = await listRoomMessages(roomID, adminMessagePageSize, oldestMessageID);
+      setMessages(prev => [...data.messages.items, ...prev]);
+      setHasOlderMessages(data.messages.hasMoreBefore);
+      // 何も返らなければ起点は据え置き（これ以上古いものは無い）。
+      setOldestMessageID(data.messages.items[0]?.ID ?? oldestMessageID);
+    } catch {
+      setMessagesError('メッセージ一覧の取得に失敗しました');
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlderMessages(false);
+    }
+  }, [roomID, oldestMessageID]);
 
   useEffect(() => {
     if (!community) void Promise.resolve().then(fetchCommunity);
@@ -249,6 +284,17 @@ export const AdminCommunityDetailPage = () => {
 
         <h2>メッセージ一覧</h2>
         {messagesError && <p className={styles.errorText}>{messagesError}</p>}
+        {/* items は古い順なので、古いぶんを継ぎ足すボタンは表の手前に置く。 */}
+        {hasOlderMessages && (
+          <button
+            type="button"
+            onClick={loadOlderMessages}
+            disabled={loadingOlderMessages}
+            className={styles.paginationButton}
+          >
+            {loadingOlderMessages ? '読み込み中...' : '過去のメッセージを読み込む'}
+          </button>
+        )}
         {messages.length > 0 ? (
           <table className={styles.table}>
             <thead>

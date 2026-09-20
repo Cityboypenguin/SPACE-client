@@ -25,9 +25,13 @@ export type Question = {
   body: string;
   isAnswered: boolean;
   bestAnswer: Pick<Answer, 'ID' | 'body'> | null;
-  // 質問一覧では回答本体を全件取得しない(詳細を開いた時だけ useQuestionAnswers で
-  // ページングして取得する)ため、ここでは件数のみを持つ。
-  answers: { total: number };
+  // 質問一覧では回答本体を取得しない(詳細を開いた時だけ useQuestionAnswers で
+  // ページングして取得する)ため、件数だけを持つ。
+  //
+  // 以前は answers(limit: 0) { total } で件数を取っていたが、サーバーは
+  // limit <= 0 を「未指定」と見なして既定の20件を引くので、捨てるだけの回答を
+  // 毎回20件ぶん読んでいた。answerCount は COUNT(*) 1本で、行は取らない。
+  answerCount: number;
   media: Media[];
   createdAt: string;
   updatedAt: string;
@@ -53,9 +57,7 @@ export const QUESTION_FIELDS = `
     ID
     body
   }
-  answers(limit: 0) {
-    total
-  }
+  answerCount
   media {${MEDIA_FIELDS_RAW}}
   createdAt
   updatedAt
@@ -97,9 +99,7 @@ const QuestionsDocument = graphql(`
           ID
           body
         }
-        answers(limit: 0) {
-          total
-        }
+        answerCount
         media {
           ...MediaFields
         }
@@ -129,9 +129,7 @@ const CreateQuestionDocument = graphql(`
         ID
         body
       }
-      answers(limit: 0) {
-        total
-      }
+      answerCount
       media {
         ...MediaFields
       }

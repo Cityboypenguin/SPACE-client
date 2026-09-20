@@ -271,8 +271,8 @@ export type Poll = {
 };
 
 const AdminGetCourseQuestionsDocument = graphql(`
-  query AdminGetCourseQuestions($roomID: ID!, $limit: Int) {
-    questions(roomID: $roomID, limit: $limit) {
+  query AdminGetCourseQuestions($roomID: ID!, $limit: Int, $offset: Int) {
+    questions(roomID: $roomID, limit: $limit, offset: $offset) {
       items {
         ID
         roomID
@@ -295,8 +295,18 @@ const AdminGetCourseQuestionsDocument = graphql(`
   }
 `);
 
-export const getCourseQuestions = async (roomID: string, limit = 200): Promise<{ items: Question[]; total: number }> => {
-  const data = await requestDoc(AdminGetCourseQuestionsDocument, { roomID, limit }, getAdminToken());
+// adminCoursePageSize は管理画面が一度に読む質問・投票の件数。
+//
+// 以前は 200 件を一度に取り、ページ送りを持っていなかった。授業が育つほど
+// 1回の応答が重くなり、200 件を超えたぶんは管理画面から辿れなかった。
+export const adminCoursePageSize = 50;
+
+export const getCourseQuestions = async (
+  roomID: string,
+  limit = adminCoursePageSize,
+  offset = 0,
+): Promise<{ items: Question[]; total: number }> => {
+  const data = await requestDoc(AdminGetCourseQuestionsDocument, { roomID, limit, offset }, getAdminToken());
   return {
     items: data.questions.items,
     total: data.questions.total,
@@ -315,8 +325,8 @@ export const adminDeleteQuestion = async (id: string): Promise<boolean> => {
 };
 
 const AdminGetCoursePollsDocument = graphql(`
-  query AdminGetCoursePolls($roomID: ID!, $limit: Int) {
-    polls(roomID: $roomID, limit: $limit) {
+  query AdminGetCoursePolls($roomID: ID!, $limit: Int, $offset: Int) {
+    polls(roomID: $roomID, limit: $limit, offset: $offset) {
       items {
         ID
         roomID
@@ -340,8 +350,12 @@ const AdminGetCoursePollsDocument = graphql(`
   }
 `);
 
-export const getCoursePolls = async (roomID: string, limit = 200): Promise<{ items: Poll[]; total: number }> => {
-  const data = await requestDoc(AdminGetCoursePollsDocument, { roomID, limit }, getAdminToken());
+export const getCoursePolls = async (
+  roomID: string,
+  limit = adminCoursePageSize,
+  offset = 0,
+): Promise<{ items: Poll[]; total: number }> => {
+  const data = await requestDoc(AdminGetCoursePollsDocument, { roomID, limit, offset }, getAdminToken());
   return data.polls as { items: Poll[]; total: number };
 };
 
