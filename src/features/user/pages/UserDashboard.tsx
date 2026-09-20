@@ -34,6 +34,7 @@ import { staticCacheOptions } from '../cache/swrOptions';
 import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './UserDashboard.module.css';
 import { AppSwal } from '../../../lib/swal';
+import { withLikeToggled } from '../../../lib/postUtils';
 
 const LIMIT = 20;
 
@@ -206,9 +207,7 @@ export const UserDashboard = () => {
       const updater = (prev: Post[]) =>
         prev.map(p => {
           if (p.ID !== postId) return p;
-          return isLiked
-            ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
-            : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+          return withLikeToggled(p, isLiked);
         });
       setOwnPosts(updater);
       setLikedPosts(updater);

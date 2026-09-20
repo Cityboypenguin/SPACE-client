@@ -30,6 +30,7 @@ import dmIcon from '../../../assets/パーツ_メール.svg';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import styles from './UserPublicProfilePage.module.css';
 import { AppSwal } from '../../../lib/swal';
+import { withLikeToggled } from '../../../lib/postUtils';
 
 export const UserPublicProfilePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -166,9 +167,7 @@ export const UserPublicProfilePage = () => {
     else await createFavorite(postId);
     setPosts((prev) => prev.map((p) => {
       if (p.ID !== postId) return p;
-      return isLiked
-        ? { ...p, favorites: p.favorites.filter((f) => f.user.ID !== currentUserId) }
-        : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
+      return withLikeToggled(p, isLiked);
     }));
   };
 

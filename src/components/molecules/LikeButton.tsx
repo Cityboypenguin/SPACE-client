@@ -6,7 +6,11 @@ import styles from './LikeButton.module.css';
 
 type LikeablePost = {
   ID: string;
-  favorites: { user: { ID: string } }[];
+  // 件数と自分の有無はサーバーが直接返す。以前はいいね行の配列を受け取って
+  // length と some() で同じ2つを出していたが、表示に使うのはこの2つだけで、
+  // 配列そのものはどこにも出していなかった。
+  favoriteCount: number;
+  isFavoritedByMe: boolean;
 };
 
 type Props = {
@@ -17,7 +21,7 @@ type Props = {
 };
 
 export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
-  const isLiked = post.favorites.some((f) => f.user.ID === currentUserId);
+  const isLiked = post.isFavoritedByMe;
   const [liking, setLiking] = useState(false);
   const { theme } = useTheme();
 
@@ -46,7 +50,7 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
       <span
         className={`${isLiked ? styles.countLiked : styles.countDefault} ${large ? styles.countLarge : styles.countSmall}`}
       >
-        {large ? <strong>{post.favorites.length}</strong> : post.favorites.length}
+        {large ? <strong>{post.favoriteCount}</strong> : post.favoriteCount}
         {large && <span className={styles.suffix}>いいね</span>}
       </span>
     </button>

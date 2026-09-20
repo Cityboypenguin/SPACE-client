@@ -12,13 +12,6 @@ export type PostUser = {
   avatarUrl?: string | null;
 };
 
-export type PostFavorite = {
-  ID: string;
-  user: {
-    ID: string;
-  };
-};
-
 // 管理画面では作成日時も表示するため、共有の Media に足して使う。
 export type Media = SharedMedia & {
   createdAt: string;
@@ -32,7 +25,9 @@ export type Post = {
   deletedAt?: string | null;
   replyCount: number;
   user: PostUser;
-  favorites: PostFavorite[];
+  // 件数と「自分がいいねしたか」だけ（理由は user 側の Post と同じ）。
+  favoriteCount: number;
+  isFavoritedByMe: boolean;
   rootPost?: Post | null;
   parent?: Post | null;
   replies?: Post[];
@@ -53,12 +48,8 @@ export const AdminPostFieldsFragment = graphql(`
       accountID
       avatarUrl
     }
-    favorites {
-      ID
-      user {
-        ID
-      }
-    }
+    favoriteCount
+    isFavoritedByMe
     media {
       ...MediaFields
       createdAt

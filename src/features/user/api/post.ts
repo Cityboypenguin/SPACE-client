@@ -13,13 +13,6 @@ export type PostUser = {
   avatarUrl?: string | null;
 };
 
-export type PostFavorite = {
-  ID: string;
-  user: {
-    ID: string;
-  };
-};
-
 export type Post = {
   ID: string;
   content: string;
@@ -29,7 +22,11 @@ export type Post = {
   replyCount: number;
   rootPost: Post | null;
   user: PostUser;
-  favorites: PostFavorite[];
+  // いいねは件数と「自分がいいねしたか」だけを持つ。以前は favorites で
+  // いいね行を全部受け取り、その length と some() で同じ2つを出していたが、
+  // 人気の投稿ではいいねの数だけ応答が膨らみ、一覧ではそれが投稿の件数ぶん乗る。
+  favoriteCount: number;
+  isFavoritedByMe: boolean;
   parent?: Post | null;
   replies?: Post[];
   media: Media[];
@@ -54,12 +51,8 @@ export const PostFieldsFragment = graphql(`
       accountID
       avatarUrl
     }
-    favorites {
-      ID
-      user {
-        ID
-      }
-    }
+    favoriteCount
+    isFavoritedByMe
     media {
       ...MediaFields
     }

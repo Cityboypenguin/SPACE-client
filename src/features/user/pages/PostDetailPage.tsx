@@ -40,6 +40,7 @@ import { removePostAcrossCaches, updatePostAcrossCaches } from '../cache/postLis
 import { stableCacheOptions } from '../cache/swrOptions';
 import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
 import { useMentionNavigation } from '../hooks/useMentionNavigation';
+import { withLikeToggled } from '../../../lib/postUtils';
 
 export const PostDetailPage = () => {
   const { currentUserID, onMentionClick } = useMentionNavigation();
@@ -103,9 +104,7 @@ export const PostDetailPage = () => {
       await createFavorite(postId);
     }
     if (postId === id) {
-      const updater = (p: Post): Post => isLiked
-        ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== userId) }
-        : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
+      const updater = (p: Post): Post => withLikeToggled(p, isLiked);
       updatePostAcrossCaches(postId, updater);
     }
     void mutate();

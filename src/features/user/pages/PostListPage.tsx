@@ -36,6 +36,7 @@ import { useHashtagSuggestions } from '../hooks/useHashtagSuggestions';
 import { HashtagSuggestionList } from '../components/molecules/HashtagSuggestionList';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { Footer } from '../../../components/organisms/Footer';
+import { withLikeToggled } from '../../../lib/postUtils';
 
 const LIMIT = 20;
 const REFRESH_COOLDOWN_MS = 60 * 1000;
@@ -524,12 +525,7 @@ export const PostListPage = () => {
       } else {
         await createFavorite(postId);
       }
-      updatePostInAllLists(postId, p => {
-        if (isLiked) {
-          return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
-        }
-        return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
-      });
+      updatePostInAllLists(postId, p => withLikeToggled(p, isLiked));
     } catch (err) {
       console.error('いいねの更新に失敗しました', err);
     }

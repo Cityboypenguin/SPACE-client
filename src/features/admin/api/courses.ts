@@ -248,7 +248,9 @@ export type Question = {
   user: ChatUser;
   body: string;
   isAnswered: boolean;
-  answers: Answer[];
+  // 一覧では件数しか使わない。回答そのものが要る画面ができたら、その画面だけが
+  // answers を選ぶこと（一覧のクエリへ戻さない）。
+  answerCount: number;
   createdAt: string;
 };
 
@@ -282,20 +284,10 @@ const AdminGetCourseQuestionsDocument = graphql(`
         }
         body
         isAnswered
-        answers(limit: 200) {
-          items {
-            ID
-            questionID
-            user {
-              ID
-              name
-              accountID
-              avatarUrl
-            }
-            body
-            createdAt
-          }
-        }
+        # 一覧に出しているのは回答の件数だけ。以前は answers(limit: 200) で
+        # 回答の本文と投稿者を全部取り、その length を件数にしていた。
+        # 質問200件 × 回答200件で、最大4万行が1回の応答に乗っていた。
+        answerCount
         createdAt
       }
       total
@@ -306,7 +298,7 @@ const AdminGetCourseQuestionsDocument = graphql(`
 export const getCourseQuestions = async (roomID: string, limit = 200): Promise<{ items: Question[]; total: number }> => {
   const data = await requestDoc(AdminGetCourseQuestionsDocument, { roomID, limit }, getAdminToken());
   return {
-    items: data.questions.items.map((q) => ({ ...q, answers: q.answers.items })),
+    items: data.questions.items,
     total: data.questions.total,
   } as { items: Question[]; total: number };
 };

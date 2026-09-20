@@ -206,7 +206,7 @@ export const AdminCourseChatDetailPage = () => {
                   <td className={styles.tableCell}>
                     {question.isAnswered ? '解決済み' : '未解決'}
                   </td>
-                  <td className={styles.tableCell}>{question.answers.length}</td>
+                  <td className={styles.tableCell}>{question.answerCount}</td>
                   <td className={`${styles.tableCell} ${styles.nowrap}`}>
                     {new Date(question.createdAt).toLocaleString('ja-JP')}
                   </td>

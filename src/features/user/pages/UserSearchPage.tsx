@@ -18,6 +18,7 @@ import { storageUrl } from '../../../lib/storage';
 import searchIconSvg from '../../../assets/パーツ_検索.svg';
 import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './UserSearchPage.module.css';
+import { withLikeToggled } from '../../../lib/postUtils';
 
 type Mode = 'user' | 'post';
 const LIMIT = 20;
@@ -257,9 +258,7 @@ export const UserSearchPage = () => {
       else await createFavorite(postId);
       const applyUpdate = (posts: Post[]) => posts.map(p => {
         if (p.ID !== postId) return p;
-        return isLiked
-          ? { ...p, favorites: p.favorites.filter(f => f.user.ID !== currentUserId) }
-          : { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: currentUserId ?? '' } }] };
+        return withLikeToggled(p, isLiked);
       });
       setAllPostResults(prev => applyUpdate(prev));
       setRecentPosts(prev => {
@@ -268,7 +267,10 @@ export const UserSearchPage = () => {
         return next;
       });
     } catch { /* noop */ }
-  }, [currentUserId]);
+    // 依存なし。いいねの反映は件数と自分の有無を反転させるだけになり、
+    // 「自分が誰か」を見る必要が無くなった（以前は favorites の配列から
+    // 自分の行を探して足し引きしていた）。
+  }, []);
 
   const handleReplySubmit = useCallback(async (content: string, files: File[]) => {
     if (!replyingTo) return;
