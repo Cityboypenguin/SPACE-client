@@ -71,6 +71,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    const syncAuth = (event: StorageEvent) => {
+      if (event.key === USER_TOKEN_KEY || event.key === USER_ID_KEY || event.key === null) {
+        setToken(localStorage.getItem(USER_TOKEN_KEY));
+        setUserId(localStorage.getItem(USER_ID_KEY));
+      }
+    };
+    window.addEventListener('storage', syncAuth);
+    return () => window.removeEventListener('storage', syncAuth);
+  }, []);
+
+  useEffect(() => {
     registerUnauthorizedHandler(() => {
       clearAuth();
       const isAdmin = window.location.pathname.startsWith('/admin');
