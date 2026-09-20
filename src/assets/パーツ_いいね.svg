@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="_レイヤー_1" data-name="レイヤー_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 362.83 362.83">
+<svg id="_レイヤー_1" data-name="レイヤー_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="-6 -6 374.83 374.83">
   <!-- Generator: Adobe Illustrator 30.4.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 226)  -->
   <defs>
     <style>
+      /* 線の太さは同じ行に並ぶ パーツ_コメント.svg に合わせてある。
+         あちらは viewBox 352.36 に stroke-width 18px なので、20px 表示での
+         実効太さは 18 * 20 / 352.36 = 約1.02px。こちらを同じ約1.02px にすると
+         stroke-width = 1.02 * 374.83 / 20 = 19.15px。
+         viewBox は 0 0 362.83 362.83 に上下左右6ずつ余白を足した値で、
+         太くしたストロークの外側（パス左右端 7.29 に対し半幅 9.58）が
+         切れないようにしている。片方だけ変えると太さがずれるので必ず両方直すこと。 */
       .st0 {
         fill: none;
         stroke: #231815;
         stroke-miterlimit: 10;
-        stroke-width: 10px;
+        stroke-width: 19.15px;
       }
     </style>
   </defs>
