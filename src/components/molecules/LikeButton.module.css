@@ -31,8 +31,10 @@
   filter: opacity(0.35);
 }
 
+/* ダークモードでは同じ行に並ぶコメントアイコン（img.themed-icon）が
+   invert(1) のみで白線になるため、いいねの縁もそれに合わせて減光しない。 */
 .iconInactiveDark {
-  filter: opacity(0.35) invert(1);
+  filter: invert(1);
 }
 
 .count {

@@ -440,8 +440,10 @@
   filter: opacity(0.35);
 }
 
+/* LikeButton.module.css の .iconInactiveDark と揃えること。ダークモードでは
+   コメントアイコン（img.themed-icon）が invert(1) のみで白線になるため減光しない。 */
 .likeIconInactiveDark {
-  filter: opacity(0.35) invert(1);
+  filter: invert(1);
 }
 
 .inlineError {
