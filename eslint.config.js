@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // src/generated は graphql-codegen の出力。人が編集しないため lint 対象外にする。
+  globalIgnores(['dist', 'src/generated']),
   {
     files: ['**/*.{ts,tsx}'],
     ignores: ['e2e/**', 'playwright.config.ts'],

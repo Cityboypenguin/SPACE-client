@@ -31,7 +31,7 @@
   padding: 0;
   display: flex;
   align-items: center;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .form {
@@ -70,7 +70,7 @@
   border: none;
   cursor: pointer;
   font-size: 0.78rem;
-  color: #ef4444;
+  color: var(--color-danger);
   text-decoration: underline;
   padding: 0;
   white-space: nowrap;
@@ -80,10 +80,10 @@
   flex: 1;
   padding: 0.65rem 0.9rem;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border);
   font-size: 0.95rem;
   outline: none;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .nameInput:focus {
@@ -99,7 +99,7 @@
 .descLabel {
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text);
   text-align: center;
 }
 
@@ -107,13 +107,13 @@
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border);
   font-size: 0.95rem;
   resize: vertical;
   box-sizing: border-box;
   outline: none;
   font-family: inherit;
-  color: #1e293b;
+  color: var(--color-text);
   min-height: 160px;
 }
 
@@ -122,7 +122,7 @@
 }
 
 .errorText {
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.875rem;
   margin: 0;
 }
@@ -160,7 +160,7 @@
 }
 
 .discardDialog {
-  background: #fff;
+  background: var(--color-bg-elevated);
   border-radius: 12px;
   padding: 1.5rem 1.75rem;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
@@ -172,7 +172,7 @@
   margin: 0 0 1.25rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text);
   text-align: center;
 }
 
@@ -185,23 +185,23 @@
 .discardCancelBtn {
   padding: 0.5rem 1.25rem;
   border-radius: 8px;
-  border: 1.5px solid #e2e8f0;
-  background: #fff;
-  color: #64748b;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .discardCancelBtn:hover {
-  background: #f8fafc;
+  background: var(--color-surface);
 }
 
 .discardConfirmBtn {
   padding: 0.5rem 1.25rem;
   border-radius: 8px;
   border: none;
-  background: #ef4444;
+  background: var(--color-danger);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;

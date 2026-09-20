@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
 import { Avatar } from '../../../components/atoms/Avatar';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
 import { listMyDMRooms, deleteRoom, DELETED_ACCOUNT_ID, type Room } from '../api/message';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
+import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './DMListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -48,7 +51,7 @@ export const DMListPage = () => {
   }, []);
 
   useEffect(() => {
-    loadDMRooms(0, true);
+    void Promise.resolve().then(() => loadDMRooms(0, true));
   }, [loadDMRooms]);
 
   const sentinelRef = useInfiniteScroll(
@@ -61,12 +64,42 @@ export const DMListPage = () => {
     dmLoadingMore,
   );
 
-  useUnreadSubscription(({ roomID, unreadCount, lastMessage }) => {
-    setDmRooms((prev) =>
-      prev.map((room) => room.ID === roomID
-        ? { ...room, unreadCount, ...(lastMessage !== undefined ? { lastMessage } : {}) }
-        : room),
-    );
+  // 未読数を取り直す。room_changed は「更新された」という事実しか運ばないので、
+  // 自分の未読数は一覧クエリ（unreadCount を含む）から取り直すのが素直。
+  // 既に読み込んである件数ぶんをまとめて取り直し、無限スクロールで開いた範囲が
+  // 1ページ目まで畳まれないようにする。
+  const refreshDMRooms = useCallback(() => {
+    if (dmLoadingRef.current) return;
+    setDmRooms((prev) => {
+      if (prev.length === 0) return prev;
+      dmLoadingRef.current = true;
+      listMyDMRooms(prev.length, 0)
+        .then((page) => {
+          setDmRooms(page.items);
+          setDmTotal(page.total);
+        })
+        .catch(() => {
+          // 取り直しの失敗は表示を壊さない（古い一覧のまま次のイベントを待つ）。
+        })
+        .finally(() => { dmLoadingRef.current = false; });
+      return prev;
+    });
+  }, []);
+
+  const refreshDMRoomsSoon = useDebouncedRefresh(refreshDMRooms);
+
+  useUnreadSubscription(({ roomID, hasNewMessage, lastMessage }) => {
+    // プレビューだけは即座に反映する（サーバが本文から作った文言がイベントに載って
+    // いるので、取り直しを待つ必要が無い）。既読による更新（hasNewMessage: false）は
+    // 本文が変わったわけではないので触らない。
+    if (hasNewMessage && lastMessage !== undefined) {
+      setDmRooms((prev) =>
+        prev.map((room) => (room.ID === roomID ? { ...room, lastMessage } : room)),
+      );
+    }
+    // 未読数はイベントに載らないので取り直す。賑やかなルームだとイベントが連続する
+    // ため、短時間のぶんはまとめて1回にする。
+    refreshDMRoomsSoon();
   });
 
   const handleDeleteRoom = async (e: React.MouseEvent, roomID: string) => {
@@ -118,11 +151,11 @@ export const DMListPage = () => {
         <h2 className={styles.sectionTitle}>DM</h2>
 
         {dmInitialLoading ? (
-          <p className={styles.empty}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>読み込み中...</StatusText>
         ) : filteredRooms.length === 0 ? (
-          <p className={styles.empty}>
+          <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>
             {query ? '該当するトークが見つかりませんでした' : 'DMがまだありません'}
-          </p>
+          </StatusText>
         ) : (
           <ul className={styles.dmList}>
             {filteredRooms.map((room) => {
@@ -171,9 +204,9 @@ export const DMListPage = () => {
                 </li>
               );
             })}
-            <div ref={sentinelRef} style={{ height: '1px' }} />
+            <ScrollSentinel ref={sentinelRef} />
             {dmLoadingMore && (
-              <p className={styles.empty}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             )}
           </ul>
         )}

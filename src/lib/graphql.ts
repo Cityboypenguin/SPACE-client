@@ -75,19 +75,76 @@ let _adminRefreshPromise: Promise<string | null> | null = null;
 const isAdminToken = (token?: string): boolean => {
   if (!token) return false;
   const adminToken = localStorage.getItem(ADMIN_TOKEN_KEY);
-  return !!adminToken && token === adminToken;
+  if (adminToken && token === adminToken) return true;
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))) as { role?: string };
+    return decoded.role === 'administrator';
+  } catch {
+    return false;
+  }
 };
 
-const tryRefreshAccessToken = (isAdmin: boolean): Promise<string | null> => {
+const tryRefreshAccessToken = (isAdmin: boolean, failedToken?: string): Promise<string | null> => {
   if (isAdmin) {
     if (_adminRefreshPromise) return _adminRefreshPromise;
-    _adminRefreshPromise = doRefresh(true).finally(() => { _adminRefreshPromise = null; });
+    _adminRefreshPromise = refreshAcrossTabs(true, failedToken).finally(() => { _adminRefreshPromise = null; });
     return _adminRefreshPromise;
   } else {
     if (_userRefreshPromise) return _userRefreshPromise;
-    _userRefreshPromise = doRefresh(false).finally(() => { _userRefreshPromise = null; });
+    _userRefreshPromise = refreshAcrossTabs(false, failedToken).finally(() => { _userRefreshPromise = null; });
     return _userRefreshPromise;
   }
+};
+
+const refreshAcrossTabs = (isAdmin: boolean, failedToken?: string): Promise<string | null> => {
+  const refreshKey = isAdmin ? ADMIN_REFRESH_TOKEN_KEY : USER_REFRESH_TOKEN_KEY;
+  const tokenKey = isAdmin ? ADMIN_TOKEN_KEY : USER_TOKEN_KEY;
+  const before = localStorage.getItem(refreshKey);
+  const run = () => {
+    const currentToken = localStorage.getItem(tokenKey);
+    const currentRefresh = localStorage.getItem(refreshKey);
+    if (currentToken && currentRefresh && (currentRefresh !== before || (failedToken && currentToken !== failedToken))) {
+      if (!isAdmin) _onTokenRefreshed?.(currentToken, currentRefresh);
+      return Promise.resolve(currentToken);
+    }
+    return doRefresh(isAdmin);
+  };
+  if (navigator.locks) {
+    return navigator.locks.request(`space-${isAdmin ? 'admin' : 'user'}-token-refresh`, run);
+  }
+  return run().then((token) => token ?? waitForPeerRefresh(isAdmin, before));
+};
+
+const waitForPeerRefresh = (isAdmin: boolean, previousRefreshToken: string | null): Promise<string | null> => {
+  const refreshKey = isAdmin ? ADMIN_REFRESH_TOKEN_KEY : USER_REFRESH_TOKEN_KEY;
+  const tokenKey = isAdmin ? ADMIN_TOKEN_KEY : USER_TOKEN_KEY;
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (token: string | null) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('storage', onStorage);
+      clearTimeout(timeout);
+      if (token && !isAdmin) {
+        _onTokenRefreshed?.(token, localStorage.getItem(refreshKey) ?? '');
+      }
+      resolve(token);
+    };
+    const check = () => {
+      const refreshToken = localStorage.getItem(refreshKey);
+      const accessToken = localStorage.getItem(tokenKey);
+      if (refreshToken && refreshToken !== previousRefreshToken && accessToken) {
+        finish(accessToken);
+      }
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === refreshKey) check();
+    };
+    window.addEventListener('storage', onStorage);
+    const timeout = window.setTimeout(() => finish(null), 5000);
+    check();
+  });
 };
 
 // リフレッシュトークンでユーザーのアクセストークンを更新し、新しいトークンを返す（失敗時 null）。
@@ -183,7 +240,7 @@ export const request = async <T>(
 
   if (response.status === 401) {
     if (!_retrying) {
-      const newToken = await tryRefreshAccessToken(isAdminToken(token));
+      const newToken = await tryRefreshAccessToken(isAdminToken(token), token);
       if (newToken) {
         return request<T>(query, variables, newToken, true);
       }
@@ -219,7 +276,7 @@ export const request = async <T>(
 
     if (isAuthErrorFromErrors(errors)) {
       if (!_retrying) {
-        const newToken = await tryRefreshAccessToken(isAdminToken(token));
+        const newToken = await tryRefreshAccessToken(isAdminToken(token), token);
         if (newToken) {
           return request<T>(query, variables, newToken, true);
         }

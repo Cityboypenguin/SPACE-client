@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginAdmin, ADMIN_TOKEN_KEY, ADMIN_REFRESH_TOKEN_KEY } from '../../api/auth';
+import styles from '../../styles/AdminShared.module.css';
 
 export const AdminLoginForm = () => {
   const [email, setEmail] = useState('');
@@ -24,7 +25,7 @@ export const AdminLoginForm = () => {
   return (
     <form onSubmit={handleSubmit}>
       <h2>管理者ログイン</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className={styles.errorText}>{error}</p>}
       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin Email" required />
       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
       <button type="submit">ログイン</button>

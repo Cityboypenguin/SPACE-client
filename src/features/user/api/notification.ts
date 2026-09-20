@@ -1,6 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
+import { type Media } from './message';
 
 export type NotificationActor = {
   ID: string;
@@ -18,7 +19,14 @@ export type NotificationTargetPost = {
     name: string;
     accountID: string;
   };
-  media: { ID: string; url: string; contentType: string }[];
+  media: Media[];
+};
+
+// 返信通知の遷移先。ルーム種別でチャット画面のパスが変わるため room も引く。
+export type NotificationTargetMessage = {
+  ID: string;
+  roomID: string;
+  room: { ID: string; type: string };
 };
 
 export type Notification = {
@@ -28,6 +36,7 @@ export type Notification = {
   targetType?: string | null;
   targetID?: string | null;
   targetPost?: NotificationTargetPost | null;
+  targetMessage?: NotificationTargetMessage | null;
   message: string;
   isRead: boolean;
   createdAt: string;
@@ -42,6 +51,7 @@ export type NotificationGroup = {
   targetType?: string | null;
   targetID?: string | null;
   targetPost?: NotificationTargetPost | null;
+  targetMessage?: NotificationTargetMessage | null;
   message: string;
   createdAt: string;
   count: number;
@@ -75,9 +85,15 @@ const MyNotificationsDocument = graphql(`
             accountID
           }
           media {
+            ...MediaFields
+          }
+        }
+        targetMessage {
+          ID
+          roomID
+          room {
             ID
-            url
-            contentType
+            type
           }
         }
         message
@@ -113,9 +129,15 @@ const MyNotificationGroupsDocument = graphql(`
             accountID
           }
           media {
+            ...MediaFields
+          }
+        }
+        targetMessage {
+          ID
+          roomID
+          room {
             ID
-            url
-            contentType
+            type
           }
         }
         message
@@ -152,9 +174,15 @@ const NotificationDocument = graphql(`
           accountID
         }
         media {
+          ...MediaFields
+        }
+      }
+      targetMessage {
+        ID
+        roomID
+        room {
           ID
-          url
-          contentType
+          type
         }
       }
       message
@@ -167,6 +195,18 @@ const NotificationDocument = graphql(`
 const MyUnreadNotificationCountDocument = graphql(`
   query MyUnreadNotificationCount {
     myUnreadNotificationCount
+  }
+`);
+
+// SSE(/events) へ繋ぐための使い捨てチケット。
+//
+// ブラウザ標準の EventSource はカスタムヘッダーを送れないため、認証情報は URL に
+// 載せるしかない。以前はアクセストークンをそのまま ?token= に載せていたが、URL は
+// アクセスログ・プロキシ・監視基盤に残るので、拾われると有効期限まで使い回せてしまう。
+// 代わりに「1回使ったら無効・30秒で失効」するチケットを載せる。
+const IssueNotificationStreamTicketDocument = graphql(`
+  mutation IssueNotificationStreamTicket {
+    issueNotificationStreamTicket
   }
 `);
 
@@ -211,6 +251,13 @@ export const getNotification = async (id: string): Promise<Notification | null> 
 export const getUnreadNotificationCount = async (): Promise<number> => {
   const data = await requestDoc(MyUnreadNotificationCountDocument, {}, getUserToken());
   return data.myUnreadNotificationCount;
+};
+
+// チケットは使い捨てなので、接続のたび（再接続も含め）に取り直すこと。
+// 使い回すと 401 になる。
+export const issueNotificationStreamTicket = async (): Promise<string> => {
+  const data = await requestDoc(IssueNotificationStreamTicketDocument, {}, getUserToken());
+  return data.issueNotificationStreamTicket;
 };
 
 export const markNotificationAsRead = async (id: string): Promise<void> => {

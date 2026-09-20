@@ -1,6 +1,13 @@
 import { useRef, useEffect, useState } from 'react';
 import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
+import { useTheme } from '../../../../context/useTheme';
+import { MAX_MESSAGE_LENGTH, countMessageLength } from '../../constants/chat';
+import { type Message } from '../../api/message';
+import { storageUrl } from '../../../../lib/storage';
+import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
+import { MentionSuggestionList } from './MentionSuggestionList';
+import { applyMention, getActiveNameMention, type MentionCandidate } from '../../../../lib/mentions';
 
 const ACCEPTED_FILE_TYPES = [
   'image/jpeg',
@@ -11,6 +18,15 @@ const ACCEPTED_FILE_TYPES = [
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
+// 返信先バーに出す1行プレビュー。本文が無いときは添付の種類で代替する。
+const replyPreviewText = (msg: Message): string => {
+  if (msg.content.trim() !== '') return msg.content;
+  const imageCount = msg.media.filter((m) => m.contentType.startsWith('image/')).length;
+  const fileCount = msg.media.length - imageCount;
+  if (imageCount > 0) return `画像${imageCount}件`;
+  if (fileCount > 0) return `ファイル${fileCount}件`;
+  return '';
+};
 
 type Props = {
   value: string;
@@ -20,14 +36,65 @@ type Props = {
   selectedFiles: File[];
   disabled?: boolean;
   isBlocked?: boolean;
+  // 返信中のメッセージ。指定すると入力欄の上に返信先バーを表示する。
+  replyTarget?: Message | null;
+  onCancelReply?: () => void;
+  // メンション候補（コミュニティのみ）。onMentionSelect を渡したルームだけが
+  // メンション対応とみなされる。
+  // コミュニティのメンションは "@表示名" で本文からは終端を決められないため、
+  // ここで選んだ相手だけが onMentionSelect 経由で送信対象になる。
+  mentionCandidates?: MentionCandidate[];
+  onMentionSelect?: (candidate: MentionCandidate) => void;
+  // 入力中の表示名 prefix。null はメンション入力中でないことを表す。
+  onMentionQueryChange?: (query: string | null) => void;
 };
 
-export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked }: Props) => {
+export const ChatInput = ({
+  value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
+  replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryChange,
+}: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const { theme } = useTheme();
+
+  // メンションサジェストの状態（PostComposer と同じ構造）。
+  const [caretPos, setCaretPos] = useState(0);
+  const [suggestDismissed, setSuggestDismissed] = useState(false);
+  const [suggestActiveIndex, setSuggestActiveIndex] = useState(0);
+
+  // メンション対応かどうかは候補の件数ではなく onMentionSelect の有無で決める。
+  // 件数で判定すると「候補がまだ空 → 入力中と判定されない → 取り直しも走らない」と
+  // いう膠着が起きるため（初回ロード中や、新メンバー加入前のキャッシュがある場合）。
+  const mentionsEnabled = !!onMentionSelect;
+  const activeMention = mentionsEnabled && !suggestDismissed
+    ? getActiveNameMention(value, caretPos)
+    : null;
+  const mentionSuggestions = activeMention ? mentionCandidates : [];
+  const showMentionSuggestions = mentionSuggestions.length > 0;
+
+  useEffect(() => {
+    onMentionQueryChange?.(activeMention?.query ?? null);
+  }, [activeMention?.query, onMentionQueryChange]);
+
+  const selectMentionSuggestion = (candidate: MentionCandidate) => {
+    if (!activeMention) return;
+    // コミュニティのメンションは "@表示名"。選んだ相手を親に伝えて送信対象に含めてもらう。
+    const { value: newValue, caret } = applyMention(value, activeMention, candidate.name);
+    onChange(newValue);
+    onMentionSelect?.(candidate);
+    setSuggestDismissed(true);
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        el.selectionStart = el.selectionEnd = caret;
+        setCaretPos(caret);
+      }
+    });
+  };
 
   useEffect(() => {
     if (value === '' && textareaRef.current) {
@@ -43,11 +110,16 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     prevDisabledRef.current = disabled;
   }, [disabled]);
 
+  // 返信ボタンを押したらそのまま入力できるようフォーカスを移す
+  useEffect(() => {
+    if (replyTarget) textareaRef.current?.focus();
+  }, [replyTarget]);
+
   useEffect(() => {
     const urls = selectedFiles.map((file) =>
       file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
     );
-    setPreviewUrls(urls);
+    void Promise.resolve().then(() => setPreviewUrls(urls));
     return () => {
       urls.forEach((url) => { if (url) URL.revokeObjectURL(url); });
     };
@@ -117,77 +189,87 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
     addFiles(imageFiles);
   };
 
-  const canSubmit = !disabled && !isBlocked && (value.trim() !== '' || selectedFiles.length > 0);
+  const replyThumbnail = replyTarget?.media.find((m) => m.contentType.startsWith('image/'));
 
+  const messageLength = countMessageLength(value);
+  const isOverLimit = messageLength > MAX_MESSAGE_LENGTH;
+  // 上限の90%を超えたあたりから残り文字数を意識してもらうためカウンタを表示する。
+  const isNearOrOverLimit = messageLength > MAX_MESSAGE_LENGTH * 0.9;
+  const canSubmit = !disabled && !isBlocked && !isOverLimit && (value.trim() !== '' || selectedFiles.length > 0);
+
+  // フォームのnative submit（例: テスト・支援技術等からの直接submit）でも、送信中
+  // （disabled）や文字数超過時に親のonSubmitが呼ばれないよう、ここでもcanSubmitを見る。
+  // 通常のクリック/Enterキー操作は個別に canSubmit をチェック済みだが、二重送信防止を
+  // ボタンのdisabled属性だけに依存させないための最終防波堤。
+  const handleFormSubmit = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    onSubmit(e);
+  };
 
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: 'relative', flexShrink: 0 }}
+      className={styles.chatInputRoot}
     >
       {isDragging && (
         <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            border: '2px dashed #6b7280',
-            borderRadius: 8,
-            background: 'rgba(107, 114, 128, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            pointerEvents: 'none',
-          }}
+          className={`${styles.dragOverlay} ${styles.dragOverlayBorder}`}
         >
-          <span style={{ color: '#6b7280', fontSize: '0.85rem', fontWeight: 500 }}>
+          <span className={styles.dragOverlayText}>
             ここにドロップ
           </span>
         </div>
       )}
+      {replyTarget && (
+        <div className={styles.replyComposer}>
+          <span className={styles.replyComposerIcon}><ReplyArrow /></span>
+          <div className={styles.replyComposerBody}>
+            <span className={styles.replyComposerLabel}>
+              {replyTarget.isMine ? '自分' : replyTarget.user.name}に返信
+            </span>
+            <span className={styles.replyComposerText}>{replyPreviewText(replyTarget)}</span>
+          </div>
+          {replyThumbnail && (
+            <img src={storageUrl(replyThumbnail.url)} alt="" className={styles.replyComposerThumb} />
+          )}
+          <button
+            type="button"
+            // ボタンにフォーカスが移ると入力欄が blur してソフトウェアキーボードが
+            // 閉じてしまう。mousedown の既定動作（フォーカス移動）を止めたうえで、
+            // 念のため入力欄へフォーカスを戻す。タップ操作の延長なので
+            // iOS でもキーボードは開いたままになる。
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              onCancelReply?.();
+              textareaRef.current?.focus();
+            }}
+            title="返信をやめる"
+            className={styles.replyComposerCancel}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {selectedFiles.length > 0 && (
-        <div style={{ padding: '4px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 130, overflowY: 'auto' }}>
+        <div className={styles.filePreviewList}>
           {selectedFiles.map((file, i) =>
             file.type.startsWith('image/') ? (
               <div
                 key={i}
-                style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}
+                className={styles.filePreviewThumb}
               >
                 <img
                   src={previewUrls[i]}
                   alt={file.name}
-                  style={{
-                    width: 56,
-                    height: 56,
-                    objectFit: 'cover',
-                    borderRadius: 8,
-                    border: '1px solid #e5e7eb',
-                    display: 'block',
-                  }}
+                  className={`${styles.filePreviewImage} ${styles.filePreviewImgBorder}`}
                 />
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  style={{
-                    position: 'absolute',
-                    top: -6,
-                    right: -6,
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    background: '#6b7280',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#fff',
-                    fontSize: '0.65rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    lineHeight: 1,
-                  }}
+                  className={`${styles.fileRemoveButton} ${styles.fileRemoveBtn}`}
                 >
                   ✕
                 </button>
@@ -195,26 +277,15 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
             ) : (
               <div
                 key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '2px 8px',
-                  background: '#f3f4f6',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 12,
-                  fontSize: '0.75rem',
-                  color: '#374151',
-                  maxWidth: 160,
-                }}
+                className={`${styles.fileChipInner} ${styles.fileChip}`}
               >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className={styles.fileChipName}>
                   📎 {file.name}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '0.8rem', padding: 0, flexShrink: 0 }}
+                  className={`${styles.fileChipRemoveButton} ${styles.fileChipRemoveBtn}`}
                 >
                   ✕
                 </button>
@@ -223,20 +294,13 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           )}
         </div>
       )}
-      <form onSubmit={onSubmit} className={styles.inputForm}>
+      <form onSubmit={handleFormSubmit} className={styles.inputForm}>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
           title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? 'default' : 'pointer',
-            fontSize: '1.2rem',
-            padding: '0 4px',
-            color: (disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? '#d1d5db' : '#6b7280'
-          }}
+          className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
         >
           📎
         </button>
@@ -246,63 +310,97 @@ export const ChatInput = ({ value, onChange, onSubmit, onFileSelect, selectedFil
           multiple
           accept={ACCEPTED_FILE_TYPES.join(',')}
           onChange={handleFileChange}
-          style={{ display: 'none' }}
+          className={styles.hiddenInput}
         />
-        <textarea
-          ref={textareaRef}
-          value={value}
-          rows={1}
-          onChange={(e) => {
-            onChange(e.target.value);
-            e.target.style.height = 'auto';
-            e.target.style.height = `${e.target.scrollHeight}px`;
-          }}
-          onPaste={handlePaste}
-          onKeyDown={(e) => {
-            // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
-            // Enterは改行として扱い、送信は送信ボタンのみで行う。
-            // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
-            // 通常通りEnterで送信できるようにする。
-            const isTouch = window.matchMedia('(pointer: coarse)').matches;
-            if (isTouch) return;
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              if (canSubmit) onSubmit({ preventDefault: () => { } });
+        <div className={styles.inputFieldWrap}>
+          {showMentionSuggestions && (
+            <div className={styles.mentionSuggestionPopover}>
+              <MentionSuggestionList
+                suggestions={mentionSuggestions}
+                activeIndex={Math.min(suggestActiveIndex, mentionSuggestions.length - 1)}
+                onSelect={selectMentionSuggestion}
+                onHover={setSuggestActiveIndex}
+              />
+            </div>
+          )}
+          <textarea
+            ref={textareaRef}
+            value={value}
+            rows={1}
+            onChange={(e) => {
+              onChange(e.target.value);
+              setCaretPos(e.target.selectionStart ?? 0);
+              setSuggestDismissed(false);
+              setSuggestActiveIndex(0);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onKeyUp={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
+            onClick={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
+            onPaste={handlePaste}
+            onKeyDown={(e) => {
+              // 候補が出ているあいだは、送信・改行より先にサジェスト操作を優先する。
+              // IME変換中の Enter 等は確定操作なので横取りしない。
+              if (showMentionSuggestions && !e.nativeEvent.isComposing) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSuggestActiveIndex((prev) => {
+                    const clamped = Math.min(prev, mentionSuggestions.length - 1);
+                    return e.key === 'ArrowDown'
+                      ? Math.min(clamped + 1, mentionSuggestions.length - 1)
+                      : Math.max(clamped - 1, 0);
+                  });
+                  return;
+                }
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                  // 候補が出ているときの Enter は確定（送信も改行もしない）。
+                  e.preventDefault();
+                  const chosen = mentionSuggestions[Math.min(suggestActiveIndex, mentionSuggestions.length - 1)];
+                  if (chosen) selectMentionSuggestion(chosen);
+                  return;
+                }
+                if (e.key === 'Escape') {
+                  setSuggestDismissed(true);
+                  return;
+                }
+              }
+              // タッチ操作の端末はソフトウェアキーボードでShift+Enterを押せないため、
+              // Enterは改行として扱い、送信は送信ボタンのみで行う。
+              // 画面幅ではなくポインタ種別で判定し、PCでウィンドウを小さくしても
+              // 通常通りEnterで送信できるようにする。
+              const isTouch = window.matchMedia('(pointer: coarse)').matches;
+              if (isTouch) return;
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                if (canSubmit) onSubmit({ preventDefault: () => { } });
+              }
+            }}
+            placeholder={
+              isBlocked
+                ? 'メッセージを送信できません'
+                : window.matchMedia('(pointer: coarse)').matches
+                ? 'メッセージを入力...'
+                : 'メッセージを入力... (Shift+Enterで改行)'
             }
-          }}
-          placeholder={
-            isBlocked
-              ? 'メッセージを送信できません'
-              : window.matchMedia('(pointer: coarse)').matches
-              ? 'メッセージを入力...'
-              : 'メッセージを入力... (Shift+Enterで改行)'
-          }
-          disabled={disabled || isBlocked}
-          className={styles.inputField}
-          style={{ cursor: (disabled || isBlocked) ? 'default' : 'text' }}
-        />
+            disabled={disabled || isBlocked}
+            className={styles.inputField}
+          />
+          {isNearOrOverLimit && (
+            <span className={`${styles.charCount} ${isOverLimit ? styles.charCountOver : ''}`}>
+              {messageLength}/{MAX_MESSAGE_LENGTH}
+            </span>
+          )}
+        </div>
         <button
           type="submit"
           disabled={!canSubmit}
           title={isBlocked ? '送信不可' : disabled ? '送信中...' : '送信'}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '0 4px',
-            cursor: canSubmit ? 'pointer' : 'default',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className={styles.sendIconButton}
         >
           <img
             src={sendIcon}
             alt="送信"
-            style={{
-              width: 28,
-              height: 28,
-              filter: canSubmit ? 'none' : 'opacity(0.3)',
-              transition: 'filter 0.15s',
-            }}
+            className={`${styles.sendIcon} ${!canSubmit ? styles.sendIconDisabled : ''} ${theme === 'dark' ? styles.sendIconDark : ''}`}
           />
         </button>
       </form>

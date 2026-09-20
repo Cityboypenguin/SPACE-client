@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { useNotification } from '../context/NotificationContext';
+import { useNotification } from '../context/useNotification';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
   getNotification,
@@ -10,6 +10,7 @@ import {
   deleteNotifications,
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
+import { MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { stableCacheOptions } from '../cache/swrOptions';
 import styles from './NotificationDetailPage.module.css';
@@ -18,6 +19,9 @@ import { AppSwal } from '../../../lib/swal';
 const TYPE_LABEL: Record<string, string> = {
   favorite: 'いいね',
   reply: '返信',
+  [MESSAGE_REPLY_TYPE]: 'チャットの返信',
+  [MENTION_TYPE]: 'メンション',
+  [MESSAGE_MENTION_TYPE]: 'チャットのメンション',
   dm: 'DM',
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
@@ -27,6 +31,9 @@ const TYPE_LABEL: Record<string, string> = {
 
 const ACTION_LABEL: Record<string, string> = {
   dm: 'DMへいく',
+  [MESSAGE_REPLY_TYPE]: 'メッセージへいく',
+  [MESSAGE_MENTION_TYPE]: 'メッセージへいく',
+  [MENTION_TYPE]: '投稿へいく',
   favorite: '投稿へいく',
   reply: '投稿へいく',
   community_kick: 'コミュニティへいく',
@@ -89,7 +96,21 @@ export const NotificationDetailPage = () => {
     }
   };
 
+  // 返信・チャットのメンション通知は「ルームを開いて該当メッセージへジャンプ」なので、
+  // targetType だけではパスが決まらない（ルーム種別が要る）。targetMessage から組み立てる。
+  const replyLink = notification && isMessageJumpNotification(notification.type)
+    ? replyNotificationLink(
+        notification.targetMessage?.room.type,
+        notification.targetMessage?.roomID,
+        notification.targetMessage?.ID,
+      )
+    : null;
+
   const handleTargetLink = () => {
+    if (replyLink) {
+      navigate(replyLink);
+      return;
+    }
     if (!notification?.targetType || !notification?.targetID) return;
     if (DM_TYPES.has(notification.type) && notification.targetType === 'room') {
       navigate(`/dm/${notification.targetID}`);
@@ -171,7 +192,7 @@ export const NotificationDetailPage = () => {
               </div>
             )}
 
-            {notification.targetType && notification.targetID && TARGET_PATH[notification.targetType] && (
+            {(replyLink || (notification.targetType && notification.targetID && TARGET_PATH[notification.targetType])) && (
               <button className={styles.actionBtn} onClick={handleTargetLink}>
                 {ACTION_LABEL[notification.type] ?? '詳細へいく'}
               </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { registerAdministrator } from '../api/administrators';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminRegisterPage = () => {
   const [name, setName] = useState('');
@@ -23,7 +24,7 @@ export const AdminRegisterPage = () => {
   return (
     <form onSubmit={handleSubmit}>
       <h2>管理者アカウント作成</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className={styles.errorText}>{error}</p>}
       <input
         type="text"
         value={name}

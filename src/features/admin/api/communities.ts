@@ -1,5 +1,6 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
+import { type Media } from '../../../lib/media';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -16,7 +17,7 @@ export type Message = {
   roomID: string;
   user: MessageUser;
   content: string;
-  media: { ID: string; url: string; contentType: string }[];
+  media: Media[];
   createdAt: string;
   updatedAt: string;
 };
@@ -32,11 +33,13 @@ export type Community = {
 
 export type CommunityPage = { items: Community[]; total: number };
 
+// Room.user / CommunityMember.user は GraphQL 上は公開型の User なので
+// email を持たない。管理画面で連絡先が要るときは、そのユーザーの
+// getUserByID（UserAccount）を引くこと。
 export type RoomUser = {
   ID: string;
   accountID: string;
   name: string;
-  email: string;
 };
 
 export type CommunityMember = {
@@ -79,37 +82,24 @@ const UpdateCommunityDocument = graphql(`
   }
 `);
 
-const KickUserFromCommunityDocument = graphql(`
-  mutation KickUserFromCommunity($communityID: ID!, $userID: ID!) {
-    kickUserFromCommunity(communityID: $communityID, userID: $userID)
-  }
-`);
-
-const GetRoomDocument = graphql(`
-  query AdminGetRoom($id: ID!) {
-    room(id: $id) {
-      ID
-      name
-      user {
-        ID
-        accountID
-        name
-        email
-      }
-    }
+const UpdateCommunityMembersDocument = graphql(`
+  mutation AdminUpdateCommunityMembers($communityID: ID!, $updates: [CommunityMemberUpdateInput!]!) {
+    updateCommunityMembers(communityID: $communityID, updates: $updates)
   }
 `);
 
 const GetCommunityMembersDocument = graphql(`
-  query AdminGetCommunityMembers($communityID: ID!) {
-    getCommunityMembers(communityID: $communityID) {
-      user {
-        ID
-        accountID
-        name
-        email
+  query AdminCommunityMembers($communityID: ID!, $limit: Int!, $offset: Int!) {
+    communityMembers(communityID: $communityID, limit: $limit, offset: $offset) {
+      items {
+        user {
+          ID
+          accountID
+          name
+        }
+        role
       }
-      role
+      total
     }
   }
 `);
@@ -126,20 +116,16 @@ export const updateCommunity = async (
 };
 
 export const kickUserFromCommunity = async (communityID: string, userID: string) => {
-  return await requestDoc(KickUserFromCommunityDocument, { communityID, userID }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'KICK' }] }, getAdminToken());
 };
 
-export const getCommunityRoom = async (roomID: string) => {
-  return await requestDoc(GetRoomDocument, { id: roomID }, getAdminToken());
-};
-
-export const getCommunityMembers = async (communityID: string) => {
-  return await requestDoc(GetCommunityMembersDocument, { communityID }, getAdminToken());
+export const getCommunityMembers = async (communityID: string, limit = 50, offset = 0) => {
+  return await requestDoc(GetCommunityMembersDocument, { communityID, limit, offset }, getAdminToken());
 };
 
 const ListRoomMessagesDocument = graphql(`
-  query AdminListMessages($roomID: ID!, $limit: Int) {
-    messages(roomID: $roomID, limit: $limit) {
+  query AdminListMessages($roomID: ID!, $limit: Int, $before: ID) {
+    messages(roomID: $roomID, limit: $limit, before: $before) {
       items {
         ID
         roomID
@@ -151,35 +137,22 @@ const ListRoomMessagesDocument = graphql(`
         }
         content
         media {
-          ID
-          url
-          contentType
+          ...MediaFields
         }
         createdAt
         updatedAt
       }
+      hasMoreBefore
     }
   }
 `);
 
-const PromoteToCommunityOwnerDocument = graphql(`
-  mutation PromoteToCommunityOwner($communityID: ID!, $userID: ID!) {
-    promoteToCommunityOwner(communityID: $communityID, userID: $userID)
-  }
-`);
-
-const DemoteFromCommunityOwnerDocument = graphql(`
-  mutation DemoteFromCommunityOwner($communityID: ID!, $userID: ID!) {
-    demoteFromCommunityOwner(communityID: $communityID, userID: $userID)
-  }
-`);
-
 export const promoteToCommunityOwner = async (communityID: string, userID: string) => {
-  return await requestDoc(PromoteToCommunityOwnerDocument, { communityID, userID }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'PROMOTE' }] }, getAdminToken());
 };
 
 export const demoteFromCommunityOwner = async (communityID: string, userID: string) => {
-  return await requestDoc(DemoteFromCommunityOwnerDocument, { communityID, userID }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'DEMOTE' }] }, getAdminToken());
 };
 
 const DeleteMessageDocument = graphql(`
@@ -188,9 +161,34 @@ const DeleteMessageDocument = graphql(`
   }
 `);
 
-export const listRoomMessages = async (roomID: string, limit = 200): Promise<{ messages: { items: Message[] } }> => {
-  const data = await requestDoc(ListRoomMessagesDocument, { roomID, limit }, getAdminToken());
-  return data as { messages: { items: Message[] } };
+// adminMessagePageSize は管理画面が一度に読むメッセージ数。
+//
+// 以前は 200 件を一度に取り、ページ送りを持っていなかった。ルームが育つほど
+// 1回の応答が重くなり、しかも 200 件を超えたぶんは管理画面から一切辿れなかった
+// （古いメッセージを見る手段が無かった）。
+export const adminMessagePageSize = 50;
+
+/**
+ * ルームのメッセージを新しい側から1ページぶん読む。
+ *
+ * before には「いま持っている中で一番古いメッセージのID」を渡す。offset ではなく
+ * カーソルなのは、messages が元からカーソル方式だから（深いページでも費用が
+ * 増えず、読んでいる間に新着が入っても取りこぼし・重複が起きない）。
+ *
+ * items は常に古い順で返る。hasMoreBefore は「このページより古いメッセージが
+ * まだあるか」の実測値。
+ */
+export const listRoomMessages = async (
+  roomID: string,
+  limit = adminMessagePageSize,
+  before?: string,
+): Promise<{ messages: { items: Message[]; hasMoreBefore: boolean } }> => {
+  const data = await requestDoc(
+    ListRoomMessagesDocument,
+    { roomID, limit, ...(before ? { before } : {}) },
+    getAdminToken(),
+  );
+  return data as { messages: { items: Message[]; hasMoreBefore: boolean } };
 };
 
 export const adminDeleteMessage = async (roomID: string, messageID: string) => {

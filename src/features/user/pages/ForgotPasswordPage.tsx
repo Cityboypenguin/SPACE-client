@@ -4,7 +4,7 @@ import { requestPasswordReset, verifyPasswordResetOTP, resetPassword } from '../
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import styles from './ForgotPasswordPage.module.css';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'done';
@@ -124,7 +124,7 @@ export const ForgotPasswordPage = () => {
     return (
       <div className={styles.page}>
         <div className={styles.body}>
-          <p style={{ fontSize: '1rem', color: '#1e293b', marginBottom: '1.5rem' }}>
+          <p className={styles.doneText}>
             パスワードを再設定しました。新しいパスワードでログインしてください。
           </p>
           <button type="button" className={styles.btnPrimary} onClick={() => navigate('/login')}>
@@ -212,7 +212,7 @@ export const ForgotPasswordPage = () => {
                 required
               />
               {newPasswordError && <p className={styles.fieldError}>{newPasswordError}</p>}
-              <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0.75rem 0' }} />
+              <hr className={styles.divider} />
               <label className={styles.fieldLabel}>パスワードを再入力</label>
               <input
                 type="password"

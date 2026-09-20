@@ -1,0 +1,368 @@
+.tabContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.emptyState {
+  color: #9ca3af;
+  text-align: center;
+  padding: 2rem 0;
+  font-size: 0.85rem;
+}
+
+.loadMoreButton {
+  align-self: center;
+  background: none;
+  border: 1px solid #e5e7eb;
+  color: #646cff;
+  padding: 6px 16px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  background: var(--color-bg-elevated);
+}
+
+/* 先生からの投票のみ強調表示する。学生の投票は常に白背景。 */
+.cardTeacher {
+  background: #eaf6fb;
+  border-color: #bfe3f5;
+}
+
+:root[data-theme='dark'] .cardTeacher,
+:root:not([data-theme='light']) .cardTeacher {
+  background: #16303b;
+  border-color: #1f4b5c;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.questionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.questionIcon {
+  display: flex;
+  align-items: center;
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.metaColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.multiTag {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.deadlineText {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.teacherTag {
+  font-size: 0.75rem;
+  color: var(--color-primary);
+}
+
+.deleteLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+  color: #f97316;
+  cursor: pointer;
+}
+
+.question {
+  font-size: 1rem;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  font-weight: 700;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 回答期限内(結果ブラインド中)の選択肢: プレーンな角丸ボックス、結果は見せない。
+   送信ボタンは無く、押した瞬間に投票が確定するボタンとして実装する。 */
+.optionPlain {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  background: var(--color-bg-elevated);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.optionPlainSelected {
+  border-width: 2px;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.optionPlain[data-clickable='true'],
+.optionBar[data-clickable='true'] {
+  cursor: pointer;
+}
+
+.optionPlain[data-clickable='false'],
+.optionBar[data-clickable='false'] {
+  cursor: default;
+}
+
+/* 結果表示中(期限切れ or 期限なし)の選択肢: 得票率で塗りつぶすピル型バー */
+.optionBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  height: 44px;
+  padding: 0 1rem;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font: inherit;
+}
+
+.optionBarSelected {
+  border-width: 2px;
+  border-color: var(--color-primary);
+}
+
+.optionBarLeading {
+  background: #fde3cb;
+  border-color: #f7c393;
+}
+
+:root[data-theme='dark'] .optionBarLeading,
+:root:not([data-theme='light']) .optionBarLeading {
+  background: #3a2a17;
+  border-color: #5a3f1f;
+}
+
+.optionBarFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #f97316;
+  opacity: 0.35;
+  transition: width 0.2s ease-out;
+}
+
+.optionBarLabel {
+  position: relative;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  font-weight: 500;
+  z-index: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionBarPercent {
+  position: relative;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.respondedCount {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 0.5rem;
+  text-align: right;
+}
+
+.submitRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+}
+
+.submitButton {
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  background: #fbc99a;
+  cursor: default;
+}
+
+.submitButtonSpaced {
+  margin-left: 0.5rem;
+}
+
+.formError,
+.cardError {
+  color: #ef4444;
+  font-size: 0.78rem;
+}
+
+.formError {
+  margin: 0 0 0.4rem;
+}
+
+.cardError {
+  margin: 0.3rem 0 0;
+}
+
+.listError {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.cancelFormButton {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.formCard {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  background: var(--color-bg-elevated);
+}
+
+.formTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 0.6rem;
+}
+
+.formLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0.8rem 0 0.4rem;
+}
+
+.deadlineInputRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.formInput {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  box-sizing: border-box;
+  margin-bottom: 0.4rem;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+.formInputFlush {
+  margin-bottom: 0;
+}
+
+.optionInputRow {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.removeOptionButton {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 6px;
+}
+
+.addOptionButton {
+  background: none;
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  margin: 0.6rem 0 0.2rem;
+}
+
+.toggleFormButton {
+  align-self: flex-start;
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}

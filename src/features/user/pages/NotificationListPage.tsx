@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { Pagination } from '../components/molecules/Pagination';
-import { useNotification } from '../context/NotificationContext';
+import { useNotification } from '../context/useNotification';
 import {
   listMyNotificationGroups,
   listMyNotifications,
@@ -16,16 +16,19 @@ import {
   type NotificationActor,
 } from '../api/notification';
 import { listAnnouncements } from '../api/announcement';
+import { MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
 import senshuIcon from '../../../assets/Senshu-Universe.svg';
 import { Tabs } from '../../../components/molecules/Tabs';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './NotificationListPage.module.css';
 import  mail  from '../../../assets/パーツ_メール.svg';
 import favorite from '../../../assets/パーツ_いいね.svg';
 import community from '../../../assets/パーツ_コミュニティマーク.svg';
 import reply from '../../../assets/パーツ_コメント.svg';
+import mention from '../../../assets/パーツ_メンション.svg';
 import notification from '../../../assets/パーツ_通知.svg';
 import person from '../../../assets/パーツ_お気に入り.svg';
 import { AppSwal } from '../../../lib/swal';
@@ -36,43 +39,52 @@ type ViewingActor = { actor: NotificationActor; type: string };
 
 function HeartIcon() {
   return (
-    <img src={favorite} alt="Favorite" width="20" height="20" />
+    <img src={favorite} alt="Favorite" width="20" height="20" className="themed-icon" />
   );
 }
 
 function ChatIcon() {
   return (
-    <img src={mail} alt="Mail" width="20" height="20" />
+    <img src={mail} alt="Mail" width="20" height="20" className="themed-icon" />
   );
 }
 
 function ReplyIcon() {
   return (
-    <img src={reply} alt="Reply" width="20" height="20" />
+    <img src={reply} alt="Reply" width="20" height="20" className="themed-icon" />
   );
 }
 
 function GroupIcon() {
   return (
-    <img src={community} alt="Community" width="20" height="20" />
+    <img src={community} alt="Community" width="20" height="20" className="themed-icon" />
   );
 }
 
 function BellIcon() {
   return (
-    <img src={notification} alt="Notification" width="20" height="20" />
+    <img src={notification} alt="Notification" width="20" height="20" className="themed-icon" />
   );
 }
 
 function PersonIcon() {
   return (
-    <img src={person} alt="Follow" width="20" height="20" />
+    <img src={person} alt="Follow" width="20" height="20" className="themed-icon" />
+  );
+}
+
+function MentionIcon() {
+  return (
+    <img src={mention} alt="Mention" width="20" height="20" className="themed-icon" />
   );
 }
 
 const TYPE_ICON: Record<string, ReactNode> = {
   favorite: <HeartIcon />,
   reply: <ReplyIcon />,
+  [MESSAGE_REPLY_TYPE]: <ReplyIcon />,
+  [MENTION_TYPE]: <MentionIcon />,
+  [MESSAGE_MENTION_TYPE]: <MentionIcon />,
   dm: <ChatIcon />,
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
@@ -116,10 +128,12 @@ export const NotificationListPage = () => {
   );
 
   useEffect(() => {
-    setNotifPage(0);
-    setAnnouncePage(0);
-    setSelectMode(false);
-    setSelectedIds(new Set());
+    void Promise.resolve().then(() => {
+      setNotifPage(0);
+      setAnnouncePage(0);
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    });
   }, [pageSize]);
 
   useEffect(() => {
@@ -216,6 +230,10 @@ export const NotificationListPage = () => {
   };
 
   const openGroup = (group: (typeof pagedGroups)[number]) => {
+    // 返信通知は通知詳細を挟まず、該当メッセージまでジャンプして開く
+    const replyLink = isMessageJumpNotification(group.type)
+      ? replyNotificationLink(group.targetMessage?.room.type, group.targetMessage?.roomID, group.targetMessage?.ID)
+      : null;
     if (group.type === 'dm' && group.actor) {
       setActorPage(0);
       setViewingActor({ actor: group.actor, type: group.type });
@@ -231,7 +249,7 @@ export const NotificationListPage = () => {
       );
       decrementUnread();
     }
-    navigate(`/notifications/${group.latestID}`);
+    navigate(replyLink ?? `/notifications/${group.latestID}`);
   };
 
   const handleMarkActorAllRead = async () => {
@@ -400,7 +418,7 @@ export const NotificationListPage = () => {
           <>
             {notifError && <p className={styles.error}>{notifError}</p>}
             {actorNotifs.length === 0 ? (
-              <p className={styles.empty}>通知はありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>通知はありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {actorNotifs.map((n) => (
@@ -451,9 +469,9 @@ export const NotificationListPage = () => {
           <>
             {notifError && <p className={styles.error}>{notifError}</p>}
             {notifLoading ? (
-              <p className={styles.loading}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             ) : pagedGroups.length === 0 ? (
-              <p className={styles.empty}>通知はありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>通知はありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {pagedGroups.map((group) => {
@@ -534,9 +552,9 @@ export const NotificationListPage = () => {
         {tab === 'announcements' && (
           <>
             {announceLoading ? (
-              <p className={styles.loading}>読み込み中...</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>読み込み中...</StatusText>
             ) : announceList.length === 0 ? (
-              <p className={styles.empty}>お知らせはありません</p>
+              <StatusText style={{ padding: '2rem', fontSize: '0.9rem' }}>お知らせはありません</StatusText>
             ) : (
               <ul className={styles.list}>
                 {announceList.map((a) => (

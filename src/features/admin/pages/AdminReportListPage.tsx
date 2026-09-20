@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 import { Link } from 'react-router-dom';
@@ -7,7 +7,11 @@ import {
   adminUpdateReportStatus, 
   getReportServiceStatus,
   updateReportServiceStatus,
+  type Report,
 } from '../api/report';
+import styles from '../styles/AdminShared.module.css';
+import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
+import { AdminPagination } from '../components/molecules/AdminPagination';
 
 type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY';
 
@@ -27,7 +31,7 @@ const statusJa: Record<string, string> = {
 };
 
 export const ReportsPage: React.FC = () => {
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize('reports');
@@ -40,7 +44,7 @@ export const ReportsPage: React.FC = () => {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = (p: number, size = pageSize) => {
+  const loadPage = useCallback((p: number, size = pageSize) => {
     setError('');
     getReports(filterStatus, activeTab === 'ALL' ? undefined : activeTab, size, p * size)
       .then((data) => {
@@ -52,11 +56,11 @@ export const ReportsPage: React.FC = () => {
         console.error(err);
         setError('通報一覧の取得に失敗しました');
       });
-  };
+  }, [activeTab, filterStatus, pageSize]);
 
   const loadReports = () => loadPage(0);
 
-  const loadServiceStatus = async () => {
+  const loadServiceStatus = useCallback(async () => {
     setIsStatusLoading(true);
     try {
       const isEnabled = await getReportServiceStatus();
@@ -66,15 +70,15 @@ export const ReportsPage: React.FC = () => {
     } finally {
       setIsStatusLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadPage(0);
-  }, [filterStatus, activeTab, pageSize]);
-
-  useEffect(() => {
-    loadServiceStatus();
   }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadServiceStatus);
+  }, [loadServiceStatus]);
 
   const handleToggleServiceStatus = async () => {
     const nextStatus = !isServiceEnabled;
@@ -90,9 +94,10 @@ export const ReportsPage: React.FC = () => {
       const updatedStatus = await updateReportServiceStatus(nextStatus);
       setIsServiceEnabled(updatedStatus);
       alert('通報機能の設定を更新しました');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'エラー';
       console.error(err);
-      setError(`システム設定の更新に失敗しました: ${err.message || 'エラー'}`);
+      setError(`システム設定の更新に失敗しました: ${message}`);
     } finally {
       setIsUpdating(false);
     }
@@ -126,62 +131,36 @@ export const ReportsPage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <main className={styles.pageWide}>
+        <div className={styles.headerRow}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.4rem', color: '#0f172a', fontWeight: 700 }}>
+            <h1 className={styles.title}>
               通報管理一覧
             </h1>
-            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>全 {total} 件</span>
+            <span className={styles.countText}>全 {total} 件</span>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem', 
-              background: '#fff', 
-              padding: '0.4rem 0.8rem', 
-              borderRadius: '8px', 
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-              border: '1px solid #e2e8f0',
-              opacity: isStatusLoading ? 0.6 : 1
-            }}>
-              <span style={{ 
-                width: '8px', 
-                height: '8px', 
-                borderRadius: '50%', 
-                backgroundColor: isServiceEnabled ? '#10b981' : '#ef4444',
-                display: 'inline-block' 
-              }} />
-              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          <div className={styles.toolbarGroup}>
+            <div className={`${styles.serviceStatus} ${isStatusLoading ? styles.serviceStatusLoading : ''}`}>
+              <span className={`${styles.statusDot} ${isServiceEnabled ? styles.statusDotEnabled : styles.statusDotDisabled}`} />
+              <span className={styles.controlLabel}>
                 システム通報枠: {isStatusLoading ? '読み込み中...' : isServiceEnabled ? '稼働中' : '停止中'}
               </span>
               <button
                 onClick={handleToggleServiceStatus}
                 disabled={isProcessing}
-                style={{
-                  padding: '0.25rem 0.6rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  borderRadius: '6px',
-                  border: 'none',
-                  color: '#fff',
-                  backgroundColor: isServiceEnabled ? '#ef4444' : '#2563eb',
-                  cursor: isProcessing ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.15s'
-                }}
+                className={`${styles.serviceButton} ${isServiceEnabled ? styles.serviceButtonStop : styles.serviceButtonStart} ${isProcessing ? styles.disabled : ''}`}
               >
                 {isUpdating ? '更新中...' : isServiceEnabled ? '一括停止' : 'サービス再開'}
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>ステータス絞り込み：</span>
+            <div className={styles.controlGroup}>
+              <span className={styles.controlLabel}>ステータス絞り込み：</span>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
+                className={styles.selectSmall}
               >
                 <option value="ALL">すべて</option>
                 <option value="UNRESOLVED">未対応</option>
@@ -190,20 +169,13 @@ export const ReportsPage: React.FC = () => {
               </select>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#fff', padding: '0.4rem 0.8rem', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>表示件数：</span>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', outline: 'none', cursor: 'pointer' }}
-              >
-                {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}件</option>)}
-              </select>
+            <div className={styles.controlGroup}>
+              <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+        <div className={styles.tabBar}>
           {(['ALL', 'POST', 'USER', 'COMMUNITY'] as TargetTypeFilter[]).map((tab) => {
             const isActive = activeTab === tab;
             const labelMap: Record<TargetTypeFilter, string> = {
@@ -216,19 +188,7 @@ export const ReportsPage: React.FC = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  borderRadius: '6px 6px 0 0',
-                  border: 'none',
-                  background: isActive ? '#fff' : 'transparent',
-                  color: isActive ? '#2563eb' : '#64748b',
-                  cursor: 'pointer',
-                  borderBottom: isActive ? '2px solid #2563eb' : '2px solid transparent',
-                  transition: 'all 0.15s',
-                  marginBottom: '-1px',
-                }}
+                className={`${styles.tabButton} ${isActive ? styles.tabButtonActive : ''}`}
               >
                 {labelMap[tab]}
               </button>
@@ -237,21 +197,21 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {error && (
-          <p style={{ color: '#ef4444', background: '#fef2f2', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.8rem', fontWeight: 500 }}>
+          <p className={styles.alertError}>
             {error}
           </p>
         )}
 
-        <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflowX: 'auto', border: '1px solid #e2e8f0' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed', minWidth: '1100px' }}>
+        <div className={styles.tablePanel}>
+          <table className={styles.fixedTable}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>対象タイプ</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '280px' }}>通報対象の内容</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '140px' }}>通報理由</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: 'auto' }}>詳細説明</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '130px', textAlign: 'center' }}>状態</th>
-                <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 600, fontSize: '0.8rem', width: '110px' }}>日時</th>
+              <tr className={styles.tableHeaderRow}>
+                <th className={`${styles.reportHeader} ${styles.reportTargetColumn}`}>対象タイプ</th>
+                <th className={`${styles.reportHeader} ${styles.reportContentColumn}`}>通報対象の内容</th>
+                <th className={`${styles.reportHeader} ${styles.reportReasonColumn}`}>通報理由</th>
+                <th className={styles.reportHeader}>詳細説明</th>
+                <th className={`${styles.reportHeader} ${styles.reportStatusColumn} ${styles.cellCenter}`}>状態</th>
+                <th className={`${styles.reportHeader} ${styles.reportDateColumn}`}>日時</th>
               </tr>
             </thead>
             <tbody>
@@ -259,55 +219,24 @@ export const ReportsPage: React.FC = () => {
                 const targetUrl = getTargetUrl(report.targetID, report.targetType);
                 const currentStatus = report.status?.toUpperCase();
                 return (
-                  <tr key={report.ID} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.1s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}>
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
-                      <span style={{ 
-                        padding: '0.2rem 0.5rem', 
-                        borderRadius: '4px', 
-                        fontSize: '0.75rem', 
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap',
-                        background: report.targetType === 'USER' ? '#eff6ff' : report.targetType === 'COMMUNITY' ? '#f5f3ff' : '#f0fdf4',
-                        color: report.targetType === 'USER' ? '#1d4ed8' : report.targetType === 'COMMUNITY' ? '#6d28d9' : '#15803d',
-                        border: `1px solid ${report.targetType === 'USER' ? '#bfdbfe' : report.targetType === 'COMMUNITY' ? '#ddd6fe' : '#bbf7d0'}`
-                      }}>
+                  <tr key={report.ID} className={styles.hoverRow}>
+                    <td className={styles.reportCell}>
+                      <span className={styles.targetBadge} data-type={report.targetType}>
                         {targetTypeJa[report.targetType?.toUpperCase()] || report.targetType}
                       </span>
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'top' }}>
+                    <td className={`${styles.reportCell} ${styles.cellTop}`}>
                       <Link 
                       to={targetUrl} 
-                      style={{ 
-                        color: '#2563eb', 
-                        textDecoration: 'none', 
-                        fontWeight: 600, 
-                        fontSize: '0.85rem',
-                        display: 'block',
-                        marginBottom: report.targetType === 'POST' && report.content ? '0.5rem' : '0'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                      className={`${styles.targetLink} ${report.targetType === 'POST' && report.content ? styles.targetLinkWithContent : ''}`}
                       >
                       詳細を確認する
                       </Link>
                       
                       {report.targetType === 'POST' && report.content && (
-                        <div style={{
-                          fontSize: '0.75rem',
-                          color: '#334155',
-                          background: '#f1f5f9',
-                          padding: '0.5rem 0.7rem',
-                          borderRadius: '6px',
-                          border: '1px solid #e2e8f0',
-                          wordBreak: 'break-all',
-                          maxHeight: '4.5rem',
-                          overflowY: 'auto',
-                          lineHeight: '1.4',
-                          textAlign: 'left',
-                          marginTop: '0.25rem'
-                      }}>
-                        <span style={{ fontWeight: 600, color: '#64748b', fontSize: '0.7rem', display: 'block', marginBottom: '0.2rem' }}>
+                        <div className={styles.contentPreview}>
+                        <span className={styles.contentPreviewLabel}>
                           通報時の投稿本文:
                         </span>
                           {report.content}
@@ -315,50 +244,27 @@ export const ReportsPage: React.FC = () => {
                       )}
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle' }}>
-                      <span style={{ 
-                        padding: '0.2rem 0.4rem', 
-                        borderRadius: '4px', 
-                        background: '#fee2e2', 
-                        color: '#991b1b', 
-                        fontWeight: 600, 
-                        fontSize: '0.75rem',
-                        display: 'inline-block',
-                        wordBreak: 'break-all',
-                        lineHeight: '1.2'
-                      }}>
+                    <td className={styles.reportCell}>
+                      <span className={styles.reasonBadge}>
                         {report.reason}
                       </span>
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', fontSize: '0.75rem', color: '#475569', wordBreak: 'break-all', lineHeight: '1.4' }}>
-                      {report.customReason || <span style={{ color: '#cbd5e1' }}>(入力なし)</span>}
+                    <td className={`${styles.reportCell} ${styles.reportCustomReason}`}>
+                      {report.customReason || <span className={styles.cellMuted}>(入力なし)</span>}
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', textAlign: 'center' }}>
+                    <td className={`${styles.reportCell} ${styles.cellCenter}`}>
                       <select
                         value={currentStatus === 'PENDING' ? 'UNRESOLVED' : currentStatus}
                         disabled={currentStatus === 'RESOLVED'}
+                        data-status={currentStatus}
                         onChange={(e) => {
                           const nextStatus = e.target.value;
                           const nextLabel = statusJa[nextStatus] || nextStatus;
                           handleUpdateStatus(report.ID, nextStatus, nextLabel);
                         }}
-                        style={{
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '12px',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          cursor: currentStatus === 'RESOLVED' ? 'default' : 'pointer',
-                          outline: 'none',
-                          border: 'none',
-                          textAlign: 'center',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'none',
-                          appearance: 'none',
-                          background: currentStatus === 'RESOLVED' ? '#dcfce7' : currentStatus === 'REVIEWING' ? '#fef9c3' : '#fee2e2',
-                          color: currentStatus === 'RESOLVED' ? '#15803d' : currentStatus === 'REVIEWING' ? '#854d0e' : '#991b1b',
-                        }}
+                        className={styles.statusSelect}
                       >
                         <option value="UNRESOLVED">未対応</option>
                         <option value="REVIEWING">対応中</option>
@@ -366,7 +272,7 @@ export const ReportsPage: React.FC = () => {
                       </select>
                     </td>
 
-                    <td style={{ padding: '0.75rem 1rem', verticalAlign: 'middle', color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                    <td className={`${styles.reportCell} ${styles.reportDateCell}`}>
                       {report.createdAt ? new Date(report.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---'}
                     </td>
                   </tr>
@@ -377,30 +283,17 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {reports.length === 0 && !error && (
-          <div style={{ color: '#94a3b8', padding: '3rem', textAlign: 'center', fontSize: '0.85rem' }}>
+          <div className={styles.emptyStateLarge}>
             指定された条件の通報は見つかりませんでした
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
-            <button
-              onClick={() => loadPage(page - 1)}
-              disabled={page === 0}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page === 0 ? 'not-allowed' : 'pointer', background: '#fff' }}
-            >
-              前へ
-            </button>
-            <span style={{ color: '#475569' }}>{page + 1} / {totalPages}</span>
-            <button
-              onClick={() => loadPage(page + 1)}
-              disabled={page >= totalPages - 1}
-              style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #cbd5e1', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', background: '#fff' }}
-            >
-              次へ
-            </button>
-          </div>
-        )}
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          onPrev={() => loadPage(page - 1)}
+          onNext={() => loadPage(page + 1)}
+        />
       </main>
     </div>
   );

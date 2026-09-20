@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { Modal } from '../../../components/molecules/Modal';
 import { InquiryForm } from '../components/organisms/InquiryForm';
 import styles from './InquiryPage.module.css';
 
@@ -20,17 +21,15 @@ export const InquiryPage = () => {
       <InquiryForm onSubmitted={() => setSubmitted(true)} />
 
       {submitted && (
-        <div className={styles.overlay}>
-          <div className={styles.modal}>
-            <p className={styles.modalText}>
-              送信が完了しました。<br />
-              お問い合わせいただきありがとうございます。
-            </p>
-            <button className={styles.modalBackBtn} onClick={() => navigate(-1)}>
-              戻る
-            </button>
-          </div>
-        </div>
+        <Modal overlayClassName={styles.overlay} className={styles.modal}>
+          <p className={styles.modalText}>
+            送信が完了しました。<br />
+            お問い合わせいただきありがとうございます。
+          </p>
+          <button className={styles.modalBackBtn} onClick={() => navigate(-1)}>
+            戻る
+          </button>
+        </Modal>
       )}
     </div>
   );

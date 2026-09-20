@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { UserListItem } from '../components/molecules/UserListItem';
+import { UserListItem } from '../../../components/molecules/UserListItem';
 import {
   listFavoriteUsers,
   listMyFollowers,
@@ -10,8 +10,10 @@ import {
   type User,
 } from '../api/favorite_user';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
+import styles from './UserListPage.module.css';
 
 const LIMIT = 20;
 
@@ -52,10 +54,12 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
   }, [isFollowersMode]);
 
   useEffect(() => {
-    setUsers([]);
-    setTotal(0);
-    setRemovedIds(new Set());
-    loadUsers(0, true);
+    void Promise.resolve().then(() => {
+      setUsers([]);
+      setTotal(0);
+      setRemovedIds(new Set());
+      loadUsers(0, true);
+    });
   }, [mode, loadUsers]);
 
   const sentinelRef = useInfiniteScroll(
@@ -88,19 +92,19 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
   return (
     <div>
       <UserSidebar />
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
+      <main className={styles.main}>
         <button onClick={() => navigate('/mypage')}><ChevronLeft /> マイページに戻る</button>
         <h1>{isFollowersMode ? 'フォロワー' : 'お気に入りリスト'}</h1>
 
         {initialLoading ? (
           <p>読み込み中...</p>
         ) : users.length === 0 ? (
-          <p style={{ color: 'gray' }}>
+          <p className={styles.emptyText}>
             {isFollowersMode ? 'フォロワーはいません。' : 'お気に入り登録しているユーザーはいません。'}
           </p>
         ) : (
           <>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul className={styles.list}>
               {users.map((user) => {
                 const isRemoved = removedIds.has(user.ID);
                 return (
@@ -115,8 +119,8 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
                 );
               })}
             </ul>
-            <div ref={sentinelRef} style={{ height: '1px' }} />
-            {loadingMore && <p style={{ textAlign: 'center', color: '#94a3b8' }}>読み込み中...</p>}
+            <ScrollSentinel ref={sentinelRef} />
+            {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
           </>
         )}
       </main>

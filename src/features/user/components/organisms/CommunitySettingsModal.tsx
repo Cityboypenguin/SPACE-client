@@ -1,7 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
+import useSWR from 'swr';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
+import { Modal, ModalCloseButton } from '../../../../components/molecules/Modal';
 import { RoleBadge } from '../atoms/RoleBadge';
 import { ImageCropModal } from './ImageCropModal';
 import { toUserMessage } from '../../../../lib/errorMessages';
@@ -16,8 +18,11 @@ import {
   type CommunityMember,
 } from '../../api/community';
 import { uploadAvatarToStorage } from '../../api/profile';
+import { staticCacheOptions } from '../../cache/swrOptions';
+import { communityMembersKey } from '../../cache/communityMembers';
 import { storageUrl } from '../../../../lib/storage';
 import { AppSwal } from '../../../../lib/swal';
+import styles from './CommunitySettingsModal.module.css';
 
 type Props = {
   community: Community;
@@ -31,10 +36,12 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [tab, setTab] = useState<'info' | 'members'>('info');
   const [name, setName] = useState(community.name);
   const [description, setDescription] = useState(community.description);
-  const [members, setMembers] = useState<CommunityMember[]>([]);
+
   const [infoError, setInfoError] = useState('');
   const [infoSuccess, setInfoSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
+  const [memberOffset, setMemberOffset] = useState(0);
+  const memberPageSize = 50;
   const hasValidAvatar =
     community.avatarURL && 
     community.avatarURL !== '' && 
@@ -49,11 +56,14 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    getCommunityMembers(community.ID)
-      .then(setMembers)
-      .catch(() => setMembersError('メンバー一覧の取得に失敗しました'));
-  }, [community.ID]);
+  // 詳細パネル・メンバーモーダルと同じキャッシュを共有する。開き直しても取り直さない。
+  // メンバーを変更したときだけ mutate で取り直す（下の kick/promote/demote）。
+  const { data: memberPage, error: membersLoadError } = useSWR(
+    communityMembersKey(community.ID, memberPageSize, memberOffset),
+    ([, cid, limit, offset]: [string, string, number, number]) => getCommunityMembers(cid, limit, offset),
+    staticCacheOptions,
+  );
+  const members = memberPage?.items ?? [];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -120,8 +130,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     });
     if (!result.isConfirmed) return;
     try {
+      // API 側がメンバー一覧のキャッシュを捨てるので、この画面も含めて自動で更新される。
       await kickUserFromCommunity(community.ID, member.user.ID);
-      setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
     } catch (err) {
       setMembersError(toUserMessage(err, 'メンバーの削除に失敗しました。時間をおいてから再度お試しください。'));
     }
@@ -137,9 +147,6 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     if (!result.isConfirmed) return;
     try {
       await promoteToCommunityOwner(community.ID, member.user.ID);
-      setMembers((prev) =>
-        prev.map((m) => (m.user.ID === member.user.ID ? { ...m, role: ROLE_OWNER } : m)),
-      );
     } catch (err) {
       setMembersError(toUserMessage(err, 'オーナーへの昇格に失敗しました。時間をおいてから再度お試しください。'));
     }
@@ -155,70 +162,49 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
     if (!result.isConfirmed) return;
     try {
       await demoteFromCommunityOwner(community.ID, member.user.ID);
-      setMembers((prev) =>
-        prev.map((m) => (m.user.ID === member.user.ID ? { ...m, role: 'member' } : m)),
-      );
     } catch (err) {
       setMembersError(toUserMessage(err, 'メンバーへの降格に失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        style={{
-          background: '#fff', borderRadius: 12, width: '90%', maxWidth: 520,
-          maxHeight: '85vh', display: 'flex', flexDirection: 'column',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ margin: 0, fontSize: '1.1rem' }}>コミュニティ設定</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
-        </div>
+    <>
+    <Modal onClose={onClose} overlayClassName={styles.overlay} className={styles.modal}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>コミュニティ設定</h2>
+        <ModalCloseButton onClick={onClose} />
+      </div>
 
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+        <div className={styles.tabs}>
           {(['info', 'members'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              style={{
-                flex: 1, padding: '0.6rem', border: 'none', cursor: 'pointer',
-                background: tab === t ? '#f8faff' : 'transparent',
-                borderBottom: tab === t ? '2px solid #646cff' : '2px solid transparent',
-                color: tab === t ? '#646cff' : '#64748b',
-                fontWeight: tab === t ? 600 : 400,
-              }}
+              className={`${styles.tabButton} ${tab === t ? styles.tabButtonActive : ''}`}
             >
               {t === 'info' ? 'コミュニティ情報' : 'メンバー管理'}
             </button>
           ))}
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+        <div className={styles.content}>
           {tab === 'info' && (
-            <form onSubmit={handleSaveInfo} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {infoError && <p style={{ color: 'red', margin: 0 }}>{infoError}</p>}
-              {infoSuccess && <p style={{ color: '#16a34a', margin: 0 }}>{infoSuccess}</p>}
-              
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <div 
+            <form onSubmit={handleSaveInfo} className={styles.form}>
+              {infoError && <p className={styles.errorText}>{infoError}</p>}
+              {infoSuccess && <p className={styles.successText}>{infoSuccess}</p>}
+
+              <div className={styles.avatarSection}>
+                <div
                   onClick={() => fileInputRef.current?.click()}
-                  style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden', cursor: 'pointer', border: '1px solid #e2e8f0' }}
+                  className={styles.avatarWrap}
                   title="クリックして画像を変更"
                 >
                   {previewUrl ? (
-                    <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={previewUrl} alt="Preview" className={styles.avatarPreview} />
                   ) : (
                     <Avatar name={name} size={120} />
                   )}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '0.65rem', textAlign: 'center', padding: '2px 0' }}>
+                  <div className={styles.avatarEditLabel}>
                     変更
                   </div>
                 </div>
@@ -233,46 +219,42 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                         fileInputRef.current.value = '';
                       }
                     }}
-                    style={{
-                      background: 'none', border: 'none', color: '#ef4444', 
-                      fontSize: '0.8rem', cursor: 'pointer', padding: '4px 8px',
-                      textDecoration: 'underline'
-                    }}
+                    className={styles.deleteImageButton}
                   >
                     画像を削除する
                   </button>
                 )}
 
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
                   accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-                  style={{ display: 'none' }} 
+                  className={styles.hiddenInput}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>コミュニティ名</label>
+                <label className={styles.fieldLabel}>コミュニティ名</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  className={styles.textInput}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>説明</label>
+                <label className={styles.fieldLabel}>説明</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid #cbd5e1', boxSizing: 'border-box', resize: 'vertical' }}
+                  className={`${styles.textInput} ${styles.textarea}`}
                 />
               </div>
               <button
                 type="submit"
                 disabled={saving}
-                style={{ alignSelf: 'flex-end', padding: '0.5rem 1.5rem', borderRadius: 8, background: saving ? '#94a3b8' : '#646cff', color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+                className={`${styles.saveButton} ${saving ? styles.saveButtonDisabled : styles.saveButtonActive}`}
               >
                 {saving ? '保存中...' : '保存'}
               </button>
@@ -281,83 +263,68 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
 
           {tab === 'members' && (
             <div>
-              {membersError && <p style={{ color: 'red', margin: '0 0 0.75rem' }}>{membersError}</p>}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem', 
-                  marginBottom: '1rem', 
-                  paddingBottom: '0.5rem', 
-                  borderBottom: '1px dashed #e2e8f0' 
-                }}
+              {(membersError || membersLoadError) && (
+                <p className={`${styles.errorText} ${styles.errorTextSpaced}`}>
+                  {membersError || 'メンバー一覧の取得に失敗しました'}
+                </p>
+              )}
+              <div
+                className={styles.membersHeaderDivider}
               >
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                <span className={styles.membersHeaderLabel}>
                   現在のメンバー
                 </span>
-                <span 
-                  style={{ 
-                    fontSize: '0.75rem', 
-                    fontWeight: 700, 
-                    color: '#646cff', 
-                    background: '#f0f2ff', 
-                    padding: '2px 8px', 
-                    borderRadius: 12 
-                  }}
-                >
-                  {members.length} 人
+                <span className={styles.memberCountBadge}>
+                  {memberPage?.total ?? 0} 人
                 </span>
               </div>
               {members.length === 0 ? (
-                <p style={{ color: '#94a3b8' }}>メンバーがいません</p>
+                <p className={styles.emptyText}>メンバーがいません</p>
               ) : (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <ul className={styles.memberList}>
                   {members.map((m) => (
                     <li
                       key={m.user.ID}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '0.75rem',
-                        padding: '0.6rem 0.75rem', borderRadius: 8, border: '1px solid #e2e8f0',
-                      }}
+                      className={styles.memberItem}
                     >
-                      <UserAvatar 
-                        userId={m.user.ID} 
-                        name={m.user.name} 
+                      <UserAvatar
+                        userId={m.user.ID}
+                        name={m.user.name}
                         avatarUrl={m.user.avatarUrl ? storageUrl(m.user.avatarUrl) : undefined}
-                        size={36} 
+                        size={36}
                       />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div className={styles.memberText}>
+                        <div className={styles.memberNameBlock}>
                           <UserNameLink userId={m.user.ID}>
-                            <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <div className={styles.memberName}>
                               {m.user.name}
                             </div>
                           </UserNameLink>
-                          <div style={{ fontSize: '0.78rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div className={styles.memberAccountId}>
                             @{m.user.accountID}
                           </div>
                         </div>
-                        </div>
+                      </div>
                       <RoleBadge role={m.role} />
-                      <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                      <div className={styles.memberActions}>
                         {m.role === ROLE_OWNER ? (
                           <button
                             onClick={() => handleDemote(m)}
-                            style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', color: '#64748b' }}
+                            className={styles.demoteButton}
                           >
                             降格
                           </button>
                         ) : (
                           <button
                             onClick={() => handlePromote(m)}
-                            style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: 6, border: '1px solid #a78bfa', background: '#fff', cursor: 'pointer', color: '#7c3aed' }}
+                            className={styles.promoteButton}
                           >
                             オーナーにする
                           </button>
                         )}
                         <button
                           onClick={() => handleKick(m)}
-                          style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff', cursor: 'pointer', color: '#ef4444' }}
+                          className={styles.kickButton}
                         >
                           キック
                         </button>
@@ -366,20 +333,26 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
                   ))}
                 </ul>
               )}
+              {(memberPage?.total ?? 0) > memberPageSize && (
+                <div>
+                  <button disabled={memberOffset === 0} onClick={() => setMemberOffset(Math.max(0, memberOffset - memberPageSize))}>前へ</button>
+                  <button disabled={memberOffset + memberPageSize >= (memberPage?.total ?? 0)} onClick={() => setMemberOffset(memberOffset + memberPageSize)}>次へ</button>
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
+    </Modal>
 
-      {cropTarget && (
-        <ImageCropModal
-          imageSrc={cropTarget.imageSrc}
-          fileName={cropTarget.file.name}
-          mimeType={cropTarget.file.type}
-          onCancel={() => setCropTarget(null)}
-          onComplete={handleCropComplete}
-        />
-      )}
-    </div>
+    {cropTarget && (
+      <ImageCropModal
+        imageSrc={cropTarget.imageSrc}
+        fileName={cropTarget.file.name}
+        mimeType={cropTarget.file.type}
+        onCancel={() => setCropTarget(null)}
+        onComplete={handleCropComplete}
+      />
+    )}
+    </>
   );
 };

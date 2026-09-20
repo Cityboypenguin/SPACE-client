@@ -1,31 +1,33 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
+import { ChatUnreadSeparator } from '../../../components/atoms/ChatUnreadSeparator';
+import { findFirstUnreadIndex, isSameMessageGroup } from '../lib/messageGrouping';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
+import { getMentionCandidates } from '../api/message';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
+import { useScrollToMessage } from '../hooks/useScrollToMessage';
+import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
+import { invalidateCommunityMembers } from '../cache/communityMembers';
 import styles from '../components/ChatRoom.module.css';
+import pageStyles from './CommunityRoomPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
 
-// performance.getEntriesByType('navigation') はタブの実際のロード種別を返し、
-// SPA内のクライアントサイド遷移では変化しない。そのため「リロード時のみ
-// モーダルを閉じる」判定は、このタブで実際にリロードが起きた直後の
-// 最初のマウント1回だけに限定する必要がある（モジュールスコープなので
-// 実際のページリロードでのみリセットされ、SPA内の再マウントでは保持される）。
 let hardReloadPending = (() => {
   const entry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
   return entry?.type === 'reload';
@@ -35,9 +37,13 @@ export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  useResetViewportScroll([roomId]);
   const locationState = location.state as { communityID?: string; community?: Community; showDetail?: boolean } | null;
   const { userId: currentUserID } = useAuth();
-  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages } = useRoomMessages(roomId);
+  // 返信通知からは ?messageID=... 付きで開かれ、そのメッセージを中心に表示する。
+  const [searchParams] = useSearchParams();
+  const aroundMessageId = searchParams.get('messageID');
+  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -45,16 +51,37 @@ export const CommunityRoomPage = () => {
     sendError,
     editingId, setEditingId,
     editContent, setEditContent,
+    replyTarget, setReplyTarget,
+    addPendingMention,
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
-
-  const { bottomRef, firstUnreadRef, newMessageCount, isAtBottom, scrollToLatest } = useChatScroll(messages, currentUserID, roomId, hasMoreAfter);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
+  const {
+    bottomRef,
+    firstUnreadRef,
+    newMessageCount,
+    isAtBottom,
+    scrollToLatest, releaseAutoScroll,
+  } = useChatScroll({
+    messages,
+    containerRef: messageListRef,
+    roomId,
+    hasMoreAfter,
+  });
+
   const { beginRestore } = useScrollRestoreOnPrepend(messageListRef, messages.length, loadingOlder);
+
+  useScrollToMessage({
+    containerRef: messageListRef,
+    pendingScrollId,
+    onScrolled: clearPendingScroll,
+    messageCount: messages.length,
+    releaseAutoScroll,
+  });
 
   const loadOlderWithScrollRestore = async () => {
     beginRestore();
@@ -140,6 +167,13 @@ export const CommunityRoomPage = () => {
   );
   const isOwner = role === 'owner';
 
+  const [mentionPrefix, setMentionPrefix] = useState<string | null>(null);
+  const { data: mentionCandidates } = useSWR(
+    roomId && mentionPrefix !== null ? ['mention-candidates', roomId, mentionPrefix] : null,
+    ([, rid, prefix]: [string, string, string]) => getMentionCandidates(rid, prefix),
+    stableCacheOptions,
+  );
+
   const handleLeave = async () => {
     if (!roomId || !currentUserID) return;
     const result = await AppSwal.fire({
@@ -152,6 +186,8 @@ export const CommunityRoomPage = () => {
     setLeaveError('');
     try {
       await leaveCommunity(roomId, currentUserID);
+      // 退出でメンバーが減るので、メンバー一覧のキャッシュを捨てる。
+      if (communityID) await invalidateCommunityMembers(communityID);
       void mutateCommunities();
       navigate('/community', { replace: true });
     } catch (err) {
@@ -166,6 +202,7 @@ export const CommunityRoomPage = () => {
   }, [error, navigate]);
 
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
+  const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.user.ID === currentUserID);
 
   return (
     <div className={styles.container}>
@@ -175,7 +212,7 @@ export const CommunityRoomPage = () => {
         <button onClick={() => navigate('/community')}><ChevronLeft /></button>
         <button
           onClick={() => openDetail()}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, flex: 1, overflow: 'hidden' }}
+          className={styles.roomHeaderButton}
         >
           <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
           <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
@@ -184,32 +221,28 @@ export const CommunityRoomPage = () => {
 
       <div className={styles.messageListWrapper}>
         <div className={styles.messageList} ref={messageListRef}>
-          <div ref={topSentinelRef} style={{ height: '1px' }} />
+          <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
-          {(error || sendError) && <p style={{ color: 'red' }}>{error || sendError}</p>}
+          {(error || sendError) && <p className={pageStyles.errorText}>{error || sendError}</p>}
 
           {messages.map((msg, index) => {
             const isMine = msg.user.ID === currentUserID;
             const prevMsg = index > 0 ? messages[index - 1] : null;
-            const msgTimeMs = new Date(msg.createdAt).getTime();
-            const prevMsgTimeMs = prevMsg ? new Date(prevMsg.createdAt).getTime() : null;
-            const isFirstUnread = !isMine && initialLastReadAtMs !== null
-              && msgTimeMs > initialLastReadAtMs
-              && (prevMsgTimeMs === null || prevMsgTimeMs <= initialLastReadAtMs);
+            const nextMsg = index + 1 < messages.length ? messages[index + 1] : null;
+            const isFirstUnread = index === firstUnreadIndex;
+            // 未読区切り線をまたぐところではまとまりを切る
+            const isGroupStart = isFirstUnread || !isSameMessageGroup(prevMsg, msg);
+            const isGroupEnd = index + 1 === firstUnreadIndex || !isSameMessageGroup(msg, nextMsg);
 
             return (
-              <div key={msg.ID} style={{ display: 'contents' }}>
+              <Fragment key={msg.ID}>
                 <ChatDateSeparator
                   currentCreatedAt={msg.createdAt}
                   prevCreatedAt={prevMsg?.createdAt}
                 />
-                {isFirstUnread && (
-                  <div ref={firstUnreadRef} className={styles.unreadSeparator}>
-                    未読メッセージ
-                  </div>
-                )}
+                {isFirstUnread && <ChatUnreadSeparator ref={firstUnreadRef} />}
                 <ChatMessageBubble
                   msg={msg}
                   isMine={isMine}
@@ -217,17 +250,21 @@ export const CommunityRoomPage = () => {
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
                   onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
-                  onSaveEdit={() => handleSaveEdit(msg.ID)}
+                  onSaveEdit={() => handleSaveEdit(msg.ID, msg.mentions)}
                   onCancelEdit={() => setEditingId(null)}
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
+                  onReply={() => setReplyTarget(msg)}
+                  onJumpToMessage={jumpToMessage}
+                  isGroupStart={isGroupStart}
+                  isGroupEnd={isGroupEnd}
                 />
-              </div>
+              </Fragment>
             );
           })}
-          <div ref={bottomSentinelRef} style={{ height: '1px' }} />
+          <div ref={bottomSentinelRef} className={styles.scrollSentinel} />
           {loadingNewer && (
-            <p style={{ color: '#94a3b8', padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem' }}>読み込み中...</p>
+            <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
           <div ref={bottomRef} />
         </div>
@@ -242,6 +279,11 @@ export const CommunityRoomPage = () => {
         onFileSelect={setSelectedFiles}
         selectedFiles={selectedFiles}
         disabled={sending}
+        replyTarget={replyTarget}
+        onCancelReply={() => setReplyTarget(null)}
+        mentionCandidates={mentionCandidates ?? []}
+        onMentionSelect={addPendingMention}
+        onMentionQueryChange={setMentionPrefix}
       />
 
       {showDetail && community && (

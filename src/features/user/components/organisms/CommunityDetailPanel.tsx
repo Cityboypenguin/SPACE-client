@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
-import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
+import { useClickOutside } from '../../../../hooks/useClickOutside';
+import { getCommunityMembers, type Community } from '../../api/community';
+import { staticCacheOptions } from '../../cache/swrOptions';
+import { communityMembersKey } from '../../cache/communityMembers';
 import { storageUrl } from '../../../../lib/storage';
 import personIcon from '../../../../assets/パーツ_人間.svg';
 import redLeaveIcon from '../../../../assets/パーツ_退出（赤）.svg';
@@ -23,26 +27,18 @@ type Props = {
 
 export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, onLeave, onReport }: Props) => {
   const navigate = useNavigate();
-  const [members, setMembers] = useState<CommunityMember[]>([]);
   const [showMenu, setShowMenu] = useState(false);
-  const menuWrapRef = useRef<HTMLDivElement>(null);
+  const menuWrapRef = useClickOutside<HTMLDivElement>(showMenu, () => setShowMenu(false));
 
-  useEffect(() => {
-    getCommunityMembers(community.ID)
-      .then(setMembers)
-      .catch(() => {});
-  }, [community.ID]);
-
-  useEffect(() => {
-    if (!showMenu) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuWrapRef.current && !menuWrapRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showMenu]);
+  // このパネルは開閉のたびにマウントされるので、素の useEffect だと開くたびに
+  // 同じ問い合わせが飛ぶ。共通キーのキャッシュから描画し、再取得はメンバーを
+  // 変更した側の invalidateCommunityMembers() に任せる。
+  const { data: memberPage } = useSWR(
+    communityMembersKey(community.ID, 10, 0),
+    ([, cid, limit, offset]: [string, string, number, number]) => getCommunityMembers(cid, limit, offset),
+    staticCacheOptions,
+  );
+  const members = memberPage?.items ?? [];
 
   const returnPath = `/community/chat/${community.roomID}`;
 
@@ -64,7 +60,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
                     className={styles.menuItem} 
                     onClick={() => { setShowMenu(false); onReport();}}
                   >
-                  <img src={reportIcon} alt="" className={styles.dropdownIcon} />
+                  <img src={reportIcon} alt="" className={`${styles.dropdownIcon} themed-icon`} />
                   通報
                   </button>
                   <button
@@ -94,7 +90,7 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
           <p className={styles.communityName}>{community.name}</p>
           <p className={styles.memberCount}>
             <img src={personIcon} alt="メンバー数" className={styles.memberIcon} />
-            {members.length}
+            {memberPage?.total ?? community.memberCount}
           </p>
           {leaveError && <p className={styles.leaveError}>{leaveError}</p>}
           <p className={styles.descLabel}>紹介文</p>

@@ -7,7 +7,8 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './PostListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -26,14 +27,16 @@ import {
 import { uploadMediaFiles } from '../api/media';
 import { extractHashtags } from '../../../lib/hashtags';
 import { createBlocker } from '../api/block';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { getPostListCache, savePostListCache } from '../cache/postListCache';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { useFollowFeed } from '../hooks/useFollowFeed';
 import { useHashtagSuggestions } from '../hooks/useHashtagSuggestions';
 import { HashtagSuggestionList } from '../components/molecules/HashtagSuggestionList';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { Footer } from '../../../components/organisms/Footer';
+import { withLikeToggled } from '../../../lib/postUtils';
 
 const LIMIT = 20;
 const REFRESH_COOLDOWN_MS = 60 * 1000;
@@ -76,7 +79,18 @@ export const PostListPage = () => {
   // Enter を押すまでは表示中の投稿(タイムライン)を検索結果に切り替えない。
   const [submittedQuery, setSubmittedQuery] = useState(initialCache?.searchQuery ?? '');
   const [searchResults, setSearchResults] = useState<Post[]>(initialCache?.searchResults ?? []);
-  const [searchDisplayedCount, setSearchDisplayedCount] = useState(LIMIT);
+  // 検索結果はサーバー側でページングする。以前は全件を受け取って slice していたので、
+  // ヒットが増えるほど見えないぶんまで毎回転送していた。
+  //
+  // searchPosts は total を返さない（[Post!]! なので数える先が無い）ため、
+  // 「次があるか」は「最後に受け取った件数が LIMIT と同じか」で持つ。
+  // キャッシュから戻ったときも同じ判定でよい（ちょうど LIMIT の倍数で終わっていた
+  // 場合だけ空振りの1回が増えるが、次のページが0件と分かった時点で止まる）。
+  const [searchHasMore, setSearchHasMore] = useState(
+    (initialCache?.searchResults?.length ?? 0) > 0 &&
+    (initialCache?.searchResults?.length ?? 0) % LIMIT === 0,
+  );
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [suggestDismissed, setSuggestDismissed] = useState(false);
@@ -123,29 +137,60 @@ export const PostListPage = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // fetchSearchPage は「ハッシュタグ検索か通常検索か」の振り分けを1箇所に閉じ込める。
+  // 初回とページ追加で別々に書くと、片方だけ引数を直し忘れる。
+  const fetchSearchPage = useCallback(async (trimmed: string, offset: number): Promise<Post[]> => {
+    const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
+    return hashtagMatch
+      ? await searchPostsByHashtag(hashtagMatch[1], LIMIT, offset)
+      : await searchPosts(trimmed, LIMIT, offset);
+  }, []);
+
   const handleSearch = useCallback(async (keyword: string) => {
     const trimmed = keyword.trim();
     // Enter を押したこのタイミングで初めて検索結果表示へ切り替える。
     setSubmittedQuery(trimmed);
     if (!trimmed) {
       setSearchResults([]);
-      setSearchDisplayedCount(LIMIT);
+      setSearchHasMore(false);
       return;
     }
     setSearchLoading(true);
-    setSearchDisplayedCount(LIMIT);
     try {
-      const hashtagMatch = trimmed.match(HASHTAG_QUERY_REGEX);
-      const results = hashtagMatch
-        ? await searchPostsByHashtag(hashtagMatch[1])
-        : await searchPosts(trimmed);
+      const results = await fetchSearchPage(trimmed, 0);
       setSearchResults(results);
+      setSearchHasMore(results.length === LIMIT);
     } catch {
       setSearchResults([]);
+      setSearchHasMore(false);
     } finally {
       setSearchLoading(false);
     }
-  }, []);
+  }, [fetchSearchPage]);
+
+  // 検索結果の続きを読む。offset には「いま画面に出ている件数」をそのまま渡す。
+  // 投稿直後に先頭へ差し込まれたぶん（postMatchesSearch の分岐）も件数に入るので
+  // 1件ぶんずれることがあるが、ずれるのは境界の重複だけで、下の dedupe が吸収する。
+  const loadMoreSearchResults = useCallback(async () => {
+    if (searchLoadingMore || !searchHasMore) return;
+    const trimmed = submittedQuery.trim();
+    if (!trimmed) return;
+
+    setSearchLoadingMore(true);
+    try {
+      const next = await fetchSearchPage(trimmed, searchResults.length);
+      setSearchHasMore(next.length === LIMIT);
+      setSearchResults(prev => {
+        const seen = new Set(prev.map(p => p.ID));
+        return [...prev, ...next.filter(p => !seen.has(p.ID))];
+      });
+    } catch {
+      // 続きが読めなかっただけなので、いま出ている結果はそのまま残す。
+      setSearchHasMore(false);
+    } finally {
+      setSearchLoadingMore(false);
+    }
+  }, [fetchSearchPage, searchHasMore, searchLoadingMore, searchResults.length, submittedQuery]);
 
   const handleSelectHashtag = useCallback((tag: string) => {
     setSearchQuery(`#${tag}`);
@@ -264,7 +309,7 @@ export const PostListPage = () => {
   useEffect(() => {
     feedLoadedAtRef.current = new Date();
     if (initialCache) return;
-    loadPosts(0, 'initial');
+    void Promise.resolve().then(() => loadPosts(0, 'initial'));
   }, [loadPosts, initialCache]);
 
   // スクロール位置の復元（描画前に実行してちらつきを防ぐ）
@@ -309,10 +354,10 @@ export const PostListPage = () => {
 
   const searchSentinelRef = useInfiniteScroll(
     useCallback(() => {
-      setSearchDisplayedCount(prev => prev + LIMIT);
-    }, []),
-    false,
-    isSearching && searchDisplayedCount < searchResults.length,
+      void loadMoreSearchResults();
+    }, [loadMoreSearchResults]),
+    searchLoadingMore,
+    isSearching && searchHasMore,
   );
 
   const handlePostClick = (postId: string) => {
@@ -480,30 +525,30 @@ export const PostListPage = () => {
       } else {
         await createFavorite(postId);
       }
-      updatePostInAllLists(postId, p => {
-        if (isLiked) {
-          return { ...p, favorites: p.favorites.filter((f) => f.user.ID !== userId) };
-        }
-        return { ...p, favorites: [...p.favorites, { ID: 'tmp', user: { ID: userId ?? '' } }] };
-      });
+      updatePostInAllLists(postId, p => withLikeToggled(p, isLiked));
     } catch (err) {
       console.error('いいねの更新に失敗しました', err);
     }
   };
 
   const displayedPosts = isSearching
-    ? searchResults.slice(0, searchDisplayedCount)
+    ? searchResults
     : activeTab === 'favorites'
       ? followFeed.posts
       : posts;
 
   const isTabLoading = activeTab === 'favorites' ? followFeed.initialLoading : initialLoading;
-  const isTabLoadingMore = activeTab === 'favorites' ? followFeed.loadingMore : loadingMore;
-  const hasMore = !isSearching && (
-    activeTab === 'favorites'
+  const isTabLoadingMore = isSearching
+    ? searchLoadingMore
+    : activeTab === 'favorites' ? followFeed.loadingMore : loadingMore;
+  // 検索もサーバー側ページングになったので、タイムラインと同じく「まだ続きがあるか」を
+  // 持てる。以前は全件を受け取っていて末尾が常に分かっていたため、検索中は
+  // この判定を外していた。
+  const hasMore = isSearching
+    ? searchHasMore
+    : activeTab === 'favorites'
       ? followFeed.posts.length < followFeed.total
-      : posts.length < total
-  );
+      : posts.length < total;
 
   return (
     <div>
@@ -587,19 +632,15 @@ export const PostListPage = () => {
           </div>
         )}
 
-        <div style={{ position: 'relative' }}>
-          <div className={styles.searchBar}>
-            <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
-            <input
-              className={styles.searchInput}
-              type="text"
-              placeholder="search"
+        <div className={styles.searchWrap}>
+          <div className={styles.searchBarArea}>
+            <IconSearchBar
               value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
+              placeholder="search"
+              onChange={(value) => { setSearchQuery(value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
               onFocus={() => { setSearchFocused(true); setSuggestDismissed(false); }}
               onBlur={() => setSearchFocused(false)}
+              onClear={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); setSuggestDismissed(true); }}
               onKeyDown={e => {
                 // IME変換中の Enter 等は確定操作なので横取りしない。
                 if (e.nativeEvent.isComposing) return;
@@ -623,16 +664,9 @@ export const PostListPage = () => {
                 }
               }}
             />
-            {searchQuery && (
-              <button
-                className={styles.searchClear}
-                onClick={() => { setSearchQuery(''); setSubmittedQuery(''); setSearchResults([]); setSuggestDismissed(true); }}
-                aria-label="クリア"
-              >✕</button>
-            )}
           </div>
           {showSuggestions && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>
+            <div className={styles.searchSuggestions}>
               <HashtagSuggestionList
                 suggestions={suggestions}
                 activeIndex={Math.min(suggestActiveIndex, suggestions.length - 1)}
@@ -677,7 +711,7 @@ export const PostListPage = () => {
         {loadError && <p className={styles.loadError}>投稿の読み込みに失敗しました</p>}
 
         {(isTabLoading || searchLoading) ? (
-          <p className={styles.loadingText}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem' }}>読み込み中...</StatusText>
         ) : (
           <>
             {displayedPosts.map((post) =>
@@ -721,16 +755,18 @@ export const PostListPage = () => {
               )
             )}
             {displayedPosts.length === 0 && (
-              <p className={styles.emptyText}>
+              <StatusText style={{ padding: '2rem' }}>
                 {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'フォロー中のユーザーの投稿がありません' : '投稿がまだありません'}
-              </p>
+              </StatusText>
             )}
             <div ref={recommendedSentinelRef} className={styles.sentinel} />
             <div ref={followSentinelRef} className={styles.sentinel} />
             <div ref={searchSentinelRef} className={styles.sentinel} />
-            {isTabLoadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
-            {!isSearching && !hasMore && displayedPosts.length > 0 && (
-              <p className={styles.allLoadedText}>すべての投稿を表示しました</p>
+            {isTabLoadingMore && <StatusText style={{ padding: '1rem' }}>読み込み中...</StatusText>}
+            {!hasMore && displayedPosts.length > 0 && (
+              <StatusText style={{ padding: '1rem', fontSize: '0.875rem' }}>
+                {isSearching ? 'すべての検索結果を表示しました' : 'すべての投稿を表示しました'}
+              </StatusText>
             )}
           </>
         )}

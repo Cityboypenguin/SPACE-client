@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../../api/auth';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import logo from '../../../../assets/Senshu-Universe_logo.svg';
 import styles from './UserLoginForm.module.css';

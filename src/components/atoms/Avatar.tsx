@@ -1,4 +1,5 @@
 import humanIcon from '../../assets/パーツ_人間.svg';
+import { AvatarFrame } from './AvatarFrame';
 
 type Props = {
   name: string;
@@ -6,19 +7,7 @@ type Props = {
 };
 
 export const Avatar = ({ name, size = 40 }: Props) => (
-  <div
-    style={{
-      width: size,
-      height: size,
-      borderRadius: '50%',
-      background: '#e2e8f0',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-      overflow: 'hidden',
-    }}
-  >
+  <AvatarFrame size={size}>
     <img
       src={humanIcon}
       alt={name}
@@ -28,5 +17,5 @@ export const Avatar = ({ name, size = 40 }: Props) => (
         objectFit: 'contain',
       }}
     />
-  </div>
+  </AvatarFrame>
 );

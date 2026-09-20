@@ -32,13 +32,13 @@
 .name {
   font-weight: 700;
   font-size: 1.3rem;
-  color: #1e293b;
+  color: var(--color-text);
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 .account {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-size: 1rem;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -50,13 +50,13 @@
 
 .bioLabel {
   font-size: 0.95rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-weight: 600;
   margin-bottom: 0.3rem;
 }
 
 .bioText {
-  color: #1e293b;
+  color: var(--color-text);
   font-size: 1rem;
   line-height: 1.7;
   white-space: pre-wrap;

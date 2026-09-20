@@ -4,8 +4,9 @@ import { ADMIN_TOKEN_KEY } from './auth';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
-// adminGetBlockers/adminGetFavoriteUsers はこの4フィールドしか返さないため、
-// email/role/status等を含む管理者向けフル User 型は使わず専用の型を用いる。
+// adminGetBlockers/adminGetFavoriteUsers は公開型の User（email を持たない）を
+// 返し、そのうちこの4フィールドしか引かないため、管理者向けの UserAccount 型
+// （admin/api/users.ts の User）ではなく専用の型を用いる。
 export type RelatedUser = {
   ID: string;
   name: string;

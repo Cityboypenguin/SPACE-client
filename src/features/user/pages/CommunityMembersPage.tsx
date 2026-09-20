@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
@@ -13,7 +14,10 @@ import {
   type CommunityMemberUpdateInput,
 } from '../api/community';
 import { storageUrl } from '../../../lib/storage';
+import { communityMembersKey } from '../cache/communityMembers';
+import { stableCacheOptions } from '../cache/swrOptions';
 import { toUserMessage } from '../../../lib/errorMessages';
+import { StatusText } from '../../../components/atoms/StatusText';
 import styles from './CommunityMembersPage.module.css';
 
 export const CommunityMembersPage = () => {
@@ -24,27 +28,29 @@ export const CommunityMembersPage = () => {
   const community = state?.community;
   const returnPath = state?.returnPath;
 
-  const [originalMembers, setOriginalMembers] = useState<CommunityMember[]>([]);
-  const [members, setMembers] = useState<CommunityMember[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const pageSize = 50;
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  useEffect(() => {
-    if (!communityID) return;
-    getCommunityMembers(communityID)
-      .then((data) => {
-        setOriginalMembers(data);
-        setMembers(data);
-      })
-      .catch(() => setError('メンバー一覧の取得に失敗しました'))
-      .finally(() => setLoading(false));
-  }, [communityID]);
+  // 詳細パネル・各モーダルと同じキャッシュを共有する。ただしここは編集画面なので
+  // マウント時の再検証は残し、必ず最新から編集を始める（その結果は共有キャッシュにも入る）。
+  const { data, isLoading: loading, error: loadError } = useSWR(
+    communityID ? communityMembersKey(communityID, pageSize, offset) : null,
+    ([, cid, limit, pageOffset]: [string, string, number, number]) => getCommunityMembers(cid, limit, pageOffset),
+    stableCacheOptions,
+  );
+
+  // 編集中の下書き。null のあいだはサーバーの値をそのまま見せる。
+  // 「保存前の値」は常にサーバー由来の data 側なので、差分計算の基準がぶれない。
+  const [draft, setDraft] = useState<CommunityMember[] | null>(null);
+  const originalMembers = useMemo(() => data?.items ?? [], [data]);
+  const members = draft ?? originalMembers;
 
   const hasChanges = useMemo(() => {
     if (members.length !== originalMembers.length) return true;
@@ -53,17 +59,15 @@ export const CommunityMembersPage = () => {
   }, [members, originalMembers]);
 
   const handleKick = (member: CommunityMember) => {
-    setMembers((prev) => prev.filter((m) => m.user.ID !== member.user.ID));
+    setDraft(members.filter((m) => m.user.ID !== member.user.ID));
   };
 
   const handleToggleRole = (member: CommunityMember) => {
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.user.ID === member.user.ID
-          ? { ...m, role: m.role === 'owner' ? 'member' : 'owner' }
-          : m,
-      ),
-    );
+    setDraft(members.map((m) =>
+      m.user.ID === member.user.ID
+        ? { ...m, role: m.role === 'owner' ? 'member' : 'owner' }
+        : m,
+    ));
   };
 
   const doNavigateBack = () => {
@@ -103,6 +107,7 @@ export const CommunityMembersPage = () => {
       }
 
       if (updates.length > 0) {
+        // updateCommunityMembers は成功時にメンバー一覧のキャッシュも捨てる。
         await updateCommunityMembers(communityID, updates);
       }
       doNavigateBack();
@@ -124,12 +129,14 @@ export const CommunityMembersPage = () => {
           <h1 className={styles.title}>メンバー一覧</h1>
         </div>
 
-        {error && <p className={styles.errorText}>{error}</p>}
+        {(error || loadError) && (
+          <p className={styles.errorText}>{error || 'メンバー一覧の取得に失敗しました'}</p>
+        )}
 
         {loading ? (
-          <p className={styles.empty}>読み込み中...</p>
+          <StatusText style={{ padding: '2rem 0' }}>読み込み中...</StatusText>
         ) : members.length === 0 ? (
-          <p className={styles.empty}>メンバーがいません</p>
+          <StatusText style={{ padding: '2rem 0' }}>メンバーがいません</StatusText>
         ) : (
           <>
             <ul className={styles.list}>
@@ -153,6 +160,13 @@ export const CommunityMembersPage = () => {
                 </li>
               ))}
             </ul>
+            {(data?.total ?? 0) > pageSize && !hasChanges && (
+              <div className={styles.pagination}>
+                <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - pageSize))}>前へ</button>
+                <span>{Math.floor(offset / pageSize) + 1} / {Math.ceil((data?.total ?? 0) / pageSize)}</span>
+                <button disabled={offset + pageSize >= (data?.total ?? 0)} onClick={() => setOffset(offset + pageSize)}>次へ</button>
+              </div>
+            )}
             <div className={styles.footer}>
               <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
                 {saving ? '保存中...' : '保存'}

@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { getAnnouncement, updateAnnouncement, deleteAnnouncement, type Announcement } from '../api/announcements';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
+import styles from '../styles/AdminShared.module.css';
 
 export const AdminAnnouncementDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,24 +66,24 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main style={{ maxWidth: 700, margin: '2rem auto', padding: '0 1rem' }}>
+      <main className={styles.formPage}>
         <button
           onClick={() => navigate('/admin/announcements')}
         >
           <ChevronLeft /> お知らせ一覧に戻る
         </button>
 
-        {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p className={styles.formError}>{error}</p>}
 
         {loading ? (
-          <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
+          <p className={styles.centerMuted}>読み込み中...</p>
         ) : !announcement ? (
-          <p style={{ color: '#94a3b8', textAlign: 'center' }}>お知らせが見つかりません</p>
+          <p className={styles.centerMuted}>お知らせが見つかりません</p>
         ) : isEditing ? (
-          <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>お知らせを編集</h2>
+          <form onSubmit={handleUpdate} className={styles.adminForm}>
+            <h2 className={styles.formSectionTitle}>お知らせを編集</h2>
             <div>
-              <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+              <label className={styles.fieldLabel}>
                 タイトル
               </label>
               <input
@@ -90,50 +91,25 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 maxLength={255}
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 0.75rem',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: 8,
-                  fontSize: '0.95rem',
-                  boxSizing: 'border-box',
-                }}
+                className={styles.formInput}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.4rem', fontSize: '0.9rem' }}>
+              <label className={styles.fieldLabel}>
                 本文（マークダウン形式）
               </label>
               <textarea
                 value={editBody}
                 onChange={(e) => setEditBody(e.target.value)}
                 rows={12}
-                style={{
-                  width: '100%',
-                  padding: '0.6rem 0.75rem',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: 8,
-                  fontSize: '0.95rem',
-                  fontFamily: 'monospace',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                }}
+                className={`${styles.formInput} ${styles.monoTextarea}`}
               />
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div className={styles.buttonRow}>
               <button
                 type="submit"
                 disabled={submitting}
-                style={{
-                  padding: '0.6rem 1.5rem',
-                  background: submitting ? '#93c5fd' : '#3b82f6',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: submitting ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                }}
+                className={`${styles.primaryButtonLargeRounded} ${submitting ? styles.disabled : ''}`}
               >
                 {submitting ? '更新中...' : '更新する'}
               </button>
@@ -145,99 +121,41 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                   setEditBody(announcement.body);
                   setError('');
                 }}
-                style={{
-                  padding: '0.6rem 1.5rem',
-                  background: '#fff',
-                  color: '#475569',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  fontSize: '0.95rem',
-                }}
+                className={styles.secondaryButtonLarge}
               >
                 キャンセル
               </button>
             </div>
           </form>
         ) : (
-          <div
-            style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: 12,
-              padding: '1.5rem 2rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.75rem' }}>
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: 12,
-                  background: '#fef3c7',
-                  color: '#92400e',
-                  fontWeight: 600,
-                  flexShrink: 0,
-                }}
-              >
+          <div className={styles.detailCard}>
+            <div className={styles.detailCardHeader}>
+              <span className={styles.noticeBadge}>
                 運営からのお知らせ
               </span>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div className={styles.buttonRowCompact}>
                 <button
                   onClick={() => setIsEditing(true)}
-                  style={{
-                    padding: '0.35rem 1rem',
-                    background: '#f1f5f9',
-                    color: '#475569',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                  }}
+                  className={styles.secondaryButtonSmall}
                 >
                   編集
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={submitting}
-                  style={{
-                    padding: '0.35rem 1rem',
-                    background: '#fee2e2',
-                    color: '#dc2626',
-                    border: '1px solid #fca5a5',
-                    borderRadius: 8,
-                    cursor: submitting ? 'not-allowed' : 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                  }}
+                  className={`${styles.dangerButtonSmall} ${submitting ? styles.disabled : ''}`}
                 >
                   削除
                 </button>
               </div>
             </div>
-            <h1
-              style={{
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                margin: '0 0 0.25rem',
-                color: '#1e293b',
-              }}
-            >
+            <h1 className={styles.detailTitle}>
               {announcement.title}
             </h1>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 1.5rem' }}>
+            <p className={styles.detailMeta}>
               {new Date(announcement.createdAt).toLocaleString('ja-JP')}
             </p>
-            <div
-              style={{
-                lineHeight: 1.8,
-                color: '#334155',
-                fontSize: '0.95rem',
-                borderTop: '1px solid #f1f5f9',
-                paddingTop: '1.25rem',
-              }}
-            >
+            <div className={styles.markdownBody}>
               <ReactMarkdown>{announcement.body}</ReactMarkdown>
             </div>
           </div>

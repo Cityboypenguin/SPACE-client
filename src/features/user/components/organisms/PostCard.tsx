@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../../../../components/molecules/LikeButton';
 import { UserMeta } from '../../../../components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { type Post } from '../../api/post';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
 import redblockIcon from '../../../../assets/パーツ_ブロック（赤）.svg';
@@ -13,6 +14,7 @@ import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { formatTime } from '../../../../lib/formatTime';
 import styles from './PostCard.module.css';
 import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
+import { useMentionNavigation } from '../../hooks/useMentionNavigation';
 
 type Props = {
   post: Post;
@@ -27,11 +29,10 @@ type Props = {
 };
 
 export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBlock, onReport, onEdit, onDelete }: Props) => {
+  const { onMentionClick } = useMentionNavigation();
   const isOwnPost = post.user.ID === currentUserId;
-  const [menuOpen, setMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [isClamped, setIsClamped] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLParagraphElement>(null);
   const navigate = useNavigate();
 
@@ -45,17 +46,6 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
       setIsClamped(contentRef.current.scrollHeight > contentRef.current.clientHeight);
     }
   }, [post.content]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
 
   const handleExpand = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,54 +65,29 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
       <div className={styles.body}>
         <div className={styles.header}>
           <UserMeta userId={post.user.ID} name={post.user.name} accountID={post.user.accountID} timestamp={formatTime(post.createdAt)} />
-          <div className={styles.menuWrap} ref={menuRef}>
-            <button
-              className={styles.menuButton}
-              onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
-              aria-label="メニュー"
-            >
-              ···
-            </button>
-            {menuOpen && (
-              <div className={styles.dropdown} onClick={(e) => e.stopPropagation()}>
-                {isOwnPost ? (
-                  <>
-                    <button
-                      className={styles.dropdownItem}
-                      onClick={() => { setMenuOpen(false); onEdit?.(post); }}
-                    >
-                      <img src={editIcon} alt="" className={styles.dropdownIcon} />
-                      編集
-                    </button>
-                    <button
-                      className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
-                      onClick={() => { setMenuOpen(false); onDelete?.(post.ID); }}
-                    >
-                      <img src={deleteIcon} alt="" className={styles.dropdownIconDelete} />
-                      削除
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
-                      onClick={() => { setMenuOpen(false); onBlock?.(post.user.ID); }}
-                    >
-                      <img src={redblockIcon} alt="" className={styles.dropdownIcon} />
-                      ブロック
-                    </button>
-                    <button
-                      className={styles.dropdownItem}
-                      onClick={() => { setMenuOpen(false); onReport?.(post.ID); }}
-                    >
-                      <img src={reportIcon} alt="" className={styles.dropdownIcon} />
-                      通報
-                    </button>
-                  </>
-                )}
-              </div>
+          <DropdownMenu wrapClassName={styles.menuWrap}>
+            {(close) => (
+              isOwnPost ? (
+                <>
+                  <DropdownMenuItem icon={editIcon} themedIcon onClick={() => { close(); onEdit?.(post); }}>
+                    編集
+                  </DropdownMenuItem>
+                  <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); onDelete?.(post.ID); }}>
+                    削除
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem icon={redblockIcon} danger onClick={() => { close(); onBlock?.(post.user.ID); }}>
+                    ブロック
+                  </DropdownMenuItem>
+                  <DropdownMenuItem icon={reportIcon} themedIcon onClick={() => { close(); onReport?.(post.ID); }}>
+                    通報
+                  </DropdownMenuItem>
+                </>
+              )
             )}
-          </div>
+          </DropdownMenu>
         </div>
         {post.content && (
           <div>
@@ -130,7 +95,13 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
               ref={contentRef}
               className={`${styles.content} ${!expanded ? styles.contentClamped : ''}`}
             >
-              {renderTextWithLinks({ text: post.content, onHashtagClick: handleHashtagClick })}
+              {renderTextWithLinks({
+                text: post.content,
+                onHashtagClick: handleHashtagClick,
+                mentions: post.mentions,
+                currentUserID: currentUserId,
+                onMentionClick,
+              })}
             </p>
             {isClamped && !expanded && (
               <button className={styles.expandButton} onClick={handleExpand}>もっと見る</button>
@@ -151,7 +122,7 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
             style={{ cursor: onReply ? 'pointer' : 'default' }}
             onClick={(e) => { e.stopPropagation(); onReply?.(); }}
           >
-            <img src={commentIcon} alt="返信" className={styles.commentIcon} />
+            <img src={commentIcon} alt="返信" className={`${styles.commentIcon} themed-icon`} />
             {post.replyCount}
           </button>
           <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />

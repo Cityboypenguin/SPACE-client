@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { API_URL } from '../../lib/graphql';
 import { USER_TOKEN_KEY } from '../../lib/authStorage';
+import styles from './MaintenancePage.module.css';
 
 const MAINTENANCE_KEY = 'space_maintenance';
 const POLL_INTERVAL_MS = 30_000; // 30秒ごとにサーバーへ確認
@@ -44,7 +45,7 @@ export const MaintenancePage = () => {
       }}
     >
       <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>メンテナンス中</h1>
-      <p style={{ fontSize: '1.1rem', color: '#555', maxWidth: '480px', lineHeight: 1.8 }}>
+      <p className={styles.message}>
         現在、システムメンテナンスを実施しています。<br />
         ご不便をおかけして申し訳ございません。<br />
         メンテナンス終了後、自動的にページへ移動します。

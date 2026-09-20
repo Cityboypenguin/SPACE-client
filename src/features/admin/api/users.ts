@@ -2,6 +2,9 @@ import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
+// 管理画面のユーザー台帳。GraphQL の UserAccount（User + email）に対応する。
+// email が付くのは users / adminSearchUsers / getUserByID / adminUpdateUser など
+// 管理者しか辿れない口だけなので、公開型の User を引く画面では使わないこと。
 export type User = {
   ID: string;
   accountID: string;
@@ -19,13 +22,13 @@ export type Profile = {
   avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
-  // getProfileByUserID/adminUpdateProfile は user の createdAt/updatedAt を取得しないため、
-  // フル User 型ではなくこのサブセットのみを保証する。
+  // Profile.user は GraphQL 上は公開型の User なので email を持たない。
+  // 管理画面で email が要るときは getUserByID（UserAccount）から取ること。
+  // createdAt/updatedAt も取得していないため、このサブセットのみを保証する。
   user: {
     ID: string;
     accountID: string;
     name: string;
-    email: string;
     role: string;
     status: string;
   };
@@ -51,9 +54,12 @@ const UsersDocument = graphql(`
   }
 `);
 
+// 管理画面のユーザー検索は adminSearchUsers を使う。一般ユーザー向けの
+// searchUsers は公開型の User（email を持たない）を返すため、管理者向けの
+// 台帳表示に必要な email は adminSearchUsers（UserAccount）からしか取れない。
 const SearchUsersDocument = graphql(`
   query AdminSearchUsers($keyword: String!) {
-    searchUsers(keyword: $keyword) {
+    adminSearchUsers(keyword: $keyword) {
       items {
         ID
         accountID
@@ -129,7 +135,6 @@ const AdminUpdateProfileDocument = graphql(`
         ID
         accountID
         name
-        email
         role
         status
       }
@@ -149,7 +154,6 @@ const GetProfileByUserIDDocument = graphql(`
         ID
         accountID
         name
-        email
         role
         status
       }

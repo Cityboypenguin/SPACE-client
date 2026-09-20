@@ -2,6 +2,8 @@ import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { storageUrl } from '../../../lib/storage';
 import { getUserToken } from './auth';
+import { MEDIA_FIELDS_RAW, type Media, type MediaInput } from '../../../lib/media';
+import { type Mention, type MentionCandidate } from '../../../lib/mentions';
 
 export type MessageUser = {
   ID: string;
@@ -12,15 +14,15 @@ export type MessageUser = {
 
 export const DELETED_ACCOUNT_ID = 'deleted-account';
 
-export type Media = {
-  ID: string;
-  url: string;
-  contentType: string;
-};
+export type { Media, MediaInput };
 
-export type MediaInput = {
-  objectKey: string;
-  contentType: string;
+// 引用返信の返信先として表示する最小限の情報。返信先の返信先までは辿らない（1階層）。
+export type ReplyTarget = {
+  ID: string;
+  user: MessageUser;
+  content: string;
+  media: Media[];
+  isMine: boolean;
 };
 
 export type Message = {
@@ -31,6 +33,12 @@ export type Message = {
   media: Media[];
   createdAt: string;
   updatedAt: string;
+  isMine: boolean;
+  // replyToID があるのに replyTo が null なら、返信先は削除済み。
+  replyToID?: string | null;
+  replyTo?: ReplyTarget | null;
+  // 本文中のメンション（コミュニティのみ）。表示側は text を本文と突き合わせて着色する。
+  mentions: Mention[];
 };
 
 export type Room = {
@@ -40,6 +48,9 @@ export type Room = {
   user: MessageUser[];
   isMessagingDisabled: boolean;
   lastReadAt?: string | null;
+  // 既読位置のメッセージID。未読ページの取得（messages(after:)）はこれを起点にする。
+  // まだ一度も読んでいない、またはサーバ側で既読位置を時刻でしか持っていない行では null。
+  lastReadMessageID?: string | null;
   unreadCount: number;
   partnerLastReadAt?: string | null;
   lastMessage?: string | null;
@@ -57,18 +68,37 @@ export const MESSAGE_FIELDS = `
     avatarUrl
   }
   content
-  media {
-    ID
-    url
-    contentType
-  }
+  media {${MEDIA_FIELDS_RAW}}
   createdAt
   updatedAt
+  isMine
+  replyToID
+  replyTo {
+    ID
+    user {
+      ID
+      name
+      accountID
+      avatarUrl
+    }
+    content
+    media {${MEDIA_FIELDS_RAW}}
+    isMine
+  }
+  mentions {
+    user {
+      ID
+      name
+      accountID
+      avatarUrl
+    }
+    text
+  }
 `;
 
 const MarkRoomAsReadDocument = graphql(`
-  mutation MarkRoomAsRead($roomID: ID!) {
-    markRoomAsRead(roomID: $roomID)
+  mutation MarkRoomAsRead($roomID: ID!, $lastReadMessageID: ID) {
+    markRoomAsRead(roomID: $roomID, lastReadMessageID: $lastReadMessageID)
   }
 `);
 
@@ -86,6 +116,7 @@ const GetOrCreateDMRoomDocument = graphql(`
       }
       isMessagingDisabled
       lastReadAt
+      lastReadMessageID
       unreadCount
       partnerLastReadAt
       content
@@ -94,8 +125,8 @@ const GetOrCreateDMRoomDocument = graphql(`
 `);
 
 const SendMessageDocument = graphql(`
-  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!]) {
-    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs) {
+  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $mentionUserIDs: [ID!], $replyToID: ID) {
+    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID) {
       ID
       roomID
       user {
@@ -106,19 +137,42 @@ const SendMessageDocument = graphql(`
       }
       content
       media {
-        ID
-        url
-        contentType
+        ...MediaFields
       }
       createdAt
       updatedAt
+      isMine
+      replyToID
+      replyTo {
+        ID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        content
+        media {
+          ...MediaFields
+        }
+        isMine
+      }
+      mentions {
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        text
+      }
     }
   }
 `);
 
 const UpdateMessageDocument = graphql(`
-  mutation UpdateMessage($roomID: ID!, $id: ID!, $content: String!) {
-    updateMessage(roomID: $roomID, id: $id, content: $content) {
+  mutation UpdateMessage($roomID: ID!, $id: ID!, $content: String!, $mentionUserIDs: [ID!]) {
+    updateMessage(roomID: $roomID, id: $id, content: $content, mentionUserIDs: $mentionUserIDs) {
       ID
       roomID
       user {
@@ -129,12 +183,35 @@ const UpdateMessageDocument = graphql(`
       }
       content
       media {
-        ID
-        url
-        contentType
+        ...MediaFields
       }
       createdAt
       updatedAt
+      isMine
+      replyToID
+      replyTo {
+        ID
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        content
+        media {
+          ...MediaFields
+        }
+        isMine
+      }
+      mentions {
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+        text
+      }
     }
   }
 `);
@@ -152,8 +229,8 @@ const DeleteRoomDocument = graphql(`
 `);
 
 const ListMessagesDocument = graphql(`
-  query ListMessages($roomID: ID!, $limit: Int, $before: ID, $after: ID, $afterTime: String) {
-    messages(roomID: $roomID, limit: $limit, before: $before, after: $after, afterTime: $afterTime) {
+  query ListMessages($roomID: ID!, $limit: Int, $before: ID, $after: ID, $afterTime: String, $around: ID) {
+    messages(roomID: $roomID, limit: $limit, before: $before, after: $after, afterTime: $afterTime, around: $around) {
       items {
         ID
         roomID
@@ -165,12 +242,35 @@ const ListMessagesDocument = graphql(`
         }
         content
         media {
-          ID
-          url
-          contentType
+          ...MediaFields
         }
         createdAt
         updatedAt
+        isMine
+        replyToID
+        replyTo {
+          ID
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          content
+          media {
+            ...MediaFields
+          }
+          isMine
+        }
+        mentions {
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          text
+        }
       }
       hasMoreBefore
       hasMoreAfter
@@ -198,6 +298,7 @@ const GetRoomDocument = graphql(`
       }
       isMessagingDisabled
       lastReadAt
+      lastReadMessageID
       unreadCount
       partnerLastReadAt
       content
@@ -220,11 +321,23 @@ const MyDMRoomsDocument = graphql(`
         }
         isMessagingDisabled
         lastReadAt
+        lastReadMessageID
         unreadCount
         partnerLastReadAt
         content
       }
       total
+    }
+  }
+`);
+
+const MentionCandidatesDocument = graphql(`
+  query MentionCandidates($roomID: ID!, $prefix: String!, $limit: Int!) {
+    mentionCandidates(roomID: $roomID, prefix: $prefix, limit: $limit) {
+      ID
+      name
+      accountID
+      avatarUrl
     }
   }
 `);
@@ -238,9 +351,27 @@ const PresignedMediaUploadUrlDocument = graphql(`
   }
 `);
 
-export const markRoomAsRead = async (roomID: string) => {
+// コミュニティチャットの "@表示名" メンションでサジェストに出せる相手。
+// サーバー側が送信時の検証とまったく同じ条件（メンバー・凍結・ブロック・自分自身）で
+// prefix に前方一致する候補だけを上限付きで返す。
+// コミュニティ以外のルームでは空配列が返る。
+export const getMentionCandidates = async (
+  roomID: string,
+  prefix: string,
+  limit = 8,
+): Promise<MentionCandidate[]> => {
+  const data = await requestDoc(MentionCandidatesDocument, { roomID, prefix, limit }, getUserToken());
+  return data.mentionCandidates;
+};
+
+// lastReadMessageID には「画面に実際に出したうちの最後のメッセージID」を渡す。
+// 省略するとサーバがリクエスト到着時点の最新メッセージを既読位置にするため、
+// こちらがまだ描画していない新着まで既読になり、そのぶんが未読から落ちる。
+// 呼び出し側は「いま state に入っている最後」ではなく「この処理で表示したことが
+// 確定している最後」を渡すこと（useRoomMessages.ts のコメント参照）。
+export const markRoomAsRead = async (roomID: string, lastReadMessageID?: string | null) => {
   const token = getUserToken();
-  return await requestDoc(MarkRoomAsReadDocument, { roomID }, token);
+  return await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
 };
 
 export const getOrCreateDMRoom = async (targetUserID: string) => {
@@ -248,15 +379,24 @@ export const getOrCreateDMRoom = async (targetUserID: string) => {
   return await requestDoc(GetOrCreateDMRoomDocument, { targetUserID }, token);
 };
 
-export const sendMessage = async (roomID: string, content: string, mediaInputs?: MediaInput[]) => {
+export const sendMessage = async (
+  roomID: string,
+  content: string,
+  mediaInputs?: MediaInput[],
+  replyToID?: string | null,
+  // メンション先のユーザーID（コミュニティのみ）。サジェストから選んだ相手だけを渡す。
+  mentionUserIDs?: string[],
+) => {
   const token = getUserToken();
-  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs }, token);
+  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, mentionUserIDs, replyToID }, token);
 };
 
 export type ListMessagesOptions = {
   before?: string;
   after?: string;
   afterTime?: string;
+  // 指定メッセージを中心に前後 limit 件ずつ取得する（引用タップ・返信通知のジャンプ用）
+  around?: string;
 };
 
 export const listMessages = async (roomID: string, limit = 50, options?: ListMessagesOptions): Promise<MessagePage> => {
@@ -268,6 +408,7 @@ export const listMessages = async (roomID: string, limit = 50, options?: ListMes
       ...(options?.before ? { before: options.before } : {}),
       ...(options?.after ? { after: options.after } : {}),
       ...(options?.afterTime ? { afterTime: options.afterTime } : {}),
+      ...(options?.around ? { around: options.around } : {}),
     },
     getUserToken(),
   );
@@ -278,9 +419,14 @@ export const getRoom = async (id: string) => {
   return await requestDoc(GetRoomDocument, { id }, getUserToken());
 };
 
-export const updateMessage = async (roomID: string, id: string, content: string) => {
+export const updateMessage = async (
+  roomID: string,
+  id: string,
+  content: string,
+  mentionUserIDs?: string[],
+) => {
   const token = getUserToken();
-  return await requestDoc(UpdateMessageDocument, { roomID, id, content }, token);
+  return await requestDoc(UpdateMessageDocument, { roomID, id, content, mentionUserIDs }, token);
 };
 
 export const deleteMessage = async (roomID: string, id: string) => {

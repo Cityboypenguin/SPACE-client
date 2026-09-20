@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import Cropper, { type Area, type Point } from 'react-easy-crop';
 import { getCroppedImageFile } from '../../../../lib/cropImage';
+import { Modal } from '../../../../components/molecules/Modal';
 import styles from './ImageCropModal.module.css';
 
 interface ImageCropModalProps {
@@ -33,9 +34,8 @@ export const ImageCropModal = ({ imageSrc, fileName, mimeType, onCancel, onCompl
   };
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
-        <h2 className={styles.title}>画像を編集</h2>
+    <Modal overlayClassName={styles.overlay} className={styles.modal}>
+      <h2 className={styles.title}>画像を編集</h2>
 
         <div className={styles.cropArea}>
           <Cropper
@@ -72,7 +72,6 @@ export const ImageCropModal = ({ imageSrc, fileName, mimeType, onCancel, onCompl
             {isSaving ? '処理中...' : '設定する'}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

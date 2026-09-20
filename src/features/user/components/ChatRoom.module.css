@@ -1,15 +1,9 @@
 .container {
+  --chat-mobile-nav-height: 3.5rem;
   display: flex;
   flex-direction: column;
-  height: 100vh;
   height: 100dvh;
-}
-
-@media (max-width: 768px) {
-  .container {
-    height: calc(100vh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    height: calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  }
+  overflow: hidden;
 }
 
 .roomHeader {
@@ -17,12 +11,42 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
-  background: #fff;
+  background: var(--color-bg-elevated);
   z-index: 10;
   flex-shrink: 0;
+}
+
+.roomHeaderButton {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.avatarButton {
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.headerAvatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .roomTitle {
@@ -33,8 +57,60 @@
   min-width: 0;
 }
 
+.roomTitleFlex {
+  flex: 1;
+}
+
+.roomTitleBlock {
+  min-width: 0;
+  flex: 1;
+}
+
+.roomSubTitle {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roomTabs {
+  padding: 0.5rem 1.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.roomNotice {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: 0.8rem;
+  padding: 0.5rem 1.5rem;
+  flex-shrink: 0;
+}
+
 .backButton {
   cursor: pointer;
+}
+
+.pollButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.pollButtonBadge {
+  position: absolute;
+  top: -6px;
+  left: -6px;
 }
 
 .wsIndicator {
@@ -46,21 +122,55 @@
 }
 
 .wsConnected {
-  background-color: #22c55e;
+  background-color: var(--color-success);
 }
 
 .wsDisconnected {
-  background-color: #9ca3af;
+  background-color: var(--color-text-muted);
 }
 
 .messageList {
   flex: 1;
   overflow-y: auto;
-  overflow-anchor: none;
+  /*overflow-anchor: none; */
   padding: 1rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  /* まとまりの中の行間。まとまりの切れ目は .messageGroupStart が上に足す */
+  gap: 0.125rem;
+}
+
+/*
+ * 同じ人が同じ分に続けて投稿したメッセージは詰めて出すので、間隔を空けるのは
+ * まとまりの先頭だけ。gap(0.125rem) と合わせて従来どおりの 0.5rem になる。
+ */
+.messageGroupStart {
+  margin-top: 0.375rem;
+}
+
+/* 続きのメッセージでアイコンの場所だけ空けるための余白（UserAvatar と同じ 32px） */
+.avatarSpacer {
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.scrollSentinel {
+  height: 1px;
+}
+
+.messageGroup {
+  display: contents;
+}
+
+.loadingText {
+  padding: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.errorText {
+  color: var(--color-danger);
 }
 
 .theirRow {
@@ -77,6 +187,8 @@
 .messageBubble {
   display: flex;
   flex-direction: column;
+  /* スワイプ返信のインジケーターを吹き出しの外側へ置くための基準 */
+  position: relative;
 }
 
 .mine {
@@ -89,7 +201,7 @@
 
 .senderName {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--color-text-muted);
   margin-bottom: 2px;
   display: block;
   max-width: 100%;
@@ -99,36 +211,61 @@
 }
 
 .bubble {
+  /* 引用カードを吹き出しの端まで広げるのに使うので変数で持つ */
+  --bubble-pad-y: 0.5rem;
+  --bubble-pad-x: 0.75rem;
   max-width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: var(--bubble-pad-y) var(--bubble-pad-x);
   border-radius: 12px;
   word-break: break-word;
   white-space: pre-wrap;
 }
 
 .bubbleMine {
-  background-color: #646cff;
+  background-color: var(--color-primary);
   color: #fff;
+
+  /* URL は白い下線付きテキスト、メンションは白地の青いラベルとして区別する。 */
+  --mention-color: #1d4ed8;
+  --mention-bg: color-mix(in srgb, #fff 90%, transparent);
+  --mention-self-color: #1e3a8a;
+  --mention-self-bg: #fff;
 }
 
+/* 相手の吹き出し。ライトでは背景(--color-bg)が白で --color-bg-elevated と
+   同色になり境目が消えるため、専用の一段沈んだ色を使う。 */
 .bubbleTheirs {
-  background-color: #e5e7eb;
-  color: #111;
+  background-color: var(--color-bubble-theirs);
+  color: var(--color-text);
+
+  /* 本文とは文字色と背景色を変え、下線付きの URL とも形で区別する。 */
+  --mention-color: var(--color-link-hover);
+  --mention-bg: color-mix(in srgb, var(--color-link) 14%, transparent);
+  --mention-self-bg: color-mix(in srgb, var(--color-link) 24%, transparent);
+  --mention-self-color: var(--color-link-hover);
 }
 
 .timestamp {
   font-size: 0.7rem;
-  color: #aaa;
-  margin-top: 2px;
+  line-height: 1.2;
+  color: var(--color-chat-meta);
+  white-space: nowrap;
+}
+
+.editedLabel {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--color-chat-meta);
+  white-space: nowrap;
 }
 
 .inputForm {
   display: flex;
   gap: 0.5rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid var(--color-border);
   flex-shrink: 0;
-  background: #fff;
+  background: var(--color-bg-elevated);
 }
 
 .inputField {
@@ -143,88 +280,226 @@
   box-sizing: border-box;
 }
 
-.messageActions {
+.inputField:disabled {
+  cursor: default;
+}
+
+.inputField:not(:disabled) {
+  cursor: text;
+}
+
+.inputFieldWrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.charCount {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 6px;
+  bottom: -1.1rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.charCountOver {
+  color: var(--color-danger);
+}
+
+.hiddenInput {
   display: none;
-  flex-direction: column;
-  gap: 2px;
-  z-index: 1;
 }
 
-.messageActionsLeft {
-  right: calc(100% + 2px);
-}
-
-.messageActionsRight {
-  left: calc(100% + 2px);
-}
-
-.messageBubble:hover .messageActions {
-  display: flex;
-}
-
-.messageActionsVisible {
-  display: flex;
-}
-
-.actionBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px 5px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  color: #bbb;
-  line-height: 1;
-  transition: background 0.15s, color 0.15s;
-}
-
-.actionBtnEdit {
-  padding: 1px;
+.sendIconButton {
   display: flex;
   align-items: center;
-  justify-content: center;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
-.actionBtn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #555;
+.sendIconButton:disabled {
+  cursor: default;
 }
 
-.actionIcon {
-  width: 14px;
-  height: 14px;
+.sendIcon {
+  width: 28px;
+  height: 28px;
+  transition: filter 0.15s;
+}
+
+.sendIconDisabled {
+  filter: opacity(0.3);
+}
+
+.sendIconDark {
+  filter: invert(1);
+}
+
+.sendIconDisabled.sendIconDark {
+  filter: opacity(0.3) invert(1);
 }
 
 /*
- * タッチデバイス向けの調整。画面幅ではなくポインタ種別で判定することで、
- * PCでウィンドウを小さくした場合は引き続きホバー操作のまま使えるようにする。
- * 表示/非表示自体は ChatMessageBubble の長押し(タッチ)操作で .messageActionsVisible を
- * 切り替えることで制御し、ここではタップしやすいよう領域だけを拡大する。
+ * メッセージの操作メニュー（返信・編集・削除）。共通の DropdownMenu を使い、
+ * ここでは「時刻の真上に浮かせる」「ホバー中だけ出す」ぶんだけ上書きする。
+ * PC はホバーで出る「···」か右クリック、タッチ端末は吹き出しのタップで開く。
+ *
+ * 絶対配置にしているのは、「···」が出ていない間も行の高さを増やさないため
+ * （flow に置くと1行メッセージでも時刻＋アイコンぶんの高さになってしまう）。
  */
+.messageMenu {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  z-index: 2;
+}
+
+/* 自分の発言では時刻列が吹き出しの左にあるので、吹き出し寄り（右）に揃える */
+.messageMenuLeft {
+  right: 0;
+}
+
+/* 相手の発言では時刻列が吹き出しの右にあるので、吹き出し寄り（左）に揃える */
+.messageMenuRight {
+  left: 0;
+}
+
+/*
+ * 既定では隠しておき、吹き出しにホバーしたときとメニューを開いている間だけ見せる。
+ * display ではなく opacity で消すのは、閉じている間もドロップダウンの
+ * アンカー位置を保つため（長押し・右クリックはホバー無しで開く）。
+ */
+.messageMenuTrigger {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+/* DropdownMenu 側の .trigger も color を持つ（クラス1つ同士だとバンドル順で
+   どちらが勝つか変わる）ので、子孫セレクタにして確実に上書きする。 */
+.messageMenu .messageMenuTrigger {
+  color: var(--color-chat-meta);
+}
+
+.messageBubble:hover .messageMenuTrigger {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * 開く向きは ChatMessageBubble が実測して決める（一覧の上端・下端で見切れるため）。
+ * DropdownMenu 側の .dropdown も top を持っており、クラス1つ同士だとどちらが勝つかが
+ * バンドル順まかせになるので、子孫セレクタで確実に上書きする。
+ */
+.messageMenu .messageMenuDropdownUp {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.messageMenu .messageMenuDropdownDown {
+  top: calc(100% + 4px);
+  bottom: auto;
+}
+
+/* 左右の向きも ChatMessageBubble が実測して決める（上下と同じ理由） */
+.messageMenu .messageMenuDropdownStart {
+  left: 0;
+  right: auto;
+}
+
+.messageMenu .messageMenuDropdownEnd {
+  left: auto;
+  right: 0;
+}
+
+/* タッチ端末はホバーが無いので「···」は出さない（長押しで開く） */
+/* タッチ端末はホバーが無いので「···」は出さない（バブルのタップで開く） */
 @media (pointer: coarse) {
-  .messageActions {
-    gap: 4px;
+  .messageMenuTrigger {
+    display: none;
   }
+}
 
-  .actionBtn {
-    padding: 8px;
-    min-width: 36px;
-    min-height: 36px;
-    font-size: 1.1rem;
-    background: rgba(0, 0, 0, 0.04);
-  }
+/*
+ * 吹き出しと、その外側の時刻列を横に並べる行。時刻は吹き出しの下端に揃えたいので
+ * align-items: flex-end。自分の発言は時刻列が左、相手の発言は右（＝どちらも
+ * 画面の内側・空いている側）に来る。
+ */
+.messageRow {
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+  gap: 0.375rem;
+}
 
-  .actionBtnEdit {
-    padding: 8px;
-  }
+.messageRowMine {
+  justify-content: flex-end;
+}
 
-  .actionIcon {
-    width: 18px;
-    height: 18px;
-  }
+.messageRowTheirs {
+  justify-content: flex-start;
+}
+
+/* 吹き出しの外側に置く時刻・既読・編集済みの列。ミートボールの位置基準も兼ねる */
+.messageMeta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 1px;
+  padding-bottom: 2px;
+}
+
+.messageMetaMine {
+  align-items: flex-end;
+}
+
+.messageMetaTheirs {
+  align-items: flex-start;
+}
+
+.messageContentWrap {
+  position: relative;
+  display: inline-flex;
+  max-width: min(80%, 42rem);
+  flex-direction: column;
+  gap: 0.1875rem;
+  /* 縦スクロールはブラウザに任せ、横方向だけスワイプ返信で使う */
+  touch-action: pan-y;
+}
+
+.messageContentMine {
+  align-items: flex-end;
+}
+
+.messageContentTheirs {
+  align-items: flex-start;
+}
+
+/* スワイプ返信で、バブルが退いた側に現れる返信アイコン */
+.swipeReplyHint {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.swipeReplyHintLeft {
+  left: 0;
+}
+
+.swipeReplyHintRight {
+  right: 0;
+}
+
+/* 返信が成立する距離まで引けたことを色で示す */
+.swipeReplyHintReady {
+  color: var(--color-primary);
 }
 
 .editWrapper {
@@ -235,7 +510,7 @@
 
 .editInput {
   border-radius: 12px;
-  border: 2px solid #646cff;
+  border: 2px solid var(--color-primary);
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;
   outline: none;
@@ -257,7 +532,7 @@
   padding: 3px 10px;
   border-radius: 6px;
   border: none;
-  background: #646cff;
+  background: var(--color-primary);
   color: white;
   cursor: pointer;
 }
@@ -266,35 +541,17 @@
   font-size: 0.75rem;
   padding: 3px 10px;
   border-radius: 6px;
-  border: 1px solid #ccc;
-  background: white;
-  color: #666;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
   cursor: pointer;
-}
-
-.unreadSeparator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #ef4444;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 4px 0;
-}
-
-.unreadSeparator::before,
-.unreadSeparator::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #ef4444;
 }
 
 .readReceipt {
   font-size: 0.65rem;
-  color: #646cff;
-  margin-top: 1px;
-  text-align: right;
+  line-height: 1.2;
+  color: var(--color-primary);
+  white-space: nowrap;
 }
 
 .messageListWrapper {
@@ -311,7 +568,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background: #646cff;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 20px;
@@ -320,4 +577,519 @@
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
+}
+
+/* 以下は ChatInput / ChatMessageBubble のインラインスタイルから抽出したクラス */
+
+.dragOverlayBorder {
+  border: 2px dashed var(--color-text-muted);
+  background: rgba(107, 114, 128, 0.08);
+}
+
+.dragOverlayText {
+  color: var(--color-text-muted);
+}
+
+.filePreviewImgBorder {
+  border: 1px solid var(--color-border);
+}
+
+.fileRemoveBtn {
+  background: var(--color-text-muted);
+  color: #fff;
+}
+
+.fileChip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.fileChipRemoveBtn {
+  color: var(--color-text-muted);
+}
+
+.attachBtnEnabled {
+  color: var(--color-text-muted);
+}
+
+.attachBtnDisabled {
+  color: var(--color-border);
+}
+
+.chatInputRoot {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dragOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  pointer-events: none;
+}
+
+.dragOverlayText {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.filePreviewList {
+  display: flex;
+  max-height: clamp(7rem, 18dvh, 8.125rem);
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  overflow-y: auto;
+  padding: 0.25rem 0.75rem 0;
+}
+
+.filePreviewThumb {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+}
+
+.filePreviewImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.fileRemoveButton {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.375rem;
+  display: flex;
+  width: 1.125rem;
+  height: 1.125rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.fileChipInner {
+  display: flex;
+  max-width: min(10rem, 100%);
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.fileChipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileChipRemoveButton {
+  flex-shrink: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.attachButton {
+  border: 0;
+  padding: 0 0.25rem;
+  background: none;
+  font-size: 1.2rem;
+}
+
+.mediaFileChipMine {
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  color: var(--color-text);
+}
+
+.mediaFileChipTheirs {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.messageLink {
+  color: inherit;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.messageMediaGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1875rem;
+}
+
+.messageMediaGridMine {
+  justify-content: flex-end;
+}
+
+.messageMediaGridTheirs {
+  justify-content: flex-start;
+}
+
+.messageMediaGridSingle {
+  max-width: min(12.5rem, 100%);
+}
+
+.messageMediaGridMultiple {
+  max-width: min(10rem, 100%);
+}
+
+.messageImageThumb {
+  display: block;
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 0.5rem;
+  cursor: zoom-in;
+  object-fit: cover;
+}
+
+.messageImageSingle {
+  width: 100%;
+  height: auto;
+  max-width: min(12.5rem, 100%);
+  max-height: 12.5rem;
+}
+
+.messageFileList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.messageFileListMine {
+  align-items: flex-end;
+}
+
+.messageFileListTheirs {
+  align-items: flex-start;
+}
+
+.messageFileLink {
+  text-decoration: none;
+}
+
+.messageFileChip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  padding: 0.3125rem 0.625rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.messageFileIcon {
+  font-size: 1rem;
+}
+
+.editingMediaWrap {
+  margin-top: 0.5rem;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: calc(100dvh - var(--chat-mobile-nav-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .roomHeader {
+    gap: 0.55rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .roomHeader > button:first-child {
+    flex-shrink: 0;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+  }
+
+  .roomTitle {
+    display: block;
+    font-size: 1rem;
+  }
+
+  .roomSubTitle {
+    font-size: 0.7rem;
+  }
+
+  .roomTabs {
+    padding: 0.35rem 0.75rem 0;
+  }
+
+  .roomNotice {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .pollButton {
+    min-height: 2.15rem;
+    padding: 4px 9px;
+    font-size: 0.78rem;
+  }
+
+  .messageList {
+    padding: 0.75rem;
+    gap: 0.125rem;
+  }
+
+  .bubble {
+    --bubble-pad-x: 0.65rem;
+    max-width: min(82vw, 100%);
+    font-size: 0.92rem;
+  }
+
+  .inputForm {
+    padding: 0.55rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom));
+    gap: 0.35rem;
+  }
+
+  .inputField {
+    min-height: 38px;
+    max-height: 110px;
+    font-size: 1rem;
+  }
+
+  .scrollToLatest {
+    bottom: 8px;
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+/* ===== 引用返信 ===== */
+
+/*
+ * 返信先プレビュー。LINE と同じくバブルの内側（本文の上）に収める角丸カード。
+ * 「返信元」だと分かるよう、乗っている吹き出しより一段濃い色にする。
+ * 吹き出しの色が自分（primary）と相手（bubble-theirs）で違うので、背景は
+ * それぞれに合わせて出し分ける。文字色は不透明度で調整しており、
+ * テーマごとに色を用意しなくても明暗どちらでも読める。
+ */
+.replyQuote {
+  /* 吹き出しの内側の端から、この距離だけ残して広げる */
+  --quote-inset: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* 吹き出しの左右パディングをはみ出して、端ぎりぎりまで幅を使う。
+     はみ出し量を padding から計算しているので、モバイルで padding が
+     変わってもカードと吹き出しの余白は 4px のまま保たれる。 */
+  width: calc(100% + 2 * (var(--bubble-pad-x) - var(--quote-inset)));
+  margin: calc(var(--quote-inset) - var(--bubble-pad-y)) calc(var(--quote-inset) - var(--bubble-pad-x)) 0.375rem;
+  padding: 0.375rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  /* プロジェクト全体の box-sizing リセットが無いため、width:100% と padding が
+     足し算にならないようここで指定する（無いと吹き出しから横にはみ出す）。 */
+  box-sizing: border-box;
+}
+
+.replyQuoteMine {
+  background: var(--color-quote-on-primary);
+}
+
+.replyQuoteTheirs {
+  background: var(--color-quote-bg);
+}
+
+/* 返信先が削除済み。ジャンプ先がないので button ではなく div で出す */
+.replyQuoteDeleted {
+  cursor: default;
+}
+
+.replyQuoteDeleted .replyQuoteText {
+  font-style: italic;
+}
+
+.replyQuoteBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* 返信先のアイコンと名前。誰への返信かを一目で分かるようにする */
+.replyQuoteHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* AvatarFrame 相当の丸枠。<button> の中に置くので div ではなく span で組む */
+.replyQuoteAvatar {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.replyQuoteAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 既定の人型アイコン。Avatar と同じく枠より少し大きく見せる */
+.replyQuoteAvatarDefault {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+}
+
+.replyQuoteName {
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-quote-name);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replyQuoteMine .replyQuoteName {
+  color: #fff;
+}
+
+/* 長い返信先は2行で打ち切る（LINE と同じ） */
+.replyQuoteText {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--color-text);
+  /* 地が一段濃くなったぶん、薄めすぎると読めないので不透明度を上げる */
+  opacity: 0.78;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.replyQuoteMine .replyQuoteText {
+  color: #fff;
+  opacity: 0.85;
+}
+
+.replyQuoteThumb {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+/*
+ * ジャンプ先の一時ハイライト。実際のアニメーションは useScrollToMessage が
+ * Web Animations API で直接かけるので、ここでは角丸だけ用意しておく
+ * （同じメッセージを続けてタップしても必ず光らせたいため、クラスの付け外しに
+ *  依存する CSS アニメーションは使わない）。
+ */
+.messageHighlightTarget {
+  border-radius: 12px;
+}
+
+/* 入力欄の上に出す「〜に返信」バー */
+.replyComposer {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+/* 返信であることは左の矢印アイコンで示す（縦線は使わない） */
+.replyComposerIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--color-primary);
+}
+
+.replyComposerBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.replyComposerLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replyComposerText {
+  font-size: 0.75rem;
+  color: var(--color-text);
+  opacity: 0.65;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replyComposerThumb {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.replyComposerCancel {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.replyComposerCancel:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* メンションのサジェスト。入力欄が画面下にあるので、上方向に開く。 */
+.mentionSuggestionPopover {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 6px;
+  z-index: 20;
 }

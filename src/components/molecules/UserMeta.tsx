@@ -1,6 +1,5 @@
 import styles from './UserMeta.module.css';
 import { UserNameLink } from '../atoms/UserNameLink';
-import { AdminUserNameLink } from '../atoms/AdminUserNameLink';
 
 type Props = {
   userId: string;
@@ -12,12 +11,16 @@ type Props = {
 };
 
 export const UserMeta = ({ userId, name, accountID, timestamp, small, admin }: Props) => {
-  const NameLink = admin ? AdminUserNameLink : UserNameLink;
   return (
     <div className={`${styles.row} ${small ? styles.rowSmall : styles.rowNormal}`}>
-      <NameLink userId={userId} className={`${styles.name} ${small ? styles.nameSmall : styles.nameNormal}`}>
+      <UserNameLink
+        userId={userId}
+        className={`${styles.name} ${small ? styles.nameSmall : styles.nameNormal}`}
+        basePath={admin ? '/admin/users' : '/users'}
+        useMyPageForCurrentUser={!admin}
+      >
         {name}
-      </NameLink>
+      </UserNameLink>
       <span className={`${styles.meta} ${small ? styles.metaSmall : styles.metaNormal}`}>
         @{accountID}
       </span>

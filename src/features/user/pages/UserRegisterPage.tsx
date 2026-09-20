@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerUser, loginUser, sendEmailOTP, verifyEmailOTP, USER_TOKEN_KEY } from '../api/auth';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { getCurrentTerms, consentToTerms, type TermsOfService } from '../api/terms';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { TermsContent } from '../components/molecules/TermsContent';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { OtpInputSection } from '../components/molecules/OtpInputSection';
 import styles from './UserRegisterPage.module.css';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 
 const OTP_COOLDOWN_SECONDS = 60;
 
@@ -399,12 +399,12 @@ export const UserRegisterPage = () => {
                   style={{
                     height: '240px',
                     overflowY: 'auto',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--color-border)',
                     borderRadius: 8,
                     padding: '1rem',
                     lineHeight: 1.8,
                     fontSize: '0.85rem',
-                    color: '#334155',
+                    color: 'var(--color-text)',
                     marginBottom: '0.5rem',
                   }}
                 />
@@ -424,7 +424,7 @@ export const UserRegisterPage = () => {
                 </label>
               </>
             ) : (
-              <p style={{ color: '#94a3b8', textAlign: 'center' }}>読み込み中...</p>
+              <p className={styles.centerMutedText}>読み込み中...</p>
             )}
             <button
               type="button"

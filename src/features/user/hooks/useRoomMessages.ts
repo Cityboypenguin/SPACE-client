@@ -50,7 +50,18 @@ type State = {
   partnerLastReadAt: string | null;
 };
 
-export const useRoomMessages = (roomId: string | undefined) => {
+// 返信通知から開いたときなど、特定メッセージを中心にルームを開く指定。
+type UseRoomMessagesOptions = {
+  aroundMessageId?: string | null;
+};
+
+// around 指定でルームを開く／ジャンプするときに前後何件読むか。
+const AROUND_LIMIT = 25;
+
+export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMessagesOptions) => {
+  const aroundMessageId = options?.aroundMessageId ?? null;
+  // ジャンプ先のメッセージID。読み込み完了後にページ側がスクロール・ハイライトして clear する。
+  const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
   const [state, setState] = useState<State>({
     room: null,
     messages: [],
@@ -63,6 +74,13 @@ export const useRoomMessages = (roomId: string | undefined) => {
   const [hasMoreAfter, setHasMoreAfter] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loadingNewer, setLoadingNewer] = useState(false);
+
+  // jumpToMessage から最新の messages を読むための参照（依存配列に messages を
+  // 入れると、ジャンプのたびに購読が張り直されてしまうため）
+  const messagesRef = useRef<Message[]>([]);
+  useEffect(() => {
+    messagesRef.current = state.messages;
+  }, [state.messages]);
 
   const markedAsRead = useRef(false);
   const loadingOlderRef = useRef(false);
@@ -79,11 +97,14 @@ export const useRoomMessages = (roomId: string | undefined) => {
     oldestIDRef.current = undefined;
     newestIDRef.current = undefined;
 
-    // ルーム切り替え時にリセット
-    setState({ room: null, messages: [], wsConnected: false, error: '', initialLastReadAt: null, partnerLastReadAt: null });
-    setHasMoreBefore(false);
-    setHasMoreAfter(false);
-    hasMoreAfterRef.current = false;
+    Promise.resolve().then(() => {
+      if (!active) return;
+      setState({ room: null, messages: [], wsConnected: false, error: '', initialLastReadAt: null, partnerLastReadAt: null });
+      setHasMoreBefore(false);
+      setHasMoreAfter(false);
+      hasMoreAfterRef.current = false;
+      setPendingScrollId(null);
+    });
 
     (async () => {
       try {
@@ -91,15 +112,37 @@ export const useRoomMessages = (roomId: string | undefined) => {
         if (!active) return;
 
         const lastReadAt = roomData.room?.lastReadAt ?? null;
+        const lastReadMessageID = roomData.room?.lastReadMessageID ?? null;
         const unreadCount = roomData.room?.unreadCount ?? 0;
 
         let messages: Message[];
         let moreBefore: boolean;
         let moreAfter: boolean;
 
-        if (unreadCount > 0 && lastReadAt) {
-          // 未読あり: 未読開始点の前後25件ずつ取得
-          const unreadResult = await listMessages(roomId, 25, { afterTime: lastReadAt });
+        if (aroundMessageId) {
+          // 返信通知などから特定メッセージを指定して開いた場合は、未読起点ではなく
+          // そのメッセージを中心に読む。
+          const result = await listMessages(roomId, AROUND_LIMIT, { around: aroundMessageId });
+          if (!active) return;
+          messages = result.items;
+          moreBefore = result.hasMoreBefore;
+          moreAfter = result.hasMoreAfter;
+        } else if (unreadCount > 0 && (lastReadMessageID || lastReadAt)) {
+          // 未読あり: 未読開始点の前後25件ずつ取得。
+          //
+          // 起点は既読位置のメッセージID。unreadCount もサーバ側で同じIDを起点に
+          // 数えているので、「未読は1件なのに未読ページは0件」という食い違いが出ない。
+          // 時刻（lastReadAt）を afterTime に渡していた頃は、既読を打った秒と同じ秒に
+          // 届いたメッセージが件数には入るのにページには出てこなかった（時刻は秒解像度で、
+          // 同じ秒の中の前後関係を表せないため）。
+          //
+          // lastReadMessageID が null になるのは、069 のバックフィル対象外だった行
+          // （既読時刻を持たないなど）や、まだ ID で既読を打ち直していない古い行。
+          // そのときだけ従来の afterTime に落とす（サーバ側の未読件数も同じ順序で
+          // ID → 時刻とフォールバックするので、起点の選び方が両者で揃う）。
+          const unreadResult = lastReadMessageID
+            ? await listMessages(roomId, 25, { after: lastReadMessageID })
+            : await listMessages(roomId, 25, { afterTime: lastReadAt ?? undefined });
           if (!active) return;
 
           if (unreadResult.items.length > 0) {
@@ -140,10 +183,20 @@ export const useRoomMessages = (roomId: string | undefined) => {
         setHasMoreBefore(moreBefore);
         setHasMoreAfter(moreAfter);
         hasMoreAfterRef.current = moreAfter;
+        if (aroundMessageId) setPendingScrollId(aroundMessageId);
 
         if (!markedAsRead.current) {
           markedAsRead.current = true;
-          await markRoomAsRead(roomId).catch(() => {});
+          // 既読位置として送るのは「この初期ロードで画面に載せた最後のメッセージ」。
+          // messages はここで組み立て終えた配列そのもので、setState の反映を待たずに
+          // 読めるため、送るIDと表示した内容がずれない（newestIDRef を読むと、
+          // 直後に走りうる loadNewerMessages やサブスクリプションが書き換えた値を
+          // 拾ってしまい、まだ描画していないメッセージまで既読にしかねない）。
+          //
+          // 未読が25件を超えていて moreAfter が立っている場合、ここで既読にするのは
+          // 読み込んだぶんまで。残りはスクロールで追いついたときに既読になる。
+          const lastShownID = messages[messages.length - 1]?.ID;
+          await markRoomAsRead(roomId, lastShownID).catch(() => {});
         }
       } catch (err) {
         if (!active) return;
@@ -153,7 +206,7 @@ export const useRoomMessages = (roomId: string | undefined) => {
     })();
 
     return () => { active = false; };
-  }, [roomId]);
+  }, [roomId, aroundMessageId]);
 
   // 上スクロール: 古いメッセージを50件追加取得
   const loadOlderMessages = useCallback(async () => {
@@ -225,7 +278,13 @@ export const useRoomMessages = (roomId: string | undefined) => {
           return { ...prev, wsConnected: true, messages: [...prev.messages, newMsg] };
         });
         newestIDRef.current = newMsg.ID;
-        markRoomAsRead(roomId).catch(() => {});
+        // 既読位置は「いま受け取って画面に足したメッセージ」。ここに来るのは
+        // hasMoreAfterRef が false のとき（＝末尾を表示している）だけなので、この
+        // メッセージが表示済みの最後になる。newMsg.ID を直接渡すのは、state の更新が
+        // 非同期で newestIDRef も他の経路が書き換えうるため（読み取った状態と送るIDを
+        // ずらさない）。既に表示済みで重複だったとしても、サーバ側の既読位置は
+        // 前にしか進まないので実害はない。
+        markRoomAsRead(roomId, newMsg.ID).catch(() => {});
       },
       (err) => {
         console.error('[useRoomMessages] subscription error:', err);
@@ -297,6 +356,30 @@ export const useRoomMessages = (roomId: string | undefined) => {
     return () => unsubscribe();
   }, [roomId]);
 
+  // 引用のタップや返信通知からのジャンプ。すでに読み込み済みならスクロールするだけ、
+  // まだ読み込んでいない古いメッセージなら around で読み直してから中央に表示する。
+  const jumpToMessage = useCallback(async (messageId: string) => {
+    if (!roomId) return;
+    if (messagesRef.current.some((m) => m.ID === messageId)) {
+      setPendingScrollId(messageId);
+      return;
+    }
+    try {
+      const result = await listMessages(roomId, AROUND_LIMIT, { around: messageId });
+      oldestIDRef.current = result.items[0]?.ID;
+      newestIDRef.current = result.items[result.items.length - 1]?.ID;
+      setState((prev) => ({ ...prev, messages: result.items }));
+      setHasMoreBefore(result.hasMoreBefore);
+      setHasMoreAfter(result.hasMoreAfter);
+      hasMoreAfterRef.current = result.hasMoreAfter;
+      setPendingScrollId(messageId);
+    } catch {
+      // ジャンプに失敗しても、開いているルームの表示はそのまま維持する
+    }
+  }, [roomId]);
+
+  const clearPendingScroll = useCallback(() => setPendingScrollId(null), []);
+
   const addMessage = (msg: Message) => {
     setState((prev) => ({
       ...prev,
@@ -316,5 +399,8 @@ export const useRoomMessages = (roomId: string | undefined) => {
     loadOlderMessages,
     loadNewerMessages,
     addMessage,
+    pendingScrollId,
+    jumpToMessage,
+    clearPendingScroll,
   };
 };

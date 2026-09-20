@@ -1,6 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
+import { invalidateCommunityMembers } from '../cache/communityMembers';
 
 export type Community = {
   ID: string;
@@ -22,7 +23,6 @@ export type CommunityMember = {
     ID: string;
     accountID: string;
     name: string;
-    email: string;
     avatarUrl?: string | null;
   };
   role: string;
@@ -103,16 +103,18 @@ const GetMyRoleInCommunityDocument = graphql(`
 `);
 
 const GetCommunityMembersDocument = graphql(`
-  query GetCommunityMembers($communityID: ID!) {
-    getCommunityMembers(communityID: $communityID) {
-      user {
-        ID
-        accountID
-        name
-        email
-        avatarUrl
+  query CommunityMembers($communityID: ID!, $limit: Int!, $offset: Int!) {
+    communityMembers(communityID: $communityID, limit: $limit, offset: $offset) {
+      items {
+        user {
+          ID
+          accountID
+          name
+          avatarUrl
+        }
+        role
       }
-      role
+      total
     }
   }
 `);
@@ -130,24 +132,6 @@ const UpdateCommunityDocument = graphql(`
       createdAt
       updatedAt
     }
-  }
-`);
-
-const KickUserFromCommunityDocument = graphql(`
-  mutation KickUserFromCommunity($communityID: ID!, $userID: ID!) {
-    kickUserFromCommunity(communityID: $communityID, userID: $userID)
-  }
-`);
-
-const PromoteToCommunityOwnerDocument = graphql(`
-  mutation PromoteToCommunityOwner($communityID: ID!, $userID: ID!) {
-    promoteToCommunityOwner(communityID: $communityID, userID: $userID)
-  }
-`);
-
-const DemoteFromCommunityOwnerDocument = graphql(`
-  mutation DemoteFromCommunityOwner($communityID: ID!, $userID: ID!) {
-    demoteFromCommunityOwner(communityID: $communityID, userID: $userID)
   }
 `);
 
@@ -194,6 +178,11 @@ export type CommunityPage = {
   total: number;
 };
 
+export type CommunityMemberPage = {
+  items: CommunityMember[];
+  total: number;
+};
+
 export const listMyCommunities = async (limit = 20, offset = 0): Promise<CommunityPage> => {
   const data = await requestDoc(MyCommunitiesDocument, { limit, offset }, getUserToken());
   return data.myCommunities;
@@ -222,9 +211,13 @@ export const getMyRoleInCommunity = async (communityID: string): Promise<string>
   return data.getMyRoleInCommunity;
 };
 
-export const getCommunityMembers = async (communityID: string): Promise<CommunityMember[]> => {
-  const data = await requestDoc(GetCommunityMembersDocument, { communityID }, getUserToken());
-  return data.getCommunityMembers;
+export const getCommunityMembers = async (
+  communityID: string,
+  limit = 50,
+  offset = 0,
+): Promise<CommunityMemberPage> => {
+  const data = await requestDoc(GetCommunityMembersDocument, { communityID, limit, offset }, getUserToken());
+  return data.communityMembers;
 };
 
 export const updateCommunityInfo = async (
@@ -235,16 +228,22 @@ export const updateCommunityInfo = async (
   return data.updateCommunity;
 };
 
+// 以下のメンバー変更系は、成功後に必ずメンバー一覧のキャッシュを捨てる。
+// 呼び出し側で無効化を書き忘れると古い一覧が残り続けるため、ここに寄せている
+// （メンバー一覧は revalidateIfStale: false で読んでいる。cache/communityMembers.ts 参照）。
 export const kickUserFromCommunity = async (communityID: string, userID: string): Promise<void> => {
-  await requestDoc(KickUserFromCommunityDocument, { communityID, userID }, getUserToken());
+  await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'KICK' }] }, getUserToken());
+  await invalidateCommunityMembers(communityID);
 };
 
 export const promoteToCommunityOwner = async (communityID: string, userID: string): Promise<void> => {
-  await requestDoc(PromoteToCommunityOwnerDocument, { communityID, userID }, getUserToken());
+  await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'PROMOTE' }] }, getUserToken());
+  await invalidateCommunityMembers(communityID);
 };
 
 export const demoteFromCommunityOwner = async (communityID: string, userID: string): Promise<void> => {
-  await requestDoc(DemoteFromCommunityOwnerDocument, { communityID, userID }, getUserToken());
+  await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'DEMOTE' }] }, getUserToken());
+  await invalidateCommunityMembers(communityID);
 };
 
 export const updateCommunityMembers = async (
@@ -252,6 +251,7 @@ export const updateCommunityMembers = async (
   updates: CommunityMemberUpdateInput[],
 ): Promise<void> => {
   await requestDoc(UpdateCommunityMembersDocument, { communityID, updates }, getUserToken());
+  await invalidateCommunityMembers(communityID);
 };
 
 export const getRandomCommunities = async (limit: number): Promise<Community[]> => {

@@ -2,22 +2,30 @@ import { useRef, useEffect, useState, type ReactNode } from 'react';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { storageUrl } from '../../../../lib/storage';
-import { useToast } from '../../../../context/ToastContext';
+import { useToast } from '../../../../context/useToast';
 import { useHashtagSuggestions } from '../../hooks/useHashtagSuggestions';
 import { HashtagSuggestionList } from '../molecules/HashtagSuggestionList';
+import { useMentionSuggestions } from '../../hooks/useMentionSuggestions';
+import { MentionSuggestionList } from '../molecules/MentionSuggestionList';
+import { applyMention, getActiveAccountMention, type MentionCandidate } from '../../../../lib/mentions';
 import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
 import styles from './PostComposer.module.css';
+import { type Media } from '../../../../lib/media';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_IMAGES = 4;
 
-// 入力中の本文からハッシュタグ部分だけを色付けするためのハイライト用ノードを生成する。
-// ルールは表示側 (renderTextWithLinks) / サーバー側 (hashtag.go) と揃える:
-//   マーカー "#"（直後に空白なし）が本文先頭 or 直前が空白のときのみ、最初の空白までをタグとして着色。
-const HASHTAG_HL_REGEX = /#[^\s]+/g;
+// 入力中の本文からハッシュタグ・メンション部分だけを色付けするためのハイライト用ノードを生成する。
+// ルールは表示側 (renderTextWithLinks) / サーバー側 (hashtag.go, mention.go) と揃える:
+//   - ハッシュタグ: マーカー "#"（直後に空白なし）が本文先頭 or 直前が空白のときのみ、
+//     最初の空白までをタグとして着色。
+//   - メンション: マーカー "@"/"＠" が本文先頭 or 直前が空白のときのみ、
+//     accountID として有効な文字（[a-zA-Z0-9_-]、最大25文字）までを着色。
+// メンションの着色は入力中のヒントなので、実在するユーザーかどうかまでは見ない
+// （実際に成立したかは投稿後の表示で分かる）。
+const HIGHLIGHT_REGEX = /(#[^\s]+)|([@＠][a-zA-Z0-9_-]{1,25})/g;
 const WHITESPACE_REGEX = /\s/;
-const HASHTAG_COLOR = '#1d9bf0';
 
 // キャレット位置(caret)から、いま編集中のハッシュタグトークンを取り出す。
 // 返り値: { query: "#"の後ろ〜caretの文字列, start: "#"の位置, end: トークン末尾 } / なければ null。
@@ -32,14 +40,14 @@ function getActiveHashtag(text: string, caret: number): { query: string; start: 
   return { query: text.slice(i + 1, caret), start: i, end };
 }
 
-function renderHashtagHighlight(text: string): ReactNode[] {
+function renderComposerHighlight(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
   let lastIndex = 0;
   let key = 0;
 
-  HASHTAG_HL_REGEX.lastIndex = 0;
+  HIGHLIGHT_REGEX.lastIndex = 0;
   let match: RegExpExecArray | null;
-  while ((match = HASHTAG_HL_REGEX.exec(text)) !== null) {
+  while ((match = HIGHLIGHT_REGEX.exec(text)) !== null) {
     const start = match.index;
     if (!(start === 0 || WHITESPACE_REGEX.test(text[start - 1]))) {
       continue;
@@ -48,19 +56,13 @@ function renderHashtagHighlight(text: string): ReactNode[] {
       nodes.push(text.slice(lastIndex, start));
     }
     nodes.push(
-      <span key={key++} style={{ color: HASHTAG_COLOR }}>{match[0]}</span>,
+      <span key={key++} className={styles.hashtagHighlight}>{match[0]}</span>,
     );
     lastIndex = start + match[0].length;
   }
   nodes.push(text.slice(lastIndex));
   return nodes;
 }
-
-type MinimalMedia = {
-  ID: string;
-  url: string;
-  contentType: string;
-};
 
 type Props = {
   value: string;
@@ -79,7 +81,7 @@ type Props = {
   accountId?: string;
   selectedFiles?: File[];
   onFileSelect?: (files: File[]) => void;
-  existingMedia?: MinimalMedia[];
+  existingMedia?: Media[];
   deletedMediaIDs?: string[];
   onDeleteExistingMedia?: (id: string) => void;
   onCancel?: () => void;
@@ -87,6 +89,8 @@ type Props = {
   isEmbedded?: boolean;
   maxLength?: number;
   enableHashtagSuggestions?: boolean;
+  // メンション (@accountID) のサジェスト。投稿・返信のどこでもメンションは書けるので既定で有効。
+  enableMentionSuggestions?: boolean;
 };
 
 export const PostComposer = ({
@@ -114,6 +118,7 @@ export const PostComposer = ({
   isEmbedded = false,
   maxLength,
   enableHashtagSuggestions = false,
+  enableMentionSuggestions = true,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -127,27 +132,37 @@ export const PostComposer = ({
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-  // ハッシュタグサジェスト用の状態。
+  // サジェスト（ハッシュタグ / メンション共用）の状態。
   const [caretPos, setCaretPos] = useState(0);
   const [focused, setFocused] = useState(false);
   const [suggestDismissed, setSuggestDismissed] = useState(false);
   const [suggestActiveIndex, setSuggestActiveIndex] = useState(0);
 
+  // ハッシュタグとメンションは同じトークンにはならない（# と @ で始まりが排他）ので、
+  // どちらか一方だけが有効になる。
+  const suggestActive = focused && !suggestDismissed;
   const activeHashtag = enableHashtagSuggestions ? getActiveHashtag(value, caretPos) : null;
-  const suggestions = useHashtagSuggestions(
-    focused && !suggestDismissed && activeHashtag ? activeHashtag.query : null,
-  );
-  const showSuggestions = enableHashtagSuggestions && focused && !suggestDismissed && activeHashtag !== null && suggestions.length > 0;
+  const activeMention = enableMentionSuggestions ? getActiveAccountMention(value, caretPos) : null;
 
-  const selectSuggestion = (tag: string) => {
-    if (!activeHashtag) return;
-    const before = value.slice(0, activeHashtag.start);
-    const after = value.slice(activeHashtag.end);
-    // 直後が空白でなければ空白を補い、続けて入力できるようにする。
-    const needsSpace = after === '' || !WHITESPACE_REGEX.test(after[0]);
-    const inserted = `#${tag}${needsSpace ? ' ' : ''}`;
-    const newValue = `${before}${inserted}${after}`;
-    const newCaret = before.length + inserted.length;
+  const hashtagSuggestions = useHashtagSuggestions(
+    suggestActive && activeHashtag ? activeHashtag.query : null,
+  );
+  const mentionSuggestions = useMentionSuggestions(
+    suggestActive && activeMention ? activeMention.query : null,
+  );
+
+  const showHashtagSuggestions = suggestActive && activeHashtag !== null && hashtagSuggestions.length > 0;
+  const showMentionSuggestions = suggestActive && activeMention !== null && mentionSuggestions.length > 0;
+  const suggestionCount = showHashtagSuggestions
+    ? hashtagSuggestions.length
+    : showMentionSuggestions
+      ? mentionSuggestions.length
+      : 0;
+  const showSuggestions = suggestionCount > 0;
+
+  // 差し替え後のキャレット位置を反映する。onChange 直後は DOM がまだ古いので
+  // 次フレームで設定する（ハッシュタグ・メンション共通）。
+  const applyToTextarea = (newValue: string, newCaret: number) => {
     onChange(newValue);
     setSuggestDismissed(true);
     requestAnimationFrame(() => {
@@ -158,6 +173,34 @@ export const PostComposer = ({
         setCaretPos(newCaret);
       }
     });
+  };
+
+  const selectHashtagSuggestion = (tag: string) => {
+    if (!activeHashtag) return;
+    const before = value.slice(0, activeHashtag.start);
+    const after = value.slice(activeHashtag.end);
+    // 直後が空白でなければ空白を補い、続けて入力できるようにする。
+    const needsSpace = after === '' || !WHITESPACE_REGEX.test(after[0]);
+    const inserted = `#${tag}${needsSpace ? ' ' : ''}`;
+    applyToTextarea(`${before}${inserted}${after}`, before.length + inserted.length);
+  };
+
+  const selectMentionSuggestion = (candidate: MentionCandidate) => {
+    if (!activeMention) return;
+    // 投稿のメンションは "@accountID"。表示名ではなく accountID を挿入する。
+    const { value: newValue, caret } = applyMention(value, activeMention, candidate.accountID);
+    applyToTextarea(newValue, caret);
+  };
+
+  // 候補リストの index を確定させる（キーボード/クリック共通）。
+  const confirmSuggestion = (index: number) => {
+    if (showHashtagSuggestions) {
+      const chosen = hashtagSuggestions[Math.min(index, hashtagSuggestions.length - 1)];
+      if (chosen) selectHashtagSuggestion(chosen.tag);
+    } else if (showMentionSuggestions) {
+      const chosen = mentionSuggestions[Math.min(index, mentionSuggestions.length - 1)];
+      if (chosen) selectMentionSuggestion(chosen);
+    }
   };
 
   useEffect(() => {
@@ -275,25 +318,10 @@ export const PostComposer = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      style={{ position: 'relative' }} // オーバーレイ表示の基準点にするため追加
     >
       {/* ▼ 追加: ドラッグ中のオーバーレイUI */}
       {isDragging && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            border: '2px dashed #6b7280',
-            borderRadius: 8,
-            background: 'rgba(107, 114, 128, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            pointerEvents: 'none',
-          }}
-        >
-        </div>
+        <div className={styles.dragOverlay} />
       )}
 
       {userId && userName ? (
@@ -301,14 +329,7 @@ export const PostComposer = ({
       ) : userName ? (
         <Avatar name={userName} size={iconSize} />
       ) : (
-        <div
-          style={{
-            width: iconSize, height: iconSize, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#646cff,#a78bfa)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontSize: iconSize >= 40 ? '1.2rem' : '1rem', flexShrink: 0,
-          }}
-        >✍️</div>
+        <Avatar name="投稿" size={iconSize} />
       )}
       <div className={styles.inner}>
         {!isEmbedded && userName && (
@@ -323,23 +344,23 @@ export const PostComposer = ({
             aria-hidden="true"
             className={`${styles.highlightBackdrop} ${large ? styles.textareaLarge : styles.textareaSmall}`}
           >
-            {renderHashtagHighlight(value)}
+            {renderComposerHighlight(value)}
           </div>
           <textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => {
               onChange(e.target.value);
-              if (enableHashtagSuggestions) {
+              if (enableHashtagSuggestions || enableMentionSuggestions) {
                 setCaretPos(e.target.selectionStart ?? 0);
                 setSuggestDismissed(false);
                 setSuggestActiveIndex(0);
               }
             }}
-            onKeyUp={(e) => { if (enableHashtagSuggestions) setCaretPos(e.currentTarget.selectionStart ?? 0); }}
-            onClick={(e) => { if (enableHashtagSuggestions) setCaretPos(e.currentTarget.selectionStart ?? 0); }}
-            onFocus={() => { if (enableHashtagSuggestions) { setFocused(true); setSuggestDismissed(false); } }}
-            onBlur={() => { if (enableHashtagSuggestions) setFocused(false); }}
+            onKeyUp={(e) => { if (enableHashtagSuggestions || enableMentionSuggestions) setCaretPos(e.currentTarget.selectionStart ?? 0); }}
+            onClick={(e) => { if (enableHashtagSuggestions || enableMentionSuggestions) setCaretPos(e.currentTarget.selectionStart ?? 0); }}
+            onFocus={() => { if (enableHashtagSuggestions || enableMentionSuggestions) { setFocused(true); setSuggestDismissed(false); } }}
+            onBlur={() => setFocused(false)}
             onKeyDown={(e) => {
               if (!showSuggestions) return;
               // IME変換中の Enter 等は確定操作なので横取りしない。
@@ -347,16 +368,15 @@ export const PostComposer = ({
               if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                 e.preventDefault();
                 setSuggestActiveIndex(prev => {
-                  const clamped = Math.min(prev, suggestions.length - 1);
+                  const clamped = Math.min(prev, suggestionCount - 1);
                   return e.key === 'ArrowDown'
-                    ? Math.min(clamped + 1, suggestions.length - 1)
+                    ? Math.min(clamped + 1, suggestionCount - 1)
                     : Math.max(clamped - 1, 0);
                 });
               } else if (e.key === 'Enter' || e.key === 'Tab') {
                 // 候補が出ているときは Enter/Tab で確定（改行は挿入しない）。
                 e.preventDefault();
-                const chosen = suggestions[Math.min(suggestActiveIndex, suggestions.length - 1)];
-                if (chosen) selectSuggestion(chosen.tag);
+                confirmSuggestion(suggestActiveIndex);
               } else if (e.key === 'Escape') {
                 setSuggestDismissed(true);
               }
@@ -373,13 +393,22 @@ export const PostComposer = ({
             className={`${styles.textarea} ${styles.textareaHighlighted} ${large ? styles.textareaLarge : styles.textareaSmall}`}
           />
           {showSuggestions && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30, marginTop: 4 }}>
-              <HashtagSuggestionList
-                suggestions={suggestions}
-                activeIndex={Math.min(suggestActiveIndex, suggestions.length - 1)}
-                onSelect={selectSuggestion}
-                onHover={setSuggestActiveIndex}
-              />
+            <div className={styles.suggestionPopover}>
+              {showHashtagSuggestions ? (
+                <HashtagSuggestionList
+                  suggestions={hashtagSuggestions}
+                  activeIndex={Math.min(suggestActiveIndex, hashtagSuggestions.length - 1)}
+                  onSelect={selectHashtagSuggestion}
+                  onHover={setSuggestActiveIndex}
+                />
+              ) : (
+                <MentionSuggestionList
+                  suggestions={mentionSuggestions}
+                  activeIndex={Math.min(suggestActiveIndex, mentionSuggestions.length - 1)}
+                  onSelect={selectMentionSuggestion}
+                  onHover={setSuggestActiveIndex}
+                />
+              )}
             </div>
           )}
         </div>
@@ -435,7 +464,7 @@ export const PostComposer = ({
               multiple /* ← ▼ 追加: ファイル選択ダイアログで複数選択を許可 */
               accept={ACCEPTED_IMAGE_TYPES.join(',')}
               onChange={handleFileChange}
-              style={{ display: 'none' }}
+              className={styles.hiddenInput}
             />
           )}
           {onCancel && (
@@ -456,14 +485,13 @@ export const PostComposer = ({
               disabled={submitting}
               title={`写真を追加 (最大${MAX_IMAGES}枚)`}
             >
-              <img src={cameraIcon} alt="写真を追加" className={styles.cameraIcon} />
+              <img src={cameraIcon} alt="写真を追加" className={`${styles.cameraIcon} themed-icon`} />
             </button>
           )}
           <button
             onClick={onSubmit}
             disabled={!canSubmit}
-            className={`${styles.submitButton} ${large ? styles.submitButtonLarge : styles.submitButtonSmall}`}
-            style={{ background: canSubmit ? '#FF7430' : '#F89150', cursor: canSubmit ? 'pointer' : 'default' }}
+            className={`${styles.submitButton} ${large ? styles.submitButtonLarge : styles.submitButtonSmall} ${canSubmit ? styles.submitButtonActive : styles.submitButtonDisabled}`}
           >
             {submitting ? submittingLabel : submitLabel}
           </button>

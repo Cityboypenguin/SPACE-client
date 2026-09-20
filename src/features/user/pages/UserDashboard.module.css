@@ -5,69 +5,32 @@
 
 .pageHeader {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .pageTitle {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .flashMessage {
-  color: #16a34a;
+  color: var(--color-success);
   font-weight: 600;
   padding: 0.75rem 1rem;
-  background: #f0fdf4;
+  background: var(--color-success-bg);
   border-bottom: 1px solid #bbf7d0;
 }
 
 .actionButtons {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.35rem;
-}
-
-.actionButton {
-  flex: 1 1 0;
-  min-width: 0;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 2.75rem;
-  padding: 0.4rem 0.2rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  text-decoration: none;
-  color: #1e293b;
-  font-size: 0.72rem;
-  line-height: 1.25;
-  white-space: normal;
-  word-break: break-all;
-  transition: background 0.15s;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.actionButton:hover {
-  background: #f1f5f9;
-}
-
-@media (max-width: 768px) {
-  .actionButton {
-    font-size: 0.55rem;
-    padding: 0.4rem 0.15rem;
-  }
-}
-
-.loadingText {
-  color: #94a3b8;
-  padding: 2rem;
-  text-align: center;
-}
-
-.emptyText {
-  color: #94a3b8;
-  padding: 2rem;
-  text-align: center;
-}

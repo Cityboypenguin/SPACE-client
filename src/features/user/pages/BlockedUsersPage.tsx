@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { UserListItem } from '../components/molecules/UserListItem';
+import { UserListItem } from '../../../components/molecules/UserListItem';
 import { listBlockedUsers, deleteBlocker, type User } from '../api/block';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { useRef } from 'react';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { AppSwal } from '../../../lib/swal';
+import { ScrollSentinel } from '../../../components/atoms/ScrollSentinel';
+import styles from './UserListPage.module.css';
 
 const LIMIT = 20;
 
@@ -38,7 +40,7 @@ export const BlockedUsersPage = () => {
   }, []);
 
   useEffect(() => {
-    loadUsers(0, true);
+    void Promise.resolve().then(() => loadUsers(0, true));
   }, [loadUsers]);
 
   const sentinelRef = useInfiniteScroll(
@@ -71,17 +73,17 @@ export const BlockedUsersPage = () => {
   return (
     <div>
       <UserSidebar />
-      <main style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
+      <main className={styles.main}>
         <button onClick={() => navigate('/mypage')}><ChevronLeft /> マイページに戻る</button>
         <h1>ブロック一覧</h1>
 
         {initialLoading ? (
           <p>読み込み中...</p>
         ) : users.length === 0 ? (
-          <p style={{ color: 'gray' }}>ブロックしているユーザーはいません。</p>
+          <p className={styles.emptyText}>ブロックしているユーザーはいません。</p>
         ) : (
           <>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul className={styles.list}>
               {users.map((user) => (
                 <UserListItem
                   key={user.ID}
@@ -92,8 +94,8 @@ export const BlockedUsersPage = () => {
                 />
               ))}
             </ul>
-            <div ref={sentinelRef} style={{ height: '1px' }} />
-            {loadingMore && <p style={{ textAlign: 'center', color: '#94a3b8' }}>読み込み中...</p>}
+            <ScrollSentinel ref={sentinelRef} />
+            {loadingMore && <p className={styles.loadingMoreText}>読み込み中...</p>}
           </>
         )}
       </main>

@@ -1,0 +1,60 @@
+/* HashtagSuggestionList.module.css と同じ見た目に揃えている。 */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.itemActive {
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+
+.itemActive .name {
+  color: var(--color-primary-hover);
+}
+
+.itemActive .accountID {
+  color: var(--color-text);
+}
+
+.avatarImage {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountID {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}

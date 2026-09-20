@@ -3,11 +3,14 @@ import { graphql } from '../../../generated';
 import { storageUrl } from '../../../lib/storage';
 import { getUserToken } from './auth';
 
+// UserProfile は「他人も見える」ユーザー像。GraphQL の公開型 User に対応する。
+// email は載せない（searchUsers / getProfileByUserID など、誰でも辿れる口から
+// 他人の連絡先が出ないようにするため）。自分のメールアドレスは me / updateUser が
+// 返す UserAccount から取ること。
 export type UserProfile = {
   ID: string;
   accountID: string;
   name: string;
-  email: string;
   role: string;
   status: string;
   avatarUrl: string | null;
@@ -48,7 +51,6 @@ const SearchUsersDocument = graphql(`
         ID
         accountID
         name
-        email
         role
         status
         avatarUrl
@@ -126,7 +128,6 @@ const GetProfileByUserIDDocument = graphql(`
         ID
         accountID
         name
-        email
         role
         status
         avatarUrl
@@ -145,6 +146,28 @@ const UpdateProfileDocument = graphql(`
       avatarUrl
       createdAt
       updatedAt
+    }
+  }
+`);
+
+const UpdateMyProfileDocument = graphql(`
+  mutation UpdateMyProfile($input: UpdateMyProfileInput!) {
+    updateMyProfile(input: $input) {
+      username
+      bio
+      avatarUrl
+      createdAt
+      updatedAt
+      user {
+        ID
+        accountID
+        name
+        role
+        status
+        avatarUrl
+        createdAt
+        updatedAt
+      }
     }
   }
 `);
@@ -181,6 +204,14 @@ export const updateProfile = async (input: {
   bio?: string;
 }) => {
   return await requestDoc(UpdateProfileDocument, { input }, getUserToken());
+};
+
+export const updateMyProfileDetails = async (input: {
+  accountID?: string;
+  name?: string;
+  bio?: string;
+}) => {
+  return await requestDoc(UpdateMyProfileDocument, { input }, getUserToken());
 };
 
 export const getPresignedAvatarUploadUrl = async (contentType: string) => {

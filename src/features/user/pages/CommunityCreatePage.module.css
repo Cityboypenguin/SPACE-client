@@ -18,14 +18,14 @@
   padding: 0;
   display: flex;
   align-items: center;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .title {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .form {
@@ -46,7 +46,7 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: var(--color-surface);
   border: none;
   padding: 0;
   cursor: pointer;
@@ -59,13 +59,13 @@
 }
 
 .iconButton:hover {
-  background: #cbd5e1;
+  background: var(--color-border);
 }
 
 .iconInitial {
   font-size: 3rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   line-height: 1;
   user-select: none;
 }
@@ -88,7 +88,7 @@
   border: none;
   cursor: pointer;
   font-size: 0.82rem;
-  color: #ef4444;
+  color: var(--color-danger);
   text-decoration: underline;
   padding: 0;
 }
@@ -103,18 +103,18 @@
 .label {
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .input {
   width: 100%;
   padding: 0.65rem 0.9rem;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border);
   font-size: 0.95rem;
   box-sizing: border-box;
   outline: none;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .input:focus {
@@ -125,12 +125,12 @@
   width: 100%;
   padding: 0.65rem 0.9rem;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border);
   font-size: 0.95rem;
   resize: vertical;
   box-sizing: border-box;
   outline: none;
-  color: #1e293b;
+  color: var(--color-text);
   font-family: inherit;
 }
 
@@ -139,7 +139,7 @@
 }
 
 .errorText {
-  color: #ef4444;
+  color: var(--color-danger);
   font-size: 0.875rem;
   margin: 0;
 }

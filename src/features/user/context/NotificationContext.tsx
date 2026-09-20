@@ -1,16 +1,17 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { useAuth } from './AuthContext';
-import { useToast } from '../../../context/ToastContext';
+import { useAuth } from './useAuth';
+import { NotificationContext } from './notificationContextValue';
+import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
-import { emitUnreadRoomUpdate } from '../hooks/useUnreadSubscription';
+import { emitRoomChanged, type RoomChangedEvent } from '../hooks/useUnreadSubscription';
+import { isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
+import { getUnreadNotificationCount, issueNotificationStreamTicket } from '../api/notification';
 
 import { SSE_URL, refreshUserAccessToken } from '../../../lib/graphql';
 import { USER_TOKEN_KEY } from '../../../lib/authStorage';
@@ -23,29 +24,10 @@ type SSENotificationPayload = {
   actorID?: string;
   targetType?: string;
   targetID?: string;
+  // message_reply のときだけ載る追加フィールド（遷移先の組み立て用）
+  roomID?: string;
+  roomType?: string;
 };
-
-type NotificationContextValue = {
-  unreadCount: number;
-  lastSseAt: number;
-  pendingTerms: TermsOfService | null;
-  consentChecking: boolean;
-  clearPendingTerms: () => void;
-  resetUnread: () => void;
-  decrementUnread: () => void;
-};
-
-const NotificationContext = createContext<NotificationContextValue>({
-  unreadCount: 0,
-  lastSseAt: 0,
-  pendingTerms: null,
-  consentChecking: false,
-  clearPendingTerms: () => {},
-  resetUnread: () => {},
-  decrementUnread: () => {},
-});
-
-export const useNotification = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const { token } = useAuth();
@@ -55,22 +37,41 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [pendingTerms, setPendingTerms] = useState<TermsOfService | null>(null);
   const [consentChecking, setConsentChecking] = useState(false);
   const addToastRef = useRef(addToast);
-  addToastRef.current = addToast;
 
   useEffect(() => {
-    if (!token) {
-      setUnreadCount(0);
-      setPendingTerms(null);
-      return;
-    }
-    setConsentChecking(true);
-    getMyTermsConsentStatus()
-      .then((status) => {
-        setPendingTerms(!status.isConsented && status.currentTerms ? status.currentTerms : null);
-      })
-      .catch(() => {})
-      .finally(() => setConsentChecking(false));
-  }, [token]);
+    addToastRef.current = addToast;
+  }, [addToast]);
+
+  // ベルの未読数はサーバから配られない（サーバは「変わった」という事実だけを送る）。
+  // 必要になったこちらが myUnreadNotificationCount を取りに行く。room_changed で
+  // ルームの未読数を配るのをやめたのと同じ方針で、数字の出どころを1つに保つ。
+  //
+  // 失敗したら今の数字を据え置く（0 に落とさない）。サーバが 0 を送っていた頃は
+  // 「DB が不調なときほどベルが静か」になっていたので、取れないときは黙って
+  // 古い数字のままにして、次のきっかけで取り直す。
+  const refreshUnreadCount = useCallback(() => {
+    getUnreadNotificationCount()
+      .then(setUnreadCount)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      if (!token) {
+        setUnreadCount(0);
+        setPendingTerms(null);
+        return;
+      }
+      refreshUnreadCount();
+      setConsentChecking(true);
+      getMyTermsConsentStatus()
+        .then((status) => {
+          setPendingTerms(!status.isConsented && status.currentTerms ? status.currentTerms : null);
+        })
+        .catch(() => {})
+        .finally(() => setConsentChecking(false));
+    });
+  }, [token, refreshUnreadCount]);
 
   const clearPendingTerms = useCallback(() => setPendingTerms(null), []);
   const resetUnread = useCallback(() => setUnreadCount(0), []);
@@ -118,44 +119,69 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     // 初回接続は [token] useEffect 側がすでに consent を確認済みなのでスキップする
     let isFirstConnect = true;
 
-    const connect = () => {
+    // 接続は「チケットを1枚もらう → それを付けて EventSource を張る」の2段階。
+    //
+    // 以前はアクセストークンをそのまま ?token= に載せていたが、URL はアクセスログ・
+    // プロキシ・監視基盤に残るため、拾われると有効期限まで使い回せてしまっていた。
+    // チケットは1回使ったら無効・30秒で失効するので、URL に残っても再利用できない。
+    //
+    // チケットは使い捨てなので、**接続のたびに必ず取り直す**（再接続でも同じ）。
+    // 取得は非同期なので、await の前後で stopped を見直してから副作用を起こすこと
+    // （cleanup 後に張られたゾンビ接続を防ぐ）。
+    const connect = async () => {
       if (stopped) return;
       clearReconnectTimer();
       closeES(); // 再接続の直前に必ず古い接続を閉じてゾンビ接続を防ぐ
 
-      // 常に localStorage の最新トークンで張る（リフレッシュ後の新トークンを確実に使う）
+      // 常に localStorage の最新トークンで発行する（リフレッシュ後の新トークンを確実に使う）
       const current = localStorage.getItem(USER_TOKEN_KEY);
       if (!current) return;
 
-      const source = new EventSource(`${SSE_URL}?token=${encodeURIComponent(current)}`);
+      let ticket: string;
+      try {
+        ticket = await issueNotificationStreamTicket();
+      } catch (err) {
+        // トークンが切れている等で発行に失敗した場合。scheduleReconnect は再接続前に
+        // アクセストークンをリフレッシュするので、そのまま任せれば復帰できる。
+        console.warn('[SSE] failed to issue stream ticket, scheduling reconnect', err);
+        scheduleReconnect();
+        return;
+      }
+      if (stopped) return; // 発行を待っている間に cleanup された
+
+      const source = new EventSource(`${SSE_URL}?ticket=${encodeURIComponent(ticket)}`);
       es = source;
 
       source.addEventListener('connected', () => {
         console.log('[SSE] connected');
         retryCount = 0; // 正常接続でバックオフをリセット
         if (isFirstConnect) {
+          // 初回接続は [token] useEffect 側が consent も未読数も取得済み
           isFirstConnect = false;
           return;
         }
+        // 再接続。切れている間に増減したぶんをここで取り直す
+        // （サーバは接続時に未読数を送らない。数えられなかった時に 0 を送る＝嘘をつく
+        //  作りだったのをやめ、取得はクライアントの責任に寄せた）。
+        refreshUnreadCount();
         refreshConsent();
       });
 
-      source.addEventListener('sync', (e: MessageEvent) => {
+      // 通知の状態が変わった、という事実だけが届く（数字は載らない）。
+      // 送られてくるのは主に「自分の別のタブ・別の端末で既読にした」とき。
+      source.addEventListener('notifications_changed', () => {
         retryCount = 0;
-        try {
-          const payload = JSON.parse(e.data as string) as { unreadCount: number };
-          setUnreadCount(payload.unreadCount);
-        } catch {
-          // ignore malformed event
-        }
+        refreshUnreadCount();
       });
 
       source.addEventListener('terms_updated', refreshConsent);
 
-      source.addEventListener('unread_room', (e: MessageEvent) => {
+      // room_changed は「このルームが更新された」という事実だけを運ぶ（未読数は載らない）。
+      // 旧 unread_room は購読しない: サーバはもう送らないし、仮に古いサーバへ繋いでも
+      // unreadCount だけを頼りにした更新は今の一覧の作りと噛み合わない。
+      source.addEventListener('room_changed', (e: MessageEvent) => {
         try {
-          const payload = JSON.parse(e.data as string) as { roomID: string; unreadCount: number };
-          emitUnreadRoomUpdate(payload);
+          emitRoomChanged(JSON.parse(e.data as string) as RoomChangedEvent);
         } catch {
           // ignore malformed event
         }
@@ -178,6 +204,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           } else if (payload.type === 'dm' && payload.targetType === 'room' && payload.targetID) {
             // DM は通知詳細をスキップして個別 DM ルームへ直行（通知一覧のタップ挙動と揃える）
             link = `/dm/${payload.targetID}`;
+          } else if (isMessageJumpNotification(payload.type)) {
+            // 返信・チャットのメンション通知はルームを開いて該当メッセージまでジャンプする
+            link = replyNotificationLink(payload.roomType, payload.roomID, payload.targetID) ?? link;
           }
           console.log('[SSE] calling addToast:', payload.message, link);
           addToastRef.current(payload.message, 'info', 4000, link);
@@ -209,7 +238,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         // 再接続の前に必ずアクセストークンを更新してから張り直す
         await refreshUserAccessToken();
         if (stopped) return;
-        connect();
+        void connect();
       }, backoff);
     };
 
@@ -227,7 +256,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             if (stopped) return;
             await refreshUserAccessToken();
             if (stopped) return;
-            connect();
+            void connect();
           }, 0);
         }
       } else {
@@ -241,7 +270,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
-    connect();
+    void connect();
 
     return () => {
       stopped = true;
@@ -250,7 +279,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       if (hiddenCloseTimer) clearTimeout(hiddenCloseTimer);
       closeES();
     };
-  }, [token]);
+  }, [token, refreshUnreadCount]);
 
   return (
     <NotificationContext.Provider value={{ unreadCount, lastSseAt, pendingTerms, consentChecking, clearPendingTerms, resetUnread, decrementUnread }}>

@@ -1,0 +1,21 @@
+.separator {
+  /* メッセージ一覧の gap はまとまりの中の行間まで詰めてあるので、
+     区切り線の前の間隔はここで足す（後ろは次のメッセージが必ず
+     まとまりの先頭になるため .messageGroupStart が足す）。 */
+  margin-top: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-danger);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-danger);
+}

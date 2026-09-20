@@ -1,5 +1,6 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
+import { type Media as SharedMedia } from '../../../lib/media';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -11,17 +12,8 @@ export type PostUser = {
   avatarUrl?: string | null;
 };
 
-export type PostFavorite = {
-  ID: string;
-  user: {
-    ID: string;
-  };
-};
-
-export type Media = {
-  ID: string;
-  url: string;
-  contentType: string;
+// 管理画面では作成日時も表示するため、共有の Media に足して使う。
+export type Media = SharedMedia & {
   createdAt: string;
 };
 
@@ -33,10 +25,12 @@ export type Post = {
   deletedAt?: string | null;
   replyCount: number;
   user: PostUser;
-  favorites: PostFavorite[];
+  // 件数と「自分がいいねしたか」だけ（理由は user 側の Post と同じ）。
+  favoriteCount: number;
+  isFavoritedByMe: boolean;
   rootPost?: Post | null;
   parent?: Post | null;
-  replies: Post[];
+  replies?: Post[];
   media: Media[];
 };
 
@@ -54,16 +48,10 @@ export const AdminPostFieldsFragment = graphql(`
       accountID
       avatarUrl
     }
-    favorites {
-      ID
-      user {
-        ID
-      }
-    }
+    favoriteCount
+    isFavoritedByMe
     media {
-      ID
-      url
-      contentType
+      ...MediaFields
       createdAt
     }
   }
@@ -76,9 +64,6 @@ const GetAdminPostsDocument = graphql(`
     posts(limit: $limit, offset: $offset) {
       items {
         ...AdminPostFields
-        replies {
-          ID
-        }
       }
       total
     }
@@ -92,20 +77,18 @@ const GetPostByIDIncludeDeletedDocument = graphql(`
       rootPost {
         ...AdminPostFields
       }
-      replies {
+      replies(limit: 50) {
         ...AdminPostFields
-        replies {
-          ...AdminPostFields
-          replies {
-            ...AdminPostFields
-            replies {
-              ...AdminPostFields
-              replies {
-                ID
-              }
-            }
-          }
-        }
+      }
+    }
+  }
+`);
+
+const GetAdminPostRepliesDocument = graphql(`
+  query GetAdminPostReplies($id: ID!, $limit: Int!, $offset: Int!) {
+    getPostByIDIncludeDeleted(id: $id) {
+      replies(limit: $limit, offset: $offset) {
+        ...AdminPostFields
       }
     }
   }
@@ -125,6 +108,11 @@ export const getPosts = async (limit = 20, offset = 0): Promise<PostPage> => {
 export const getPostByID = async (id: string): Promise<Post | null> => {
   const data = await requestDoc(GetPostByIDIncludeDeletedDocument, { id }, getAdminToken());
   return (data.getPostByIDIncludeDeleted as Post | null) ?? null;
+};
+
+export const getPostReplies = async (id: string, limit = 50, offset = 0): Promise<Post[]> => {
+  const data = await requestDoc(GetAdminPostRepliesDocument, { id, limit, offset }, getAdminToken());
+  return (data.getPostByIDIncludeDeleted?.replies as Post[] | undefined) ?? [];
 };
 
 export const adminDeletePost = async (id: string): Promise<void> => {
