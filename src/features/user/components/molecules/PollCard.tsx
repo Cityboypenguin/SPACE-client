@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type Poll } from '../../api/poll';
 import { BarChartIcon } from '../../../../components/atoms/BarChartIcon';
+import { CheckIcon } from '../../../../components/atoms/CheckIcon';
 import { AppSwal } from '../../../../lib/swal';
 import styles from '../PollBox.module.css';
 
@@ -65,11 +66,6 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
   const showResults = poll.deadline == null || isExpired || hasVoted;
   const canVote = roomWritable && !isExpired;
   const isTeacherPoll = poll.user.role === 'teacher';
-
-  const leadingOptionID = useMemo(() => {
-    if (totalVotes === 0) return null;
-    return poll.options.reduce((a, b) => (b.voteCount > a.voteCount ? b : a)).ID;
-  }, [poll.options, totalVotes]);
 
   // 選択肢を押した瞬間に投票を確定する(送信ボタンは無し)。選択済みの選択肢をもう一度
   // 押すと選択解除として再送信する(選択が空になれば投票の取り消しになる)。
@@ -149,23 +145,28 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
                 onClick={() => selectOption(option.ID)}
                 data-clickable={canVote ? 'true' : 'false'}
               >
-                {option.label}
+                <span className={styles.optionLabelRow}>
+                  {isSelected && <span className={styles.optionCheck}><CheckIcon size={12} /></span>}
+                  <span className={styles.optionBarLabel}>{option.label}</span>
+                </span>
               </button>
             );
           }
 
-          const isLeading = leadingOptionID === option.ID && totalVotes > 0;
           return (
             <button
               key={option.ID}
               type="button"
-              className={`${styles.optionBar} ${isLeading ? styles.optionBarLeading : ''} ${isSelected ? styles.optionBarSelected : ''}`}
+              className={`${styles.optionBar} ${isSelected ? styles.optionBarSelected : ''}`}
               disabled={!canVote || voting}
               onClick={() => selectOption(option.ID)}
               data-clickable={canVote ? 'true' : 'false'}
             >
               <div className={styles.optionBarFill} style={{ width: `${percent}%` }} />
-              <span className={styles.optionBarLabel}>{option.label}</span>
+              <span className={styles.optionLabelRow}>
+                {isSelected && <span className={styles.optionCheck}><CheckIcon size={12} /></span>}
+                <span className={styles.optionBarLabel}>{option.label}</span>
+              </span>
               <span className={styles.optionBarPercent}>{percent}%</span>
             </button>
           );

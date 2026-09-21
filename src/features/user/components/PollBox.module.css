@@ -137,11 +137,8 @@
 }
 
 .optionPlainSelected {
-  border-width: 2px;
-  border-color: var(--color-primary);
   background: var(--color-surface);
   font-weight: 700;
-  color: var(--color-primary);
 }
 
 .optionPlain[data-clickable='true'],
@@ -171,28 +168,55 @@
   font: inherit;
 }
 
-.optionBarSelected {
-  border-width: 2px;
-  border-color: var(--color-primary);
-}
-
-.optionBarLeading {
-  background: #fde3cb;
-  border-color: #f7c393;
-}
-
-:root[data-theme='dark'] .optionBarLeading,
-:root:not([data-theme='light']) .optionBarLeading {
-  background: #3a2a17;
-  border-color: #5a3f1f;
-}
-
 .optionBarFill {
   position: absolute;
   inset: 0 auto 0 0;
-  background: #f97316;
-  opacity: 0.35;
+  background: #e2e8f0;
   transition: width 0.2s ease-out;
+}
+
+.optionBarSelected .optionBarFill {
+  background: color-mix(in srgb, #f97316 35%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .optionBarFill {
+    background: #475569;
+  }
+
+  :root:not([data-theme]) .optionBarSelected .optionBarFill {
+    background: color-mix(in srgb, #f97316 70%, transparent);
+  }
+}
+
+:root[data-theme='dark'] .optionBarFill {
+  background: #475569;
+}
+
+:root[data-theme='dark'] .optionBarSelected .optionBarFill {
+  background: color-mix(in srgb, #f97316 70%, transparent);
+}
+
+/* 選択肢ラベルの前に、自分が投票した選択肢だけチェックマークを付ける */
+.optionLabelRow {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.optionCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #f97316;
+  color: #fff;
 }
 
 .optionBarLabel {

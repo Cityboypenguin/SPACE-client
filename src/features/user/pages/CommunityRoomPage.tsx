@@ -209,7 +209,19 @@ export const CommunityRoomPage = () => {
       <UserSidebar />
 
       <div className={styles.roomHeader}>
-        <button onClick={() => navigate('/community')}><ChevronLeft /></button>
+        <button
+          onClick={() => {
+            // 通知などから ?messageID=... 付きで開いた場合は、アプリ内に戻り先があれば元の画面へ戻す。
+            // URL直開きなどで履歴が無い(location.key === 'default')ときは従来どおり一覧へ。
+            if (aroundMessageId && location.key !== 'default') {
+              navigate(-1);
+              return;
+            }
+            navigate('/community');
+          }}
+        >
+          <ChevronLeft />
+        </button>
         <button
           onClick={() => openDetail()}
           className={styles.roomHeaderButton}

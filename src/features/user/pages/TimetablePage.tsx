@@ -471,7 +471,7 @@ export const TimetablePage = () => {
         {isLoading ? (
           <p className={styles.empty}>読み込み中...</p>
         ) : (
-          <TimetableGrid renderSlotContent={renderSlotContent} />
+          <TimetableGrid renderSlotContent={renderSlotContent} mobileDayStorageKey="timetable-mobile-day" />
         )}
       </main>
     </div>
