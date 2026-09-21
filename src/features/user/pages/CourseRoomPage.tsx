@@ -101,6 +101,11 @@ export const CourseRoomPage = () => {
               setSelectedQuestionID(null);
               return;
             }
+            // 通知などから ?messageID=... 付きで開いた場合は、アプリ内に戻り先があれば元の画面へ戻す。
+            if (aroundMessageId && location.key !== 'default') {
+              navigate(-1);
+              return;
+            }
             navigate('/timetable', { state: backYear != null && backSemester ? { year: backYear, semester: backSemester } : undefined });
           }}
         >

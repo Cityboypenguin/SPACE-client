@@ -4,6 +4,9 @@ import styles from './Timetable.module.css';
 
 type Props = {
   renderSlotContent: (day: string, period: number) => ReactNode;
+  // 指定するとスマホ表示で選択中の曜日を sessionStorage に保持し、授業チャットなど
+  // 別ページから戻ってきても同じ曜日を開き直す(未指定なら常に月曜から)。
+  mobileDayStorageKey?: string;
   classNames?: {
     gridWrap?: string;
     mobileTimetable?: string;
@@ -12,8 +15,28 @@ type Props = {
   };
 };
 
-export const TimetableGrid = ({ renderSlotContent, classNames }: Props) => {
-  const [mobileDay, setMobileDay] = useState(TIMETABLE_DAYS[0]);
+const readStoredDay = (key: string | undefined) => {
+  if (!key) return TIMETABLE_DAYS[0];
+  try {
+    const stored = sessionStorage.getItem(key);
+    return stored && TIMETABLE_DAYS.includes(stored) ? stored : TIMETABLE_DAYS[0];
+  } catch {
+    return TIMETABLE_DAYS[0];
+  }
+};
+
+export const TimetableGrid = ({ renderSlotContent, mobileDayStorageKey, classNames }: Props) => {
+  const [mobileDay, setMobileDayState] = useState(() => readStoredDay(mobileDayStorageKey));
+
+  const setMobileDay = (day: string) => {
+    setMobileDayState(day);
+    if (!mobileDayStorageKey) return;
+    try {
+      sessionStorage.setItem(mobileDayStorageKey, day);
+    } catch {
+      // ストレージが使えない環境では保持しないだけ
+    }
+  };
 
   return (
     <>
