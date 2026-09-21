@@ -81,21 +81,26 @@
 }
 
 /*
-  margin-left: calc(1rem + 19px) = 35px
+  padding-left: calc(1rem + 19px) = 35px
+  margin ではなく padding + 背景色にして、インデント部分も投稿と同じ色で埋める
   ガイド線は各 replyWrapper の ::before で描画（border-left は使わない）
   - replyWrapper left edge = 35px from root
   - ガイド線 left: -2px → x=33〜35px、中心 x=34px = 親 threadLine 中心と一致
 */
 .replies {
-  margin-left: calc(1rem + 19px);
+  padding-left: calc(1rem + 19px);
+  background: var(--color-bg-elevated);
 }
 
+/* margin だと外側に背景色が漏れるので padding + 背景色で投稿と地続きにする */
 .loadMoreButton {
   display: block;
-  margin: 0.5rem 1rem 0.75rem;
-  padding: 0.35rem 0;
+  width: 100%;
+  margin: 0;
+  padding: 0.85rem 1rem 1.1rem;
   border: 0;
-  background: transparent;
+  background: var(--color-bg-elevated);
+  text-align: left;
   color: var(--color-primary);
   font: inherit;
   font-size: 0.9rem;
@@ -108,7 +113,9 @@
 }
 
 .loadError {
-  margin: 0.25rem 1rem 0.75rem;
+  margin: 0;
+  padding: 0.25rem 1rem 0.75rem;
+  background: var(--color-bg-elevated);
   color: var(--color-danger);
   font-size: 0.82rem;
 }
