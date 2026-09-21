@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostComposer } from '../components/organisms/PostComposer';
-import { ReplyList } from '../components/organisms/ReplyThread';
+import { ReplyList, type ReplyRefresh } from '../components/organisms/ReplyThread';
 import { PostCard } from '../components/organisms/PostCard';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
@@ -74,6 +74,7 @@ export const PostDetailPage = () => {
   const [isRootUpdating, setIsRootUpdating] = useState(false);
   const [rootUpdateError, setRootUpdateError] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
+  const [replyRefresh, setReplyRefresh] = useState<ReplyRefresh | undefined>(undefined);
 
   const handleBlock = async (blockedUserId: string) => {
     const result = await AppSwal.fire({
@@ -114,6 +115,7 @@ export const PostDetailPage = () => {
     if (!replyingTo) return;
     const mediaInputs = await uploadMediaFiles(files);
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    setReplyRefresh(current => ({ postID: replyingTo.ID, n: (current?.n ?? 0) + 1 }));
     if (id) {
       const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
       updatePostAcrossCaches(id, updater);
@@ -461,6 +463,7 @@ export const PostDetailPage = () => {
               currentUserId={userId}
               onLike={handleLike}
               onReply={setReplyingTo}
+              replyRefresh={replyRefresh}
             />
 
             {replyingTo && (

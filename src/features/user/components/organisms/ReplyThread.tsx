@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../../../../components/molecules/LikeButton';
@@ -18,7 +18,11 @@ type Props = {
   currentUserId: string | null;
   onLike: (postId: string, isLiked: boolean) => Promise<void>;
   onReply?: (post: Post) => void;
+  replyRefresh?: ReplyRefresh;
 };
+
+/** 返信を投稿したとき、どの投稿への返信かを遅延読み込み中の階層へ知らせる */
+export type ReplyRefresh = { postID: string; n: number };
 
 const REPLY_PAGE_SIZE = 50;
 
@@ -39,6 +43,7 @@ export const ReplyList = ({
   currentUserId,
   onLike,
   onReply,
+  replyRefresh,
 }: ReplyListProps) => {
   const visibleInitialReplies = (initialReplies ?? []).filter(reply => reply.user != null && reply.deletedAt == null);
   const [additionalReplies, setAdditionalReplies] = useState<Post[]>([]);
@@ -50,6 +55,29 @@ export const ReplyList = ({
   );
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
+
+  // 返信が投稿されたら、読み込み済みの返信を取り直して即座に表示する。
+  // 親の再取得で initialReplies が渡ってくる階層はそれで更新されるので、
+  // 遅延読み込みしている階層（initialReplies なし）だけ自分で取り直す。
+  // 返信先の階層と、読み込み済みの階層（孫以下の件数を最新にするため）が対象。
+  // 裏での取り直しなので読み込み中表示は出さない。
+  useEffect(() => {
+    if (replyRefresh == null || initialReplies != null) return;
+    if (replyRefresh.postID !== parentID && additionalLoadedCount === 0) return;
+    let cancelled = false;
+    const limit = Math.max(REPLY_PAGE_SIZE, additionalLoadedCount + 1);
+    getPostReplies(parentID, limit, 0)
+      .then(next => {
+        if (cancelled) return;
+        setAdditionalReplies(next.filter(reply => reply.user != null && reply.deletedAt == null));
+        setAdditionalLoadedCount(next.length);
+        setHasMore(next.length === limit);
+        setLoadError(false);
+      })
+      .catch(() => { if (!cancelled) setLoadError(true); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyRefresh]);
 
   const loadMore = async () => {
     if (loading || !hasMore) return;
@@ -82,6 +110,7 @@ export const ReplyList = ({
           currentUserId={currentUserId}
           onLike={onLike}
           onReply={onReply}
+          replyRefresh={replyRefresh}
         />
       ))}
       {hasMore && (
@@ -94,7 +123,7 @@ export const ReplyList = ({
   );
 };
 
-export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }: Props) => {
+export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply, replyRefresh }: Props) => {
   const { onMentionClick } = useMentionNavigation();
   const navigate = useNavigate();
   const replies = (post.replies ?? []).filter(r => r.user != null);
@@ -135,7 +164,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
               onClick={(e) => { e.stopPropagation(); onReply?.(post); }}
             >
               <img src={commentIcon} alt="返信" className={`${styles.commentIcon} themed-icon`} />
-              {countAllReplies(post)}
+              {Math.max(countAllReplies(post), post.replyCount)}
             </button>
             <LikeButton post={post} currentUserId={currentUserId} onLike={onLike} />
           </div>
@@ -151,6 +180,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply }:
         currentUserId={currentUserId}
         onLike={onLike}
         onReply={onReply}
+        replyRefresh={replyRefresh}
       />
 
       {depth === 0 && <div className={styles.separator} />}
