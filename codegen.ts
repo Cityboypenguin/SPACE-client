@@ -1,10 +1,12 @@
 import type { CodegenConfig } from '@graphql-codegen/cli';
 
-// GraphQL 型と操作(query/mutation)の型を、サーバーの schema.graphqls から自動生成する。
+// GraphQL 型と操作(query/mutation)の型を、サーバーのスキーマから自動生成する。
+// スキーマは機能ごとの .graphqls に分かれ（schema.graphqls が根、各ファイルが extend type で
+// フィールドを足す）、1枚に統合されるのは読み込み時なので、ここでもまとめて読む。
 // これにより「手書き型とクエリ選択セットのズレ」（存在しないフィールド参照などの実行時バグ）を
 // 機械的に排除する。生成物は src/generated/ に出力され、独自 request() フェッチャと組み合わせて使う。
 const config: CodegenConfig = {
-  schema: '../SPACE-server/graph/schema.graphqls',
+  schema: '../SPACE-server/graph/*.graphqls',
   documents: ['src/**/*.{ts,tsx}', '!src/generated/**/*'],
   ignoreNoDocuments: true,
   generates: {

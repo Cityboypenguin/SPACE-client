@@ -1,14 +1,35 @@
+/* 未読・未投票を示すバッジ。アプリ全体で赤の正円に揃えるため、桁数で幅が伸びる
+   ピル型にはせず、大きさは固定して文字サイズだけ落とす。 */
 .badge {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #f97316;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-danger);
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.58rem;
   font-weight: 700;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.badge[data-length='2'] {
+  font-size: 0.5rem;
+}
+
+.badge[data-length='3'] {
+  font-size: 0.4rem;
+}
+
+/* 件数なしの丸。件数入りのバッジ (.badge) と並ぶ場所（サイドバー）で同じ大きさに
+   見えるよう、実寸はわずかに小さくする。.badge は中の白い数字が赤の面積を削るので、
+   同じ直径だと赤一色のこちらだけが大きく見える。 */
+.dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--color-danger);
   flex-shrink: 0;
 }
