@@ -500,6 +500,17 @@
   padding: 0.18rem 0.36rem;
 }
 
+/* 授業チャットの未読件数。コマの左上の角の外側に置く。授業名は左の余白（7px）から
+   始まるので、バッジの右端がちょうどその位置で止まる量だけ外へ出し、文字には
+   重ねない。 */
+.unreadBadge {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  z-index: 2;
+  display: flex;
+}
+
 .fullYearBadge {
   position: absolute;
   right: 5px;

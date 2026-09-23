@@ -5,6 +5,7 @@ import { useNotification } from '../../context/useNotification';
 import { useUnreadRoomCounts } from '../../context/useUnreadRoomCounts';
 import { useProfile } from '../../hooks/useProfile';
 import { Avatar } from '../../../../components/atoms/Avatar';
+import { UnreadCountBadge } from '../../../../components/atoms/UnreadCountBadge';
 import { storageUrl } from '../../../../lib/storage';
 import styles from './UserSidebar.module.css';
 
@@ -35,7 +36,9 @@ export const UserSidebar = () => {
   const location = useLocation();
   const { userId } = useAuth();
   const { unreadCount } = useNotification();
-  const { dmUnreadCount, communityUnreadCount } = useUnreadRoomCounts();
+  const { dmUnreadCount, communityUnreadCount, courseUnreadCounts } = useUnreadRoomCounts();
+  // 授業は件数ではなく「未読があるか」だけを赤丸で示す(件数は時間割のコマ側に出す)。
+  const courseUnreadTotal = Object.values(courseUnreadCounts).reduce((sum, n) => sum + n, 0);
   const { profile } = useProfile(userId);
   const [expanded, setExpanded] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -98,7 +101,8 @@ export const UserSidebar = () => {
           const badgeCount =
             label === '通知' ? unreadCount :
             label === 'DM' ? dmUnreadCount :
-            label === 'コミュニティ' ? communityUnreadCount : 0;
+            label === 'コミュニティ' ? communityUnreadCount :
+            label === '授業' ? courseUnreadTotal : 0;
           return (
             <button
               key={path}
@@ -108,8 +112,8 @@ export const UserSidebar = () => {
               <span className={styles.iconWrap}>
                 {renderIcon(icon, label, iconSize)}
                 {badgeCount > 0 && (
-                  <span className={styles.badge}>
-                    {badgeCount > 99 ? '99+' : badgeCount}
+                  <span className={styles.badgeSlot}>
+                    <UnreadCountBadge count={badgeCount} dotOnly={label === '授業'} />
                   </span>
                 )}
               </span>

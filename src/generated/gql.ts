@@ -112,6 +112,7 @@ type Documents = {
     "\n  query CurrentSemester {\n    currentSemester {\n      year\n      semester\n    }\n  }\n": typeof types.CurrentSemesterDocument,
     "\n  query CourseYears {\n    courseYears\n  }\n": typeof types.CourseYearsDocument,
     "\n  mutation SetTimetableEntryColor($id: ID!, $color: TimetableEntryColor!) {\n    setTimetableEntryColor(id: $id, color: $color) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n": typeof types.SetTimetableEntryColorDocument,
+    "\n  query MyCourseRoomUnreadCounts {\n    myCourseRoomUnreadCounts {\n      roomID\n      unreadCount\n    }\n  }\n": typeof types.MyCourseRoomUnreadCountsDocument,
     "\n  mutation SetMyTimetable($year: Int!, $semester: String!, $baselineEntryIDs: [ID!]!, $courseIDs: [ID!]!) {\n    setMyTimetable(year: $year, semester: $semester, baselineEntryIDs: $baselineEntryIDs, courseIDs: $courseIDs) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n": typeof types.SetMyTimetableDocument,
     "\n  query GetFavoriteUsersByUserID($userID: ID!) {\n    GetFavoriteUsersByUserID(userID: $userID) {\n      ID\n      name\n      accountID\n      avatarUrl\n    }\n  }\n": typeof types.GetFavoriteUsersByUserIdDocument,
     "\n  mutation CreateFavoriteUser($favoriteUserID: ID!) {\n    createFavoriteUser(favoriteUserID: $favoriteUserID) {\n      ID\n      userID\n      favoriteUserID\n      createdAt\n    }\n  }\n": typeof types.CreateFavoriteUserDocument,
@@ -294,6 +295,7 @@ const documents: Documents = {
     "\n  query CurrentSemester {\n    currentSemester {\n      year\n      semester\n    }\n  }\n": types.CurrentSemesterDocument,
     "\n  query CourseYears {\n    courseYears\n  }\n": types.CourseYearsDocument,
     "\n  mutation SetTimetableEntryColor($id: ID!, $color: TimetableEntryColor!) {\n    setTimetableEntryColor(id: $id, color: $color) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n": types.SetTimetableEntryColorDocument,
+    "\n  query MyCourseRoomUnreadCounts {\n    myCourseRoomUnreadCounts {\n      roomID\n      unreadCount\n    }\n  }\n": types.MyCourseRoomUnreadCountsDocument,
     "\n  mutation SetMyTimetable($year: Int!, $semester: String!, $baselineEntryIDs: [ID!]!, $courseIDs: [ID!]!) {\n    setMyTimetable(year: $year, semester: $semester, baselineEntryIDs: $baselineEntryIDs, courseIDs: $courseIDs) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n": types.SetMyTimetableDocument,
     "\n  query GetFavoriteUsersByUserID($userID: ID!) {\n    GetFavoriteUsersByUserID(userID: $userID) {\n      ID\n      name\n      accountID\n      avatarUrl\n    }\n  }\n": types.GetFavoriteUsersByUserIdDocument,
     "\n  mutation CreateFavoriteUser($favoriteUserID: ID!) {\n    createFavoriteUser(favoriteUserID: $favoriteUserID) {\n      ID\n      userID\n      favoriteUserID\n      createdAt\n    }\n  }\n": types.CreateFavoriteUserDocument,
@@ -784,6 +786,10 @@ export function graphql(source: "\n  query CourseYears {\n    courseYears\n  }\n
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation SetTimetableEntryColor($id: ID!, $color: TimetableEntryColor!) {\n    setTimetableEntryColor(id: $id, color: $color) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation SetTimetableEntryColor($id: ID!, $color: TimetableEntryColor!) {\n    setTimetableEntryColor(id: $id, color: $color) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query MyCourseRoomUnreadCounts {\n    myCourseRoomUnreadCounts {\n      roomID\n      unreadCount\n    }\n  }\n"): (typeof documents)["\n  query MyCourseRoomUnreadCounts {\n    myCourseRoomUnreadCounts {\n      roomID\n      unreadCount\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

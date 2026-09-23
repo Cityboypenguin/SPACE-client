@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
+import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
+import { useUnreadRoomCounts } from '../context/useUnreadRoomCounts';
 import { TimetableGrid } from '../components/TimetableGrid';
 import { TIMETABLE_DAYS } from '../components/timetableConstants';
 import {
@@ -41,6 +43,9 @@ export const TimetablePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { mutate: mutateCache } = useSWRConfig();
+  // 授業チャットの未読件数。サーバは現在の学期ぶんだけ返すので、過去・未来の学期を
+  // 見ているときは出さない（isEditable が現在の学期表示と同義）。
+  const { courseUnreadCounts } = useUnreadRoomCounts();
 
   const { data: currentSemester } = useSWR('current-semester', () => getCurrentSemester(), semesterCacheOptions);
   const { data: courseYears } = useSWR('course-years', () => getCourseYears(), staticCacheOptions);
@@ -385,12 +390,18 @@ export const TimetablePage = () => {
 
     const entry = entryMap.get(key);
     const viewSwatch = entry ? getTimetableColorSwatch(entry.color) : null;
+    const unreadCount = entry && isEditable ? (courseUnreadCounts[entry.course.roomID] ?? 0) : 0;
     return entry ? (
       <div
         className={`${styles.courseChip} ${styles.courseChipClickable} ${!isEditable ? styles.courseChipReadOnly : ''}`}
         style={{ '--chip-bg': viewSwatch!.bg } as CSSProperties}
         onClick={() => navigate(`/courses/chat/${entry.course.roomID}`, { state: { course: entry.course, year: viewYear, semester: viewSemester } })}
       >
+        {unreadCount > 0 && (
+          <span className={styles.unreadBadge}>
+            <UnreadCountBadge count={unreadCount} />
+          </span>
+        )}
         {entry.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}
         <span className={styles.courseName}>{entry.course.courseName}</span>
         <span className={styles.teacherName}>{entry.course.teacherName}</span>

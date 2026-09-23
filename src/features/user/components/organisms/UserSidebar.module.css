@@ -197,22 +197,13 @@
 }
 
 /* バッジ */
-.badge {
+/* アイコンの右上に少しはみ出す位置。数値なしの丸（授業）と件数入りのバッジ（通知・
+   DM・コミュニティ）で同じ値を使う。 */
+.badgeSlot {
   position: absolute;
-  top: -5px;
-  right: -6px;
-  background: var(--color-danger);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  border-radius: 50%;
-  min-width: 20px;
-  height: 20px;
+  top: 0;
+  right: -3px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  padding: 0 3px;
 }
 
 /* ラベル */
