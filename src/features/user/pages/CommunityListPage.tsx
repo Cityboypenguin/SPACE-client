@@ -9,6 +9,7 @@ import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
+import { sortUnreadFirst } from '../lib/unreadSort';
 import styles from './CommunityListPage.module.css';
 
 const LIMIT = 20;
@@ -97,6 +98,7 @@ export const CommunityListPage = () => {
     if (!query) return true;
     return c.name.toLowerCase().includes(query.toLowerCase());
   });
+  const visibleCommunities = sortUnreadFirst(filteredCommunities);
 
   return (
     <div>
@@ -122,7 +124,7 @@ export const CommunityListPage = () => {
 
         {initialLoading ? (
           <p className={styles.empty}>読み込み中...</p>
-        ) : filteredCommunities.length === 0 ? (
+        ) : visibleCommunities.length === 0 ? (
           <div className={styles.empty}>
             <p>{query ? '該当するコミュニティが見つかりませんでした' : '参加しているコミュニティがありません'}</p>
             {!query && (
@@ -133,7 +135,7 @@ export const CommunityListPage = () => {
           </div>
         ) : (
           <ul className={styles.list}>
-            {filteredCommunities.map((c) => {
+            {visibleCommunities.map((c) => {
               const hasUnread = (c.unreadCount ?? 0) > 0;
               return (
                 <li
