@@ -18,9 +18,13 @@ type Props = {
   currentUserId: string | null;
   onLike: (postId: string, isLiked: boolean) => Promise<void>;
   large?: boolean;
+  // 件数を押したときの動作。渡したときだけ件数がアイコンと別のボタンになる
+  //（自分の投稿で「いいねした人」を開くため）。渡さなければ従来どおり、
+  // アイコンも件数も押すといいねが切り替わる1つのボタンのままにする。
+  onCountClick?: () => void;
 };
 
-export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
+export const LikeButton = ({ post, currentUserId, onLike, large, onCountClick }: Props) => {
   const isLiked = post.isFavoritedByMe;
   const [liking, setLiking] = useState(false);
   const { theme } = useTheme();
@@ -36,23 +40,53 @@ export const LikeButton = ({ post, currentUserId, onLike, large }: Props) => {
     }
   };
 
-  return (
-    <button
-      onClick={handle}
-      disabled={liking || !currentUserId}
-      className={styles.button}
+  const icon = (
+    <img
+      src={isLiked ? likeIconOn : likeIconOff}
+      alt="いいね"
+      className={`${styles.icon} ${large ? styles.iconLarge : styles.iconDefault} ${isLiked ? '' : theme === 'dark' ? styles.iconInactiveDark : styles.iconInactive}`}
+    />
+  );
+
+  const count = (
+    <span
+      className={`${isLiked ? styles.countLiked : styles.countDefault} ${large ? styles.countLarge : styles.countSmall}`}
     >
-      <img
-        src={isLiked ? likeIconOn : likeIconOff}
-        alt="いいね"
-        className={`${styles.icon} ${large ? styles.iconLarge : styles.iconDefault} ${isLiked ? '' : theme === 'dark' ? styles.iconInactiveDark : styles.iconInactive}`}
-      />
-      <span
-        className={`${isLiked ? styles.countLiked : styles.countDefault} ${large ? styles.countLarge : styles.countSmall}`}
+      {large ? <strong>{post.favoriteCount}</strong> : post.favoriteCount}
+      {large && <span className={styles.suffix}>いいね</span>}
+    </span>
+  );
+
+  if (!onCountClick) {
+    return (
+      <button
+        onClick={handle}
+        disabled={liking || !currentUserId}
+        className={styles.button}
       >
-        {large ? <strong>{post.favoriteCount}</strong> : post.favoriteCount}
-        {large && <span className={styles.suffix}>いいね</span>}
-      </span>
-    </button>
+        {icon}
+        {count}
+      </button>
+    );
+  }
+
+  // ボタンは入れ子にできないので、2つ並べて元と同じ見た目の1かたまりにする。
+  return (
+    <span className={styles.group}>
+      <button
+        onClick={handle}
+        disabled={liking || !currentUserId}
+        className={styles.button}
+        aria-label="いいね"
+      >
+        {icon}
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); onCountClick(); }}
+        className={`${styles.button} ${styles.countButton}`}
+      >
+        {count}
+      </button>
+    </span>
   );
 };

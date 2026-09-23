@@ -11,6 +11,7 @@ import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
+import { PostFavoritesModal } from '../components/organisms/PostFavoritesModal';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/molecules/DropdownMenu';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -78,6 +79,8 @@ export const PostDetailPage = () => {
   const [rootUpdateError, setRootUpdateError] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
   const [replyRefresh, setReplyRefresh] = useState<ReplyRefresh | undefined>(undefined);
+  // 「いいねした人」一覧。自分の投稿のときだけ開ける（サーバーも本人にしか返さない）。
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
 
   useEffect(() => {
     if (isLoading || !id) return;
@@ -457,7 +460,17 @@ export const PostDetailPage = () => {
                     <img src={commentIcon} alt="返信" className={`${styles.commentIcon} themed-icon`} />
                     <strong>{post.replyCount}</strong> 件の返信
                   </span>
-                  <LikeButton post={post} currentUserId={userId} onLike={handleLike} large />
+                  <LikeButton
+                    post={post}
+                    currentUserId={userId}
+                    onLike={handleLike}
+                    large
+                    onCountClick={
+                      post.user.ID === userId && post.favoriteCount > 0
+                        ? () => setFavoritesOpen(true)
+                        : undefined
+                    }
+                  />
                 </div>
               </div>
             )}
@@ -515,6 +528,14 @@ export const PostDetailPage = () => {
                 targetType="POST"
                 targetID={reportTarget.ID}
                 postContent={reportTarget.content}
+              />
+            )}
+
+            {favoritesOpen && post && (
+              <PostFavoritesModal
+                postId={post.ID}
+                favoriteCount={post.favoriteCount}
+                onClose={() => setFavoritesOpen(false)}
               />
             )}
           </>

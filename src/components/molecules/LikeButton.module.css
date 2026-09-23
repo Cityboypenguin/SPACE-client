@@ -66,3 +66,21 @@
   color: var(--color-text-muted);
   margin-left: 4px;
 }
+
+/* 件数を押して「いいねした人」を開くとき、アイコンと件数を別のボタンに分ける。
+   元の1つのボタン（.button）と同じ間隔で並べて、見た目は変えない。 */
+.group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.countButton {
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+}
+
+.countButton:hover {
+  text-decoration-color: currentColor;
+}
