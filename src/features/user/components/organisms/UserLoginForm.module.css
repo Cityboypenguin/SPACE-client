@@ -12,13 +12,17 @@
   align-items: center;
   justify-content: center;
   padding-bottom: 4rem;
-  padding-left: 1rem;
+  /* ロゴを左端から離すぶん。ロゴ側に margin を置くと width: 100% と足し合わさった
+     ぶんが flex の縮小に回り、狭い画面ほどロゴが小さくなる（320px 幅で 300px→245px）。
+     さらに下の @media で .left の padding-left を 0 に戻してもロゴの margin は
+     残るので、モバイルでロゴだけ右へずれる。コンテナ側の padding で取れば
+     中央揃えを崩さない。値は画面幅に追従させ、広い画面では頭打ちにする。 */
+  padding-left: clamp(1rem, 6vw, 5rem);
 }
 
 .logo {
   max-width: 1000px;
   width: 100%;
-  margin-left: 75px;
 }
 
 .right {

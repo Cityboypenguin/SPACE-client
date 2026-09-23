@@ -10,13 +10,14 @@ import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableO
 import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
 import { ProfilePillButton } from '../components/molecules/ProfilePillButton';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/molecules/DropdownMenu';
+import { Tabs } from '../../../components/molecules/Tabs';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../../../context/useToast';
 import { createFavoriteUser, deleteFavoriteUser, getFavoriteUsersByUserID } from '../api/favorite_user';
 import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block';
 import { getOrCreateDMRoom } from '../api/message';
-import { getPostsByUserID, createPost, createFavorite, deleteFavorite, type Post } from '../api/post';
+import { getPostsByUserID, getFavoritePostsByUserID, createPost, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -67,7 +68,20 @@ export const UserPublicProfilePage = () => {
   const [reportingPostContent, setReportingPostContent] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
 
-  // ── posts ─────────────────────────────────────────────────────────────────
+  // ── tabs ──────────────────────────────────────────────────────────────────
+  // 「投稿」と「いいね」はサーバー側のクエリが別（getPostsByUserID /
+  // getFavoritePostsByUserID）なので、マイページ（UserDashboard）と同じく
+  // タブごとに状態を分けて持つ。投稿タブの一覧をクライアントで絞り込む形にはできない。
+  // Post は favoriteCount / isFavoritedByMe しか持たず「その投稿を誰がいいねしたか」を
+  // 返さないため、この人がいいねした投稿はサーバーに聞くしかない
+  //（api/post.ts の Post のコメント参照）。
+  const [activeTab, setActiveTab] = useState<'posts' | 'liked'>('posts');
+  // アンマウント時のキャッシュ保存はクリーンアップ関数の中で走るので、
+  // そこから今のタブを見るために ref でも持っておく。
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+
+  // ── posts（投稿タブ） ─────────────────────────────────────────────────────
   const [initialCache] = useState(() => id ? getUserPostListCache(id) : null);
 
   const [posts, setPosts] = useState<Post[]>(initialCache?.posts ?? []);
@@ -81,6 +95,20 @@ export const UserPublicProfilePage = () => {
   const scrollYRef = useRef(initialCache?.scrollY ?? 0);
   useEffect(() => { postsRef.current = posts; }, [posts]);
   useEffect(() => { totalRef.current = postsTotal; }, [postsTotal]);
+
+  // ── liked（いいねタブ） ───────────────────────────────────────────────────
+  // 投稿タブと違ってキャッシュには載せない。タブが開かれるまで読まず、開かれたら
+  // その場で取る（UserDashboard のいいね一覧と同じ）。
+  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
+  const [likedTotal, setLikedTotal] = useState(0);
+  const [likedLoading, setLikedLoading] = useState(false);
+  const [likedLoadingMore, setLikedLoadingMore] = useState(false);
+  const likedLoadingRef = useRef(false);
+  const likedLoadedRef = useRef(false);
+  const likedPostsRef = useRef(likedPosts);
+  const likedTotalRef = useRef(likedTotal);
+  useEffect(() => { likedPostsRef.current = likedPosts; }, [likedPosts]);
+  useEffect(() => { likedTotalRef.current = likedTotal; }, [likedTotal]);
 
   useEffect(() => {
     const onScroll = () => { scrollYRef.current = window.scrollY; };
@@ -100,7 +128,10 @@ export const UserPublicProfilePage = () => {
           posts: postsRef.current,
           total: totalRef.current,
           offset: postsRef.current.length,
-          scrollY: scrollYRef.current,
+          // いいねタブを見ている間の位置は投稿タブのキャッシュに入れない。
+          // 戻ってきたときに開くのは常に投稿タブなので、そこで復元して意味が
+          // あるのは投稿タブを見ていたときの位置だけ。
+          scrollY: activeTabRef.current === 'posts' ? scrollYRef.current : 0,
         });
       }
     };
@@ -126,10 +157,35 @@ export const UserPublicProfilePage = () => {
     }
   }, []);
 
+  // 別の人のプロフィールへ移っても、このページは同じインスタンスのまま id だけが
+  // 変わる（ルートに key を付けていないため）。useState の初期化関数はマウント時に
+  // しか走らないので、id が変わったぶんはここで読み替える。
+  const loadedUserIdRef = useRef(id);
   useEffect(() => {
-    if (initialCache) return;
-    if (id) void Promise.resolve().then(() => loadPosts(id, 0, true));
-  }, [id, loadPosts, initialCache]);
+    if (loadedUserIdRef.current === id) return;
+    loadedUserIdRef.current = id;
+
+    // 投稿タブ: 新しい人のキャッシュがあれば載せ替え、無ければ空にして読み直させる。
+    const cached = id ? getUserPostListCache(id) : null;
+    setPosts(cached?.posts ?? []);
+    setPostsTotal(cached?.total ?? 0);
+    setPostsLoading(!cached);
+    scrollYRef.current = cached?.scrollY ?? 0;
+    window.scrollTo(0, cached?.scrollY ?? 0);
+
+    // いいねタブ: 開かれるまで読まないので、空に戻すだけでよい。
+    likedLoadedRef.current = false;
+    setLikedPosts([]);
+    setLikedTotal(0);
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    // マウント時の initialCache と同じ判定だが、id が変わったときも効くように
+    // その場で引き直す。
+    if (getUserPostListCache(id)) return;
+    void Promise.resolve().then(() => loadPosts(id, 0, true));
+  }, [id, loadPosts]);
 
   const postsSentinelRef = useInfiniteScroll(
     useCallback(() => {
@@ -139,6 +195,44 @@ export const UserPublicProfilePage = () => {
       });
     }, [postsTotal, id, loadPosts]),
     postsLoadingMore,
+    activeTab === 'posts',
+  );
+
+  const loadLikedPosts = useCallback(async (userID: string, currentOffset: number, isInitial: boolean) => {
+    if (likedLoadingRef.current) return;
+    likedLoadingRef.current = true;
+    if (isInitial) setLikedLoading(true);
+    else setLikedLoadingMore(true);
+    try {
+      const page = await getFavoritePostsByUserID(userID, 20, currentOffset);
+      setLikedPosts((prev) => {
+        if (isInitial) return page.items;
+        const existingIds = new Set(prev.map(p => p.ID));
+        return [...prev, ...page.items.filter(p => !existingIds.has(p.ID))];
+      });
+      setLikedTotal(page.total);
+      likedLoadedRef.current = true;
+    } catch { /* noop */ } finally {
+      likedLoadingRef.current = false;
+      if (isInitial) setLikedLoading(false);
+      else setLikedLoadingMore(false);
+    }
+  }, []);
+
+  // いいねタブは開かれたときに初めて読む
+  useEffect(() => {
+    if (activeTab !== 'liked' || likedLoadedRef.current || !id) return;
+    void loadLikedPosts(id, 0, true);
+  }, [activeTab, id, loadLikedPosts]);
+
+  const likedSentinelRef = useInfiniteScroll(
+    useCallback(() => {
+      if (!likedLoadingRef.current && likedPostsRef.current.length < likedTotalRef.current && id) {
+        loadLikedPosts(id, likedPostsRef.current.length, false);
+      }
+    }, [id, loadLikedPosts]),
+    likedLoadingMore,
+    activeTab === 'liked',
   );
 
   // 相手の新着投稿をポーリングして先頭に反映する
@@ -165,10 +259,13 @@ export const UserPublicProfilePage = () => {
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (isLiked) await deleteFavorite(postId);
     else await createFavorite(postId);
-    setPosts((prev) => prev.map((p) => {
+    // どちらのタブから押しても、もう片方に同じ投稿が並んでいることがある。
+    const updater = (prev: Post[]) => prev.map((p) => {
       if (p.ID !== postId) return p;
       return withLikeToggled(p, isLiked);
-    }));
+    });
+    setPosts(updater);
+    setLikedPosts(updater);
   };
 
   const handlePostClick = (postId: string) => {
@@ -177,7 +274,7 @@ export const UserPublicProfilePage = () => {
         posts: postsRef.current,
         total: totalRef.current,
         offset: postsRef.current.length,
-        scrollY: scrollYRef.current,
+        scrollY: activeTab === 'posts' ? scrollYRef.current : 0,
       });
     }
     navigate(`/posts/${postId}`);
@@ -235,12 +332,20 @@ export const UserPublicProfilePage = () => {
         await deleteBlocker(id);
         mutateBlocked((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
         void loadPosts(id, 0, true);
+        // いいねタブも取り直す。開いていなければ次に開いたときに読まれる。
+        likedLoadedRef.current = false;
+        setLikedPosts([]);
+        setLikedTotal(0);
+        if (activeTab === 'liked') void loadLikedPosts(id, 0, true);
         addToast('ブロックを解除しました', 'success');
       } else {
         await createBlocker(id);
         addBlockedUserOptimistic();
         setPosts([]);
         setPostsTotal(0);
+        setLikedPosts([]);
+        setLikedTotal(0);
+        likedLoadedRef.current = false;
         if (isFavorited) {
           mutateFavorites((prev) => prev?.filter((u) => u.ID !== id), { revalidate: false });
         }
@@ -275,9 +380,11 @@ export const UserPublicProfilePage = () => {
     try {
       await createBlocker(blockedUserId);
       setPosts((prev) => prev.filter((p) => p.user.ID !== blockedUserId));
+      setLikedPosts((prev) => prev.filter((p) => p.user.ID !== blockedUserId));
       if (blockedUserId === id) {
         addBlockedUserOptimistic();
         setPostsTotal(0);
+        setLikedTotal(0);
         if (isFavorited) mutateFavorites((prev) => prev?.filter((u) => u.ID !== blockedUserId), { revalidate: false });
       }
       addToast('ユーザーをブロックしました', 'success');
@@ -295,10 +402,17 @@ export const UserPublicProfilePage = () => {
     if (!replyingTo) return;
     const mediaInputs = await uploadMediaFiles(files);
     await createPost(content.trim(), replyingTo.ID, mediaInputs);
-    setPosts((prev) => prev.map((p) => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p));
+    const bumpReplyCount = (prev: Post[]) =>
+      prev.map((p) => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p);
+    setPosts(bumpReplyCount);
+    setLikedPosts(bumpReplyCount);
   };
 
   // ── profile action buttons (passed to ProfileCard) ───────────────────────
+  const displayedPosts = activeTab === 'posts' ? posts : likedPosts;
+  const displayedLoading = activeTab === 'posts' ? postsLoading : likedLoading;
+  const displayedLoadingMore = activeTab === 'posts' ? postsLoadingMore : likedLoadingMore;
+
   const profileActions = profile && !isMe ? (
     <div className={styles.profileActions}>
       {!isBlocked && (
@@ -363,18 +477,27 @@ export const UserPublicProfilePage = () => {
           <>
             <ProfileCard profile={profile} actions={profileActions} />
             <hr className={styles.divider} />
+            <Tabs
+              tabs={[
+                { key: 'posts', label: '投稿' },
+                { key: 'liked', label: 'いいね一覧' },
+              ]}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+            />
             <ScrollablePostsList
-              posts={posts}
-              loading={postsLoading}
-              loadingMore={postsLoadingMore}
+              posts={displayedPosts}
+              loading={displayedLoading}
+              loadingMore={displayedLoadingMore}
               error={false}
               currentUserId={currentUserId}
-              sentinelRef={postsSentinelRef}
+              sentinelRef={activeTab === 'posts' ? postsSentinelRef : likedSentinelRef}
               onLike={handleLike}
               onPostClick={handlePostClick}
               onReply={setReplyingTo}
               onBlock={handlePostBlock}
-              onReport={(postId) => handlePostReport(postId, posts.find(p => p.ID === postId)?.content ?? '')}
+              onReport={(postId) => handlePostReport(postId, displayedPosts.find(p => p.ID === postId)?.content ?? '')}
+              emptyMessage={activeTab === 'liked' ? 'いいねした投稿がまだありません' : '投稿がまだありません'}
             />
           </>
         )}
