@@ -1093,3 +1093,8 @@
   margin-bottom: 6px;
   z-index: 20;
 }
+
+.clipIcon {
+  width: 2rem;
+  height: 2rem;
+}

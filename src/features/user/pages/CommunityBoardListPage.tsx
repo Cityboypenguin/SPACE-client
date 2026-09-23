@@ -157,7 +157,7 @@ export const CommunityBoardListPage = () => {
             value={query}
             onChange={setQuery}
             onSubmit={handleSearch}
-            placeholder="コミュニティ名で検索"
+            placeholder="Search"
             disabled={searching}
           />
         </div>
