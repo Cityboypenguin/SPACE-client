@@ -86,8 +86,14 @@ const GetPostByIDDocument = graphql(`
       rootPost {
         ...PostFields
       }
-      replies(limit: 50) {
+      replies(limit: 10) {
         ...PostFields
+        replies(limit: 3) {
+          ...PostFields
+          replies(limit: 2) {
+            ...PostFields
+          }
+        }
       }
     }
   }
