@@ -153,6 +153,7 @@ type Documents = {
     "\n  query GetPostReplies($id: ID!, $limit: Int!, $offset: Int!) {\n    getPostByID(id: $id) {\n      replies(limit: $limit, offset: $offset) {\n        ...PostFields\n      }\n    }\n  }\n": typeof types.GetPostRepliesDocument,
     "\n  query GetPostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {\n    getPostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {\n      items {\n        ...PostFields\n      }\n      total\n    }\n  }\n": typeof types.GetPostsByUserIdDocument,
     "\n  query GetFavoritePostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {\n    getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {\n      items {\n        ...PostFields\n      }\n      total\n    }\n  }\n": typeof types.GetFavoritePostsByUserIdDocument,
+    "\n  query GetPostFavorites($id: ID!, $limit: Int, $offset: Int) {\n    getPostByID(id: $id) {\n      favorites(limit: $limit, offset: $offset) {\n        ID\n        createdAt\n        user {\n          ID\n          name\n          accountID\n          avatarUrl\n        }\n      }\n    }\n  }\n": typeof types.GetPostFavoritesDocument,
     "\n  mutation CreatePost($input: CreatePostInput!) {\n    createPost(input: $input) {\n      ...PostFields\n    }\n  }\n": typeof types.CreatePostDocument,
     "\n  mutation UpdatePost($input: UpdatePostInput!) {\n    updatePost(input: $input) {\n      ...PostFields\n    }\n  }\n": typeof types.UpdatePostDocument,
     "\n  mutation DeletePost($id: ID!) {\n    deletePost(id: $id)\n  }\n": typeof types.DeletePostDocument,
@@ -336,6 +337,7 @@ const documents: Documents = {
     "\n  query GetPostReplies($id: ID!, $limit: Int!, $offset: Int!) {\n    getPostByID(id: $id) {\n      replies(limit: $limit, offset: $offset) {\n        ...PostFields\n      }\n    }\n  }\n": types.GetPostRepliesDocument,
     "\n  query GetPostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {\n    getPostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {\n      items {\n        ...PostFields\n      }\n      total\n    }\n  }\n": types.GetPostsByUserIdDocument,
     "\n  query GetFavoritePostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {\n    getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {\n      items {\n        ...PostFields\n      }\n      total\n    }\n  }\n": types.GetFavoritePostsByUserIdDocument,
+    "\n  query GetPostFavorites($id: ID!, $limit: Int, $offset: Int) {\n    getPostByID(id: $id) {\n      favorites(limit: $limit, offset: $offset) {\n        ID\n        createdAt\n        user {\n          ID\n          name\n          accountID\n          avatarUrl\n        }\n      }\n    }\n  }\n": types.GetPostFavoritesDocument,
     "\n  mutation CreatePost($input: CreatePostInput!) {\n    createPost(input: $input) {\n      ...PostFields\n    }\n  }\n": types.CreatePostDocument,
     "\n  mutation UpdatePost($input: UpdatePostInput!) {\n    updatePost(input: $input) {\n      ...PostFields\n    }\n  }\n": types.UpdatePostDocument,
     "\n  mutation DeletePost($id: ID!) {\n    deletePost(id: $id)\n  }\n": types.DeletePostDocument,
@@ -950,6 +952,10 @@ export function graphql(source: "\n  query GetPostsByUserID($user_id: ID!, $limi
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GetFavoritePostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {\n    getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {\n      items {\n        ...PostFields\n      }\n      total\n    }\n  }\n"): (typeof documents)["\n  query GetFavoritePostsByUserID($user_id: ID!, $limit: Int, $offset: Int) {\n    getFavoritePostsByUserID(user_id: $user_id, limit: $limit, offset: $offset) {\n      items {\n        ...PostFields\n      }\n      total\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetPostFavorites($id: ID!, $limit: Int, $offset: Int) {\n    getPostByID(id: $id) {\n      favorites(limit: $limit, offset: $offset) {\n        ID\n        createdAt\n        user {\n          ID\n          name\n          accountID\n          avatarUrl\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query GetPostFavorites($id: ID!, $limit: Int, $offset: Int) {\n    getPostByID(id: $id) {\n      favorites(limit: $limit, offset: $offset) {\n        ID\n        createdAt\n        user {\n          ID\n          name\n          accountID\n          avatarUrl\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

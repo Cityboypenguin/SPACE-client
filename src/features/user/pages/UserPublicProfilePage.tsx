@@ -126,10 +126,30 @@ export const UserPublicProfilePage = () => {
     }
   }, []);
 
+  // 別の人のプロフィールへ移っても、このページは同じインスタンスのまま id だけが
+  // 変わる（ルートに key を付けていないため）。useState の初期化関数はマウント時に
+  // しか走らないので、id が変わったぶんはここで読み替える。
+  const loadedUserIdRef = useRef(id);
   useEffect(() => {
-    if (initialCache) return;
-    if (id) void Promise.resolve().then(() => loadPosts(id, 0, true));
-  }, [id, loadPosts, initialCache]);
+    if (loadedUserIdRef.current === id) return;
+    loadedUserIdRef.current = id;
+
+    // 新しい人のキャッシュがあれば載せ替え、無ければ空にして読み直させる。
+    const cached = id ? getUserPostListCache(id) : null;
+    setPosts(cached?.posts ?? []);
+    setPostsTotal(cached?.total ?? 0);
+    setPostsLoading(!cached);
+    scrollYRef.current = cached?.scrollY ?? 0;
+    window.scrollTo(0, cached?.scrollY ?? 0);
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    // マウント時の initialCache と同じ判定だが、id が変わったときも効くように
+    // その場で引き直す。
+    if (getUserPostListCache(id)) return;
+    void Promise.resolve().then(() => loadPosts(id, 0, true));
+  }, [id, loadPosts]);
 
   const postsSentinelRef = useInfiniteScroll(
     useCallback(() => {

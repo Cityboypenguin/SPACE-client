@@ -125,6 +125,27 @@ const GetFavoritePostsByUserIDDocument = graphql(`
   }
 `);
 
+// 「この投稿を誰がいいねしたか」。サーバー側は投稿した本人（と管理者）にしか
+// 返さないので、自分の投稿だと分かっているところからだけ呼ぶこと
+// （SPACE-server の graph/post.graphqls の Post.favorites のコメント参照）。
+// 投稿一覧のクエリに混ぜてはいけない。他人の投稿のところで丸ごと失敗する。
+const GetPostFavoritesDocument = graphql(`
+  query GetPostFavorites($id: ID!, $limit: Int, $offset: Int) {
+    getPostByID(id: $id) {
+      favorites(limit: $limit, offset: $offset) {
+        ID
+        createdAt
+        user {
+          ID
+          name
+          accountID
+          avatarUrl
+        }
+      }
+    }
+  }
+`);
+
 const CreatePostDocument = graphql(`
   mutation CreatePost($input: CreatePostInput!) {
     createPost(input: $input) {
@@ -236,6 +257,17 @@ export const getPostsByUserID = async (userId: string, limit = 20, offset = 0): 
 export const getFavoritePostsByUserID = async (userId: string, limit = 20, offset = 0): Promise<{ items: Post[]; total: number }> => {
   const data = await requestDoc(GetFavoritePostsByUserIDDocument, { user_id: userId, limit, offset }, getUserToken());
   return data.getFavoritePostsByUserID as { items: Post[]; total: number };
+};
+
+export type PostFavorite = {
+  ID: string;
+  createdAt: string;
+  user: PostUser;
+};
+
+export const getPostFavorites = async (postId: string, limit = 50, offset = 0): Promise<PostFavorite[]> => {
+  const data = await requestDoc(GetPostFavoritesDocument, { id: postId, limit, offset }, getUserToken());
+  return (data.getPostByID?.favorites ?? []) as PostFavorite[];
 };
 
 export const deleteFavorite = async (postId: string): Promise<void> => {
