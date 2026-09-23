@@ -136,7 +136,7 @@ export const AdminAnalyticsPage = () => {
 
         {/* 時系列グラフ */}
         <div className={styles.analyticsSection}>
-          <TimeSeriesChart />
+          <TimeSeriesChart currentActiveUsers={data.currentActiveUsers} />
         </div>
 
         {/* 基本集計 */}

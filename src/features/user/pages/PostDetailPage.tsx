@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, useNavigationType } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { PostComposer } from '../components/organisms/PostComposer';
@@ -42,10 +42,13 @@ import { renderTextWithLinks } from '../../../lib/renderTextWithLinks';
 import { useMentionNavigation } from '../hooks/useMentionNavigation';
 import { withLikeToggled } from '../../../lib/postUtils';
 
+const detailScrollCache = new Map<string, number>();
+
 export const PostDetailPage = () => {
   const { currentUserID, onMentionClick } = useMentionNavigation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
   const { userId } = useAuth();
   const { profile } = useProfile(userId);
   const { addToast } = useToast();
@@ -75,6 +78,34 @@ export const PostDetailPage = () => {
   const [rootUpdateError, setRootUpdateError] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
   const [replyRefresh, setReplyRefresh] = useState<ReplyRefresh | undefined>(undefined);
+
+  useEffect(() => {
+    if (isLoading || !id) return;
+    const timer = requestAnimationFrame(() => {
+      // 「戻る(POP)」かつ「詳細画面のキャッシュがある」場合のみ復元
+      if (navigationType === 'POP' && detailScrollCache.has(id)) {
+        const savedY = detailScrollCache.get(id) ?? 0;
+        window.scrollTo(0, savedY);
+      } else {
+        // 「一覧からの遷移(PUSH)」や「新規詳細への遷移」は必ず最上部(0, 0)
+        window.scrollTo(0, 0);
+        // 一覧から来た場合などに備えて過去のキャッシュをクリア
+        detailScrollCache.delete(id);
+      }
+    });
+    return () => cancelAnimationFrame(timer);
+  }, [id, isLoading, navigationType]);
+
+  useEffect(() => {
+    if (!id) return;
+    const onScroll = () => {
+      if (window.scrollY > 0) {
+        detailScrollCache.set(id, window.scrollY);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [id]);
 
   const handleBlock = async (blockedUserId: string) => {
     const result = await AppSwal.fire({
