@@ -294,6 +294,10 @@ export const PostDetailPage = () => {
     }
   };
 
+  const handleHashtagClick = (tag: string) => {
+    navigate(`/home?q=${encodeURIComponent(`#${tag}`)}`);
+  };
+
   return (
     <div>
       <UserSidebar />
@@ -442,6 +446,7 @@ export const PostDetailPage = () => {
                         mentions: post.mentions,
                         currentUserID,
                         onMentionClick,
+                        onHashtagClick: handleHashtagClick,
                       })}
                     </p>
                   )

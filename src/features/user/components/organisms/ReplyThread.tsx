@@ -128,6 +128,9 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply, r
   const navigate = useNavigate();
   const replies = (post.replies ?? []).filter(r => r.user != null);
   const hasReplyBranch = replies.length > 0 || (post.replies == null && post.replyCount > 0);
+  const handleHashtagClick = (tag: string) => {
+    navigate(`/home?q=${encodeURIComponent(`#${tag}`)}`);
+  };
 
   return (
     <div className={styles.replyWrapper}>
@@ -151,6 +154,7 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply, r
               mentions: post.mentions,
               currentUserID: currentUserId,
               onMentionClick,
+              onHashtagClick: handleHashtagClick
             })}
           </p>
           {post.media && post.media.length > 0 && (
