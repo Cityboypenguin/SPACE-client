@@ -159,7 +159,7 @@ export const ForgotPasswordPage = () => {
         {step === 'email' && (
           <form onSubmit={handleEmailSubmit}>
             <div className={styles.card}>
-              <label className={styles.fieldLabel}>専修大学メールアドレス</label>
+              <label className={styles.fieldLabel}>メールアドレス</label>
               <input
                 type="email"
                 className={styles.input}

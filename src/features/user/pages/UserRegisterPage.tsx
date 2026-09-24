@@ -440,7 +440,7 @@ export const UserRegisterPage = () => {
         {/* ── Step 2: メアド入力 ── */}
         {step === 2 && (
           <div>
-            <label className={styles.fieldLabel}>専修大学メールアドレス</label>
+            <label className={styles.fieldLabel}>メールアドレス</label>
             <input
               type="email"
               value={email}
