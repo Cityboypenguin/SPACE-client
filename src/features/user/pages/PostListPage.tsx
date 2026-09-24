@@ -647,7 +647,7 @@ export const PostListPage = () => {
           <div className={styles.searchBarArea}>
             <IconSearchBar
               value={searchQuery}
-              placeholder="search"
+              placeholder="Search"
               onChange={(value) => { setSearchQuery(value); setSuggestActiveIndex(0); setSuggestDismissed(false); }}
               onFocus={() => { setSearchFocused(true); setSuggestDismissed(false); }}
               onBlur={() => setSearchFocused(false)}

@@ -335,7 +335,7 @@ export const UserSearchPage = () => {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="search"
+              placeholder="Search"
               value={query}
               onChange={e => setQuery(e.target.value)}
             />

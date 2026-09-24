@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
+import clipIcon from '../../../../assets/パーツ_クリップ.svg';
 import { useTheme } from '../../../../context/useTheme';
 import { MAX_MESSAGE_LENGTH, countMessageLength } from '../../constants/chat';
 import { type Message } from '../../api/message';
@@ -280,7 +281,7 @@ export const ChatInput = ({
                 className={`${styles.fileChipInner} ${styles.fileChip}`}
               >
                 <span className={styles.fileChipName}>
-                  📎 {file.name}
+                  <img src={clipIcon} alt="添付" className={styles.clipIcon} /> {file.name}
                 </span>
                 <button
                   type="button"
@@ -302,7 +303,7 @@ export const ChatInput = ({
           title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
           className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
         >
-          📎
+          <img src={clipIcon} alt="添付" className={styles.clipIcon} />
         </button>
         <input
           ref={fileInputRef}
