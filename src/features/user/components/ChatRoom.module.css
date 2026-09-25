@@ -1098,3 +1098,7 @@
   width: 2rem;
   height: 2rem;
 }
+
+.clipIconDark {
+  filter: invert(1);
+}
