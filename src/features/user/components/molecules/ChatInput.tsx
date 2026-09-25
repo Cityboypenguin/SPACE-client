@@ -281,7 +281,11 @@ export const ChatInput = ({
                 className={`${styles.fileChipInner} ${styles.fileChip}`}
               >
                 <span className={styles.fileChipName}>
-                  <img src={clipIcon} alt="添付" className={styles.clipIcon} /> {file.name}
+                  <img
+                    src={clipIcon}
+                    alt="添付"
+                    className={`${styles.clipIcon} ${theme === 'dark' ? styles.clipIconDark : ''}`}
+                  /> {file.name}
                 </span>
                 <button
                   type="button"
@@ -303,7 +307,11 @@ export const ChatInput = ({
           title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
           className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
         >
-          <img src={clipIcon} alt="添付" className={styles.clipIcon} />
+          <img
+            src={clipIcon}
+            alt="添付"
+            className={`${styles.clipIcon} ${theme === 'dark' ? styles.clipIconDark : ''}`}
+          />
         </button>
         <input
           ref={fileInputRef}
