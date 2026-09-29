@@ -303,6 +303,7 @@
 .select,
 .input {
   padding: 0.4rem 0.6rem;
+  width: 18.75rem;
 }
 
 .selectSmall {
