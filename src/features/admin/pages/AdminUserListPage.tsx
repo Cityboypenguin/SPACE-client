@@ -82,53 +82,61 @@ export const AdminUserListPage = () => {
       <AdminHeader />
       <main className={styles.page}>
         <h1>ユーザー一覧</h1>
-        <form onSubmit={handleSearch} className={styles.searchForm}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="名前で検索"
-            className={styles.input}
-          />
-          <button type="submit" className={styles.primaryButton}>検索</button>
-          {query && (
-            <button type="button" onClick={handleClear} className={styles.paginationButton}>
-              クリア
-            </button>
-          )}
-        </form>
-        {error && <p className={styles.errorText}>{error}</p>}
-        <div className={styles.listMetaRow}>
-          <p className={styles.countText}>全 {total} 件</p>
-          <AdminPageSizeSelect value={pageSize} onChange={setPageSize} muted />
+        <div className={styles.toolbar}>
+          <form onSubmit={handleSearch} className={styles.searchForm}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ID・名前・メールアドレスで検索"
+              className={styles.input}
+              style={{ width: '280px' }}
+            />
+            <button type="submit" className={styles.primaryButton}>検索</button>
+            {query && (
+              <button type="button" onClick={handleClear} className={styles.paginationButton}>
+                クリア
+              </button>
+            )}
+          </form>
+
+          <div className={styles.listMetaRow}>
+            <p className={styles.countText}>全 {total} 件</p>
+            <AdminPageSizeSelect value={pageSize} onChange={setPageSize} muted />
+          </div>
         </div>
-        <table className={styles.compactTable}>
-          <thead>
-            <tr>
-              <th>ユーザーID</th>
-              <th>名前</th>
-              <th>メールアドレス</th>
-              <th>ロール</th>
-              <th>ステータス</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr
-                key={user.ID}
-                onClick={() => navigate(`/admin/users/${user.ID}`)}
-                className={styles.clickableRow}
-              >
-                <td>{user.accountID}</td>
-                <td>{user.name}</td>
-                <td>{user.email}</td>
-                <td>{user.role}</td>
-                <td>{user.status}</td>
+
+        {error && <p className={styles.errorText}>{error}</p>}
+
+        <div className={styles.tablePanel}>
+          <table className={styles.compactTable}>
+            <thead>
+              <tr>
+                <th>ユーザーID</th>
+                <th>名前</th>
+                <th>メールアドレス</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {users.length === 0 && !error && <p>該当するユーザーが見つかりませんでした</p>}
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr
+                  key={user.ID}
+                  onClick={() => navigate(`/admin/users/${user.ID}`)}
+                  className={styles.clickableRow}
+                >
+                  <td className={styles.mono}>{user.accountID || user.ID}</td>
+                  <td className={styles.strongText}>{user.name}</td>
+                  <td>{user.email}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {users.length === 0 && !error && (
+          <p className={styles.emptyState}>該当するユーザーが見つかりませんでした</p>
+        )}
+
         {totalPages > 1 && (
           <AdminPagination
             page={page}

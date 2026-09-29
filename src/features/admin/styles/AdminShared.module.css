@@ -759,6 +759,16 @@
   font-size: 0.9rem;
 }
 
+.compactTable th {
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+
 .fixedTable {
   min-width: 68.75rem;
   table-layout: fixed;
