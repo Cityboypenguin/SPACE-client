@@ -34,11 +34,16 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # Container Apps の URL が決まったら、リポジトリの Variables に
-          # VITE_API_URL を追加する。
-          #   例: https://xxx.japaneast.azurecontainerapps.io/query
-          # 未設定のうちは同一オリジンの /query を向くため、API 呼び出しは失敗する
-          # （画面の表示自体は確認できる）。
+          # API は Azure VM の nginx 越し。リポジトリの Variables に VITE_API_URL を
+          # 入れる。
+          #   例: https://api.senshu-universe.com/query
+          #
+          # ここは必ず https にすること。Static Web Apps は https でしか配信されず、
+          # https のページから http の API は呼べない（mixed content）。つまり VM の
+          # 443 が開いて証明書が入るまで、この経路では API 呼び出しが全て失敗する。
+          #
+          # 未設定のうちは同一オリジンの /query を向く。Static Web Apps には API が
+          # 居ないので、これも失敗する（画面の表示自体は確認できる）。
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           # VITE_MINIO_PUBLIC_ENDPOINT は意図的に設定しない。
           # src/lib/storage.ts は、この値が空なら受け取った URL をそのまま使う。
