@@ -30,9 +30,25 @@ export const AdminUserListPage = () => {
       .catch(() => setError('ユーザー一覧の取得に失敗しました'));
   }, [pageSize]);
 
+  const loadSearchPage = useCallback((p: number) => {
+    setError('');
+    searchUsers(query)
+      .then((data) => {
+        const allItems = data.adminSearchUsers.items;
+        setTotal(allItems.length);
+        setUsers(allItems.slice(p * pageSize, (p + 1) * pageSize));
+        setPage(p);
+      })
+      .catch(() => setError('検索に失敗しました'));
+  }, [query, pageSize]);
+
   useEffect(() => {
-    if (!isSearching) void Promise.resolve().then(() => loadPage(0));
-  }, [isSearching, loadPage]);
+    if (!isSearching) {
+      void Promise.resolve().then(() => loadPage(0));
+    } else {
+      loadSearchPage(0);
+    }
+  }, [isSearching, loadPage, loadSearchPage]);
 
   const handleSearch = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -44,8 +60,10 @@ export const AdminUserListPage = () => {
     }
     try {
       const data = await searchUsers(query);
-      setUsers(data.adminSearchUsers.items);
-      setTotal(data.adminSearchUsers.total);
+      const allItems = data.adminSearchUsers.items;
+      setTotal(allItems.length);
+      setUsers(allItems.slice(0, pageSize));
+      setPage(0);
       setIsSearching(true);
     } catch {
       setError('検索に失敗しました');
@@ -111,12 +129,12 @@ export const AdminUserListPage = () => {
           </tbody>
         </table>
         {users.length === 0 && !error && <p>該当するユーザーが見つかりませんでした</p>}
-        {!isSearching && totalPages > 1 && (
+        {totalPages > 1 && (
           <AdminPagination
             page={page}
             totalPages={totalPages}
-            onPrev={() => loadPage(page - 1)}
-            onNext={() => loadPage(page + 1)}
+            onPrev={() => (isSearching ? loadSearchPage(page - 1) : loadPage(page - 1))}
+            onNext={() => (isSearching ? loadSearchPage(page + 1) : loadPage(page + 1))}
           />
         )}
       </main>
