@@ -25,6 +25,7 @@ type Props = {
 export type ReplyRefresh = { postID: string; n: number };
 
 const REPLY_PAGE_SIZE = 50;
+const INITIAL_REPLY_LIMITS = [10, 3, 2] as const;
 
 type ReplyListProps = Omit<Props, 'post' | 'depth'> & {
   parentID: string;
@@ -50,8 +51,11 @@ export const ReplyList = ({
   const [additionalLoadedCount, setAdditionalLoadedCount] = useState(0);
   const initialIDs = new Set(visibleInitialReplies.map(reply => reply.ID));
   const replies = [...visibleInitialReplies, ...additionalReplies.filter(reply => !initialIDs.has(reply.ID))];
+  const initialReplyLimit = INITIAL_REPLY_LIMITS[depth];
   const [hasMore, setHasMore] = useState(
-    initialReplies == null ? knownReplyCount > 0 : initialReplies.length >= REPLY_PAGE_SIZE,
+    initialReplies == null
+      ? knownReplyCount > 0
+      : initialReplyLimit != null && initialReplies.length >= initialReplyLimit,
   );
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);

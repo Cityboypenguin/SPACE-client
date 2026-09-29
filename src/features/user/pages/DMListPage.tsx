@@ -13,6 +13,7 @@ import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { StatusText } from '../../../components/atoms/StatusText';
+import { sortUnreadFirst } from '../lib/unreadSort';
 import styles from './DMListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -133,6 +134,7 @@ export const DMListPage = () => {
       partner.accountID.toLowerCase().includes(q)
     );
   });
+  const visibleRooms = sortUnreadFirst(filteredRooms);
 
   return (
     <div>
@@ -152,13 +154,13 @@ export const DMListPage = () => {
 
         {dmInitialLoading ? (
           <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>読み込み中...</StatusText>
-        ) : filteredRooms.length === 0 ? (
+        ) : visibleRooms.length === 0 ? (
           <StatusText style={{ padding: '2rem 0', fontSize: '0.9rem' }}>
             {query ? '該当するトークが見つかりませんでした' : 'DMがまだありません'}
           </StatusText>
         ) : (
           <ul className={styles.dmList}>
-            {filteredRooms.map((room) => {
+            {visibleRooms.map((room) => {
               const partner = room.user.find((u) => u.ID !== currentUserID) ?? room.user[0];
               if (!partner) return null;
               const hasUnread = (room.unreadCount ?? 0) > 0;
