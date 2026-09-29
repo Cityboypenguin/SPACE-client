@@ -351,6 +351,18 @@ const PresignedMediaUploadUrlDocument = graphql(`
   }
 `);
 
+// DM の添付は投稿の添付とは別の置き場に入る（匿名読み取りを許していないコンテナー）。
+// 口が分かれているのはそのため。こちらを使わずに上げると、DM の添付が
+// URL を知る誰にでも見える場所へ入る。
+const PresignedMessageMediaUploadUrlDocument = graphql(`
+  query PresignedMessageMediaUploadUrl($contentType: String!) {
+    presignedMessageMediaUploadUrl(contentType: $contentType) {
+      uploadUrl
+      objectKey
+    }
+  }
+`);
+
 // コミュニティチャットの "@表示名" メンションでサジェストに出せる相手。
 // サーバー側が送信時の検証とまったく同じ条件（メンバー・凍結・ブロック・自分自身）で
 // prefix に前方一致する候補だけを上限付きで返す。
@@ -461,6 +473,12 @@ export const getPresignedMediaUploadUrl = async (contentType: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');
   return await requestDoc(PresignedMediaUploadUrlDocument, { contentType }, token);
+};
+
+export const getPresignedMessageMediaUploadUrl = async (contentType: string) => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await requestDoc(PresignedMessageMediaUploadUrlDocument, { contentType }, token);
 };
 
 export const uploadFileToStorage = async (uploadUrl: string, file: File): Promise<void> => {
