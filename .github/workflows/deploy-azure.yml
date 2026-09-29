@@ -1,0 +1,58 @@
+# Azure Static Web Apps へフロントエンドを配信する。
+#
+# 既存の deploy.yml（S3 + CloudFront）はそのまま残してある。現行サイトは
+# そちらで動き続けるので、Azure 側が整うまで両方へ配信される。Azure へ
+# 切り替え終わったら deploy.yml を削除すること。
+name: Deploy to Azure Static Web Apps
+
+on:
+  push:
+    branches:
+      - main
+  # API がまだ無い段階でも配信経路を確かめられるように、手動実行を残す。
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Vite の環境変数はビルド時にファイルへ焼き込まれる。Azure 側の設定画面で
+      # 後から変えることはできないので、ここで渡す。
+      - name: Build
+        run: npm run build
+        env:
+          # Container Apps の URL が決まったら、リポジトリの Variables に
+          # VITE_API_URL を追加する。
+          #   例: https://xxx.japaneast.azurecontainerapps.io/query
+          # 未設定のうちは同一オリジンの /query を向くため、API 呼び出しは失敗する
+          # （画面の表示自体は確認できる）。
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          # VITE_MINIO_PUBLIC_ENDPOINT は意図的に設定しない。
+          # src/lib/storage.ts は、この値が空なら受け取った URL をそのまま使う。
+          # Azure Blob は完全な URL を返すので、素通しさせるのが正しい。
+          # 設定すると、その接頭辞を削って相対パスにしてしまい、
+          # 画像を代理配信する仕組みが無い Static Web Apps では壊れる。
+
+      - name: Deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          # ビルドは上で済ませているので、アクション側のビルドは行わない。
+          # app_location にはビルド済みの出力を渡す。
+          skip_app_build: true
+          app_location: dist
+          output_location: ""
