@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react';
 // サーバは事実だけを配り、未読数は必要になった画面が自分ぶんだけ取得する。
 //
 // 投稿者は配信対象から外れているので、受け取った時点で必ず「自分以外の更新」。
-// actorID は載らない（授業内チャットは匿名で、投稿者を特定できる情報を配れないため）。
+// そのため actorID は載らない。
 export type RoomChangedEvent = {
   roomID: string;
   // 新着メッセージのID。既読による更新（hasNewMessage: false）では載らない。

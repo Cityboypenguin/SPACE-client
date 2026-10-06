@@ -1608,6 +1608,11 @@
   color: #16a34a;
 }
 
+.userStatusBadge[data-status='deactivated'] {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
 .definitionList {
   line-height: 2;
 }

@@ -46,7 +46,9 @@ export const DMPage = () => {
   } = useRoomMessages(roomId);
 
   const partner = room?.user.find((u) => u.ID !== currentUserID);
+  // 相手が退会していても入力欄を閉じる（isMessagingDisabled はその場合も true）。
   const isBlocked = room?.isMessagingDisabled ?? false;
+  const isPartnerWithdrawn = room?.isPartnerWithdrawn ?? false;
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -132,7 +134,7 @@ export const DMPage = () => {
     }
   }, [error, navigate]);
 
-  const partnerName = partner?.name ?? 'DM';
+  const partnerName = partner?.name ?? (isPartnerWithdrawn ? '削除されたアカウント' : 'DM');
   const partnerLastReadAtMs = partnerLastReadAt ? new Date(partnerLastReadAt).getTime() : null;
 
   const lastReadMessageId = (() => {
@@ -243,7 +245,11 @@ export const DMPage = () => {
         <NewMessagesBadge count={newMessageCount} isAtBottom={isAtBottom} onClick={scrollToLatest} />
       </div>
 
-      {isBlocked && (
+      {isPartnerWithdrawn ? (
+        <div className={pageStyles.blockedBanner}>
+          相手が退会したため、メッセージを送信できません。
+        </div>
+      ) : isBlocked && (
         <div className={pageStyles.blockedBanner}>
           ブロック設定により、現在メッセージを送受信できません。
         </div>

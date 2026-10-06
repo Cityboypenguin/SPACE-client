@@ -16,7 +16,6 @@ export const isSameMessageGroup = (
   b: Message | null | undefined,
 ): boolean => {
   if (!a || !b) return false;
-  // 授業チャットの匿名投稿者もルームごとに固定の user.ID を持つので、これで判定できる
   if (a.user.ID !== b.user.ID) return false;
   return minuteKey(a.createdAt) === minuteKey(b.createdAt);
 };
