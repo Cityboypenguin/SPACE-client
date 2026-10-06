@@ -95,7 +95,9 @@ export const PostListPage = () => {
   const [searchFocused, setSearchFocused] = useState(false);
   const [suggestDismissed, setSuggestDismissed] = useState(false);
   const [suggestActiveIndex, setSuggestActiveIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'recommended' | 'favorites' | 'newest'>('recommended');
+  const [activeTab, setActiveTab] = useState<'recommended' | 'favorites' | 'newest'>(
+    initialCache?.activeTab ?? 'recommended'
+  );
 
   // 検索ボックスが "#..." のとき、入力中のタグ本体（"#"の後〜最初の空白まで）をサジェスト対象にする。
   const searchHashtagQuery = (() => {
@@ -116,7 +118,9 @@ export const PostListPage = () => {
   const totalRef = useRef(total);
   const scrollYRef = useRef(initialCache?.scrollY ?? 0);
   const isNavigatingRef = useRef(false);
+  const activeTabRef = useRef(activeTab);
 
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
   useEffect(() => { postsRef.current = posts; }, [posts]);
   useEffect(() => { totalRef.current = total; }, [total]);
   useEffect(() => {
@@ -336,6 +340,7 @@ export const PostListPage = () => {
         scrollY: scrollYRef.current,
         searchQuery: submittedQuery,
         searchResults,
+        activeTab: activeTabRef.current,
       });
     };
   }, [posts, total, submittedQuery, searchResults]);
@@ -377,6 +382,7 @@ export const PostListPage = () => {
       scrollY: scrollYRef.current,
       searchQuery: submittedQuery,
       searchResults,
+      activeTab: activeTabRef.current,
     });
     navigate(`/posts/${postId}`);
   };
