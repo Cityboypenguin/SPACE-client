@@ -353,7 +353,7 @@ const GeneralView = ({
       await logout();
       navigate('/login');
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'アカウントの削除に失敗しました');
+      setDeleteError(toUserMessage(err, 'アカウントの削除に失敗しました'));
       setDeleting(false);
     }
   };
@@ -399,7 +399,10 @@ const GeneralView = ({
               アカウントを削除しますか？
             </p>
             <p className={styles.modalBody}>
-              この操作は取り消せません。投稿・メッセージなどすべてのデータが削除されます。
+              15日以内にもう一度ログインすると、削除を取り消せます。
+              15日を過ぎると、プロフィール・タイムラインの投稿・添付ファイルなどが完全に削除されます。
+              チャット・質問・回答・投票は「削除されたアカウント」の投稿として残ります。
+              あなたが唯一のオーナーのコミュニティは、ほかのメンバーにオーナーを引き継ぎます。
             </p>
             {deleteError && <p className={styles.errorMsg} style={{ marginBottom: '1rem' }}>{deleteError}</p>}
             <div className={styles.modalActions}>

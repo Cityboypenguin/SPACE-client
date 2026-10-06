@@ -11,6 +11,7 @@ const LoginUserDocument = graphql(`
     loginUser(input: $input) {
       token
       refreshToken
+      accountRestored
       user {
         ID
         accountID

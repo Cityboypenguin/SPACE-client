@@ -10,6 +10,14 @@ import styles from '../styles/AdminShared.module.css';
 
 const STATUS_FROZEN = 'frozen';
 
+// 利用者の状態の表示名。deactivated は退会手続き中（15日の猶予の間）で、本人が
+// ログインすれば取り消せる。完全に削除した人は個人情報が無いのでこの画面には来ない。
+const STATUS_LABELS: Record<string, string> = {
+  active: 'アクティブ',
+  frozen: '凍結中',
+  deactivated: '退会手続き中',
+};
+
 export const AdminUserDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -119,9 +127,9 @@ export const AdminUserDetailPage = () => {
           <dd>
             <span
               className={styles.userStatusBadge}
-              data-status={isFrozen ? 'frozen' : 'active'}
+              data-status={user.status}
             >
-              {isFrozen ? '凍結中' : 'アクティブ'}
+              {STATUS_LABELS[user.status] ?? user.status}
             </span>
           </dd>
           <dt>登録日時</dt>

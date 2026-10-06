@@ -22,7 +22,6 @@ const SERVER_ERROR_MAP: Array<[string, string]> = [
   ['forbidden: only community owners or administrators can kick members', 'コミュニティのオーナーまたは管理者のみメンバーを削除できます。'],
   ['cannot kick yourself', '自分自身をキックすることはできません。退出するには「退出」ボタンをご利用ください。'],
   ['cannot kick the last owner', '最後のオーナーはキックできません。先に別のメンバーをオーナーに昇格させてください。'],
-  ['cannot delete user', '他のメンバーがいるコミュニティのオーナーのため削除できません。先にオーナーを引き継いでください。'],
 
   // --- 重複登録エラー ---
   ['account_id is already taken', 'このユーザーIDはすでに使用されています。別のIDをお試しください。'],

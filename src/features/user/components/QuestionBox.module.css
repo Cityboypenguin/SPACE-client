@@ -51,20 +51,25 @@
   background: var(--color-surface);
 }
 
+/* 投稿者・未回答バッジ・時刻の1行。名前が長いときは名前の側を省略する */
 .cardTopLine {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
   min-height: 22px;
 }
 
 .cardTime {
   margin-left: auto;
+  flex-shrink: 0;
   font-size: 0.72rem;
   color: var(--color-text);
 }
 
 .unansweredBadge {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   border-radius: 12px;
   background: #ffc34d;
@@ -173,6 +178,14 @@
   padding: 0.5rem;
   text-align: center;
   font-size: 0.8rem;
+}
+
+/* 自分の質問では右上にメニューが重なるので、名前がその下に潜らないよう右を空ける */
+.detailAuthor {
+  display: flex;
+  min-width: 0;
+  margin-bottom: 0.45rem;
+  padding-right: 2rem;
 }
 
 .detailQuestionBlock {
@@ -377,6 +390,14 @@
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
   padding: 1.35rem 1.25rem 0.55rem;
+}
+
+/* 回答の右上にもメニューが重なるので、同じく右を空ける */
+.answerAuthor {
+  display: flex;
+  min-width: 0;
+  margin-bottom: 0.4rem;
+  padding-right: 2rem;
 }
 
 .answerItemBest {

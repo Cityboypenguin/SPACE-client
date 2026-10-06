@@ -9,7 +9,6 @@ import { useChatActions } from '../../hooks/useChatActions';
 import { useChatScroll } from '../../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../../hooks/useScrollToMessage';
-import { isAnonymousUser } from '../../lib/anonymous';
 import { findFirstUnreadIndex, isSameMessageGroup } from '../../lib/messageGrouping';
 import styles from '../ChatRoom.module.css';
 
@@ -56,7 +55,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
 
   // ルームを開いた時点の既読位置。開いている間に既読が進んでも区切り線は動かさない(DM・コミュニティと同じ)。
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
-  // 授業チャットは匿名表示のため、自分の投稿かどうかは user.ID ではなく isMine で判定する。
+  // 自分の投稿かどうかはサーバが付ける isMine で判定する。
   const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.isMine);
 
   const loadOlderWithScrollRestore = async () => {
@@ -120,7 +119,6 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
                   editable={roomWritable}
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
-                  isAnonymousAuthor={isAnonymousUser(msg.user)}
                   onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
                   onSaveEdit={() => handleSaveEdit(msg.ID)}
                   onCancelEdit={() => setEditingId(null)}

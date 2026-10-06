@@ -4,9 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message, type Media, type MessageUser, type ReplyTarget } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
-import { Avatar } from '../../../../components/atoms/Avatar';
 import humanIcon from '../../../../assets/パーツ_人間.svg';
-import { isAnonymousUser } from '../../lib/anonymous';
 import { storageUrl } from '../../../../lib/storage';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
@@ -107,9 +105,9 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
 // 引用カードに出す返信先のアイコン。カード全体が <button> なので、<div> を含む
 // Avatar / <a> を張る UserAvatar ではなく画像1枚で組む（ボタンの中に置ける要素で
 // 収める・引用のタップがプロフィール遷移に化けないようにする、の両方が理由）。
-// 授業チャットの匿名投稿者は avatarUrl を持たないため、既定の人型アイコンが出る。
+// アイコン未設定の投稿者には既定の人型アイコンが出る。
 const ReplyQuoteAvatar = ({ user }: { user: MessageUser }) => {
-  const url = isAnonymousUser(user) ? null : storageUrl(user.avatarUrl);
+  const url = storageUrl(user.avatarUrl);
   return (
     <span className={styles.replyQuoteAvatar}>
       <img
@@ -187,7 +185,6 @@ type Props = {
   onEditContentChange: (val: string) => void;
   onDelete: () => void;
   isReadByPartner?: boolean;
-  isAnonymousAuthor?: boolean;
   // 引用返信。書き込み不可のルームでは onReply を渡さず返信ボタンを出さない。
   onReply?: () => void;
   onJumpToMessage?: (messageId: string) => void;
@@ -202,7 +199,7 @@ type Props = {
 export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
-  onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor, editable = true,
+  onEditContentChange, onDelete, isReadByPartner, editable = true,
   onReply, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
 }: Props) => {
   const navigate = useNavigate();
@@ -391,8 +388,8 @@ export const ChatMessageBubble = ({
       {!isMine && isGroupStart && (
         <span
           className={styles.senderName}
-          onClick={isAnonymousAuthor ? undefined : () => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
-          style={{ cursor: isAnonymousAuthor ? 'default' : 'pointer' }}
+          onClick={() => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
+          style={{ cursor: 'pointer' }}
         >
           {msg.user.name}
         </span>
@@ -491,11 +488,7 @@ export const ChatMessageBubble = ({
     <div className={`${styles.theirRow} ${styles.messageHighlightTarget} ${groupStartClass}`} data-message-id={msg.ID}>
       {/* 続きのメッセージではアイコンを出さないが、吹き出しの左端は揃えたいので場所だけ空ける */}
       {isGroupStart ? (
-        isAnonymousAuthor ? (
-          <Avatar name={msg.user.name} size={32} />
-        ) : (
-          <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
-        )
+        <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
       ) : (
         <span className={styles.avatarSpacer} aria-hidden="true" />
       )}

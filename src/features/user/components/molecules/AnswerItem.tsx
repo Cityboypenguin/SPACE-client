@@ -9,6 +9,7 @@ import { ClampedText } from '../../../../components/atoms/ClampedText';
 import { type Answer } from '../../api/question';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
+import { AuthorLabel } from './AuthorLabel';
 import styles from '../QuestionBox.module.css';
 
 type Props = {
@@ -151,6 +152,10 @@ export const AnswerItem = ({
           )}
         </DropdownMenu>
       )}
+
+      <div className={styles.answerAuthor}>
+        <AuthorLabel user={answer.user} />
+      </div>
 
       {editing ? (
         <form onSubmit={handleSaveEdit} className={styles.formRow}>

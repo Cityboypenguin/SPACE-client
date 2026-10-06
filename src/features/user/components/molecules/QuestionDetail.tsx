@@ -9,6 +9,7 @@ import { ImageAttachButton, ImageAttachPreviews } from './ImageAttachControl';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { ScrollSentinel } from '../../../../components/atoms/ScrollSentinel';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
+import { AuthorLabel } from './AuthorLabel';
 import styles from '../QuestionBox.module.css';
 
 type Props = {
@@ -193,6 +194,10 @@ export const QuestionDetail = ({
               </DropdownMenu>
             </div>
           )}
+
+          <div className={styles.detailAuthor}>
+            <AuthorLabel user={question.user} />
+          </div>
 
           {editingQuestion ? (
             <form onSubmit={handleQuestionUpdate} className={styles.editQuestionForm}>
