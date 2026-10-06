@@ -8,6 +8,7 @@ type PostListCacheData = {
   cachedAt: number;
   searchQuery?: string;
   searchResults?: Post[];
+  activeTab?: 'recommended' | 'favorites' | 'newest';
 };
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
