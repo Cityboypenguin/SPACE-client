@@ -742,3 +742,24 @@
     z-index: 40;
   }
 }
+
+  /* 📱 画面横向き（landscape）時：週間グリッドを表示し、高さ不足による潰れを防ぐ */
+  @media (max-width: 960px) and (orientation: landscape) {
+    .main {
+      height: auto;
+      min-height: 100dvh;
+      overflow-y: auto;
+      --timetable-slot-height: 4.2rem; /* 横画面時にコマが潰れないよう高さを固定 */
+    }
+
+    .gridWrap {
+      display: block;
+      overflow-x: auto; /* 画面幅に入り切らない場合の横スクロールを許可 */
+      max-height: none;
+    }
+
+    .mobileTimetable {
+      display: none;
+    }
+  }
+
