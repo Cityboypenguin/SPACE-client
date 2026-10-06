@@ -304,7 +304,7 @@ export const ChatInput = ({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
-          title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
+          title={isBlocked ? 'このルームには送信できないため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
           className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
         >
           <img

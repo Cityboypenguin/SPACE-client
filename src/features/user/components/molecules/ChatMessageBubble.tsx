@@ -24,6 +24,9 @@ const TAP_MAX_DURATION_MS = 400;
 // マウスではなく指で操作する端末か。長押しやテキスト選択の扱いを分けるのに使う。
 const isCoarsePointer = () => window.matchMedia('(pointer: coarse)').matches;
 
+// 添付を上げた人が退会して削除され、添付だけが無くなったメッセージに出す文言。
+const FILES_REMOVED_TEXT = 'ファイルは削除されました';
+
 const getFileIcon = (contentType: string): string => {
   if (contentType.includes('word')) return '📝';
   if (contentType.includes('excel') || contentType.includes('spreadsheet')) return '📊';
@@ -150,7 +153,7 @@ const ReplyQuote = ({
       ? `画像${imageCount}件`
       : fileCount > 0
         ? `ファイル${fileCount}件`
-        : '';
+        : FILES_REMOVED_TEXT;
 
   return (
     <button
@@ -207,6 +210,9 @@ export const ChatMessageBubble = ({
   const { currentUserID, onMentionClick } = useMentionNavigation();
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
+  // 本文も添付も無いメッセージは送れない。それでも空なのは、添付を上げた人が
+  // 退会して個人情報ごと消され、添付だけが無くなったとき。
+  const filesRemoved = !hasText && !hasMedia;
   const canEdit = editable && isMine && msg.content.trim() !== '';
   const canReply = !!onReply && !isEditing;
   const canShowActions = (canEdit || canDelete || canReply) && !isEditing;
@@ -457,11 +463,16 @@ export const ChatMessageBubble = ({
                 <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
                   <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
                   {hasText && renderMessageBody(msg.content)}
+                  {filesRemoved && <span className={styles.filesRemoved}>{FILES_REMOVED_TEXT}</span>}
+                </div>
+              ) : hasText ? (
+                <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
+                  {renderMessageBody(msg.content)}
                 </div>
               ) : (
-                hasText && (
+                filesRemoved && (
                   <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                    {renderMessageBody(msg.content)}
+                    <span className={styles.filesRemoved}>{FILES_REMOVED_TEXT}</span>
                   </div>
                 )
               )}

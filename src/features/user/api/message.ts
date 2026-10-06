@@ -47,6 +47,8 @@ export type Room = {
   type: string;
   user: MessageUser[];
   isMessagingDisabled: boolean;
+  // DM の相手が退会している（退会手続き中・削除済み）。入力欄を閉じた理由の出し分けに使う。
+  isPartnerWithdrawn: boolean;
   lastReadAt?: string | null;
   // 既読位置のメッセージID。未読ページの取得（messages(after:)）はこれを起点にする。
   // まだ一度も読んでいない、またはサーバ側で既読位置を時刻でしか持っていない行では null。
@@ -115,6 +117,7 @@ const GetOrCreateDMRoomDocument = graphql(`
         avatarUrl
       }
       isMessagingDisabled
+      isPartnerWithdrawn
       lastReadAt
       lastReadMessageID
       unreadCount
@@ -297,6 +300,7 @@ const GetRoomDocument = graphql(`
         avatarUrl
       }
       isMessagingDisabled
+      isPartnerWithdrawn
       lastReadAt
       lastReadMessageID
       unreadCount
@@ -320,6 +324,7 @@ const MyDMRoomsDocument = graphql(`
           avatarUrl
         }
         isMessagingDisabled
+        isPartnerWithdrawn
         lastReadAt
         lastReadMessageID
         unreadCount

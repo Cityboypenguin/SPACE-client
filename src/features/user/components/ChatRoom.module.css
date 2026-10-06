@@ -914,6 +914,12 @@
 }
 
 /* 返信先が削除済み。ジャンプ先がないので button ではなく div で出す */
+/* 添付が削除されたメッセージ。本文ではないので、斜体と薄い色で区別する。 */
+.filesRemoved {
+  font-style: italic;
+  opacity: 0.75;
+}
+
 .replyQuoteDeleted {
   cursor: default;
 }
