@@ -29,6 +29,7 @@ const AdminUserTimetableDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
       }
     }
   }
@@ -59,6 +60,7 @@ const AdminRegisterTimetableEntryDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
       }
     }
   }

@@ -27,6 +27,7 @@ const TYPE_LABEL: Record<string, string> = {
   community_role: 'コミュニティ権限変更',
   announcement: 'お知らせ',
   follow: 'フォロー',
+  timetable_removed: '時間割の変更',
 };
 
 const ACTION_LABEL: Record<string, string> = {
@@ -39,6 +40,7 @@ const ACTION_LABEL: Record<string, string> = {
   community_kick: 'コミュニティへいく',
   community_role: 'コミュニティへいく',
   announcement: 'お知らせへいく',
+  timetable_removed: '時間割へいく',
 };
 
 const TARGET_PATH: Record<string, (id: string) => string> = {
@@ -46,6 +48,9 @@ const TARGET_PATH: Record<string, (id: string) => string> = {
   room: (id) => `/community/chat/${id}`,
   community: () => `/community`,
   announcement: (id) => `/announcements/${id}`,
+  // シラバス同期で時間割から外した授業（timetable_removed）。授業そのものより、
+  // 何が残ったかを確かめられる時間割へ案内する。
+  course: () => '/timetable',
 };
 
 const DM_TYPES = new Set(['dm']);

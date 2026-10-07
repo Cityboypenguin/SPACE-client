@@ -22,6 +22,8 @@ export type CourseImportStatus = {
   processedCount?: number | null;
   totalCount?: number | null;
   progressPercent?: number | null;
+  dryRun: boolean;
+  syncRunID?: string | null;
 };
 
 export type Course = {
@@ -34,6 +36,7 @@ export type Course = {
   year: number;
   semester: string;
   createdAt: string;
+  discontinued: boolean;
 };
 
 // registeredCount（その授業を時間割に登録している人数）はサーバー側で都度集計されるため、
@@ -88,13 +91,15 @@ const AdminCourseImportStatusDocument = graphql(`
       processedCount
       totalCount
       progressPercent
+      dryRun
+      syncRunID
     }
   }
 `);
 
 const AdminTriggerCourseImportDocument = graphql(`
-  mutation AdminTriggerCourseImport($year: Int!) {
-    adminTriggerCourseImport(year: $year) {
+  mutation AdminTriggerCourseImport($year: Int!, $dryRun: Boolean) {
+    adminTriggerCourseImport(year: $year, dryRun: $dryRun) {
       state
       year
       imported
@@ -105,6 +110,8 @@ const AdminTriggerCourseImportDocument = graphql(`
       processedCount
       totalCount
       progressPercent
+      dryRun
+      syncRunID
     }
   }
 `);
@@ -122,6 +129,7 @@ const AdminListCoursesDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
         registeredCount
       }
       total
@@ -141,6 +149,7 @@ const AdminCreateCourseDocument = graphql(`
       year
       semester
       createdAt
+      discontinued
       registeredCount
     }
   }
@@ -185,6 +194,7 @@ const AdminGetCourseDocument = graphql(`
       year
       semester
       createdAt
+      discontinued
     }
   }
 `);
@@ -222,9 +232,215 @@ export const getCourseImportStatus = async (): Promise<CourseImportStatus> => {
   return data.adminCourseImportStatus;
 };
 
-export const triggerCourseImport = async (year: number): Promise<CourseImportStatus> => {
-  const data = await requestDoc(AdminTriggerCourseImportDocument, { year }, getAdminToken());
+export const triggerCourseImport = async (year: number, dryRun: boolean): Promise<CourseImportStatus> => {
+  const data = await requestDoc(AdminTriggerCourseImportDocument, { year, dryRun }, getAdminToken());
   return data.adminTriggerCourseImport;
+};
+
+// ■ シラバス同期の結果
+//
+// 取り込みは DB の授業をシラバスの今の内容に合わせる（作成・更新・廃止）。実行ごとの
+// 集計と授業1件ごとの変更、自動で判断しなかった変化（確認待ち）をここで引く。
+
+export type CourseSyncChangeKind = 'CREATED' | 'UPDATED' | 'DISCONTINUED' | 'RESTORED' | 'REVIEW';
+export type CourseSyncReviewKind = 'CODE_REUSED' | 'CODE_REISSUED' | 'SLOT_AMBIGUOUS';
+export type CourseSyncReviewStatus = 'PENDING' | 'SAME' | 'DIFFERENT' | 'IGNORED' | 'APPLIED';
+export type CourseSyncReviewDecision = 'SAME' | 'DIFFERENT' | 'IGNORED';
+
+export type CourseSnapshot = {
+  courseID?: string | null;
+  sourceRef: string;
+  semester: string;
+  dayOfWeek: string;
+  period: number;
+  courseName: string;
+  teacherName: string;
+};
+
+export type CourseSyncRun = {
+  ID: string;
+  year: number;
+  dryRun: boolean;
+  siteTotal: number;
+  listedRows: number;
+  unidentifiedRows: number;
+  createdCount: number;
+  updatedCount: number;
+  discontinuedCount: number;
+  restoredCount: number;
+  reviewCount: number;
+  unchangedCount: number;
+  unregisteredCount: number;
+  discontinueSkippedReason?: string | null;
+  startedAt: string;
+  finishedAt: string;
+};
+
+export type CourseSyncChange = {
+  ID: string;
+  kind: CourseSyncChangeKind;
+  courseID?: string | null;
+  reviewID?: string | null;
+  courseName: string;
+  teacherName: string;
+  detail: string;
+  before?: CourseSnapshot | null;
+  after?: CourseSnapshot | null;
+  registeredCount: number;
+  // コマが変わり、移った先のコマに別の授業があったため時間割から外した（ドライランでは外す予定の）人数。
+  unregisteredCount: number;
+};
+
+export type CourseSyncReview = {
+  ID: string;
+  year: number;
+  kind: CourseSyncReviewKind;
+  status: CourseSyncReviewStatus;
+  message: string;
+  existing: CourseSnapshot[];
+  proposed: CourseSnapshot[];
+  createdAt: string;
+  resolvedAt?: string | null;
+};
+
+const AdminCourseSyncRunsDocument = graphql(`
+  query AdminCourseSyncRuns($year: Int, $limit: Int, $offset: Int) {
+    adminCourseSyncRuns(year: $year, limit: $limit, offset: $offset) {
+      items {
+        ID
+        year
+        dryRun
+        siteTotal
+        listedRows
+        unidentifiedRows
+        createdCount
+        updatedCount
+        discontinuedCount
+        restoredCount
+        reviewCount
+        unchangedCount
+        unregisteredCount
+        discontinueSkippedReason
+        startedAt
+        finishedAt
+      }
+      total
+    }
+  }
+`);
+
+export const listCourseSyncRuns = async (
+  limit = 20,
+  offset = 0,
+): Promise<{ items: CourseSyncRun[]; total: number }> => {
+  const data = await requestDoc(AdminCourseSyncRunsDocument, { limit, offset }, getAdminToken());
+  return data.adminCourseSyncRuns;
+};
+
+const AdminCourseSyncChangesDocument = graphql(`
+  query AdminCourseSyncChanges($runID: ID!, $kind: CourseSyncChangeKind, $limit: Int, $offset: Int) {
+    adminCourseSyncChanges(runID: $runID, kind: $kind, limit: $limit, offset: $offset) {
+      items {
+        ID
+        kind
+        courseID
+        reviewID
+        courseName
+        teacherName
+        detail
+        before {
+          courseID
+          sourceRef
+          semester
+          dayOfWeek
+          period
+          courseName
+          teacherName
+        }
+        after {
+          courseID
+          sourceRef
+          semester
+          dayOfWeek
+          period
+          courseName
+          teacherName
+        }
+        registeredCount
+        unregisteredCount
+      }
+      total
+    }
+  }
+`);
+
+export const listCourseSyncChanges = async (
+  runID: string,
+  kind: CourseSyncChangeKind | undefined,
+  limit = 50,
+  offset = 0,
+): Promise<{ items: CourseSyncChange[]; total: number }> => {
+  const data = await requestDoc(AdminCourseSyncChangesDocument, { runID, kind, limit, offset }, getAdminToken());
+  return data.adminCourseSyncChanges;
+};
+
+const AdminCourseSyncReviewsDocument = graphql(`
+  query AdminCourseSyncReviews($status: CourseSyncReviewStatus, $limit: Int, $offset: Int) {
+    adminCourseSyncReviews(status: $status, limit: $limit, offset: $offset) {
+      items {
+        ID
+        year
+        kind
+        status
+        message
+        existing {
+          courseID
+          sourceRef
+          semester
+          dayOfWeek
+          period
+          courseName
+          teacherName
+        }
+        proposed {
+          courseID
+          sourceRef
+          semester
+          dayOfWeek
+          period
+          courseName
+          teacherName
+        }
+        createdAt
+        resolvedAt
+      }
+      total
+    }
+  }
+`);
+
+export const listCourseSyncReviews = async (
+  status: CourseSyncReviewStatus | undefined,
+  limit = 20,
+  offset = 0,
+): Promise<{ items: CourseSyncReview[]; total: number }> => {
+  const data = await requestDoc(AdminCourseSyncReviewsDocument, { status, limit, offset }, getAdminToken());
+  return data.adminCourseSyncReviews;
+};
+
+const AdminResolveCourseSyncReviewDocument = graphql(`
+  mutation AdminResolveCourseSyncReview($id: ID!, $decision: CourseSyncReviewDecision!) {
+    adminResolveCourseSyncReview(id: $id, decision: $decision) {
+      ID
+      status
+      resolvedAt
+    }
+  }
+`);
+
+export const resolveCourseSyncReview = async (id: string, decision: CourseSyncReviewDecision) => {
+  const data = await requestDoc(AdminResolveCourseSyncReviewDocument, { id, decision }, getAdminToken());
+  return data.adminResolveCourseSyncReview;
 };
 
 export type ChatUser = {

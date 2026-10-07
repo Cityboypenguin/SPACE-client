@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { useToast } from '../../../context/useToast';
 import {
@@ -17,6 +17,7 @@ import {
 import { subscribeToAdminGraphQL } from '../api/adminGraphqlWs';
 import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '../../user/components/timetableConstants';
 import styles from '../styles/AdminShared.module.css';
+import syncStyles from '../styles/AdminCourseSync.module.css';
 
 const LIST_PAGE_SIZE = 20;
 
@@ -40,6 +41,8 @@ const ADMIN_COURSE_IMPORT_STATUS_UPDATED_SUBSCRIPTION = `
       processedCount
       totalCount
       progressPercent
+      dryRun
+      syncRunID
     }
   }
 `;
@@ -58,6 +61,8 @@ export const AdminCourseManagementPage = () => {
   const [importYear, setImportYear] = useState(new Date().getFullYear());
   const [status, setStatus] = useState<CourseImportStatus | null>(null);
   const [triggering, setTriggering] = useState(false);
+  // 既定はドライラン。授業を書き換える本実行は、結果を確かめてから明示的に選んでもらう。
+  const [importDryRun, setImportDryRun] = useState(true);
 
   const [courseYears, setCourseYears] = useState<number[]>([]);
   const [filterYear, setFilterYear] = useState('');
@@ -145,7 +150,7 @@ export const AdminCourseManagementPage = () => {
         const next = data.adminCourseImportStatusUpdated;
         setStatus(next);
         if (next.state === 'SUCCEEDED') {
-          addToast(`取り込みが完了しました（新規${next.imported ?? 0}件・スキップ${next.skipped ?? 0}件）`, 'success');
+          addToast(next.dryRun ? 'ドライランが完了しました。結果を確認してください' : '同期が完了しました', 'success');
         } else if (next.state === 'FAILED') {
           addToast(next.errorMessage ?? '取り込みに失敗しました', 'error');
         }
@@ -171,9 +176,14 @@ export const AdminCourseManagementPage = () => {
   const handleTriggerImport = async () => {
     setTriggering(true);
     try {
-      const next = await triggerCourseImport(importYear);
+      if (!importDryRun && !window.confirm(
+        `${importYear}年度の授業をシラバスの内容に合わせて書き換えます。\n`
+        + 'コマ・授業名・教員名の変更が反映され、シラバスから消えた授業は廃止扱いになります（削除はされません）。\n'
+        + '先にドライランで変更内容を確認しましたか？',
+      )) return;
+      const next = await triggerCourseImport(importYear, importDryRun);
       setStatus(next);
-      addToast('取り込みを開始しました', 'success');
+      addToast(importDryRun ? 'ドライランを開始しました' : '同期を開始しました', 'success');
     } catch (err) {
       addToast(err instanceof Error ? err.message : '取り込みの開始に失敗しました', 'error');
     } finally {
@@ -273,14 +283,23 @@ export const AdminCourseManagementPage = () => {
                   className={styles.inputCompact}
                   disabled={status?.state === 'RUNNING'}
                 />
-                <span>年度をシラバスサイトから取り込む</span>
+                <span>年度をシラバスサイトと同期する</span>
+                <label className={styles.inlineRow}>
+                  <input
+                    type="checkbox"
+                    checked={importDryRun}
+                    onChange={(e) => setImportDryRun(e.target.checked)}
+                    disabled={status?.state === 'RUNNING'}
+                  />
+                  ドライラン（授業は書き換えず、変更内容だけを確認する）
+                </label>
               </div>
               <button
                 onClick={() => { void handleTriggerImport(); }}
                 disabled={triggering || status?.state === 'RUNNING'}
                 className={`${styles.primaryButton} ${styles.primaryButtonLarge} ${(triggering || status?.state === 'RUNNING') ? styles.disabled : ''}`}
               >
-                {status?.state === 'RUNNING' ? '実行中...' : '取り込みを開始'}
+                {status?.state === 'RUNNING' ? '実行中...' : importDryRun ? 'ドライランを開始' : '同期を開始'}
               </button>
 
               {status && (
@@ -288,16 +307,18 @@ export const AdminCourseManagementPage = () => {
                   <p>
                     状態：
                     <strong className={styles.importState} data-state={status.state}> {STATE_LABELS[status.state]}</strong>
-                    {status.year != null && ` （${status.year}年度）`}
+                    {status.year != null && ` （${status.year}年度${status.dryRun ? '・ドライラン' : ''}）`}
                   </p>
                   {status.state === 'RUNNING' && status.progressPercent != null && (
                     <p className={styles.cellText}>
                       進捗: {status.progressPercent}%（{status.processedCount ?? 0} / {status.totalCount ?? 0}件）
                     </p>
                   )}
-                  {status.state === 'SUCCEEDED' && (
+                  {status.state === 'SUCCEEDED' && status.syncRunID && (
                     <p className={styles.cellText}>
-                      新規登録: {status.imported ?? 0}件 ・ スキップ: {status.skipped ?? 0}件
+                      <Link to={`/admin/course-sync?run=${encodeURIComponent(status.syncRunID)}`}>
+                        {status.dryRun ? '変更予定の内容を見る' : '変更の内容を見る'}
+                      </Link>
                     </p>
                   )}
                   {status.state === 'FAILED' && status.errorMessage && (
@@ -306,7 +327,12 @@ export const AdminCourseManagementPage = () => {
                 </div>
               )}
               <p className={styles.helpText}>
-                既に取り込み済みの授業は重複登録されず、新規分のみ追加されます。1回の実行に数十秒〜数分かかることがあります。
+                授業は講義コードで照合し、コマ・授業名・教員名の変更を反映します。シラバスから消えた授業は削除せず
+                「廃止」扱いにします（時間割の登録とチャットは残ります）。自動で判断できない変化は確認待ちになります。
+                1回の実行に数十秒〜数分かかることがあります。
+              </p>
+              <p className={styles.cellText}>
+                <Link to="/admin/course-sync">同期の履歴・確認待ちを見る</Link>
               </p>
             </div>
 
@@ -420,7 +446,10 @@ export const AdminCourseManagementPage = () => {
                             onClick={() => navigate(`/admin/courses/${course.ID}`, { state: { course } })}
                             className={styles.clickableRow}
                           >
-                            <td className={styles.compactTableCell}>{course.courseName}</td>
+                            <td className={styles.compactTableCell}>
+                              {course.discontinued && <span className={syncStyles.discontinuedBadge}>廃止</span>}
+                              {course.courseName}
+                            </td>
                             <td className={styles.compactTableCell}>{course.teacherName}</td>
                             <td className={styles.compactTableCell}>{course.dayOfWeek}曜{course.period}限</td>
                             <td className={styles.compactTableCell}>{course.year}</td>
