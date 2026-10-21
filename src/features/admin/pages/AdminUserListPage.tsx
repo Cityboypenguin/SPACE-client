@@ -80,16 +80,19 @@ export const AdminUserListPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <h1>ユーザー一覧</h1>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>ユーザー管理</h1>
+        </div>
+
         <div className={styles.toolbar}>
-          <form onSubmit={handleSearch} className={styles.searchForm}>
+          <form onSubmit={handleSearch} className={styles.toolbarGroup}>
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="ID・名前・メールアドレスで検索"
-              className={styles.input}
+              className={styles.select}
               style={{ width: '280px' }}
             />
             <button type="submit" className={styles.primaryButton}>検索</button>
@@ -100,21 +103,21 @@ export const AdminUserListPage = () => {
             )}
           </form>
 
-          <div className={styles.listMetaRow}>
-            <p className={styles.countText}>全 {total} 件</p>
+          <div className={styles.toolbarGroup}>
+            <p className={styles.cellMuted} style={{ margin: 0 }}>全 {total} 件</p>
             <AdminPageSizeSelect value={pageSize} onChange={setPageSize} muted />
           </div>
         </div>
 
-        {error && <p className={styles.errorText}>{error}</p>}
+        {error && <p className={styles.centerError}>{error}</p>}
 
-        <div className={styles.tablePanel}>
-          <table className={styles.compactTable}>
+        <div className={styles.tablePanelPlain}>
+          <table className={styles.table}>
             <thead>
-              <tr>
-                <th>ユーザーID</th>
-                <th>名前</th>
-                <th>メールアドレス</th>
+              <tr className={styles.tableHeaderRow}>
+                <th className={styles.tableCellLarge}>ユーザーID</th>
+                <th className={styles.tableCellLarge}>名前</th>
+                <th className={styles.tableCellLarge}>メールアドレス</th>
               </tr>
             </thead>
             <tbody>
@@ -122,11 +125,12 @@ export const AdminUserListPage = () => {
                 <tr
                   key={user.ID}
                   onClick={() => navigate(`/admin/users/${user.ID}`)}
-                  className={styles.clickableRow}
+                  className={styles.tableRow}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <td className={styles.mono}>{user.accountID || user.ID}</td>
-                  <td className={styles.strongText}>{user.name}</td>
-                  <td>{user.email}</td>
+                  <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>@{user.accountID || user.ID}</td>
+                  <td className={styles.tableCellLarge} style={{ fontWeight: 600 }}>{user.name}</td>
+                  <td className={styles.tableCellLarge}>{user.email || '-'}</td>
                 </tr>
               ))}
             </tbody>
