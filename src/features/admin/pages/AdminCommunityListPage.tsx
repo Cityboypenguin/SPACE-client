@@ -113,25 +113,44 @@ export const AdminCommunityListPage = () => {
             <tr>
               <th>名前</th>
               <th>説明</th>
-              <th>作成日時</th>
+              <th>メンバー数</th>
               <th>オーナー</th>
+              <th>作成日時</th>
             </tr>
           </thead>
           <tbody>
-            {communities.map((community) => (
-              <tr
-                key={community.ID}
-                onClick={() =>
-                  navigate(`/admin/communities/${community.ID}`, { state: { community } })
-                }
-                className={styles.clickableRow}
-              >
-                <td>{community.name}</td>
-                <td>{community.description}</td>
-                <td>{community.createdAt}</td>
-                <td>{community.owner?.name ?? '-'}</td>
-              </tr>
-            ))}
+            {communities.map((community, index) => {
+              const communityId = community.ID || (community as any).id;
+              const formattedDate = community.createdAt
+                ? new Date(community.createdAt).toLocaleDateString('ja-JP')
+                : '-';
+
+              return (
+                <tr
+                  key={communityId || index}
+                  onClick={() => {
+                    if (!communityId) return;
+                    navigate(`/admin/communities/${communityId}`, {
+                      state: {
+                        community: {
+                          ...community,
+                          ID: communityId,
+                          id: communityId,
+                        },
+                      },
+                    });
+                  }}
+                  className={styles.clickableRow}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td>{community.name}</td>
+                  <td>{community.description || '-'}</td>
+                  <td>{community.memberCount ?? 0} 人</td>
+                  <td>{community.owner?.name ?? '-'}</td>
+                  <td>{formattedDate}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {communities.length === 0 && !error && <p>コミュニティが見つかりませんでした</p>}

@@ -96,39 +96,74 @@ export const AdminUserDetailPage = () => {
     <div>
       <AdminHeader />
       <main className={styles.page}>
-        <button onClick={() => navigate(-1)}><ChevronLeft /> 戻る</button>
+        <button
+          onClick={() => navigate('/admin/users')}
+          className={styles.paginationButton}
+          style={{ marginBottom: '16px' }}
+        >
+          <ChevronLeft /> 一覧に戻る
+        </button>
+
         <h1>ユーザー詳細</h1>
 
         {error && <p className={styles.errorText}>{error}</p>}
 
-        <div className={styles.buttonRowCompactSpaced}>
-          <button onClick={() => navigate(`/admin/users/${id}/profile`)}>プロフィールを見る</button>
-          <button onClick={() => navigate(`/admin/users/${id}/edit`)}>情報を編集</button>
+        <div className={styles.buttonRowCompactSpaced} style={{ marginBottom: '24px' }}>
+          <button
+            onClick={() => navigate(`/admin/users/${id}/profile`)}
+            className={styles.paginationButton}
+          >
+            プロフィールを見る
+          </button>
+          <button
+            onClick={() => navigate(`/admin/users/${id}/edit`)}
+            className={styles.primaryButton}
+          >
+            情報を編集
+          </button>
         </div>
 
-        <dl>
-          <dt>ユーザーID</dt>
-          <dd>{user.accountID}</dd>
-          <dt>名前</dt>
-          <dd>{user.name}</dd>
-          <dt>メールアドレス</dt>
-          <dd>{user.email}</dd>
-          <dt>ロール</dt>
-          <dd>{user.role}</dd>
-          <dt>ステータス</dt>
-          <dd>
-            <span
-              className={styles.userStatusBadge}
-              data-status={isFrozen ? 'frozen' : 'active'}
-            >
-              {isFrozen ? '凍結中' : 'アクティブ'}
-            </span>
-          </dd>
-          <dt>登録日時</dt>
-          <dd>{user.createdAt}</dd>
-          <dt>更新日時</dt>
-          <dd>{user.updatedAt}</dd>
-        </dl>
+        <table className={styles.compactTable} style={{ marginBottom: '32px' }}>
+          <tbody>
+            <tr>
+              <th style={{ width: '180px' }}>ユーザーID</th>
+              <td>{user.accountID || user.ID}</td>
+            </tr>
+            <tr>
+              <th>名前</th>
+              <td>{user.name}</td>
+            </tr>
+            <tr>
+              <th>メールアドレス</th>
+              <td>{user.email || '-'}</td>
+            </tr>
+            <tr>
+              <th>ロール</th>
+              <td>{user.role}</td>
+            </tr>
+            <tr>
+              <th>ステータス</th>
+              <td>
+                <span
+                  className={styles.userStatusBadge}
+                  data-status={isFrozen ? 'frozen' : 'active'}
+                >
+                  {isFrozen ? '凍結中' : 'アクティブ'}
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <th>登録日時</th>
+              <td>{user.createdAt ? new Date(user.createdAt).toLocaleString('ja-JP') : '-'}</td>
+            </tr>
+            <tr>
+              <th>更新日時</th>
+              <td>{user.updatedAt ? new Date(user.updatedAt).toLocaleString('ja-JP') : '-'}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr className={styles.divider} />
 
         <div className={styles.relationshipSection}>
           <h2 className={styles.relationshipTitle}>交友関係 (管理者閲覧用)</h2>
@@ -136,7 +171,6 @@ export const AdminUserDetailPage = () => {
             <p>読み込み中...</p>
           ) : (
             <div className={styles.relationshipGrid}>
-
               <div className={styles.relationshipCard}>
                 <h3 className={styles.relationshipCardTitle}>
                   お気に入り ({favorites.length})
@@ -145,7 +179,7 @@ export const AdminUserDetailPage = () => {
                   <p className={styles.mutedSmall}>登録なし</p>
                 ) : (
                   <ul className={styles.scrollList}>
-                    {favorites.map(fUser => (
+                    {favorites.map((fUser) => (
                       <UserListItem key={fUser.ID} user={fUser} basePath="/admin/users" />
                     ))}
                   </ul>
@@ -160,7 +194,7 @@ export const AdminUserDetailPage = () => {
                   <p className={styles.mutedSmall}>ブロックなし</p>
                 ) : (
                   <ul className={styles.scrollList}>
-                    {blockers.map(bUser => (
+                    {blockers.map((bUser) => (
                       <UserListItem key={bUser.ID} user={bUser} basePath="/admin/users" />
                     ))}
                   </ul>
@@ -172,15 +206,15 @@ export const AdminUserDetailPage = () => {
 
         {id && <AdminUserTimetableSection userID={id} />}
 
-        <hr />
+        <hr className={styles.divider} />
 
         {freezeError && <p className={styles.errorText}>{freezeError}</p>}
 
-        <div className={styles.buttonRow}>
+        <div className={styles.buttonRow} style={{ marginTop: '24px' }}>
           {isFrozen ? (
             <button
               onClick={handleUnfreeze}
-              className={styles.freezeButton}
+              className={styles.primaryButton}
             >
               凍結を解除する
             </button>
@@ -194,7 +228,7 @@ export const AdminUserDetailPage = () => {
           )}
           <button
             onClick={handleDelete}
-            className={styles.dangerOutlineButton}
+            className={styles.dangerButton}
           >
             このユーザーを削除する
           </button>
