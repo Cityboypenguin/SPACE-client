@@ -66,25 +66,22 @@ export const AdminAnnouncementListPage: React.FC = () => {
               <thead>
                 <tr className={styles.tableHeaderRow}>
                   <th className={styles.tableCellLarge}>タイトル</th>
-                  <th className={styles.tableCellLarge}>作成日時</th>
-                  <th className={styles.tableCellLarge}>詳細</th>
+                  <th className={styles.tableCellLarge} style={{ width: '220px' }}>作成日時</th>
                 </tr>
               </thead>
               <tbody>
                 {announcements.map((a) => (
-                  <tr key={a.ID} className={styles.tableRow}>
-                    <td className={styles.tableCellLarge}>{a.title}</td>
+                  <tr
+                    key={a.ID}
+                    onClick={() => navigate(`/admin/announcements/${a.ID}`)}
+                    className={styles.tableRow}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td className={styles.tableCellLarge} style={{ fontWeight: 500 }}>
+                      {a.title}
+                    </td>
                     <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
                       {new Date(a.createdAt).toLocaleString('ja-JP')}
-                    </td>
-                    <td className={styles.tableCellLarge}>
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/admin/announcements/${a.ID}`)}
-                        className={styles.primaryButton}
-                      >
-                        詳細
-                      </button>
                     </td>
                   </tr>
                 ))}
@@ -93,12 +90,14 @@ export const AdminAnnouncementListPage: React.FC = () => {
           </div>
         )}
 
-        <AdminPagination
-          page={page}
-          totalPages={totalPages}
-          onPrev={() => loadPage(page - 1)}
-          onNext={() => loadPage(page + 1)}
-        />
+        {totalPages > 1 && (
+          <AdminPagination
+            page={page}
+            totalPages={totalPages}
+            onPrev={() => loadPage(page - 1)}
+            onNext={() => loadPage(page + 1)}
+          />
+        )}
       </main>
     </div>
   );

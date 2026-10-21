@@ -96,8 +96,9 @@ export const AdminPostDetailPage = () => {
             className={styles.paginationButton}
             style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            <ChevronLeft /> 戻る
+            <ChevronLeft /> 一覧に戻る
           </button>
+          
         {loading ? (
           <p className={styles.emptyState}>読み込み中...</p>
         ) : !post ? (
