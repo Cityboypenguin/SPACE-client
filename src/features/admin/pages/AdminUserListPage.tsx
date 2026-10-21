@@ -118,6 +118,7 @@ export const AdminUserListPage = () => {
                 <th className={styles.tableCellLarge}>ユーザーID</th>
                 <th className={styles.tableCellLarge}>名前</th>
                 <th className={styles.tableCellLarge}>メールアドレス</th>
+                <th className={styles.tableCellLarge}>登録日時</th>
               </tr>
             </thead>
             <tbody>
@@ -131,6 +132,9 @@ export const AdminUserListPage = () => {
                   <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>@{user.accountID || user.ID}</td>
                   <td className={styles.tableCellLarge} style={{ fontWeight: 600 }}>{user.name}</td>
                   <td className={styles.tableCellLarge}>{user.email || '-'}</td>
+                  <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                    {new Date(user.createdAt).toLocaleString('ja-JP')}
+                  </td>
                 </tr>
               ))}
             </tbody>
