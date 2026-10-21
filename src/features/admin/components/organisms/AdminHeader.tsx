@@ -6,28 +6,36 @@ import { getPendingReportCount } from '../../api/report';
 import { UnreadCountBadge } from '../../../../components/atoms/UnreadCountBadge';
 import styles from './AdminHeader.module.css';
 
+// SVG アイコンのインポート
+import homeIcon from '../../../../assets/パーツ_ホーム.svg';
+import postIcon from '../../../../assets/パーツ_メッセージ編集.svg';
+import communityIcon from '../../../../assets/パーツ_コミュニティマーク.svg';
+import timetableIcon from '../../../../assets/パーツ_時間割.svg';
+import settingsIcon from '../../../../assets/パーツ_設定.svg';
+import reportIcon from '../../../../assets/パーツ_通報.svg';
+
 const NAV_ITEMS = [
-  { icon: '📊', label: 'ダッシュボード', path: '/admin' },
-  { icon: '📈', label: 'アナリティクス', path: '/admin/analytics' },
-  { icon: '👥', label: 'ユーザー管理', path: '/admin/users' },
-  { icon: '💬', label: 'コミュニティ管理', path: '/admin/communities' },
-  { icon: '📚', label: '授業管理', path: '/admin/courses' },
-  { icon: '📝', label: '投稿管理', path: '/admin/posts' },
-  { icon: '⚠️', label: '通報管理', path: '/admin/reports' },
-  { icon: '✉️', label: '問い合わせ', path: '/admin/inquiries' },
-  { icon: '📢', label: 'お知らせ管理', path: '/admin/announcements' },
-  { icon: '📄', label: '利用規約管理', path: '/admin/terms' },
-  { icon: '🛡️', label: '管理者管理', path: '/admin/administrators' },
-  { icon: '➕', label: '新規管理者登録', path: '/admin/register' },
-  { icon: '🔧', label: 'メンテナンス', path: '/admin/maintenance' },
-] as const;
+  { label: 'ダッシュボード', path: '/admin', icon: homeIcon, iconSize: 20 },
+  { label: 'アナリティクス', path: '/admin/analytics', emoji: '📊' },
+  { label: 'ユーザー管理', path: '/admin/users', emoji: '👥' },
+  { label: 'コミュニティ管理', path: '/admin/communities', icon: communityIcon, iconSize: 20 },
+  { label: '投稿管理', path: '/admin/posts', icon: postIcon, iconSize: 20 },
+  { label: '授業管理', path: '/admin/courses', icon: timetableIcon, iconSize: 20 },
+  { label: '通報管理', path: '/admin/reports', icon: reportIcon, iconSize: 20 },
+  { label: '問い合わせ管理', path: '/admin/inquiries', emoji: '✉️' },
+  { label: 'お知らせ管理', path: '/admin/announcements', emoji: '📢' },
+  { label: '利用規約管理', path: '/admin/terms', emoji: '📜' },
+  { label: '管理者管理', path: '/admin/administrators', emoji: '👮', exact: true },
+  { label: '新規管理者登録', path: '/admin/register', emoji: '➕' },
+  { label: 'メンテナンス', path: '/admin/maintenance', icon: settingsIcon, iconSize: 20 },
+];
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
   const [expanded, setExpanded] = useState(true);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
   // 未対応件数のステート（問い合わせ・通報）
   const [pendingInquiryCount, setPendingInquiryCount] = useState(0);
@@ -51,7 +59,6 @@ export const AdminHeader = () => {
     refreshPendingInquiries();
     refreshPendingReports();
 
-    // イベントリスナー登録（各詳細画面や一覧でステータスが更新された時に発火）
     window.addEventListener('inquiry-status-updated', refreshPendingInquiries);
     window.addEventListener('report-status-updated', refreshPendingReports);
 
@@ -61,7 +68,7 @@ export const AdminHeader = () => {
     };
   }, []);
 
-  // サイドバーの開閉状態を body の data 属性へ反映（メインコンテンツの余白調整用）
+  // サイドバーの開閉状態を body の data 属性へ反映
   useEffect(() => {
     if (expanded) {
       document.body.setAttribute('data-admin-sidebar', 'expanded');
@@ -88,9 +95,12 @@ export const AdminHeader = () => {
     navigate('/admin/login');
   };
 
-  const isNavActive = (path: string) => {
+  const isNavActive = (path: string, exact?: boolean) => {
     if (path === '/admin') {
       return location.pathname === '/admin' || location.pathname === '/admin/';
+    }
+    if (exact) {
+      return location.pathname === path;
     }
     return location.pathname.startsWith(path);
   };
@@ -118,46 +128,58 @@ export const AdminHeader = () => {
         </div>
 
         <nav className={styles.nav}>
-          {NAV_ITEMS.map(({ icon, label, path }) => {
-            const isActive = isNavActive(path);
+          {NAV_ITEMS.map((item) => {
+            const isActive = isNavActive(item.path, item.exact);
 
-            // ラベルに応じて表示するバッジ件数を切り替え
             const badgeCount =
-              label === '問い合わせ' ? pendingInquiryCount :
-              label === '通報管理' ? pendingReportCount : 0;
+              item.label === '問い合わせ管理' ? pendingInquiryCount :
+              item.label === '通報管理' ? pendingReportCount : 0;
 
             return (
               <button
-                key={path}
+                key={item.path}
                 type="button"
                 className={`${styles.navItem} ${isActive ? styles.active : ''}`}
-                onClick={() => handleNavigate(path)}
-                title={!expanded ? label : undefined}
+                onClick={() => handleNavigate(item.path)}
+                title={!expanded ? item.label : undefined}
               >
                 <span className={styles.iconWrap}>
-                  <span className={styles.icon}>{icon}</span>
+                  {item.icon ? (
+                    <img
+                      src={item.icon}
+                      alt={item.label}
+                      width={item.iconSize ?? 20}
+                      height={item.iconSize ?? 20}
+                      className={styles.icon}
+                    />
+                  ) : (
+                    <span className={styles.icon} style={{ fontSize: '18px' }}>
+                      {item.emoji}
+                    </span>
+                  )}
+
                   {badgeCount > 0 && (
                     <span className={styles.badgeSlot}>
                       <UnreadCountBadge count={badgeCount} />
                     </span>
                   )}
                 </span>
-                <span className={styles.label}>{label}</span>
+                <span className={styles.label}>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* 下部：ログアウトボタン */}
+        {/* 最下部：ログアウトボタン */}
         <div className={styles.bottom}>
           <button
             type="button"
             className={`${styles.navItem} ${styles.logoutBtn}`}
-            onClick={() => setShowConfirm(true)}
+            onClick={() => setShowLogoutConfirm(true)}
             title={!expanded ? 'ログアウト' : undefined}
           >
             <span className={styles.iconWrap}>
-              <span className={styles.icon}>🚪</span>
+              <span className={styles.icon} style={{ fontSize: '18px' }}>🚪</span>
             </span>
             <span className={styles.label}>ログアウト</span>
           </button>
@@ -165,11 +187,11 @@ export const AdminHeader = () => {
       </header>
 
       {/* ログアウト確認ダイアログ */}
-      {showConfirm && (
+      {showLogoutConfirm && (
         <div
           className={styles.modalOverlay}
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowConfirm(false);
+            if (e.target === e.currentTarget) setShowLogoutConfirm(false);
           }}
         >
           <div className={styles.modalCard}>
@@ -177,7 +199,7 @@ export const AdminHeader = () => {
             <div className={styles.modalActions}>
               <button
                 type="button"
-                onClick={() => setShowConfirm(false)}
+                onClick={() => setShowLogoutConfirm(false)}
                 className={styles.modalCancelBtn}
               >
                 キャンセル
@@ -185,7 +207,7 @@ export const AdminHeader = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setShowConfirm(false);
+                  setShowLogoutConfirm(false);
                   void handleLogout();
                 }}
                 className={styles.modalDangerBtn}
