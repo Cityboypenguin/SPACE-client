@@ -8,7 +8,6 @@ import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect
 import { AdminPagination } from '../components/molecules/AdminPagination';
 import styles from '../styles/AdminShared.module.css';
 
-
 export const AdminPostListPage = () => {
   const { addToast } = useToast();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -48,18 +47,22 @@ export const AdminPostListPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.feedPage}>
-        <div className={styles.feedHeader}>
-          <h1 className={styles.titleSmall}>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>
             投稿管理
           </h1>
+        </div>
+
+        <div className={styles.toolbar}>
+          <div /> {/* 左側の空スペース確保（レイアウト崩れ防止） */}
           <div className={styles.toolbarGroup}>
             <span className={styles.countText}>全 {total} 件</span>
             <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
           </div>
         </div>
 
-        {error && <p className={styles.errorPadded}>{error}</p>}
+        {error && <p className={styles.centerError}>{error}</p>}
 
         {posts.length === 0 && !error ? (
           <p className={styles.emptyState}>投稿がまだありません</p>

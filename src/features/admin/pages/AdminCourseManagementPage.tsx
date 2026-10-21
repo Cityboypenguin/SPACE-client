@@ -231,7 +231,7 @@ export const AdminCourseManagementPage = () => {
     <div>
       <AdminHeader />
       <main className={styles.page}>
-        <h1>授業管理</h1>
+        <h1 className={styles.title}>授業管理</h1>
 
         {loading ? (
           <p>読み込み中...</p>

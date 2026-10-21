@@ -88,87 +88,99 @@ export const AdminUserDetailPage = () => {
     }
   };
 
-  if (!user) return <p>読み込み中...</p>;
+  if (!user) return <p className={styles.pageCentered}>{error || '読み込み中...'}</p>;
 
   const isFrozen = user.status === STATUS_FROZEN;
 
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <button
-          onClick={() => navigate('/admin/users')}
-          className={styles.paginationButton}
-          style={{ marginBottom: '16px' }}
-        >
-          <ChevronLeft /> 一覧に戻る
-        </button>
-
-        <h1>ユーザー詳細</h1>
-
-        {error && <p className={styles.errorText}>{error}</p>}
-
-        <div className={styles.buttonRowCompactSpaced} style={{ marginBottom: '24px' }}>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>ユーザー管理</h1>
           <button
-            onClick={() => navigate(`/admin/users/${id}/profile`)}
+            type="button"
+            onClick={() => navigate('/admin/users')}
             className={styles.paginationButton}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            プロフィールを見る
-          </button>
-          <button
-            onClick={() => navigate(`/admin/users/${id}/edit`)}
-            className={styles.primaryButton}
-          >
-            情報を編集
+            <ChevronLeft /> 一覧に戻る
           </button>
         </div>
 
-        <table className={styles.compactTable} style={{ marginBottom: '32px' }}>
-          <tbody>
-            <tr>
-              <th style={{ width: '180px' }}>ユーザーID</th>
-              <td>{user.accountID || user.ID}</td>
-            </tr>
-            <tr>
-              <th>名前</th>
-              <td>{user.name}</td>
-            </tr>
-            <tr>
-              <th>メールアドレス</th>
-              <td>{user.email || '-'}</td>
-            </tr>
-            <tr>
-              <th>ロール</th>
-              <td>{user.role}</td>
-            </tr>
-            <tr>
-              <th>ステータス</th>
-              <td>
-                <span
-                  className={styles.userStatusBadge}
-                  data-status={isFrozen ? 'frozen' : 'active'}
-                >
-                  {isFrozen ? '凍結中' : 'アクティブ'}
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <th>登録日時</th>
-              <td>{user.createdAt ? new Date(user.createdAt).toLocaleString('ja-JP') : '-'}</td>
-            </tr>
-            <tr>
-              <th>更新日時</th>
-              <td>{user.updatedAt ? new Date(user.updatedAt).toLocaleString('ja-JP') : '-'}</td>
-            </tr>
-          </tbody>
-        </table>
+        {error && <p className={styles.centerError}>{error}</p>}
 
-        <hr className={styles.divider} />
+        <div className={styles.toolbar} style={{ marginBottom: '24px' }}>
+          <div className={styles.toolbarGroup}>
+            <button
+              type="button"
+              onClick={() => navigate(`/admin/users/${id}/profile`)}
+              className={styles.paginationButton}
+            >
+              プロフィールを見る
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/admin/users/${id}/edit`)}
+              className={styles.primaryButton}
+            >
+              情報を編集
+            </button>
+          </div>
+        </div>
 
-        <div className={styles.relationshipSection}>
-          <h2 className={styles.relationshipTitle}>交友関係 (管理者閲覧用)</h2>
+        <div className={styles.tablePanelPlain} style={{ marginBottom: '32px' }}>
+          <table className={styles.table}>
+            <tbody>
+              <tr className={styles.tableRow}>
+                <th className={styles.tableCellLarge} style={{ width: '180px', backgroundColor: '#f8fafc', fontWeight: 600 }}>ユーザーID</th>
+                <td className={styles.tableCellLarge}>{user.accountID || user.ID}</td>
+              </tr>
+              <tr className={styles.tableRow}>
+                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>名前</th>
+                <td className={styles.tableCellLarge}>{user.name}</td>
+              </tr>
+              <tr className={styles.tableRow}>
+                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>メールアドレス</th>
+                <td className={styles.tableCellLarge}>{user.email || '-'}</td>
+              </tr>
+              <tr className={styles.tableRow}>
+                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>ロール</th>
+                <td className={styles.tableCellLarge}>{user.role}</td>
+              </tr>
+              <tr className={styles.tableRow}>
+                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>ステータス</th>
+                <td className={styles.tableCellLarge}>
+                  <span
+                    className={styles.userStatusBadge}
+                    data-status={isFrozen ? 'frozen' : 'active'}
+                  >
+                    {isFrozen ? '凍結中' : 'アクティブ'}
+                  </span>
+                </td>
+              </tr>
+              <tr className={styles.tableRow}>
+                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>登録日時</th>
+                <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                  {user.createdAt ? new Date(user.createdAt).toLocaleString('ja-JP') : '-'}
+                </td>
+              </tr>
+              <tr className={styles.tableRow}>
+                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>更新日時</th>
+                <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                  {user.updatedAt ? new Date(user.updatedAt).toLocaleString('ja-JP') : '-'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ marginBottom: '32px' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '16px' }}>
+            交友関係 (管理者閲覧用)
+          </h2>
           {relationsLoading ? (
-            <p>読み込み中...</p>
+            <p className={styles.cellMuted}>読み込み中...</p>
           ) : (
             <div className={styles.relationshipGrid}>
               <div className={styles.relationshipCard}>
@@ -206,32 +218,37 @@ export const AdminUserDetailPage = () => {
 
         {id && <AdminUserTimetableSection userID={id} />}
 
-        <hr className={styles.divider} />
+        {freezeError && <p className={styles.centerError} style={{ marginTop: '24px' }}>{freezeError}</p>}
 
-        {freezeError && <p className={styles.errorText}>{freezeError}</p>}
-
-        <div className={styles.buttonRow} style={{ marginTop: '24px' }}>
-          {isFrozen ? (
+        <div className={styles.toolbar} style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+          <div className={styles.toolbarGroup}>
+            {isFrozen ? (
+              <button
+                type="button"
+                onClick={handleUnfreeze}
+                className={styles.primaryButton}
+              >
+                凍結を解除する
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFreeze}
+                className={styles.paginationButton}
+                style={{ color: '#d97706', borderColor: '#fcd34d' }}
+              >
+                ユーザーを凍結する
+              </button>
+            )}
             <button
-              onClick={handleUnfreeze}
+              type="button"
+              onClick={handleDelete}
               className={styles.primaryButton}
+              style={{ backgroundColor: '#ef4444' }}
             >
-              凍結を解除する
+              このユーザーを削除する
             </button>
-          ) : (
-            <button
-              onClick={handleFreeze}
-              className={styles.freezeButton}
-            >
-              ユーザーを凍結する
-            </button>
-          )}
-          <button
-            onClick={handleDelete}
-            className={styles.dangerButton}
-          >
-            このユーザーを削除する
-          </button>
+          </div>
         </div>
       </main>
     </div>

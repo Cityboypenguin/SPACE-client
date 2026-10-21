@@ -81,6 +81,20 @@ export const getReports = async (filterStatus?: string, targetType?: string, lim
   return data.searchReports as ReportPage;
 };
 
+/**
+ * 未対応（UNRESOLVEDまたはPENDING）の通報件数を取得する関数
+ */
+export const getPendingReportCount = async (): Promise<number> => {
+  try {
+    // UNRESOLVED ではなく PENDING で検索する
+    const data = await getReports('PENDING', 'ALL', 1, 0);
+    return data.total ?? 0;
+  } catch (err) {
+    console.error('通報バッジカウントの取得に失敗:', err);
+    return 0;
+  }
+};
+
 export const adminUpdateReportStatus = async (id: string, status: string) => {
   const data = await requestDoc(UpdateReportStatusDocument, { id, status: status as ReportStatus }, getAdminToken());
   return data;

@@ -1,87 +1,167 @@
 .header {
-  position: sticky;
+  position: fixed;
+  left: 0;
   top: 0;
+  height: 100vh;
+  width: 56px;
+  background-color: var(--color-bg-elevated, #1a1f2c);
+  border-right: 1px solid var(--color-border, #2e3545);
   z-index: 100;
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid #1d4ed8;
-  background-color: #2563eb;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.2s ease;
 }
 
-.logo {
-  margin: 0;
-  cursor: pointer;
-  color: #fff;
-  font-size: 1.25rem;
-  font-weight: 700;
-  white-space: nowrap;
+.header.expanded {
+  width: 220px;
 }
 
-.nav {
+/* 一番上：ハンバーガー ＋ タイトル */
+.topHeader {
   display: flex;
-  gap: 0.75rem;
-  flex: 1;
-  flex-wrap: wrap;
+  align-items: center;
+  min-height: 56px;
+  height: 56px;
+  border-bottom: 1px solid var(--color-border, #2e3545);
+  flex-shrink: 0;
 }
 
-.navButton {
+.hamburgerBtn {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  font-size: 1rem;
-  color: #fff;
-  position: relative;
+  flex-shrink: 0;
 }
 
-.navButton:hover {
-  text-decoration: underline;
+.hamburgerBtn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
-.logoutButton {
-  cursor: pointer;
-  color: #fff;
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 6px;
-  padding: 0.25rem 0.75rem;
-  font-size: 1rem;
+.hamburgerIcon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 18px;
+}
+
+.hamburgerIcon span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-text, #fff);
+  border-radius: 1px;
+}
+
+.logoText {
   white-space: nowrap;
-}
-
-.logoutButton:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 9px;
-  background: var(--color-danger);
-  color: #fff;
-  font-size: 11px;
   font-weight: 700;
-  line-height: 18px;
-  text-align: center;
-  pointer-events: none;
+  font-size: 1rem;
+  color: var(--color-text, #fff);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
-@media (max-width: 768px) {
-  .header {
-    top: env(safe-area-inset-top);
-  }
+.header.expanded .logoText {
+  opacity: 1;
 }
 
+/* ナビゲーション一覧 */
+.nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0.5rem 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text, #fff);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+  padding: 0;
+}
+
+.navItem:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.active {
+  background-color: var(--color-primary, #2563eb) !important;
+  color: #ffffff !important;
+}
+
+.iconWrap {
+  position: relative;
+  width: 56px;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  font-size: 1.2rem;
+}
+
+.badgeSlot {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+}
+
+/* ラベル文字（開いたときだけ不透明にする） */
+.label {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text, #fff);
+}
+
+.header.expanded .label {
+  opacity: 1;
+}
+
+/* ボトム（ログアウト） */
+.bottom {
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border, #2e3545);
+}
+
+.logoutBtn:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* モーダル */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,20 +169,20 @@
 }
 
 .modalCard {
-  background: var(--color-bg-elevated);
+  background: var(--color-bg-elevated, #1e293b);
   border-radius: 12px;
   padding: 2rem;
   width: 90%;
-  max-width: 360px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  max-width: 340px;
   text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
 }
 
 .modalTitle {
   margin: 0 0 1.5rem;
   font-size: 1rem;
   font-weight: 500;
-  color: var(--color-text);
+  color: var(--color-text, #fff);
 }
 
 .modalActions {
@@ -111,22 +191,21 @@
   justify-content: center;
 }
 
-.modalCancelBtn {
-  padding: 0.5rem 1.5rem;
+.modalCancelBtn, .modalDangerBtn {
+  padding: 0.5rem 1.25rem;
   border-radius: 8px;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
   cursor: pointer;
   font-weight: 500;
-  color: var(--color-text-muted);
+}
+
+.modalCancelBtn {
+  border: 1px solid var(--color-border, #334155);
+  background: transparent;
+  color: var(--color-text, #fff);
 }
 
 .modalDangerBtn {
-  padding: 0.5rem 1.5rem;
-  border-radius: 8px;
   border: none;
-  background: var(--color-danger);
-  cursor: pointer;
-  font-weight: 500;
+  background: var(--color-danger, #ef4444);
   color: #fff;
 }
