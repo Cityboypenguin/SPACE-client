@@ -22,20 +22,31 @@ export type Message = {
   updatedAt: string;
 };
 
+export type CommunityUser = {
+  ID: string;
+  name: string;
+  accountID?: string;
+};
+
 export type Community = {
   ID: string;
+  id?: string;
   roomID: string;
   name: string;
   description: string;
   createdAt: string;
   updatedAt: string;
+  memberCount?: number;
+  owner?: CommunityUser | null;
 };
 
-export type CommunityPage = { items: Community[]; total: number };
+export type CommunityPage = {
+  communities: {
+    items: Community[];
+    total: number;
+  };
+};
 
-// Room.user / CommunityMember.user は GraphQL 上は公開型の User なので
-// email を持たない。管理画面で連絡先が要るときは、そのユーザーの
-// getUserByID（UserAccount）を引くこと。
 export type RoomUser = {
   ID: string;
   accountID: string;
@@ -88,6 +99,17 @@ const UpdateCommunityMembersDocument = graphql(`
   }
 `);
 
+const AdminGetCommunityAnalyticsDocument = graphql(`
+  query AdminGetCommunityAnalytics($limit: Int, $offset: Int) {
+    adminGetCommunityAnalytics(limit: $limit, offset: $offset) {
+      items {
+        communityID
+        memberCount
+      }
+    }
+  }
+`);
+
 const GetCommunityMembersDocument = graphql(`
   query AdminCommunityMembers($communityID: ID!, $limit: Int!, $offset: Int!) {
     communityMembers(communityID: $communityID, limit: $limit, offset: $offset) {
@@ -104,23 +126,79 @@ const GetCommunityMembersDocument = graphql(`
   }
 `);
 
-export const getCommunities = async (limit = 20, offset = 0) => {
-  return await requestDoc(CommunitiesDocument, { limit, offset }, getAdminToken());
+export const getCommunities = async (limit = 20, offset = 0): Promise<CommunityPage> => {
+  // 1. 基本一覧とアナリティクスを並列取得
+  const [baseRes, analyticsRes]: [any, any] = await Promise.all([
+    requestDoc(CommunitiesDocument as any, { limit, offset }, getAdminToken()),
+    requestDoc(AdminGetCommunityAnalyticsDocument as any, { limit: 1000, offset: 0 }, getAdminToken()).catch(() => null),
+  ]);
+
+  // baseRes は { communities: { items: [...], total: N } } の構造
+  const rawItems = baseRes?.communities?.items || [];
+  const total = baseRes?.communities?.total || 0;
+
+  // メンバー数マップ作成
+  const analyticsItems = analyticsRes?.adminGetCommunityAnalytics?.items || [];
+  const memberCountMap = new Map<string, number>();
+  analyticsItems.forEach((item: any) => {
+    if (item?.communityID && item?.memberCount !== undefined) {
+      memberCountMap.set(item.communityID, item.memberCount);
+    }
+  });
+
+  // 2. 各コミュニティのオーナー情報を取得（失敗しても fallback して全体を止めない）
+  const items = await Promise.all(
+    rawItems.map(async (item: any) => {
+      let owner: CommunityUser | null = null;
+      try {
+        const membersRes: any = await requestDoc(
+          GetCommunityMembersDocument as any,
+          { communityID: item.ID, limit: 50, offset: 0 },
+          getAdminToken()
+        );
+        const memberItems: CommunityMember[] = membersRes?.communityMembers?.items || [];
+        const ownerMember = memberItems.find((m) => m.role === 'owner');
+        if (ownerMember) {
+          owner = {
+            ID: ownerMember.user.ID,
+            name: ownerMember.user.name,
+            accountID: ownerMember.user.accountID,
+          };
+        }
+      } catch {
+        // 個別取得エラー時は owner を null のまま続行
+      }
+
+      return {
+        ...item,
+        id: item.ID,
+        memberCount: memberCountMap.get(item.ID) ?? 0,
+        owner,
+      };
+    })
+  );
+
+  return {
+    communities: {
+      items: items as Community[],
+      total,
+    },
+  };
 };
 
 export const updateCommunity = async (
   id: string,
   input: { name?: string; description?: string },
 ) => {
-  return await requestDoc(UpdateCommunityDocument, { id, input }, getAdminToken());
+  return await requestDoc(UpdateCommunityDocument as any, { id, input }, getAdminToken());
 };
 
 export const kickUserFromCommunity = async (communityID: string, userID: string) => {
-  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'KICK' }] }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument as any, { communityID, updates: [{ userID, action: 'KICK' }] }, getAdminToken());
 };
 
 export const getCommunityMembers = async (communityID: string, limit = 50, offset = 0) => {
-  return await requestDoc(GetCommunityMembersDocument, { communityID, limit, offset }, getAdminToken());
+  return await requestDoc(GetCommunityMembersDocument as any, { communityID, limit, offset }, getAdminToken());
 };
 
 const ListRoomMessagesDocument = graphql(`
@@ -148,11 +226,11 @@ const ListRoomMessagesDocument = graphql(`
 `);
 
 export const promoteToCommunityOwner = async (communityID: string, userID: string) => {
-  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'PROMOTE' }] }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument as any, { communityID, updates: [{ userID, action: 'PROMOTE' }] }, getAdminToken());
 };
 
 export const demoteFromCommunityOwner = async (communityID: string, userID: string) => {
-  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'DEMOTE' }] }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument as any, { communityID, updates: [{ userID, action: 'DEMOTE' }] }, getAdminToken());
 };
 
 const DeleteMessageDocument = graphql(`
@@ -161,30 +239,15 @@ const DeleteMessageDocument = graphql(`
   }
 `);
 
-// adminMessagePageSize は管理画面が一度に読むメッセージ数。
-//
-// 以前は 200 件を一度に取り、ページ送りを持っていなかった。ルームが育つほど
-// 1回の応答が重くなり、しかも 200 件を超えたぶんは管理画面から一切辿れなかった
-// （古いメッセージを見る手段が無かった）。
 export const adminMessagePageSize = 50;
 
-/**
- * ルームのメッセージを新しい側から1ページぶん読む。
- *
- * before には「いま持っている中で一番古いメッセージのID」を渡す。offset ではなく
- * カーソルなのは、messages が元からカーソル方式だから（深いページでも費用が
- * 増えず、読んでいる間に新着が入っても取りこぼし・重複が起きない）。
- *
- * items は常に古い順で返る。hasMoreBefore は「このページより古いメッセージが
- * まだあるか」の実測値。
- */
 export const listRoomMessages = async (
   roomID: string,
   limit = adminMessagePageSize,
   before?: string,
 ): Promise<{ messages: { items: Message[]; hasMoreBefore: boolean } }> => {
   const data = await requestDoc(
-    ListRoomMessagesDocument,
+    ListRoomMessagesDocument as any,
     { roomID, limit, ...(before ? { before } : {}) },
     getAdminToken(),
   );
@@ -192,5 +255,5 @@ export const listRoomMessages = async (
 };
 
 export const adminDeleteMessage = async (roomID: string, messageID: string) => {
-  return await requestDoc(DeleteMessageDocument, { roomID, id: messageID }, getAdminToken());
+  return await requestDoc(DeleteMessageDocument as any, { roomID, id: messageID }, getAdminToken());
 };

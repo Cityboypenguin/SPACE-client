@@ -114,6 +114,7 @@ export const AdminCommunityListPage = () => {
               <th>名前</th>
               <th>説明</th>
               <th>作成日時</th>
+              <th>オーナー</th>
             </tr>
           </thead>
           <tbody>
@@ -128,6 +129,7 @@ export const AdminCommunityListPage = () => {
                 <td>{community.name}</td>
                 <td>{community.description}</td>
                 <td>{community.createdAt}</td>
+                <td>{community.owner?.name ?? '-'}</td>
               </tr>
             ))}
           </tbody>
