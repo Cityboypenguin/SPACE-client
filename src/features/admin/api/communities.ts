@@ -127,35 +127,27 @@ const GetCommunityMembersDocument = graphql(`
 `);
 
 export const getCommunities = async (limit = 20, offset = 0): Promise<CommunityPage> => {
-  // 1. 基本一覧とアナリティクスを並列取得
-  const [baseRes, analyticsRes]: [any, any] = await Promise.all([
-    requestDoc(CommunitiesDocument as any, { limit, offset }, getAdminToken()),
-    requestDoc(AdminGetCommunityAnalyticsDocument as any, { limit: 1000, offset: 0 }, getAdminToken()).catch(() => null),
-  ]);
+  // 1. 基本一覧の取得
+  const baseRes: any = await requestDoc(CommunitiesDocument as any, { limit, offset }, getAdminToken());
 
-  // baseRes は { communities: { items: [...], total: N } } の構造
   const rawItems = baseRes?.communities?.items || [];
   const total = baseRes?.communities?.total || 0;
 
-  // メンバー数マップ作成
-  const analyticsItems = analyticsRes?.adminGetCommunityAnalytics?.items || [];
-  const memberCountMap = new Map<string, number>();
-  analyticsItems.forEach((item: any) => {
-    if (item?.communityID && item?.memberCount !== undefined) {
-      memberCountMap.set(item.communityID, item.memberCount);
-    }
-  });
-
-  // 2. 各コミュニティのオーナー情報を取得（失敗しても fallback して全体を止めない）
+  // 2. 各コミュニティの「オーナー情報」と「実際のメンバー総数(total)」を同時に取得
   const items = await Promise.all(
     rawItems.map(async (item: any) => {
       let owner: CommunityUser | null = null;
+      let memberCount = 0;
+
       try {
         const membersRes: any = await requestDoc(
           GetCommunityMembersDocument as any,
           { communityID: item.ID, limit: 50, offset: 0 },
           getAdminToken()
         );
+
+        memberCount = membersRes?.communityMembers?.total ?? 0;
+
         const memberItems: CommunityMember[] = membersRes?.communityMembers?.items || [];
         const ownerMember = memberItems.find((m) => m.role === 'owner');
         if (ownerMember) {
@@ -166,13 +158,13 @@ export const getCommunities = async (limit = 20, offset = 0): Promise<CommunityP
           };
         }
       } catch {
-        // 個別取得エラー時は owner を null のまま続行
+        // エラーが発生した場合は、owner は null のまま、memberCount は 0 のままにする
       }
 
       return {
         ...item,
         id: item.ID,
-        memberCount: memberCountMap.get(item.ID) ?? 0,
+        memberCount,
         owner,
       };
     })
