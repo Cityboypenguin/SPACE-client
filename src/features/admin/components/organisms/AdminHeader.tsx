@@ -43,7 +43,7 @@ export const AdminHeader = () => {
 
   // 未読問い合わせ件数の取得
   const refreshPendingInquiries = () => {
-    getInquiries('PENDING')
+    getInquiries('PENDING', 1, 0)
       .then((inquiries) => setPendingInquiryCount(inquiries.total))
       .catch(() => {});
   };

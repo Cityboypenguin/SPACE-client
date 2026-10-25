@@ -13,68 +13,40 @@ export const AdminUserListPage = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize('users');
   const [query, setQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  // 検索ボタンで確定したキーワード。入力中の query で毎回検索し直さないよう分けて持つ。
+  const [searchKeyword, setSearchKeyword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = useCallback((p: number, size = pageSize) => {
+  // 一覧も検索結果も、サーバーから1ページ分だけを取る。
+  const loadPage = useCallback((p: number) => {
     setError('');
-    getUsers(size, p * size)
+    const request = searchKeyword
+      ? searchUsers(searchKeyword, pageSize, p * pageSize).then((data) => data.adminSearchUsers)
+      : getUsers(pageSize, p * pageSize).then((data) => data.users);
+    request
       .then((data) => {
-        setUsers(data.users.items);
-        setTotal(data.users.total);
+        setUsers(data.items);
+        setTotal(data.total);
         setPage(p);
       })
-      .catch(() => setError('ユーザー一覧の取得に失敗しました'));
-  }, [pageSize]);
-
-  const loadSearchPage = useCallback((p: number) => {
-    setError('');
-    searchUsers(query)
-      .then((data) => {
-        const allItems = data.adminSearchUsers.items;
-        setTotal(allItems.length);
-        setUsers(allItems.slice(p * pageSize, (p + 1) * pageSize));
-        setPage(p);
-      })
-      .catch(() => setError('検索に失敗しました'));
-  }, [query, pageSize]);
+      .catch(() => setError(searchKeyword ? '検索に失敗しました' : 'ユーザー一覧の取得に失敗しました'));
+  }, [searchKeyword, pageSize]);
 
   useEffect(() => {
-    if (!isSearching) {
-      void Promise.resolve().then(() => loadPage(0));
-    } else {
-      loadSearchPage(0);
-    }
-  }, [isSearching, loadPage, loadSearchPage]);
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
 
-  const handleSearch = async (e: { preventDefault(): void }) => {
+  const handleSearch = (e: { preventDefault(): void }) => {
     e.preventDefault();
-    setError('');
-    if (!query.trim()) {
-      setIsSearching(false);
-      loadPage(0);
-      return;
-    }
-    try {
-      const data = await searchUsers(query);
-      const allItems = data.adminSearchUsers.items;
-      setTotal(allItems.length);
-      setUsers(allItems.slice(0, pageSize));
-      setPage(0);
-      setIsSearching(true);
-    } catch {
-      setError('検索に失敗しました');
-    }
+    setSearchKeyword(query.trim());
   };
 
   const handleClear = () => {
     setQuery('');
-    setError('');
-    setIsSearching(false);
-    loadPage(0);
+    setSearchKeyword('');
   };
 
   return (
@@ -149,8 +121,8 @@ export const AdminUserListPage = () => {
           <AdminPagination
             page={page}
             totalPages={totalPages}
-            onPrev={() => (isSearching ? loadSearchPage(page - 1) : loadPage(page - 1))}
-            onNext={() => (isSearching ? loadSearchPage(page + 1) : loadPage(page + 1))}
+            onPrev={() => loadPage(page - 1)}
+            onNext={() => loadPage(page + 1)}
           />
         )}
       </main>
