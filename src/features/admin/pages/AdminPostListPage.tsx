@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
-import { getPosts, getPostByID, adminDeletePost, type Post } from '../api/posts';
+import { getPosts, getPostByID, adminDeletePost, type Post, type PostStatusFilter } from '../api/posts';
 import { useToast } from '../../../context/useToast';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
@@ -132,7 +132,9 @@ export const AdminPostListPage = () => {
   const [pageSize, setPageSize] = usePersistedPageSize('posts');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deleted'>('all');
+  // 入力のたびにリクエストしないよう、少し待ってからサーバーへ渡す。
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<PostStatusFilter>('all');
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [detailData, setDetailData] = useState<Post | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -155,10 +157,16 @@ export const AdminPostListPage = () => {
     [addToast]
   );
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // 絞り込みは全件に対してサーバーで行い、1ページ分だけを受け取る。
   const loadPage = useCallback(
     (p: number, size = pageSize) => {
       setError('');
-      getPosts(size, p * size)
+      getPosts(size, p * size, { keyword: debouncedQuery, status: statusFilter })
         .then((data) => {
           setPosts(data.items);
           setTotal(data.total);
@@ -174,7 +182,7 @@ export const AdminPostListPage = () => {
         })
         .catch(() => setError('投稿の読み込みに失敗しました'));
     },
-    [pageSize, handleSelectPost]
+    [pageSize, debouncedQuery, statusFilter, handleSelectPost]
   );
 
   useEffect(() => {
@@ -223,20 +231,8 @@ export const AdminPostListPage = () => {
     }
   };
 
-  const filteredPosts = posts.filter((post) => {
-    if (statusFilter === 'active' && post.deletedAt != null) return false;
-    if (statusFilter === 'deleted' && post.deletedAt == null) return false;
-
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      const matchName = post.user.name.toLowerCase().includes(q);
-      const matchAccount = post.user.accountID.toLowerCase().includes(q);
-      const matchContent = (post.content || '').toLowerCase().includes(q);
-      return matchName || matchAccount || matchContent;
-    }
-
-    return true;
-  });
+  // 絞り込み自体はサーバー側。ここでは「公開中のみ」の表示中にこの画面で削除した投稿を消すだけ。
+  const filteredPosts = statusFilter === 'active' ? posts.filter((post) => post.deletedAt == null) : posts;
 
   return (
     <div>
@@ -259,7 +255,7 @@ export const AdminPostListPage = () => {
             />
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'deleted')}
+              onChange={(e) => setStatusFilter(e.target.value as PostStatusFilter)}
               className={styles.select}
             >
               <option value="all">すべてのステータス</option>

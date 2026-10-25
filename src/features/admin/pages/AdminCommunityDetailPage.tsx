@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
-  getCommunities,
+  getCommunity,
   getCommunityMembers,
   updateCommunity,
   kickUserFromCommunity,
@@ -50,8 +50,7 @@ export const AdminCommunityDetailPage = () => {
   const fetchCommunity = useCallback(async () => {
     if (!id) return;
     try {
-      const data = await getCommunities();
-      const found = data.communities.items.find((c) => c.ID === id);
+      const found = await getCommunity(id);
       if (found) {
         setCommunity(found);
         setName(found.name);

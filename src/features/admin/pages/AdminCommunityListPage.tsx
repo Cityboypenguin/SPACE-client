@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCommunities, type Community } from '../api/communities';
+import { getCommunities, type Community, type CommunitySortField, type SortOrder } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
@@ -13,75 +13,63 @@ export const AdminCommunityListPage = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize('communities');
   const [query, setQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  // 検索ボタンで確定したキーワード。入力中の query で毎回検索し直さないよう分けて持つ。
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [sortBy, setSortBy] = useState<CommunitySortField>('CREATED_AT');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('DESC');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = useCallback((p: number, size = pageSize) => {
+  // 検索・並び替えは全件に対してサーバーで行い、1ページ分だけを受け取る。
+  const loadPage = useCallback((p: number) => {
     setError('');
-    getCommunities(size, p * size)
+    getCommunities({ keyword: searchKeyword, sortBy, sortOrder, limit: pageSize, offset: p * pageSize })
       .then((data) => {
         setCommunities(data.communities.items);
         setTotal(data.communities.total);
         setPage(p);
       })
-      .catch(() => setError('コミュニティ一覧の取得に失敗しました'));
-  }, [pageSize]);
-
-  const executeClientSearch = useCallback((searchQuery: string, pageNum: number) => {
-    setError('');
-    getCommunities(1000, 0)
-      .then((data) => {
-        const q = searchQuery.toLowerCase().trim();
-        const filtered = data.communities.items.filter(
-          (c) =>
-            c.name.toLowerCase().includes(q) ||
-            (c.description && c.description.toLowerCase().includes(q))
-        );
-
-        setTotal(filtered.length);
-        setCommunities(filtered.slice(pageNum * pageSize, (pageNum + 1) * pageSize));
-        setPage(pageNum);
-      })
-      .catch(() => setError('検索に失敗しました'));
-  }, [pageSize]);
+      .catch(() => setError(searchKeyword ? '検索に失敗しました' : 'コミュニティ一覧の取得に失敗しました'));
+  }, [searchKeyword, sortBy, sortOrder, pageSize]);
 
   useEffect(() => {
-    if (!isSearching) {
-      void Promise.resolve().then(() => loadPage(0));
-    } else {
-      executeClientSearch(query, 0);
-    }
-  }, [isSearching, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
 
   // 検索実行
   const handleSearch = (e: { preventDefault(): void }) => {
     e.preventDefault();
-    if (!query.trim()) {
-      setIsSearching(false);
-      loadPage(0);
-      return;
-    }
-    setIsSearching(true);
-    executeClientSearch(query, 0);
+    setSearchKeyword(query.trim());
   };
 
   const handleClear = () => {
     setQuery('');
-    setError('');
-    setIsSearching(false);
-    loadPage(0);
+    setSearchKeyword('');
   };
 
-  const handlePageChange = (newPage: number) => {
-    if (isSearching) {
-      executeClientSearch(query, newPage);
-    } else {
-      loadPage(newPage);
+  // 同じ列をもう一度押すと昇順・降順を切り替える。名前は昇順、それ以外は降順から始める。
+  const handleSort = (field: CommunitySortField) => {
+    if (field === sortBy) {
+      setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+      return;
     }
+    setSortBy(field);
+    setSortOrder(field === 'NAME' ? 'ASC' : 'DESC');
   };
+
+  const sortableHeader = (field: CommunitySortField, label: string) => (
+    <th
+      className={styles.tableCellLarge}
+      onClick={() => handleSort(field)}
+      style={{ cursor: 'pointer', userSelect: 'none' }}
+      aria-sort={sortBy === field ? (sortOrder === 'ASC' ? 'ascending' : 'descending') : 'none'}
+    >
+      {label}
+      {sortBy === field && (sortOrder === 'ASC' ? ' ▲' : ' ▼')}
+    </th>
+  );
 
   return (
     <div>
@@ -121,11 +109,11 @@ export const AdminCommunityListPage = () => {
           <table className={styles.table}>
             <thead>
               <tr className={styles.tableHeaderRow}>
-                <th className={styles.tableCellLarge}>名前</th>
+                {sortableHeader('NAME', '名前')}
                 <th className={styles.tableCellLarge}>説明</th>
-                <th className={styles.tableCellLarge}>メンバー数</th>
+                {sortableHeader('MEMBER_COUNT', 'メンバー数')}
                 <th className={styles.tableCellLarge}>オーナー</th>
-                <th className={styles.tableCellLarge}>作成日時</th>
+                {sortableHeader('CREATED_AT', '作成日時')}
               </tr>
             </thead>
             <tbody>
@@ -173,8 +161,8 @@ export const AdminCommunityListPage = () => {
           <AdminPagination
             page={page}
             totalPages={totalPages}
-            onPrev={() => handlePageChange(page - 1)}
-            onNext={() => handlePageChange(page + 1)}
+            onPrev={() => loadPage(page - 1)}
+            onNext={() => loadPage(page + 1)}
           />
         )}
       </main>

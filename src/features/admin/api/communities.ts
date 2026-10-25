@@ -2,6 +2,7 @@ import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { type Media } from '../../../lib/media';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
+import type { AdminCommunitySortField, SortOrder } from '../../../generated/graphql';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
@@ -64,18 +65,56 @@ export type Room = {
   user: RoomUser[];
 };
 
-const CommunitiesDocument = graphql(`
-  query Communities($limit: Int, $offset: Int) {
-    communities(limit: $limit, offset: $offset) {
+// 検索・並び替え・ページングはすべてサーバー側で行う。以前は検索のたびに
+// communities(limit: 1000) を全件取り、さらに1件ごとに communityMembers を
+// 引いてオーナーと人数を出していた（1000件なら1000リクエスト）。
+const AdminListCommunitiesDocument = graphql(`
+  query AdminListCommunities(
+    $keyword: String
+    $sortBy: AdminCommunitySortField
+    $sortOrder: SortOrder
+    $limit: Int
+    $offset: Int
+  ) {
+    adminListCommunities(keyword: $keyword, sortBy: $sortBy, sortOrder: $sortOrder, limit: $limit, offset: $offset) {
       items {
+        community {
+          ID
+          roomID
+          name
+          description
+          memberCount
+          createdAt
+          updatedAt
+        }
+        owner {
+          ID
+          name
+          accountID
+        }
+      }
+      total
+    }
+  }
+`);
+
+const AdminGetCommunityDocument = graphql(`
+  query AdminGetCommunity($id: ID!) {
+    adminGetCommunity(id: $id) {
+      community {
         ID
         roomID
         name
         description
+        memberCount
         createdAt
         updatedAt
       }
-      total
+      owner {
+        ID
+        name
+        accountID
+      }
     }
   }
 `);
@@ -99,17 +138,6 @@ const UpdateCommunityMembersDocument = graphql(`
   }
 `);
 
-const AdminGetCommunityAnalyticsDocument = graphql(`
-  query AdminGetCommunityAnalytics($limit: Int, $offset: Int) {
-    adminGetCommunityAnalytics(limit: $limit, offset: $offset) {
-      items {
-        communityID
-        memberCount
-      }
-    }
-  }
-`);
-
 const GetCommunityMembersDocument = graphql(`
   query AdminCommunityMembers($communityID: ID!, $limit: Int!, $offset: Int!) {
     communityMembers(communityID: $communityID, limit: $limit, offset: $offset) {
@@ -126,56 +154,51 @@ const GetCommunityMembersDocument = graphql(`
   }
 `);
 
-export const getCommunities = async (limit = 20, offset = 0): Promise<CommunityPage> => {
-  // 1. 基本一覧の取得
-  const baseRes: any = await requestDoc(CommunitiesDocument as any, { limit, offset }, getAdminToken());
+export type CommunitySortField = AdminCommunitySortField;
+export type { SortOrder };
 
-  const rawItems = baseRes?.communities?.items || [];
-  const total = baseRes?.communities?.total || 0;
+export type CommunityListParams = {
+  keyword?: string;
+  sortBy?: CommunitySortField;
+  sortOrder?: SortOrder;
+  limit?: number;
+  offset?: number;
+};
 
-  // 2. 各コミュニティの「オーナー情報」と「実際のメンバー総数(total)」を同時に取得
-  const items = await Promise.all(
-    rawItems.map(async (item: any) => {
-      let owner: CommunityUser | null = null;
-      let memberCount = 0;
+type AdminCommunityItem = {
+  community: Omit<Community, 'id' | 'owner'>;
+  owner?: CommunityUser | null;
+};
 
-      try {
-        const membersRes: any = await requestDoc(
-          GetCommunityMembersDocument as any,
-          { communityID: item.ID, limit: 50, offset: 0 },
-          getAdminToken()
-        );
+const toCommunity = ({ community, owner }: AdminCommunityItem): Community => ({
+  ...community,
+  id: community.ID,
+  owner: owner ?? null,
+});
 
-        memberCount = membersRes?.communityMembers?.total ?? 0;
-
-        const memberItems: CommunityMember[] = membersRes?.communityMembers?.items || [];
-        const ownerMember = memberItems.find((m) => m.role === 'owner');
-        if (ownerMember) {
-          owner = {
-            ID: ownerMember.user.ID,
-            name: ownerMember.user.name,
-            accountID: ownerMember.user.accountID,
-          };
-        }
-      } catch {
-        // エラーが発生した場合は、owner は null のまま、memberCount は 0 のままにする
-      }
-
-      return {
-        ...item,
-        id: item.ID,
-        memberCount,
-        owner,
-      };
-    })
+export const getCommunities = async ({
+  keyword,
+  sortBy = 'CREATED_AT',
+  sortOrder = 'DESC',
+  limit = 20,
+  offset = 0,
+}: CommunityListParams = {}): Promise<CommunityPage> => {
+  const data = await requestDoc(
+    AdminListCommunitiesDocument,
+    { keyword: keyword?.trim() || undefined, sortBy, sortOrder, limit, offset },
+    getAdminToken(),
   );
-
   return {
     communities: {
-      items: items as Community[],
-      total,
+      items: data.adminListCommunities.items.map(toCommunity),
+      total: data.adminListCommunities.total,
     },
   };
+};
+
+export const getCommunity = async (id: string): Promise<Community | null> => {
+  const data = await requestDoc(AdminGetCommunityDocument, { id }, getAdminToken());
+  return data.adminGetCommunity ? toCommunity(data.adminGetCommunity) : null;
 };
 
 export const updateCommunity = async (
