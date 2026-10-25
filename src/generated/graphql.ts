@@ -44,6 +44,7 @@ export type CourseSyncReviewDecision =
 export type CourseSyncReviewKind =
   | 'CODE_REISSUED'
   | 'CODE_REUSED'
+  | 'SEMESTER_CHANGED'
   | 'SLOT_AMBIGUOUS';
 
 export type CourseSyncReviewStatus =

@@ -243,7 +243,7 @@ export const triggerCourseImport = async (year: number, dryRun: boolean): Promis
 // 集計と授業1件ごとの変更、自動で判断しなかった変化（確認待ち）をここで引く。
 
 export type CourseSyncChangeKind = 'CREATED' | 'UPDATED' | 'DISCONTINUED' | 'RESTORED' | 'REVIEW';
-export type CourseSyncReviewKind = 'CODE_REUSED' | 'CODE_REISSUED' | 'SLOT_AMBIGUOUS';
+export type CourseSyncReviewKind = 'CODE_REUSED' | 'CODE_REISSUED' | 'SLOT_AMBIGUOUS' | 'SEMESTER_CHANGED';
 export type CourseSyncReviewStatus = 'PENDING' | 'SAME' | 'DIFFERENT' | 'IGNORED' | 'APPLIED';
 export type CourseSyncReviewDecision = 'SAME' | 'DIFFERENT' | 'IGNORED';
 

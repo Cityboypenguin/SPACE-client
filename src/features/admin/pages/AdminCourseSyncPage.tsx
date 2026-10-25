@@ -43,6 +43,7 @@ const REVIEW_KIND_LABELS: Record<CourseSyncReview['kind'], string> = {
   CODE_REUSED: '講義コードの使い回しの疑い',
   CODE_REISSUED: '講義コードの振り直しの疑い',
   SLOT_AMBIGUOUS: 'コマの対応が決まらない',
+  SEMESTER_CHANGED: '学期の変更',
 };
 
 const formatDateTime = (value: string) => {
@@ -174,6 +175,12 @@ export const AdminCourseSyncPage = () => {
         return [
           { decision: 'SAME', label: '同じ授業として引き継ぐ', description: '既存の授業を新しい講義コードに付け替える（ルーム・時間割を引き継ぐ）' },
           { decision: 'DIFFERENT', label: '別の授業として扱う', description: '既存の授業は廃止し、新しい授業を作る' },
+          keep,
+        ];
+      case 'SEMESTER_CHANGED':
+        return [
+          { decision: 'SAME', label: '同じ授業として学期を変える', description: '既存の授業の学期を書き換える（ルーム・時間割を引き継ぐ）' },
+          { decision: 'DIFFERENT', label: '別の授業として扱う', description: '既存の授業は廃止し、新しい学期の授業を作る' },
           keep,
         ];
       case 'SLOT_AMBIGUOUS':
