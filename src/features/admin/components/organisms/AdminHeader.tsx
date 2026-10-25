@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { label: 'コミュニティ管理', path: '/admin/communities', icon: communityIcon, iconSize: 20 },
   { label: '投稿管理', path: '/admin/posts', icon: postIcon, iconSize: 20 },
   { label: '授業管理', path: '/admin/courses', icon: timetableIcon, iconSize: 20 },
+  { path: '/admin/course-chats', label: '授業・チャット管理', emoji: '💬' },
   { label: '通報管理', path: '/admin/reports', icon: reportIcon, iconSize: 20 },
   { label: '問い合わせ管理', path: '/admin/inquiries', emoji: '✉️' },
   { label: 'お知らせ管理', path: '/admin/announcements', emoji: '📢' },

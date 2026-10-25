@@ -27,6 +27,7 @@ const AdminTermsDetailPage = lazy(() => import('../pages/AdminTermsDetailPage').
 const AdminMaintenancePage = lazy(() => import('../pages/AdminMaintenancePage').then((m) => ({ default: m.AdminMaintenancePage })));
 const AdminAnalyticsPage = lazy(() => import('../pages/AdminAnalyticsPage').then((m) => ({ default: m.AdminAnalyticsPage })));
 const AdminCourseManagementPage = lazy(() => import('../pages/AdminCourseManagementPage').then((m) => ({ default: m.AdminCourseManagementPage })));
+const AdminCourseChatListPage = lazy(() => import('../pages/AdminCourseChatListpage').then((m) => ({ default: m.AdminCourseChatListPage })));
 const AdminCourseChatDetailPage = lazy(() => import('../pages/AdminCourseChatDetailPage').then((m) => ({ default: m.AdminCourseChatDetailPage })));
 
 export const AdminRoutes = () => {
@@ -215,6 +216,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminCourseManagementPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="course-chats"
+        element={
+          <AdminProtectedRoute>
+            <AdminCourseChatListPage />
           </AdminProtectedRoute>
         }
       />
