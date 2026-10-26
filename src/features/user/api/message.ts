@@ -1,6 +1,6 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
-import { storageUrl } from '../../../lib/storage';
+import { putToStorage, type PresignedUpload } from '../../../lib/storage';
 import { getUserToken } from './auth';
 import { MEDIA_FIELDS_RAW, type Media, type MediaInput } from '../../../lib/media';
 import { type Mention, type MentionCandidate } from '../../../lib/mentions';
@@ -352,6 +352,10 @@ const PresignedMediaUploadUrlDocument = graphql(`
     presignedMediaUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
+      headers {
+        name
+        value
+      }
     }
   }
 `);
@@ -364,6 +368,10 @@ const PresignedMessageMediaUploadUrlDocument = graphql(`
     presignedMessageMediaUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
+      headers {
+        name
+        value
+      }
     }
   }
 `);
@@ -486,11 +494,10 @@ export const getPresignedMessageMediaUploadUrl = async (contentType: string) => 
   return await requestDoc(PresignedMessageMediaUploadUrlDocument, { contentType }, token);
 };
 
-export const uploadFileToStorage = async (uploadUrl: string, file: File): Promise<void> => {
-  const res = await fetch(storageUrl(uploadUrl) ?? uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  });
+export const uploadFileToStorage = async (
+  presigned: PresignedUpload,
+  file: File,
+): Promise<void> => {
+  const res = await putToStorage(presigned, file, file.type);
   if (!res.ok) throw new Error('ファイルのアップロードに失敗しました。');
 };

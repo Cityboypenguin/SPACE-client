@@ -162,6 +162,10 @@ const PresignedCommunityIconUploadUrlDocument = graphql(`
     presignedCommunityIconUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
+      headers {
+        name
+        value
+      }
     }
   }
 `);

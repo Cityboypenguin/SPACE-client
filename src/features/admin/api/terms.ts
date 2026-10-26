@@ -1,7 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
-import { storageUrl } from '../../../lib/storage';
+import { putToStorage, type PresignedUpload } from '../../../lib/storage';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
@@ -16,26 +16,32 @@ export type TermsOfService = {
 const PresignedTermsDocumentUploadUrlDocument = graphql(`
   query PresignedTermsDocumentUploadUrl {
     presignedTermsDocumentUploadUrl {
+      headers {
+        name
+        value
+      }
       uploadUrl
       objectKey
     }
   }
 `);
 
-export const getPresignedTermsDocumentUploadUrl = async (): Promise<{
-  uploadUrl: string;
-  objectKey: string;
-}> => {
+export const getPresignedTermsDocumentUploadUrl = async (): Promise<
+  PresignedUpload & { objectKey: string }
+> => {
   const data = await requestDoc(PresignedTermsDocumentUploadUrlDocument, {}, getAdminToken());
   return data.presignedTermsDocumentUploadUrl;
 };
 
-export const uploadTermsDocument = async (uploadUrl: string, file: File): Promise<void> => {
+export const uploadTermsDocument = async (
+  presigned: PresignedUpload,
+  file: File,
+): Promise<void> => {
   const buffer = await file.arrayBuffer();
-  const res = await fetch(storageUrl(uploadUrl) ?? uploadUrl, {
-    method: 'PUT',
-    body: new Blob([buffer]),
-  });
+  // Content-Type は必ず送る。受け入れ時の検査（サーバー側 upload.Verify）は
+  // 置かれたオブジェクトの Content-Type を見て種別を判定するので、
+  // 送らないと置き場の既定（octet-stream）になり、規約として受け付けられない。
+  const res = await putToStorage(presigned, new Blob([buffer]), 'text/markdown');
   if (!res.ok) throw new Error(`upload failed: ${res.status}`);
 };
 

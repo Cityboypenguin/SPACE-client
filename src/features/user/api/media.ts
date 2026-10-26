@@ -5,13 +5,11 @@ import {
   type MediaInput,
 } from './message';
 import { prepareImageForUpload } from '../../../lib/prepareImageForUpload';
+import type { PresignedUpload } from '../../../lib/storage';
 
 // 署名付きURLを1つ取ってくる関数の形。投稿用と DM 用で置き場が違うので、
 // どちらを使うかは呼び出し側が選ぶ。
-type PresignFn = (contentType: string) => Promise<{
-  uploadUrl: string;
-  objectKey: string;
-}>;
+type PresignFn = (contentType: string) => Promise<PresignedUpload & { objectKey: string }>;
 
 const uploadWith = async (files: File[], presign: PresignFn): Promise<MediaInput[] | undefined> => {
   if (files.length === 0) return undefined;
@@ -20,9 +18,9 @@ const uploadWith = async (files: File[], presign: PresignFn): Promise<MediaInput
     files.map(async (originalFile) => {
       // アップロード前に画像を圧縮し、あわせて寸法を測る（非対応形式はそのまま）。
       const { file, width, height } = await prepareImageForUpload(originalFile);
-      const { uploadUrl, objectKey } = await presign(file.type);
-      await uploadFileToStorage(uploadUrl, file);
-      return { objectKey, contentType: file.type, width, height };
+      const presigned = await presign(file.type);
+      await uploadFileToStorage(presigned, file);
+      return { objectKey: presigned.objectKey, contentType: file.type, width, height };
     }),
   );
 };

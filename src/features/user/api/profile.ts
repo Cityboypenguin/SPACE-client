@@ -1,6 +1,6 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
-import { storageUrl } from '../../../lib/storage';
+import { putToStorage, type PresignedUpload } from '../../../lib/storage';
 import { getUserToken } from './auth';
 
 // UserProfile は「他人も見える」ユーザー像。GraphQL の公開型 User に対応する。
@@ -82,6 +82,10 @@ const PresignedAvatarUploadUrlDocument = graphql(`
     presignedAvatarUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
+      headers {
+        name
+        value
+      }
     }
   }
 `);
@@ -220,12 +224,11 @@ export const getPresignedAvatarUploadUrl = async (contentType: string) => {
   return await requestDoc(PresignedAvatarUploadUrlDocument, { contentType }, token);
 };
 
-export const uploadAvatarToStorage = async (uploadUrl: string, file: File): Promise<void> => {
-  const res = await fetch(storageUrl(uploadUrl) ?? uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  });
+export const uploadAvatarToStorage = async (
+  presigned: PresignedUpload,
+  file: File,
+): Promise<void> => {
+  const res = await putToStorage(presigned, file, file.type);
   if (!res.ok) throw new Error('画像のアップロードに失敗しました。');
 };
 

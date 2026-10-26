@@ -121,7 +121,7 @@ export const UserProfileEditPage = () => {
     try {
       if (selectedFile) {
         const { presignedAvatarUploadUrl } = await getPresignedAvatarUploadUrl(selectedFile.type);
-        await uploadAvatarToStorage(presignedAvatarUploadUrl.uploadUrl, selectedFile);
+        await uploadAvatarToStorage(presignedAvatarUploadUrl, selectedFile);
         await setAvatar(presignedAvatarUploadUrl.objectKey);
       }
 

@@ -32,9 +32,9 @@ export const AdminTermsCreatePage: React.FC = () => {
     setUploadState('uploading');
     setError('');
     try {
-      const { uploadUrl, objectKey: key } = await getPresignedTermsDocumentUploadUrl();
-      await uploadTermsDocument(uploadUrl, file);
-      setObjectKey(key);
+      const presigned = await getPresignedTermsDocumentUploadUrl();
+      await uploadTermsDocument(presigned, file);
+      setObjectKey(presigned.objectKey);
       setUploadState('done');
     } catch {
       setUploadState('error');
