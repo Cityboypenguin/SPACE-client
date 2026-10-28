@@ -78,7 +78,6 @@ export const AdminCourseManagementPage = () => {
   const [newYear, setNewYear] = useState(new Date().getFullYear());
   const [newSemester, setNewSemester] = useState('前期');
   const [creatingCourse, setCreatingCourse] = useState(false);
-  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
 
   const refetchCourseList = useCallback(async () => {
     setListLoading(true);
@@ -99,17 +98,6 @@ export const AdminCourseManagementPage = () => {
       await refetchCourseList();
     })();
   }, [refetchCourseList]);
-
-  const handleFilterSubmit = (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    setListOffset(0);
-    setAppliedFilter({
-      year: filterYear ? Number(filterYear) : undefined,
-      semester: filterSemester || undefined,
-      dayOfWeek: filterDayOfWeek || undefined,
-      keyword: filterKeyword.trim() || undefined,
-    });
-  };
 
   useEffect(() => {
     (async () => {
@@ -132,10 +120,6 @@ export const AdminCourseManagementPage = () => {
     })();
   }, []);
 
-  // 取り込みが動いている間だけWebSocketを張る。ボタン押下で開始した場合はもちろん、
-  // ページを開いた時点で既にRUNNINGだった場合(別の管理者が実行中/リロードした場合)も
-  // 直前のuseEffectで取得した初期状態をきっかけに接続される。SUCCEEDED/FAILEDに
-  // なった時点でこのeffectのクリーンアップが走り、切断される。
   useEffect(() => {
     if (status?.state !== 'RUNNING') return;
     const unsubscribe = subscribeToAdminGraphQL<{ adminCourseImportStatusUpdated: CourseImportStatus }>(
@@ -208,152 +192,149 @@ export const AdminCourseManagementPage = () => {
     }
   };
 
-  const handleDeleteCourse = async (course: CourseWithRegisteredCount, e: { stopPropagation(): void }) => {
-    e.stopPropagation();
-    const warning = course.registeredCount > 0
-      ? `この授業は${course.registeredCount}人が時間割に登録しています。削除するとその登録・チャット履歴（メッセージ・質問・投票）が全て失われます。`
-      : 'この授業を削除すると、チャット履歴も全て失われます。';
-    if (!window.confirm(`「${course.courseName}」を削除しますか？\n${warning}\nこの操作は取り消せません。`)) return;
-
-    setDeletingCourseId(course.ID);
-    try {
-      await deleteCourse(course.ID);
-      addToast('授業を削除しました', 'success');
-      await refetchCourseList();
-    } catch (err) {
-      addToast(err instanceof Error ? err.message : '授業の削除に失敗しました', 'error');
-    } finally {
-      setDeletingCourseId(null);
-    }
-  };
-
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <h1 className={styles.title}>授業管理</h1>
-
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>授業管理</h1>
+        </div>
         {loading ? (
-          <p>読み込み中...</p>
+          <p className={styles.loadingText}>読み込み中...</p>
         ) : (
-          <>
-            {loadError && <p className={styles.errorText}>{loadError}</p>}
+          <div className={styles.cardStack}>
+              {loadError && <p className={styles.errorText}>{loadError}</p>}
 
-            <div className={styles.sectionCard}>
-              <h2 className={styles.sectionTitle}>学期指定</h2>
-              <div className={styles.filterForm}>
-                <input
-                  type="number"
-                  value={year}
-                  onChange={(e) => setYear(Number(e.target.value))}
-                  className={styles.inputCompact}
-                />
-                <span>年</span>
-                <select value={semester} onChange={(e) => setSemester(e.target.value)} className={styles.select}>
-                  <option value="前期">前期</option>
-                  <option value="後期">後期</option>
-                </select>
-              </div>
-              <button
-                onClick={() => { void handleSaveSemester(); }}
-                disabled={savingSemester}
-                className={`${styles.primaryButton} ${styles.primaryButtonLarge} ${savingSemester ? styles.disabled : ''}`}
-              >
-                {savingSemester ? '更新中...' : '学期を更新する'}
-              </button>
-            </div>
-
-            <div className={styles.sectionCard}>
-              <h2 className={styles.sectionTitle}>授業データの取り込み</h2>
-              <div className={styles.filterForm}>
-                <input
-                  type="number"
-                  value={importYear}
-                  onChange={(e) => setImportYear(Number(e.target.value))}
-                  className={styles.inputCompact}
-                  disabled={status?.state === 'RUNNING'}
-                />
-                <span>年度をシラバスサイトから取り込む</span>
-              </div>
-              <button
-                onClick={() => { void handleTriggerImport(); }}
-                disabled={triggering || status?.state === 'RUNNING'}
-                className={`${styles.primaryButton} ${styles.primaryButtonLarge} ${(triggering || status?.state === 'RUNNING') ? styles.disabled : ''}`}
-              >
-                {status?.state === 'RUNNING' ? '実行中...' : '取り込みを開始'}
-              </button>
-
-              {status && (
-                <div className={styles.statusLine}>
-                  <p>
-                    状態：
-                    <strong className={styles.importState} data-state={status.state}> {STATE_LABELS[status.state]}</strong>
-                    {status.year != null && ` （${status.year}年度）`}
-                  </p>
-                  {status.state === 'RUNNING' && status.progressPercent != null && (
-                    <p className={styles.cellText}>
-                      進捗: {status.progressPercent}%（{status.processedCount ?? 0} / {status.totalCount ?? 0}件）
-                    </p>
-                  )}
-                  {status.state === 'SUCCEEDED' && (
-                    <p className={styles.cellText}>
-                      新規登録: {status.imported ?? 0}件 ・ スキップ: {status.skipped ?? 0}件
-                    </p>
-                  )}
-                  {status.state === 'FAILED' && status.errorMessage && (
-                    <p className={styles.errorText}>{status.errorMessage}</p>
-                  )}
+              {/* 1. 学期指定カード */}
+              <div className={styles.card}>
+                <h2 className={styles.cardTitle}>学期指定</h2>
+                <div className={styles.formRow}>
+                  <div className={styles.inputGroup}>
+                    <input
+                      type="number"
+                      value={year}
+                      onChange={(e) => setYear(Number(e.target.value))}
+                      className={styles.inputCompact}
+                    />
+                    <span className={styles.unitText}>年</span>
+                    <select value={semester} onChange={(e) => setSemester(e.target.value)} className={styles.select}>
+                      <option value="前期">前期</option>
+                      <option value="後期">後期</option>
+                    </select>
+                  </div>
                 </div>
-              )}
-              <p className={styles.helpText}>
-                既に取り込み済みの授業は重複登録されず、新規分のみ追加されます。1回の実行に数十秒〜数分かかることがあります。
-              </p>
-            </div>
+                <div className={styles.formAction}>
+                  <button
+                    onClick={() => { void handleSaveSemester(); }}
+                    disabled={savingSemester}
+                    className={`${styles.primaryButton} ${savingSemester ? styles.disabled : ''}`}
+                  >
+                    {savingSemester ? '更新中...' : '学期を更新する'}
+                  </button>
+                </div>
+              </div>
 
-            <div className={styles.sectionCard}>
-              <h2 className={styles.sectionTitle}>授業を手動で追加</h2>
-              <form onSubmit={(e) => { void handleCreateCourse(e); }} className={styles.filterForm}>
-                <select value={newDayOfWeek} onChange={(e) => setNewDayOfWeek(e.target.value)} className={styles.select}>
-                  {TIMETABLE_DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
-                </select>
-                <select value={newPeriod} onChange={(e) => setNewPeriod(Number(e.target.value))} className={styles.select}>
-                  {TIMETABLE_PERIODS.map((p) => <option key={p} value={p}>{p}限</option>)}
-                </select>
-                <select value={newSemester} onChange={(e) => setNewSemester(e.target.value)} className={styles.select}>
-                  <option value="前期">前期</option>
-                  <option value="後期">後期</option>
-                  <option value="通年">通年</option>
-                </select>
-                <input
-                  type="number"
-                  value={newYear}
-                  onChange={(e) => setNewYear(Number(e.target.value))}
-                  className={styles.inputCompact}
-                />
-                <input
-                  type="text"
-                  value={newTeacherName}
-                  onChange={(e) => setNewTeacherName(e.target.value)}
-                  placeholder="教員名"
-                  className={styles.input}
-                />
-                <input
-                  type="text"
-                  value={newCourseName}
-                  onChange={(e) => setNewCourseName(e.target.value)}
-                  placeholder="授業名"
-                  className={`${styles.input} ${styles.inputGrow}`}
-                />
-                <button type="submit" disabled={creatingCourse} className={styles.primaryButton}>
-                  {creatingCourse ? '追加中...' : '追加する'}
-                </button>
-              </form>
-              <p className={styles.helpText}>
-                スクレイピングが拾わなかった授業の緊急追加用です。追加すると専用のチャットルームも作られます。
-                後日スクレイピングで同じ授業が取り込まれると重複登録される点に注意してください。
-              </p>
-            </div>
-          </>
+              {/* 2. 授業データの取り込みカード */}
+              <div className={styles.card}>
+                <h2 className={styles.cardTitle}>授業データの取り込み</h2>
+                <div className={styles.formRow}>
+                  <div className={styles.inputGroup}>
+                    <input
+                      type="number"
+                      value={importYear}
+                      onChange={(e) => setImportYear(Number(e.target.value))}
+                      className={styles.inputCompact}
+                      disabled={status?.state === 'RUNNING'}
+                    />
+                    <span className={styles.unitText}>年度をシラバスサイトから取り込む</span>
+                  </div>
+                </div>
+                <div className={styles.formAction}>
+                  <button
+                    onClick={() => { void handleTriggerImport(); }}
+                    disabled={triggering || status?.state === 'RUNNING'}
+                    className={`${styles.primaryButton} ${(triggering || status?.state === 'RUNNING') ? styles.disabled : ''}`}
+                  >
+                    {status?.state === 'RUNNING' ? '実行中...' : '取り込みを開始'}
+                  </button>
+                </div>
+
+                {status && (
+                  <div className={styles.statusBox}>
+                    <p>
+                      状態：
+                      <strong className={styles.importState} data-state={status.state}> {STATE_LABELS[status.state]}</strong>
+                      {status.year != null && ` （${status.year}年度）`}
+                    </p>
+                    {status.state === 'RUNNING' && status.progressPercent != null && (
+                      <p className={styles.statusDetail}>
+                        進捗: {status.progressPercent}%（{status.processedCount ?? 0} / {status.totalCount ?? 0}件）
+                      </p>
+                    )}
+                    {status.state === 'SUCCEEDED' && (
+                      <p className={styles.statusDetail}>
+                        新規登録: {status.imported ?? 0}件 ・ スキップ: {status.skipped ?? 0}件
+                      </p>
+                    )}
+                    {status.state === 'FAILED' && status.errorMessage && (
+                      <p className={styles.errorText}>{status.errorMessage}</p>
+                    )}
+                  </div>
+                )}
+                <p className={styles.helpText}>
+                  既に取り込み済みの授業は重複登録されず、新規分のみ追加されます。1回の実行に数十秒〜数分かかることがあります。
+                </p>
+              </div>
+
+              {/* 3. 授業を手動で追加カード */}
+              <div className={styles.card}>
+                <h2 className={styles.cardTitle}>授業を手動で追加</h2>
+                <form onSubmit={(e) => { void handleCreateCourse(e); }} className={styles.formGrid}>
+                  <div className={styles.formRowInline}>
+                    <select value={newDayOfWeek} onChange={(e) => setNewDayOfWeek(e.target.value)} className={styles.select}>
+                      {TIMETABLE_DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
+                    </select>
+                    <select value={newPeriod} onChange={(e) => setNewPeriod(Number(e.target.value))} className={styles.select}>
+                      {TIMETABLE_PERIODS.map((p) => <option key={p} value={p}>{p}限</option>)}
+                    </select>
+                    <select value={newSemester} onChange={(e) => setNewSemester(e.target.value)} className={styles.select}>
+                      <option value="前期">前期</option>
+                      <option value="後期">後期</option>
+                      <option value="通年">通年</option>
+                    </select>
+                    <input
+                      type="number"
+                      value={newYear}
+                      onChange={(e) => setNewYear(Number(e.target.value))}
+                      className={styles.inputCompact}
+                    />
+                  </div>
+                  <div className={styles.formRowInline}>
+                    <input
+                      type="text"
+                      value={newTeacherName}
+                      onChange={(e) => setNewTeacherName(e.target.value)}
+                      placeholder="教員名"
+                      className={styles.input}
+                    />
+                    <input
+                      type="text"
+                      value={newCourseName}
+                      onChange={(e) => setNewCourseName(e.target.value)}
+                      placeholder="授業名"
+                      className={`${styles.input} ${styles.inputGrow}`}
+                    />
+                    <button type="submit" disabled={creatingCourse} className={styles.primaryButton}>
+                      {creatingCourse ? '追加中...' : '追加する'}
+                    </button>
+                  </div>
+                </form>
+                <p className={styles.helpText}>
+                  スクレイピングが拾わなかった授業の緊急追加用です。追加すると専用のチャットルームも作られます。
+                  後日スクレイピングで同じ授業が取り込まれると重複登録される点に注意してください。
+                </p>
+              </div>
+          </div>
         )}
       </main>
     </div>

@@ -157,7 +157,7 @@ export const AdminCourseChatDetailPage = () => {
     }
   };
 
-  if (!course) return <p className={styles.pageCentered}>{error || '読み込み中...'}</p>;
+  if (!course) return <p className={styles.loadingText}>{error || '読み込み中...'}</p>;
 
   return (
     <div>
@@ -165,225 +165,211 @@ export const AdminCourseChatDetailPage = () => {
       <main className={styles.pageCentered}>
         <div className={styles.pageHeader}>
           <h1 className={styles.titleLarge}>授業チャット詳細</h1>
-          <button
+        </div>
+
+        {error && <p className={styles.errorText}>{error}</p>}
+
+        <button
             type="button"
-            onClick={() => navigate('/admin/courses')}
-            className={styles.paginationButton}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+            onClick={() => navigate('/admin/course-chats')}
+            className={styles.backButton}
           >
             <ChevronLeft /> 一覧に戻る
           </button>
-        </div>
 
-        {error && <p className={styles.centerError}>{error}</p>}
-
-        {/* 授業基本情報 */}
-        <div className={styles.tablePanelPlain} style={{ marginBottom: '32px' }}>
-          <table className={styles.table}>
-            <tbody>
-              <tr className={styles.tableRow}>
-                <th className={styles.tableCellLarge} style={{ width: '160px', backgroundColor: '#f8fafc', fontWeight: 600 }}>授業名</th>
-                <td className={styles.tableCellLarge}>{course.courseName}</td>
-              </tr>
-              <tr className={styles.tableRow}>
-                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>担当教員</th>
-                <td className={styles.tableCellLarge}>{course.teacherName}</td>
-              </tr>
-              <tr className={styles.tableRow}>
-                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>曜日・時限</th>
-                <td className={styles.tableCellLarge}>{course.dayOfWeek}曜{course.period}限</td>
-              </tr>
-              <tr className={styles.tableRow}>
-                <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>年度・学期</th>
-                <td className={styles.tableCellLarge}>{course.year}年度 {course.semester}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* 1. メッセージ一覧 */}
-        <div style={{ marginBottom: '40px' }}>
-          <div className={styles.toolbar}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0 }}>メッセージ一覧</h2>
-            {hasOlderMessages && (
-              <button
-                type="button"
-                onClick={loadOlderMessages}
-                disabled={loadingOlderMessages}
-                className={styles.paginationButton}
-              >
-                {loadingOlderMessages ? '読み込み中...' : '過去のメッセージを読み込む'}
-              </button>
-            )}
-          </div>
-
-          {messagesError && <p className={styles.centerError}>{messagesError}</p>}
-          {messages.length > 0 ? (
-            <div className={styles.tablePanelPlain}>
-              <table className={styles.table}>
-                <thead>
-                  <tr className={styles.tableHeaderRow}>
-                    <th className={styles.tableCellLarge}>投稿者</th>
-                    <th className={styles.tableCellLarge}>内容</th>
-                    <th className={styles.tableCellLarge}>投稿日時</th>
-                    <th className={styles.tableCellLarge}>操作</th>
-                  </tr>
-                </thead>
+        {/* 2カラムレイアウトコンテナ */}
+        <div className={`${styles.twoColumnLayout} ${styles.courseChatLayout}`}>
+          
+          {/* 【左カラム】授業情報 / 質問箱 / 投票 */}
+          <div className={styles.leftColumn}>
+            
+            {/* 1. 授業基本情報 */}
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>授業情報</h2>
+              <table className={styles.infoTable}>
                 <tbody>
-                  {messages.map((message) => (
-                    <tr key={message.ID} className={styles.tableRow}>
-                      <td className={styles.tableCellLarge}>
-                        {message.user.name}
-                        <span className={styles.cellMuted} style={{ display: 'block', fontSize: '0.8rem' }}>
-                          @{message.user.accountID}
-                        </span>
-                      </td>
-                      <td className={styles.tableCellLarge}>{message.content}</td>
-                      <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
-                        {new Date(message.createdAt).toLocaleString('ja-JP')}
-                      </td>
-                      <td className={styles.tableCellLarge}>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteMessage(message)}
-                          className={styles.primaryButton}
-                          style={{ backgroundColor: '#ef4444' }}
-                        >
-                          削除
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  <tr>
+                    <th>授業名</th>
+                    <td>{course.courseName}</td>
+                  </tr>
+                  <tr>
+                    <th>担当教員</th>
+                    <td>{course.teacherName}</td>
+                  </tr>
+                  <tr>
+                    <th>曜日・時限</th>
+                    <td>{course.dayOfWeek}曜{course.period}限</td>
+                  </tr>
+                  <tr>
+                    <th>年度・学期</th>
+                    <td>{course.year}年度 {course.semester}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
-          ) : (
-            !messagesError && <p className={styles.emptyState}>メッセージはありません</p>
-          )}
-        </div>
 
-        {/* 2. 質問箱一覧 */}
-        <div style={{ marginBottom: '40px' }}>
-          <div className={styles.toolbar}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0 }}>質問箱一覧</h2>
+            {/* 2. 質問箱一覧 */}
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>質問箱一覧</h2>
+              {questionsError && <p className={styles.errorText}>{questionsError}</p>}
+              {questions.length > 0 ? (
+                <>
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>質問者</th>
+                          <th>本文</th>
+                          <th>状態</th>
+                          <th>操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {questions.map((question) => (
+                          <tr key={question.ID}>
+                            <td>
+                              <div>{question.user.name}</div>
+                              <span className={styles.subText}>@{question.user.accountID}</span>
+                            </td>
+                            <td className={styles.cellWrap}>{question.body}</td>
+                            <td>{question.isAnswered ? '解決済み' : '未解決'}</td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteQuestion(question)}
+                                className={styles.dangerButton}
+                              >
+                                削除
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <AdminPagination
+                    page={questionPage}
+                    totalPages={Math.ceil(questionTotal / adminCoursePageSize)}
+                    onPrev={() => setQuestionPage((p) => Math.max(0, p - 1))}
+                    onNext={() => setQuestionPage((p) => p + 1)}
+                  />
+                </>
+              ) : (
+                !questionsError && <p className={styles.emptyText}>質問はありません</p>
+              )}
+            </div>
+
+            {/* 3. 投票一覧 */}
+            <div className={styles.card}>
+              <h2 className={styles.cardTitle}>投票一覧</h2>
+              {pollsError && <p className={styles.errorText}>{pollsError}</p>}
+              {polls.length > 0 ? (
+                <>
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>作成者</th>
+                          <th>質問</th>
+                          <th>操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {polls.map((poll) => (
+                          <tr key={poll.ID}>
+                            <td>
+                              <div>{poll.user.name}</div>
+                              <span className={styles.subText}>@{poll.user.accountID}</span>
+                            </td>
+                            <td className={styles.cellWrap}>{poll.question}</td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePoll(poll)}
+                                className={styles.dangerButton}
+                              >
+                                削除
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <AdminPagination
+                    page={pollPage}
+                    totalPages={Math.ceil(pollTotal / adminCoursePageSize)}
+                    onPrev={() => setPollPage((p) => Math.max(0, p - 1))}
+                    onNext={() => setPollPage((p) => p + 1)}
+                  />
+                </>
+              ) : (
+                !pollsError && <p className={styles.emptyText}>投票はありません</p>
+              )}
+            </div>
+
           </div>
 
-          {questionsError && <p className={styles.centerError}>{questionsError}</p>}
-          {questions.length > 0 ? (
-            <div className={styles.tablePanelPlain}>
-              <table className={styles.table}>
-                <thead>
-                  <tr className={styles.tableHeaderRow}>
-                    <th className={styles.tableCellLarge}>質問者</th>
-                    <th className={styles.tableCellLarge}>本文</th>
-                    <th className={styles.tableCellLarge}>状態</th>
-                    <th className={styles.tableCellLarge}>回答数</th>
-                    <th className={styles.tableCellLarge}>投稿日時</th>
-                    <th className={styles.tableCellLarge}>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {questions.map((question) => (
-                    <tr key={question.ID} className={styles.tableRow}>
-                      <td className={styles.tableCellLarge}>
-                        {question.user.name}
-                        <span className={styles.cellMuted} style={{ display: 'block', fontSize: '0.8rem' }}>
-                          @{question.user.accountID}
-                        </span>
-                      </td>
-                      <td className={styles.tableCellLarge}>{question.body}</td>
-                      <td className={styles.tableCellLarge}>
-                        {question.isAnswered ? '解決済み' : '未解決'}
-                      </td>
-                      <td className={styles.tableCellLarge}>{question.answerCount}</td>
-                      <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
-                        {new Date(question.createdAt).toLocaleString('ja-JP')}
-                      </td>
-                      <td className={styles.tableCellLarge}>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteQuestion(question)}
-                          className={styles.primaryButton}
-                          style={{ backgroundColor: '#ef4444' }}
-                        >
-                          削除
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            !questionsError && <p className={styles.emptyState}>質問はありません</p>
-          )}
-          <AdminPagination
-            page={questionPage}
-            totalPages={Math.ceil(questionTotal / adminCoursePageSize)}
-            onPrev={() => setQuestionPage((p) => Math.max(0, p - 1))}
-            onNext={() => setQuestionPage((p) => p + 1)}
-          />
-        </div>
+          {/* 【右カラム】チャット履歴（メッセージ一覧） */}
+          <div className={`${styles.rightColumn} ${styles.courseChatColumn}`}>
+            <div className={styles.card}>
+              <div className={styles.cardHeaderWithAction}>
+                <h2 className={styles.cardTitle}>チャット履歴</h2>
+                {hasOlderMessages && (
+                  <button
+                    type="button"
+                    onClick={loadOlderMessages}
+                    disabled={loadingOlderMessages}
+                    className={styles.secondaryButton}
+                  >
+                    {loadingOlderMessages ? '読み込み中...' : '過去ログ読込'}
+                  </button>
+                )}
+              </div>
 
-        {/* 3. 投票一覧 */}
-        <div style={{ marginBottom: '40px' }}>
-          <div className={styles.toolbar}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0 }}>投票一覧</h2>
+              {messagesError && <p className={styles.errorText}>{messagesError}</p>}
+              {messages.length > 0 ? (
+                <div className={styles.courseChatTableWrapper}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr className={styles.courseChatTableHeader}>
+                        <th>投稿者</th>
+                        <th>内容</th>
+                        <th>日時</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {messages.map((message) => (
+                        <tr key={message.ID}>
+                          <td>
+                            <div className={styles.userName}>{message.user.name}</div>
+                            <span className={styles.subText}>@{message.user.accountID}</span>
+                          </td>
+                          <td className={styles.cellWrap}>{message.content}</td>
+                          <td className={styles.dateCell}>
+                            {new Date(message.createdAt).toLocaleString('ja-JP')}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMessage(message)}
+                              className={styles.dangerButton}
+                            >
+                              削除
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                !messagesError && <p className={styles.emptyText}>メッセージはありません</p>
+              )}
+            </div>
           </div>
 
-          {pollsError && <p className={styles.centerError}>{pollsError}</p>}
-          {polls.length > 0 ? (
-            <div className={styles.tablePanelPlain}>
-              <table className={styles.table}>
-                <thead>
-                  <tr className={styles.tableHeaderRow}>
-                    <th className={styles.tableCellLarge}>作成者</th>
-                    <th className={styles.tableCellLarge}>質問</th>
-                    <th className={styles.tableCellLarge}>選択肢と得票数</th>
-                    <th className={styles.tableCellLarge}>作成日時</th>
-                    <th className={styles.tableCellLarge}>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {polls.map((poll) => (
-                    <tr key={poll.ID} className={styles.tableRow}>
-                      <td className={styles.tableCellLarge}>
-                        {poll.user.name}
-                        <span className={styles.cellMuted} style={{ display: 'block', fontSize: '0.8rem' }}>
-                          @{poll.user.accountID}
-                        </span>
-                      </td>
-                      <td className={styles.tableCellLarge}>{poll.question}</td>
-                      <td className={styles.tableCellLarge}>
-                        {poll.options.map((o) => `${o.label}(${o.voteCount})`).join(' / ')}
-                      </td>
-                      <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
-                        {new Date(poll.createdAt).toLocaleString('ja-JP')}
-                      </td>
-                      <td className={styles.tableCellLarge}>
-                        <button
-                          type="button"
-                          onClick={() => handleDeletePoll(poll)}
-                          className={styles.primaryButton}
-                          style={{ backgroundColor: '#ef4444' }}
-                        >
-                          削除
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            !pollsError && <p className={styles.emptyState}>投票はありません</p>
-          )}
-          <AdminPagination
-            page={pollPage}
-            totalPages={Math.ceil(pollTotal / adminCoursePageSize)}
-            onPrev={() => setPollPage((p) => Math.max(0, p - 1))}
-            onNext={() => setPollPage((p) => p + 1)}
-          />
         </div>
       </main>
     </div>

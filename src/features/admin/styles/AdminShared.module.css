@@ -15,6 +15,111 @@
   font-family: sans-serif;
 }
 
+.container {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+}
+
+.twoColumnLayout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.leftColumn {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 20px;
+  width: 380px;
+}
+
+.rightColumn {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.courseChatColumn {
+  width: min(100%, 680px);
+  flex: 0 1 680px;
+  align-self: stretch;
+}
+
+.courseChatLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.courseChatLayout .leftColumn,
+.courseChatLayout .courseChatColumn {
+  width: auto;
+  min-width: 0;
+}
+
+.courseChatLayout .courseChatColumn {
+  flex: initial;
+}
+
+.courseChatTableWrapper {
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+}
+
+.courseChatTableHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #f8fafc;
+}
+
+.card {
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
+}
+
+.cardTitle {
+  margin: 0 0 16px;
+  color: #1e293b;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.cardHeaderWithAction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.cardHeaderWithAction .cardTitle {
+  margin-bottom: 0;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.backButton:hover {
+  background-color: #f1f5f9;
+}
+
 .pageWide {
   width: min(100%, 1400px);
   min-height: 100vh;
@@ -415,7 +520,32 @@
 }
 
 .dangerButton {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 4px;
+  background-color: #ef4444;
   color: var(--color-danger);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dangerButton:hover {
+  background-color: #dc2626;
+}
+
+.secondaryButton {
+  padding: 4px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #475569;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.secondaryButton:hover {
+  background-color: #f8fafc;
 }
 
 .ghostButton {
@@ -725,7 +855,26 @@
 }
 
 .infoTable {
+  width: 100%;
   margin-bottom: 1rem;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.infoTable th {
+  width: 90px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+  text-align: left;
+}
+
+.infoTable td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
 }
 
 .infoHeader {
@@ -735,6 +884,39 @@
 
 .tableWrap {
   overflow-x: auto;
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.cellWrap {
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.subText {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.userName {
+  font-weight: 500;
+}
+
+.dateCell {
+  color: #64748b;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.emptyText {
+  padding: 24px 0;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 .tablePanel {
@@ -1772,6 +1954,36 @@
     margin-left: 0 !important;
     margin-bottom: 56px;
     padding: 16px;
+  }
+
+  .twoColumnLayout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  /* 左カラム（均等幅 1） */
+  .leftColumn {
+    flex: 1;
+    min-width: 0; /* 子要素のテーブル溢れ防止 */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  /* 右カラム（均等幅 1） */
+  .rightColumn {
+    flex: 1;
+    min-width: 0; /* 子要素のテーブル溢れ防止 */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .courseChatColumn {
+    width: 100%;
+    flex: 1;
   }
 
   .headerRow,
