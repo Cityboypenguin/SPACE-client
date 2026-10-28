@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { useToast } from '../../../context/useToast';
 import {
@@ -7,18 +6,12 @@ import {
   updateCurrentSemester,
   getCourseImportStatus,
   triggerCourseImport,
-  listCourses,
-  listCourseYears,
   createCourse,
-  deleteCourse,
   type CourseImportStatus,
-  type CourseWithRegisteredCount,
 } from '../api/courses';
 import { subscribeToAdminGraphQL } from '../api/adminGraphqlWs';
 import { TIMETABLE_DAYS, TIMETABLE_PERIODS } from '../../user/components/timetableConstants';
 import styles from '../styles/AdminShared.module.css';
-
-const LIST_PAGE_SIZE = 20;
 
 const STATE_LABELS: Record<CourseImportStatus['state'], string> = {
   IDLE: '未実行',
@@ -46,7 +39,6 @@ const ADMIN_COURSE_IMPORT_STATUS_UPDATED_SUBSCRIPTION = `
 
 export const AdminCourseManagementPage = () => {
   const { addToast } = useToast();
-  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -59,18 +51,6 @@ export const AdminCourseManagementPage = () => {
   const [status, setStatus] = useState<CourseImportStatus | null>(null);
   const [triggering, setTriggering] = useState(false);
 
-  const [courseYears, setCourseYears] = useState<number[]>([]);
-  const [filterYear, setFilterYear] = useState('');
-  const [filterSemester, setFilterSemester] = useState('');
-  const [filterDayOfWeek, setFilterDayOfWeek] = useState('');
-  const [filterKeyword, setFilterKeyword] = useState('');
-  const [appliedFilter, setAppliedFilter] = useState<{ year?: number; semester?: string; dayOfWeek?: string; keyword?: string }>({});
-  const [listOffset, setListOffset] = useState(0);
-  const [courseItems, setCourseItems] = useState<CourseWithRegisteredCount[]>([]);
-  const [courseTotal, setCourseTotal] = useState(0);
-  const [listLoading, setListLoading] = useState(false);
-  const [listError, setListError] = useState('');
-
   const [newDayOfWeek, setNewDayOfWeek] = useState(TIMETABLE_DAYS[0]);
   const [newPeriod, setNewPeriod] = useState(TIMETABLE_PERIODS[0]);
   const [newTeacherName, setNewTeacherName] = useState('');
@@ -79,39 +59,17 @@ export const AdminCourseManagementPage = () => {
   const [newSemester, setNewSemester] = useState('前期');
   const [creatingCourse, setCreatingCourse] = useState(false);
 
-  const refetchCourseList = useCallback(async () => {
-    setListLoading(true);
-    setListError('');
-    try {
-      const data = await listCourses(appliedFilter, LIST_PAGE_SIZE, listOffset);
-      setCourseItems(data.items);
-      setCourseTotal(data.total);
-    } catch (err) {
-      setListError(err instanceof Error ? err.message : '授業一覧の取得に失敗しました');
-    } finally {
-      setListLoading(false);
-    }
-  }, [appliedFilter, listOffset]);
-
-  useEffect(() => {
-    (async () => {
-      await refetchCourseList();
-    })();
-  }, [refetchCourseList]);
-
   useEffect(() => {
     (async () => {
       try {
-        const [currentSemester, importStatus, years] = await Promise.all([
+        const [currentSemester, importStatus] = await Promise.all([
           getCurrentSemester(),
           getCourseImportStatus(),
-          listCourseYears(),
         ]);
         setYear(currentSemester.year);
         setSemester(currentSemester.semester);
         setImportYear(currentSemester.year);
         setStatus(importStatus);
-        setCourseYears(years);
       } catch {
         setLoadError('データの取得に失敗しました');
       } finally {
@@ -184,7 +142,6 @@ export const AdminCourseManagementPage = () => {
       addToast('授業を追加しました', 'success');
       setNewTeacherName('');
       setNewCourseName('');
-      await refetchCourseList();
     } catch (err) {
       addToast(err instanceof Error ? err.message : '授業の追加に失敗しました', 'error');
     } finally {

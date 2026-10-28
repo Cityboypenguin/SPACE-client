@@ -35,6 +35,7 @@ export type Course = {
   year: number;
   semester: string;
   createdAt: string;
+  messageCount?: number;
 };
 
 // registeredCount（その授業を時間割に登録している人数）はサーバー側で都度集計されるため、
@@ -140,6 +141,7 @@ const AdminListCoursesDocument = graphql(`
         semester
         createdAt
         registeredCount
+        messageCount
       }
       total
     }

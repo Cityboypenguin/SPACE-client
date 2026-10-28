@@ -226,7 +226,7 @@ export const AdminCourseChatListPage: React.FC = () => {
                       {chat.registeredCount ?? 0} 人
                     </td>
                     <td className={styles.tableCellLarge}>
-                      {(chat as any).messageCount ?? 0} 件
+                      {chat.messageCount ?? 0} 件
                     </td>
                     <td className={styles.tableCellLarge}>
                       <button
