@@ -213,7 +213,7 @@ export const kickUserFromCommunity = async (communityID: string, userID: string)
 };
 
 export const getCommunityMembers = async (communityID: string, limit = 50, offset = 0) => {
-  return await requestDoc(GetCommunityMembersDocument as any, { communityID, limit, offset }, getAdminToken());
+  return await requestDoc(GetCommunityMembersDocument, { communityID, limit, offset }, getAdminToken());
 };
 
 const ListRoomMessagesDocument = graphql(`

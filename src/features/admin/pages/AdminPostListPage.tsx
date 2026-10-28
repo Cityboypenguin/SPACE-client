@@ -580,7 +580,7 @@ export const AdminPostListPage = () => {
                     <div
                       style={{
                         display: 'flex',
-                        justify: 'space-between',
+                        justifyContent: 'space-between',
                         alignItems: 'center',
                         fontSize: '0.75rem',
                         color: '#64748b',

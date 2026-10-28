@@ -1,6 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
+import type { SortOrder } from '../../../generated/graphql';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
@@ -57,6 +58,17 @@ export type CoursePage = {
   total: number;
 };
 
+export type CourseSortField =
+  | 'COURSE_NAME'
+  | 'TEACHER_NAME'
+  | 'YEAR'
+  | 'REGISTERED_COUNT'
+  | 'CREATED_AT'
+  | 'createdAt'
+  | 'registeredCount'
+  | 'messageCount';
+export type CourseSortOrder = SortOrder | 'asc' | 'desc';
+
 const CurrentSemesterDocument = graphql(`
   query AdminCurrentSemester {
     currentSemester {
@@ -65,6 +77,11 @@ const CurrentSemesterDocument = graphql(`
     }
   }
 `);
+
+export const getCurrentSemester = async (): Promise<CurrentSemester> => {
+  const data = await requestDoc(CurrentSemesterDocument, {}, getAdminToken());
+  return data.currentSemester;
+};
 
 const UpdateCurrentSemesterDocument = graphql(`
   mutation AdminUpdateCurrentSemester($year: Int!, $semester: String!) {
@@ -110,8 +127,8 @@ const AdminTriggerCourseImportDocument = graphql(`
 `);
 
 const AdminListCoursesDocument = graphql(`
-  query AdminListCourses($year: Int, $semester: String, $dayOfWeek: String, $keyword: String, $limit: Int, $offset: Int) {
-    adminListCourses(year: $year, semester: $semester, dayOfWeek: $dayOfWeek, keyword: $keyword, limit: $limit, offset: $offset) {
+  query AdminListCourses($year: Int, $semester: String, $dayOfWeek: String, $keyword: String, $sortBy: String, $sortOrder: SortOrder, $limit: Int, $offset: Int) {
+    adminListCourses(year: $year, semester: $semester, dayOfWeek: $dayOfWeek, keyword: $keyword, sortBy: $sortBy, sortOrder: $sortOrder, limit: $limit, offset: $offset) {
       items {
         ID
         roomID
@@ -195,21 +212,31 @@ export const getCourse = async (id: string): Promise<Course | null> => {
 };
 
 export const listCourses = async (
-  filter: { year?: number; semester?: string; dayOfWeek?: string; keyword?: string },
+  filter: {
+    year?: number;
+    semester?: string;
+    dayOfWeek?: string;
+    keyword?: string;
+    sortBy?: CourseSortField;
+    sortOrder?: CourseSortOrder;
+  },
   limit = 20,
   offset = 0,
 ): Promise<CoursePage> => {
+  const sortBy = filter.sortBy === 'CREATED_AT' ? 'createdAt' : filter.sortBy === 'REGISTERED_COUNT' ? 'registeredCount' : filter.sortBy === 'YEAR' ? 'createdAt' : filter.sortBy;
+  const sortOrder = filter.sortOrder === 'asc' ? 'ASC' : filter.sortOrder === 'desc' ? 'DESC' : filter.sortOrder;
   const data = await requestDoc(
     AdminListCoursesDocument,
-    { ...filter, limit, offset },
+    {
+      ...filter,
+      sortBy,
+      sortOrder,
+      limit,
+      offset,
+    },
     getAdminToken(),
   );
   return data.adminListCourses;
-};
-
-export const getCurrentSemester = async (): Promise<CurrentSemester> => {
-  const data = await requestDoc(CurrentSemesterDocument, {}, getAdminToken());
-  return data.currentSemester;
 };
 
 export const updateCurrentSemester = async (year: number, semester: string): Promise<CurrentSemester> => {

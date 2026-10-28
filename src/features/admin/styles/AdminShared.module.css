@@ -800,6 +800,15 @@
   background: var(--color-surface);
 }
 
+.tableSortButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .tableRow {
   border-bottom: 1px solid var(--color-border);
 }
