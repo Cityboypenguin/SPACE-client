@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
-import { Link } from 'react-router-dom';
 import { 
   getReports, 
   adminUpdateReportStatus, 
@@ -23,8 +23,8 @@ const targetTypeJa: Record<string, string> = {
 };
 
 const statusJa: Record<string, string> = {
-  UNRESOLVED: '未対応',
   PENDING: '未対応',
+  UNRESOLVED: '未対応',
   REVIEWING: '対応中',
   RESOLVED: '対応済',
   DISMISSED: '却下（問題なし）',
@@ -108,6 +108,10 @@ export const ReportsPage: React.FC = () => {
     try {
       setError('');
       await adminUpdateReportStatus(reportId, newStatus);
+      
+      // サイドバーのバッジカウントを再計算させるイベントを発行
+      window.dispatchEvent(new Event('report-status-updated'));
+      
       loadReports();
     } catch (err) {
       console.error(err);
@@ -131,51 +135,56 @@ export const ReportsPage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.pageWide}>
-        <div className={styles.headerRow}>
-          <div>
-            <h1 className={styles.title}>
-              通報管理一覧
-            </h1>
-            <span className={styles.countText}>全 {total} 件</span>
-          </div>
-          
-          <div className={styles.toolbarGroup}>
-            <div className={`${styles.serviceStatus} ${isStatusLoading ? styles.serviceStatusLoading : ''}`}>
-              <span className={`${styles.statusDot} ${isServiceEnabled ? styles.statusDotEnabled : styles.statusDotDisabled}`} />
-              <span className={styles.controlLabel}>
-                システム通報枠: {isStatusLoading ? '読み込み中...' : isServiceEnabled ? '稼働中' : '停止中'}
-              </span>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>
+            通報管理
+          </h1>
+        </div>
+
+        {/* ツールバー */}
+        <div className={styles.toolbar}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              <label className={styles.label}>
+                通報機能：
+              </label>
               <button
+                type="button"
                 onClick={handleToggleServiceStatus}
                 disabled={isProcessing}
-                className={`${styles.serviceButton} ${isServiceEnabled ? styles.serviceButtonStop : styles.serviceButtonStart} ${isProcessing ? styles.disabled : ''}`}
+                className={isServiceEnabled ? styles.paginationButton : styles.primaryButton}
+                style={{ marginLeft: '8px' }}
               >
                 {isUpdating ? '更新中...' : isServiceEnabled ? '一括停止' : 'サービス再開'}
               </button>
             </div>
 
-            <div className={styles.controlGroup}>
-              <span className={styles.controlLabel}>ステータス絞り込み：</span>
+            <div>
+              <label className={styles.label}>
+                ステータス絞り込み：
+              </label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className={styles.selectSmall}
+                className={styles.select}
               >
                 <option value="ALL">すべて</option>
-                <option value="UNRESOLVED">未対応</option>
+                <option value="PENDING">未対応</option>
                 <option value="REVIEWING">対応中</option>
                 <option value="RESOLVED">対応済</option>
               </select>
             </div>
+          </div>
 
-            <div className={styles.controlGroup}>
-              <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
-            </div>
+          <div className={styles.toolbarGroup}>
+            <span className={styles.countText}>全 {total} 件</span>
+            <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
           </div>
         </div>
 
-        <div className={styles.tabBar}>
+        {/* 対象タイプ切り替えタブ */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
           {(['ALL', 'POST', 'USER', 'COMMUNITY'] as TargetTypeFilter[]).map((tab) => {
             const isActive = activeTab === tab;
             const labelMap: Record<TargetTypeFilter, string> = {
@@ -187,8 +196,9 @@ export const ReportsPage: React.FC = () => {
             return (
               <button
                 key={tab}
+                type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`${styles.tabButton} ${isActive ? styles.tabButtonActive : ''}`}
+                className={isActive ? styles.primaryButton : styles.paginationButton}
               >
                 {labelMap[tab]}
               </button>
@@ -196,84 +206,76 @@ export const ReportsPage: React.FC = () => {
           })}
         </div>
 
-        {error && (
-          <p className={styles.alertError}>
-            {error}
-          </p>
-        )}
+        {error && <p className={styles.centerError}>{error}</p>}
 
-        <div className={styles.tablePanel}>
-          <table className={styles.fixedTable}>
+        {/* テーブルパネル */}
+        <div className={styles.tablePanelPlain}>
+          <table className={styles.table}>
             <thead>
               <tr className={styles.tableHeaderRow}>
-                <th className={`${styles.reportHeader} ${styles.reportTargetColumn}`}>対象タイプ</th>
-                <th className={`${styles.reportHeader} ${styles.reportContentColumn}`}>通報対象の内容</th>
-                <th className={`${styles.reportHeader} ${styles.reportReasonColumn}`}>通報理由</th>
-                <th className={styles.reportHeader}>詳細説明</th>
-                <th className={`${styles.reportHeader} ${styles.reportStatusColumn} ${styles.cellCenter}`}>状態</th>
-                <th className={`${styles.reportHeader} ${styles.reportDateColumn}`}>日時</th>
+                <th className={styles.tableCellLarge}>対象タイプ</th>
+                <th className={styles.tableCellLarge}>内容・詳細</th>
+                <th className={styles.tableCellLarge}>通報理由</th>
+                <th className={styles.tableCellLarge}>詳細説明</th>
+                <th className={styles.tableCellLarge}>ステータス</th>
+                <th className={styles.tableCellLarge}>日時</th>
               </tr>
             </thead>
             <tbody>
               {reports.map((report) => {
                 const targetUrl = getTargetUrl(report.targetID, report.targetType);
                 const currentStatus = report.status?.toUpperCase();
+
                 return (
-                  <tr key={report.ID} className={styles.hoverRow}>
-                    <td className={styles.reportCell}>
-                      <span className={styles.targetBadge} data-type={report.targetType}>
-                        {targetTypeJa[report.targetType?.toUpperCase()] || report.targetType}
-                      </span>
+                  <tr key={report.ID} className={styles.tableRow}>
+                    <td className={styles.tableCellLarge}>
+                      {targetTypeJa[report.targetType?.toUpperCase()] || report.targetType}
                     </td>
 
-                    <td className={`${styles.reportCell} ${styles.cellTop}`}>
-                      <Link 
-                      to={targetUrl} 
-                      className={`${styles.targetLink} ${report.targetType === 'POST' && report.content ? styles.targetLinkWithContent : ''}`}
-                      >
-                      詳細を確認する
+                    <td className={styles.tableCellLarge}>
+                      <Link to={targetUrl} style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                        詳細を確認する
                       </Link>
-                      
                       {report.targetType === 'POST' && report.content && (
-                        <div className={styles.contentPreview}>
-                        <span className={styles.contentPreviewLabel}>
-                          通報時の投稿本文:
-                        </span>
+                        <div className={styles.cellMuted} style={{ marginTop: '4px', fontSize: '0.85rem' }}>
                           {report.content}
                         </div>
                       )}
                     </td>
 
-                    <td className={styles.reportCell}>
-                      <span className={styles.reasonBadge}>
-                        {report.reason}
-                      </span>
-                    </td>
+                    <td className={styles.tableCellLarge}>{report.reason}</td>
 
-                    <td className={`${styles.reportCell} ${styles.reportCustomReason}`}>
+                    <td className={styles.tableCellLarge}>
                       {report.customReason || <span className={styles.cellMuted}>(入力なし)</span>}
                     </td>
 
-                    <td className={`${styles.reportCell} ${styles.cellCenter}`}>
+                    <td className={styles.tableCellLarge}>
                       <select
-                        value={currentStatus === 'PENDING' ? 'UNRESOLVED' : currentStatus}
+                        value={currentStatus === 'UNRESOLVED' ? 'PENDING' : currentStatus}
                         disabled={currentStatus === 'RESOLVED'}
-                        data-status={currentStatus}
                         onChange={(e) => {
                           const nextStatus = e.target.value;
                           const nextLabel = statusJa[nextStatus] || nextStatus;
                           handleUpdateStatus(report.ID, nextStatus, nextLabel);
                         }}
-                        className={styles.statusSelect}
+                        className={styles.select}
+                        style={{ padding: '4px 8px' }}
                       >
-                        <option value="UNRESOLVED">未対応</option>
+                        <option value="PENDING">未対応</option>
                         <option value="REVIEWING">対応中</option>
                         <option value="RESOLVED">対応済</option>
                       </select>
                     </td>
 
-                    <td className={`${styles.reportCell} ${styles.reportDateCell}`}>
-                      {report.createdAt ? new Date(report.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '---'}
+                    <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                      {report.createdAt
+                        ? new Date(report.createdAt).toLocaleString('ja-JP', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '---'}
                     </td>
                   </tr>
                 );
@@ -283,9 +285,7 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {reports.length === 0 && !error && (
-          <div className={styles.emptyStateLarge}>
-            指定された条件の通報は見つかりませんでした
-          </div>
+          <p className={styles.emptyState}>指定された条件の通報は見つかりませんでした</p>
         )}
 
         <AdminPagination

@@ -67,46 +67,99 @@ export const AdminAdministratorEditPage = () => {
     }
   };
 
-  if (!administrator) return <p>読み込み中...</p>;
+  if (!administrator) return <p className={styles.pageCentered}>{error || '読み込み中...'}</p>;
 
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <button onClick={() => navigate('/admin/administrators')}><ChevronLeft /> 一覧に戻る</button>
-        <h1>管理者アカウントの編集</h1>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>管理者アカウントの編集</h1>
+        </div>
 
-        {error && <p className={styles.errorText}>{error}</p>}
-        {success && <p className={styles.successText}>{success}</p>}
-
-        <form onSubmit={handleSubmit} className={styles.formColumn}>
-          <div>
-            <label>名前</label><br />
-            <input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label>メールアドレス</label><br />
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <label>新しいパスワード（変更する場合のみ）</label><br />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="変更しない場合は空欄"
-            />
-          </div>
-          <button type="submit">保存</button>
-        </form>
-
-        <div className={styles.dangerZone}>
-          <button
-            onClick={handleDelete}
-            className={styles.dangerSolidButton}
+        {error && <p className={styles.centerError}>{error}</p>}
+        {success && <p className={styles.centerError} style={{ color: '#10b981' }}>{success}</p>}
+        <button
+            type="button"
+            onClick={() => navigate('/admin/administrators')}
+            className={styles.paginationButton}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            このアカウントを削除
+            <ChevronLeft /> 一覧に戻る
           </button>
+          
+        <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {/* 編集フォーム */}
+          <form onSubmit={handleSubmit} className={styles.tablePanelPlain} style={{ padding: '24px', boxSizing: 'border-box' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                名前
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={styles.select}
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                メールアドレス
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={styles.select}
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                新しいパスワード（変更する場合のみ）
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="変更しない場合は空欄"
+                className={styles.select}
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/administrators')}
+                className={styles.paginationButton}
+              >
+                キャンセル
+              </button>
+              <button type="submit" className={styles.primaryButton}>
+                保存
+              </button>
+            </div>
+          </form>
+
+          {/* 削除エリア */}
+          <div className={styles.tablePanelPlain} style={{ padding: '20px', border: '1px solid #fecdd3', backgroundColor: '#fff1f2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 600, color: '#991b1b', fontSize: '0.95rem' }}>管理者アカウントの削除</div>
+              <div style={{ fontSize: '0.8rem', color: '#9f1239', marginTop: '2px' }}>この操作は取り消せません。</div>
+            </div>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className={styles.primaryButton}
+              style={{ backgroundColor: '#ef4444' }}
+            >
+              アカウントを削除
+            </button>
+          </div>
         </div>
       </main>
     </div>

@@ -2,6 +2,7 @@ import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { type Media as SharedMedia } from '../../../lib/media';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
+import type { AdminPostStatus } from '../../../generated/graphql';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
@@ -59,9 +60,11 @@ export const AdminPostFieldsFragment = graphql(`
 
 export type PostPage = { items: Post[]; total: number };
 
+// 絞り込み（本文・投稿者名・削除状態）はサーバー側で行う。以前は表示中の
+// 1ページ分だけをクライアントで絞り込んでいたので、他のページの投稿が検索に出なかった。
 const GetAdminPostsDocument = graphql(`
-  query GetAdminPosts($limit: Int, $offset: Int) {
-    posts(limit: $limit, offset: $offset) {
+  query GetAdminPosts($keyword: String, $status: AdminPostStatus, $limit: Int, $offset: Int) {
+    adminListPosts(keyword: $keyword, status: $status, limit: $limit, offset: $offset) {
       items {
         ...AdminPostFields
       }
@@ -100,9 +103,30 @@ const AdminDeletePostDocument = graphql(`
   }
 `);
 
-export const getPosts = async (limit = 20, offset = 0): Promise<PostPage> => {
-  const data = await requestDoc(GetAdminPostsDocument, { limit, offset }, getAdminToken());
-  return data.posts as PostPage;
+export type PostStatusFilter = 'all' | 'active' | 'deleted';
+
+const postStatusToGraph: Record<PostStatusFilter, AdminPostStatus> = {
+  all: 'ALL',
+  active: 'ACTIVE',
+  deleted: 'DELETED',
+};
+
+export const getPosts = async (
+  limit = 20,
+  offset = 0,
+  filter: { keyword?: string; status?: PostStatusFilter } = {},
+): Promise<PostPage> => {
+  const data = await requestDoc(
+    GetAdminPostsDocument,
+    {
+      keyword: filter.keyword?.trim() || undefined,
+      status: postStatusToGraph[filter.status ?? 'all'],
+      limit,
+      offset,
+    },
+    getAdminToken(),
+  );
+  return data.adminListPosts as PostPage;
 };
 
 export const getPostByID = async (id: string): Promise<Post | null> => {

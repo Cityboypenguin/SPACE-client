@@ -62,49 +62,65 @@ export const AdminAdministratorListPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <h1>管理者一覧</h1>
-        <form onSubmit={handleSearch} className={styles.searchForm}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="名前で検索"
-            className={styles.input}
-          />
-          <button type="submit" className={styles.primaryButton}>検索</button>
-          {query && (
-            <button type="button" onClick={handleClear} className={styles.paginationButton}>
-              クリア
-            </button>
-          )}
-        </form>
-        {error && <p className={styles.errorText}>{error}</p>}
-        <div className={styles.listMetaRow}>
-          <p className={styles.countText}>全 {total} 件</p>
-          <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>管理者一覧</h1>
         </div>
-        <table className={styles.compactTable}>
-          <thead>
-            <tr>
-              <th>名前</th>
-              <th>メールアドレス</th>
-            </tr>
-          </thead>
-          <tbody>
-            {administrators.map((administrator) => (
-              <tr
-                key={administrator.ID}
-                onClick={() => navigate(`/admin/administrators/${administrator.ID}`)}
-                className={styles.clickableRow}
-              >
-                <td>{administrator.name}</td>
-                <td>{administrator.email}</td>
+
+        <div className={styles.toolbar}>
+          <form onSubmit={handleSearch} className={styles.toolbarGroup}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="名前で検索"
+              className={styles.select}
+              style={{ width: '280px' }}
+            />
+            <button type="submit" className={styles.primaryButton}>検索</button>
+            {query && (
+              <button type="button" onClick={handleClear} className={styles.paginationButton}>
+                クリア
+              </button>
+            )}
+          </form>
+
+          <div className={styles.toolbarGroup}>
+            <p className={styles.cellMuted} style={{ margin: 0 }}>全 {total} 件</p>
+            <AdminPageSizeSelect value={pageSize} onChange={setPageSize} muted />
+          </div>
+        </div>
+
+        {error && <p className={styles.centerError}>{error}</p>}
+
+        <div className={styles.tablePanelPlain}>
+          <table className={styles.table}>
+            <thead>
+              <tr className={styles.tableHeaderRow}>
+                <th className={styles.tableCellLarge}>名前</th>
+                <th className={styles.tableCellLarge}>メールアドレス</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {administrators.length === 0 && !error && <p>該当する管理者が見つかりませんでした</p>}
+            </thead>
+            <tbody>
+              {administrators.map((administrator) => (
+                <tr
+                  key={administrator.ID}
+                  onClick={() => navigate(`/admin/administrators/${administrator.ID}`)}
+                  className={styles.tableRow}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td className={styles.tableCellLarge} style={{ fontWeight: 600 }}>{administrator.name}</td>
+                  <td className={styles.tableCellLarge}>{administrator.email}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {administrators.length === 0 && !error && (
+          <p className={styles.emptyState}>該当する管理者が見つかりませんでした</p>
+        )}
+
         {!isSearching && totalPages > 1 && (
           <AdminPagination
             page={page}

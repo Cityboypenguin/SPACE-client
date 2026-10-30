@@ -88,116 +88,193 @@ export const AdminUserDetailPage = () => {
     }
   };
 
-  if (!user) return <p>読み込み中...</p>;
+  if (!user) return <p className={styles.pageCentered}>{error || '読み込み中...'}</p>;
 
   const isFrozen = user.status === STATUS_FROZEN;
 
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <button onClick={() => navigate(-1)}><ChevronLeft /> 戻る</button>
-        <h1>ユーザー詳細</h1>
-
-        {error && <p className={styles.errorText}>{error}</p>}
-
-        <div className={styles.buttonRowCompactSpaced}>
-          <button onClick={() => navigate(`/admin/users/${id}/profile`)}>プロフィールを見る</button>
-          <button onClick={() => navigate(`/admin/users/${id}/edit`)}>情報を編集</button>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>ユーザー詳細</h1>
         </div>
 
-        <dl>
-          <dt>ユーザーID</dt>
-          <dd>{user.accountID}</dd>
-          <dt>名前</dt>
-          <dd>{user.name}</dd>
-          <dt>メールアドレス</dt>
-          <dd>{user.email}</dd>
-          <dt>ロール</dt>
-          <dd>{user.role}</dd>
-          <dt>ステータス</dt>
-          <dd>
-            <span
-              className={styles.userStatusBadge}
-              data-status={isFrozen ? 'frozen' : 'active'}
+        {error && <p className={styles.centerError}>{error}</p>}
+
+        <div className={styles.toolbar} style={{ marginBottom: '24px' }}>
+          <div className={styles.toolbarGroup}>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/users')}
+              className={styles.paginationButton}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
             >
-              {isFrozen ? '凍結中' : 'アクティブ'}
-            </span>
-          </dd>
-          <dt>登録日時</dt>
-          <dd>{user.createdAt}</dd>
-          <dt>更新日時</dt>
-          <dd>{user.updatedAt}</dd>
-        </dl>
-
-        <div className={styles.relationshipSection}>
-          <h2 className={styles.relationshipTitle}>交友関係 (管理者閲覧用)</h2>
-          {relationsLoading ? (
-            <p>読み込み中...</p>
-          ) : (
-            <div className={styles.relationshipGrid}>
-
-              <div className={styles.relationshipCard}>
-                <h3 className={styles.relationshipCardTitle}>
-                  お気に入り ({favorites.length})
-                </h3>
-                {favorites.length === 0 ? (
-                  <p className={styles.mutedSmall}>登録なし</p>
-                ) : (
-                  <ul className={styles.scrollList}>
-                    {favorites.map(fUser => (
-                      <UserListItem key={fUser.ID} user={fUser} basePath="/admin/users" />
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div className={styles.relationshipCard}>
-                <h3 className={`${styles.relationshipCardTitle} ${styles.errorText}`}>
-                  ブロック ({blockers.length})
-                </h3>
-                {blockers.length === 0 ? (
-                  <p className={styles.mutedSmall}>ブロックなし</p>
-                ) : (
-                  <ul className={styles.scrollList}>
-                    {blockers.map(bUser => (
-                      <UserListItem key={bUser.ID} user={bUser} basePath="/admin/users" />
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
+              <ChevronLeft /> 一覧に戻る
+            </button>
+          </div>
         </div>
 
+        {/* 2カラムレイアウト: alignItems: 'stretch' で左右の高さを自動一致 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', marginBottom: '32px', alignItems: 'stretch' }}>
+          
+          {/* 左カラム: プロフィール基本情報 ＋ ボタン */}
+          <div>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '16px' }}>
+              基本情報
+            </h2>
+            <div className={styles.tablePanelPlain} style={{ marginBottom: '16px' }}>
+              <table className={styles.table}>
+                <tbody>
+                  <tr className={styles.tableRow}>
+                    <th className={styles.tableCellLarge} style={{ width: '140px', backgroundColor: '#f8fafc', fontWeight: 600 }}>ユーザーID</th>
+                    <td className={styles.tableCellLarge}>{user.accountID || user.ID}</td>
+                  </tr>
+                  <tr className={styles.tableRow}>
+                    <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>名前</th>
+                    <td className={styles.tableCellLarge}>{user.name}</td>
+                  </tr>
+                  <tr className={styles.tableRow}>
+                    <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>メールアドレス</th>
+                    <td className={styles.tableCellLarge}>{user.email || '-'}</td>
+                  </tr>
+                  <tr className={styles.tableRow}>
+                    <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>ロール</th>
+                    <td className={styles.tableCellLarge}>{user.role}</td>
+                  </tr>
+                  <tr className={styles.tableRow}>
+                    <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>ステータス</th>
+                    <td className={styles.tableCellLarge}>
+                      <span
+                        className={styles.userStatusBadge}
+                        data-status={isFrozen ? 'frozen' : 'active'}
+                      >
+                        {isFrozen ? '凍結中' : 'アクティブ'}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr className={styles.tableRow}>
+                    <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>登録日時</th>
+                    <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                      {user.createdAt ? new Date(user.createdAt).toLocaleString('ja-JP') : '-'}
+                    </td>
+                  </tr>
+                  <tr className={styles.tableRow}>
+                    <th className={styles.tableCellLarge} style={{ backgroundColor: '#f8fafc', fontWeight: 600 }}>更新日時</th>
+                    <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                      {user.updatedAt ? new Date(user.updatedAt).toLocaleString('ja-JP') : '-'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className={styles.toolbarGroup}>
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/users/${id}/profile`)}
+                className={styles.paginationButton}
+              >
+                プロフィールを見る
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/users/${id}/edit`)}
+                className={styles.primaryButton}
+              >
+                情報を編集
+              </button>
+            </div>
+          </div>
+
+          {/* 右カラム: 交友関係（左カラムの高さに合わせて伸縮） */}
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '16px' }}>
+              交友関係 (管理者閲覧用)
+            </h2>
+            {relationsLoading ? (
+              <p className={styles.cellMuted}>読み込み中...</p>
+            ) : (
+              <div
+                className={styles.relationshipGrid}
+                style={{
+                  gridTemplateColumns: '1fr 1fr',
+                  flex: 1,
+                  gap: '16px',
+                  minHeight: 0
+                }}
+              >
+                {/* お気に入りカード */}
+                <div className={styles.relationshipCard} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+                  <h3 className={styles.relationshipCardTitle}>
+                    お気に入り ({favorites.length})
+                  </h3>
+                  {favorites.length === 0 ? (
+                    <p className={styles.mutedSmall}>登録なし</p>
+                  ) : (
+                    <ul className={styles.scrollList} style={{ flex: 1, overflowY: 'auto', margin: 0, padding: 0 }}>
+                      {favorites.map((fUser) => (
+                        <UserListItem key={fUser.ID} user={fUser} basePath="/admin/users" />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* ブロックカード */}
+                <div className={styles.relationshipCard} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+                  <h3 className={`${styles.relationshipCardTitle} ${styles.errorText}`}>
+                    ブロック ({blockers.length})
+                  </h3>
+                  {blockers.length === 0 ? (
+                    <p className={styles.mutedSmall}>ブロックなし</p>
+                  ) : (
+                    <ul className={styles.scrollList} style={{ flex: 1, overflowY: 'auto', margin: 0, padding: 0 }}>
+                      {blockers.map((bUser) => (
+                        <UserListItem key={bUser.ID} user={bUser} basePath="/admin/users" />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* 下部: 時間割 */}
         {id && <AdminUserTimetableSection userID={id} />}
 
-        <hr />
+        {freezeError && <p className={styles.centerError} style={{ marginTop: '24px' }}>{freezeError}</p>}
 
-        {freezeError && <p className={styles.errorText}>{freezeError}</p>}
-
-        <div className={styles.buttonRow}>
-          {isFrozen ? (
+        <div className={styles.toolbar} style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+          <div className={styles.toolbarGroup}>
+            {isFrozen ? (
+              <button
+                type="button"
+                onClick={handleUnfreeze}
+                className={styles.primaryButton}
+              >
+                凍結を解除する
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFreeze}
+                className={styles.paginationButton}
+                style={{ color: '#d97706', borderColor: '#fcd34d' }}
+              >
+                ユーザーを凍結する
+              </button>
+            )}
             <button
-              onClick={handleUnfreeze}
-              className={styles.freezeButton}
+              type="button"
+              onClick={handleDelete}
+              className={styles.primaryButton}
+              style={{ backgroundColor: '#ef4444' }}
             >
-              凍結を解除する
+              このユーザーを削除する
             </button>
-          ) : (
-            <button
-              onClick={handleFreeze}
-              className={styles.freezeButton}
-            >
-              ユーザーを凍結する
-            </button>
-          )}
-          <button
-            onClick={handleDelete}
-            className={styles.dangerOutlineButton}
-          >
-            このユーザーを削除する
-          </button>
+          </div>
         </div>
       </main>
     </div>

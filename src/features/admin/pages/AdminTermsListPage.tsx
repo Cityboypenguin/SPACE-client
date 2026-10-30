@@ -28,18 +28,25 @@ export const AdminTermsListPage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.pageMedium}>
-        <div className={styles.headerRow}>
-          <h1 className={styles.titleSmall}>利用規約管理</h1>
-          <button
-            onClick={() => navigate('/admin/terms/new')}
-            className={styles.primaryButton}
-          >
-            新規登録
-          </button>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>利用規約管理</h1>
         </div>
 
-        {error && <p className={styles.errorText}>{error}</p>}
+        <div className={styles.toolbar}>
+          <div /> {/* 左側のスペース確保 */}
+          <div>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/terms/new')}
+              className={styles.primaryButton}
+            >
+              新規登録
+            </button>
+          </div>
+        </div>
+
+        {error && <p className={styles.centerError}>{error}</p>}
         {loading && <p className={styles.emptyState}>読み込み中...</p>}
 
         {!loading && termsList.length === 0 && (
@@ -47,44 +54,51 @@ export const AdminTermsListPage: React.FC = () => {
         )}
 
         {!loading && termsList.length > 0 && (
-          <table className={styles.compactTable}>
-            <thead>
-              <tr className={styles.tableHeaderRowStrong}>
-                <th className={styles.mutedTableHeader}>バージョン</th>
-                <th className={styles.mutedTableHeader}>施行日時</th>
-                <th className={styles.mutedTableHeader}>登録日時</th>
-                <th className={styles.mutedTableHeader}>ステータス</th>
-                <th className={styles.mutedTableHeader}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {termsList.map((t) => {
-                const status = getStatus(t.effectiveDate);
-                return (
-                  <tr key={t.ID} className={styles.tableRow}>
-                    <td className={styles.tableCellBody}>
-                      <span className={styles.strongText}>{t.version}</span>
-                    </td>
-                    <td className={styles.tableCellBody}>{new Date(t.effectiveDate).toLocaleString('ja-JP')}</td>
-                    <td className={styles.tableCellBody}>{new Date(t.createdAt).toLocaleString('ja-JP')}</td>
-                    <td className={styles.tableCellBody}>
-                      <span className={styles.termsStatusBadge} data-status={status.status}>
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className={styles.tableCellBody}>
-                      <button
-                        onClick={() => navigate(`/admin/terms/${t.ID}`)}
-                        className={styles.outlinePrimaryButton}
-                      >
-                        同意状況
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className={styles.tablePanelPlain}>
+            <table className={styles.table}>
+              <thead>
+                <tr className={styles.tableHeaderRow}>
+                  <th className={styles.tableCellLarge}>バージョン</th>
+                  <th className={styles.tableCellLarge}>施行日時</th>
+                  <th className={styles.tableCellLarge}>登録日時</th>
+                  <th className={styles.tableCellLarge}>ステータス</th>
+                  <th className={styles.tableCellLarge}>詳細</th>
+                </tr>
+              </thead>
+              <tbody>
+                {termsList.map((t) => {
+                  const status = getStatus(t.effectiveDate);
+                  return (
+                    <tr key={t.ID} className={styles.tableRow}>
+                      <td className={styles.tableCellLarge}>
+                        <span className={styles.strongText}>{t.version}</span>
+                      </td>
+                      <td className={styles.tableCellLarge}>
+                        {new Date(t.effectiveDate).toLocaleString('ja-JP')}
+                      </td>
+                      <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                        {new Date(t.createdAt).toLocaleString('ja-JP')}
+                      </td>
+                      <td className={styles.tableCellLarge}>
+                        <span className={styles.termsStatusBadge} data-status={status.status}>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className={styles.tableCellLarge}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin/terms/${t.ID}`)}
+                          className={styles.primaryButton}
+                        >
+                          同意状況
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </main>
     </div>

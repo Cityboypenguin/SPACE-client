@@ -108,7 +108,7 @@ export const AdminInquiryListPage: React.FC = () => {
                 <th className={styles.tableCellLarge}>件名</th>
                 <th className={styles.tableCellLarge}>氏名</th>
                 <th className={styles.tableCellLarge}>メールアドレス</th>
-                <th className={styles.tableCellLarge}>どのようなお問い合わせか</th>
+                <th className={styles.tableCellLarge}>問合せ内容</th>
                 <th className={styles.tableCellLarge}>ステータス</th>
                 <th className={styles.tableCellLarge}>受信日時</th>
                 <th className={styles.tableCellLarge}>詳細</th>

@@ -60,8 +60,7 @@ export const AdminPostDetailPage = () => {
         replies: (prev.replies ?? []).map(r => r.ID === replyId ? { ...r, deletedAt: new Date().toISOString() } : r)
       } : null);
       addToast('削除しました', 'success');
-    } catch (err) {
-      console.error(err);
+    } catch {
       addToast('削除に失敗しました', 'error');
     }
   };
@@ -85,24 +84,29 @@ export const AdminPostDetailPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.feedPage}>
-        <div className={styles.postDetailHeader}>
-          <button
-            onClick={() => navigate(-1)}
-          ><ChevronLeft /></button>
-          <h1 className={styles.postDetailTitle}>投稿詳細 (管理者)</h1>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>投稿詳細 (管理者)</h1>
         </div>
 
-        {error && <p className={styles.errorPadded}>{error}</p>}
-
+        {error && <p className={styles.centerError}>{error}</p>}
+        <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className={styles.paginationButton}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <ChevronLeft /> 一覧に戻る
+          </button>
+          
         {loading ? (
           <p className={styles.emptyState}>読み込み中...</p>
         ) : !post ? (
           <p className={styles.emptyState}>投稿が見つかりません</p>
         ) : (
-          <>
+          <div style={{ maxWidth: '700px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {post.rootPost && (
-              <div className={styles.rootPostPreview}>
+              <div>
                 <AdminPostCard
                   post={post.rootPost}
                   isDetail={false}
@@ -111,16 +115,16 @@ export const AdminPostDetailPage = () => {
               </div>
             )}
 
-            <div className={styles.adminPostDetailCard} data-deleted={isDeleted}>
-
+            {/* 親投稿カード */}
+            <div className={styles.tablePanelPlain} style={{ padding: '24px', boxSizing: 'border-box' }}>
               {isDeleted && (
-                <div className={styles.deletedBadge}>
+                <div style={{ backgroundColor: '#fff1f2', color: '#9f1239', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '16px', border: '1px solid #fecdd3' }}>
                   削除済み ({new Date(post.deletedAt!).toLocaleString('ja-JP')})
                 </div>
               )}
 
-              <div className={styles.postAuthorHeader}>
-                <div className={styles.authorRow}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <UserAvatar
                     userId={post.user.ID}
                     name={post.user.name}
@@ -135,47 +139,53 @@ export const AdminPostDetailPage = () => {
                       basePath="/admin/users"
                       useMyPageForCurrentUser={false}
                     >
-                      <div className={styles.authorName}>{post.user.name}</div>
+                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{post.user.name}</div>
                     </UserNameLink>
-                    <div className={styles.authorAccount}>@{post.user.accountID}</div>
+                    <div className={styles.cellMuted} style={{ fontSize: '0.85rem' }}>@{post.user.accountID}</div>
                   </div>
                 </div>
 
                 {!isDeleted && (
                   <button
+                    type="button"
                     onClick={handleMainDelete}
-                    className={styles.textDangerButton}
-                  >削除</button>
+                    className={styles.primaryButton}
+                    style={{ backgroundColor: '#ef4444' }}
+                  >
+                    削除
+                  </button>
                 )}
               </div>
 
               {post.content && (
-                <p className={styles.adminPostContent}>
+                <p style={{ fontSize: '1rem', lineHeight: 1.6, color: '#334155', margin: '0 0 16px 0', whiteSpace: 'pre-wrap' }}>
                   {post.content}
                 </p>
               )}
 
               {post.media && post.media.length > 0 && (
-                <PostMediaDetail media={post.media} />
+                <div style={{ marginBottom: '16px' }}>
+                  <PostMediaDetail media={post.media} />
+                </div>
               )}
 
-              <div className={styles.postTimestamp}>
+              <div className={styles.cellMuted} style={{ fontSize: '0.8rem', marginBottom: '16px' }}>
                 {new Date(post.createdAt).toLocaleString('ja-JP')}
               </div>
 
-              <div className={styles.postActions}>
-                <span className={styles.replySummary}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                <span className={styles.cellMuted} style={{ fontSize: '0.9rem' }}>
                   💬 <strong>{post.replyCount}</strong> 件の返信
                 </span>
-                <div className={styles.disabledPointer}>
+                <div>
                   <LikeButton post={post} currentUserId={null} onLike={async () => { }} large />
                 </div>
               </div>
             </div>
 
-            {/* 🛡 返信一覧 */}
+            {/* 返信一覧 */}
             {(post.replies ?? []).length > 0 && (
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {(post.replies ?? []).map((reply) => (
                   <AdminPostCard
                     key={reply.ID}
@@ -187,16 +197,18 @@ export const AdminPostDetailPage = () => {
               </div>
             )}
             {hasMoreReplies && (
-              <button
-                type="button"
-                className={styles.outlinePrimaryButton}
-                onClick={() => void handleLoadMoreReplies()}
-                disabled={loadingMoreReplies}
-              >
-                {loadingMoreReplies ? '読み込み中...' : 'さらに返信を表示'}
-              </button>
+              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  className={styles.paginationButton}
+                  onClick={() => void handleLoadMoreReplies()}
+                  disabled={loadingMoreReplies}
+                >
+                  {loadingMoreReplies ? '読み込み中...' : 'さらに返信を表示'}
+                </button>
+              </div>
             )}
-          </>
+          </div>
         )}
       </main>
     </div>
