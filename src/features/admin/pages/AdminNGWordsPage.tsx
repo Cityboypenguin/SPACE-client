@@ -19,6 +19,8 @@ const matchTypeLabel: Record<NgWordMatchType, string> = {
   REGEX: '正規表現',
 };
 
+const MAX_PATTERN_CHARS = 100;
+
 const formatDate = (s: string) => s.slice(0, 10);
 
 // 授業内チャットのNGワードの登録と、止めた回数の集計。
@@ -26,6 +28,8 @@ export const AdminNGWordsPage = () => {
   const [words, setWords] = useState<NGWord[]>([]);
   const [stats, setStats] = useState<NGWordStats | null>(null);
   const [loading, setLoading] = useState(true);
+  // 取得に成功したか。失敗したときに「登録がありません」と出さないため。
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
   const [pattern, setPattern] = useState('');
   const [matchType, setMatchType] = useState<NgWordMatchType>('WORD');
@@ -36,6 +40,7 @@ export const AdminNGWordsPage = () => {
       const [w, s] = await Promise.all([listNGWords(), getNGWordStats()]);
       setWords(w);
       setStats(s);
+      setLoaded(true);
       setError('');
     } catch (err) {
       setError(toUserMessage(err, 'NGワードの取得に失敗しました'));
@@ -47,6 +52,9 @@ export const AdminNGWordsPage = () => {
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
+
+  // サーバーの上限は「文字数」（絵文字などは1文字）。input の maxLength は UTF-16 の単位で数えて食い違うので使わない。
+  const patternTooLong = [...pattern].length > MAX_PATTERN_CHARS;
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +97,7 @@ export const AdminNGWordsPage = () => {
         </div>
         <p className={styles.cellMuted} style={{ marginBottom: '16px' }}>
           授業内チャットのメッセージ・質問・回答にここの言葉が含まれていると、投稿の前に止めます（どの言葉に当たったかは本人に伝えません）。
-          管理者の投稿は止めません。大文字・小文字と全角・半角は区別しません。
+          管理者の投稿は止めません。大文字・小文字と全角・半角は区別しません（正規表現も同じ）。
         </p>
 
         {error && <p className={styles.formError}>{error}</p>}
@@ -102,7 +110,6 @@ export const AdminNGWordsPage = () => {
               value={pattern}
               onChange={(e) => setPattern(e.target.value)}
               placeholder={matchType === 'REGEX' ? '正規表現（例: \\d{9}）' : '例: Respon'}
-              maxLength={100}
               aria-label="NGワード"
             />
             <select
@@ -115,20 +122,21 @@ export const AdminNGWordsPage = () => {
               <option value={'WORD'}>含む</option>
               <option value={'REGEX'}>正規表現</option>
             </select>
-            <button type="submit" className={styles.primaryButton} disabled={saving || !pattern.trim()}>
+            <button type="submit" className={styles.primaryButton} disabled={saving || !pattern.trim() || patternTooLong}>
               {saving ? '追加中...' : '追加'}
             </button>
             <button type="button" className={styles.paginationButton} onClick={fillNineDigits}>
               9桁の数字（レスポンの番号）を入れる
             </button>
           </form>
+          {patternTooLong && <p className={styles.formError}>NGワードは{MAX_PATTERN_CHARS}文字以内で入力してください。</p>}
         </section>
 
         <section style={{ marginBottom: '32px' }}>
           <h2 className={styles.sectionTitle}>登録中のNGワード（{words.length}件）</h2>
           {loading ? (
             <p className={styles.cellMuted}>読み込み中...</p>
-          ) : words.length === 0 ? (
+          ) : !loaded ? null : words.length === 0 ? (
             <p className={styles.cellMuted}>まだ登録がありません。</p>
           ) : (
             <div className={styles.tableWrap}>
@@ -160,7 +168,7 @@ export const AdminNGWordsPage = () => {
 
         <section>
           <h2 className={styles.sectionTitle}>止めた回数{stats ? `（合計 ${stats.total} 回）` : ''}</h2>
-          {stats && stats.total === 0 && <p className={styles.cellMuted}>まだ止めた投稿はありません。</p>}
+          {loaded && stats && stats.total === 0 && <p className={styles.cellMuted}>まだ止めた投稿はありません。</p>}
           {stats && stats.total > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
               <div className={styles.tableWrap}>
