@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { AdminPagination } from '../components/molecules/AdminPagination';
@@ -33,31 +33,40 @@ const formatDateTime = (s: string) => new Date(s).toLocaleString('ja-JP', { year
 export const AdminCourseChatImagesPage = () => {
   const [tab, setTab] = useState<CourseChatImageSource | 'ALL'>('ALL');
   const [page, setPage] = useState(0);
+  // 授業での絞り込み（カードの授業名を押すと、その授業だけにする）。
+  const [room, setRoom] = useState<{ id: string; name: string } | null>(null);
   const [items, setItems] = useState<CourseChatImage[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyID, setBusyID] = useState<string | null>(null);
 
+  // 切り替えの途中で遅れて届いた古い応答が、いまの絞り込みの結果を上書きしないための番号。
+  const requestSeq = useRef(0);
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const load = useCallback(async (nextTab: CourseChatImageSource | 'ALL', nextPage: number) => {
+  const roomID = room?.id;
+  const load = useCallback(async (nextTab: CourseChatImageSource | 'ALL', nextPage: number, nextRoomID: string | undefined) => {
+    const seq = ++requestSeq.current;
     setLoading(true);
     try {
-      const data = await listCourseChatImages(nextTab === 'ALL' ? undefined : nextTab, PAGE_SIZE, nextPage * PAGE_SIZE);
+      const data = await listCourseChatImages(nextRoomID, nextTab === 'ALL' ? undefined : nextTab, PAGE_SIZE, nextPage * PAGE_SIZE);
+      if (seq !== requestSeq.current) return;
       setItems(data.items);
       setTotal(data.total);
       setError('');
     } catch (err) {
+      if (seq !== requestSeq.current) return;
       setError(toUserMessage(err, '画像の一覧を取得できませんでした'));
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void Promise.resolve().then(() => load(tab, page));
-  }, [load, tab, page]);
+    void Promise.resolve().then(() => load(tab, page, roomID));
+  }, [load, tab, page, roomID]);
 
   const handleDelete = async (img: CourseChatImage) => {
     if (!window.confirm(`この画像を削除しますか？\n\n授業: ${img.courseName}\n投稿者: ${img.uploaderName}（@${img.uploaderAccountID}）\n\n画像のファイルも消え、元に戻せません。`)) return;
@@ -69,7 +78,7 @@ export const AdminCourseChatImagesPage = () => {
       const remaining = total - 1;
       const lastPage = Math.max(0, Math.ceil(remaining / PAGE_SIZE) - 1);
       if (page > lastPage) setPage(lastPage);
-      else await load(tab, page);
+      else await load(tab, page, roomID);
     } catch (err) {
       setError(toUserMessage(err, '画像を削除できませんでした'));
     } finally {
@@ -101,6 +110,14 @@ export const AdminCourseChatImagesPage = () => {
           ))}
           <span className={styles.countText} style={{ marginLeft: 'auto' }}>全 {total} 枚</span>
         </div>
+        {room && (
+          <p style={{ marginBottom: '12px' }}>
+            授業「{room.name}」だけを表示中
+            <button type="button" className={styles.paginationButton} style={{ marginLeft: '8px' }} onClick={() => { setRoom(null); setPage(0); }}>
+              絞り込みを解除
+            </button>
+          </p>
+        )}
 
         {error && <p className={styles.formError}>{error}</p>}
         {loading && items.length === 0 && <p className={styles.cellMuted}>読み込み中...</p>}
@@ -119,7 +136,16 @@ export const AdminCourseChatImagesPage = () => {
               </a>
               <div style={{ fontSize: '0.8rem', lineHeight: 1.5 }}>
                 <div><strong>{sourceLabel[img.source]}</strong>{img.targetDeleted && <span className={styles.errorText}>（投稿は削除済み）</span>}</div>
-                <div>{img.courseName}</div>
+                <div>
+                  <button
+                    type="button"
+                    title="この授業の画像だけを表示"
+                    onClick={() => { setRoom({ id: img.roomID, name: img.courseName }); setPage(0); }}
+                    style={{ border: 0, background: 'none', padding: 0, color: 'var(--color-primary)', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}
+                  >
+                    {img.courseName}
+                  </button>
+                </div>
                 <div>
                   <Link to={`/admin/users/${img.uploaderID}`}>{img.uploaderName}</Link>
                   <span className={styles.cellMuted}> @{img.uploaderAccountID}</span>

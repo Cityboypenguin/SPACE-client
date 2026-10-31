@@ -25,8 +25,8 @@ export type CourseChatImage = {
 export type CourseChatImagePage = { items: CourseChatImage[]; total: number };
 
 const CourseChatImagesDocument = graphql(`
-  query AdminListCourseChatImages($source: CourseChatImageSource, $limit: Int, $offset: Int) {
-    adminListCourseChatImages(source: $source, limit: $limit, offset: $offset) {
+  query AdminListCourseChatImages($roomID: ID, $source: CourseChatImageSource, $limit: Int, $offset: Int) {
+    adminListCourseChatImages(roomID: $roomID, source: $source, limit: $limit, offset: $offset) {
       total
       items {
         ID
@@ -53,11 +53,12 @@ const DeleteCourseChatImageDocument = graphql(`
 `);
 
 export const listCourseChatImages = async (
+  roomID: string | undefined,
   source: CourseChatImageSource | undefined,
   limit: number,
   offset: number,
 ): Promise<CourseChatImagePage> => {
-  const data = await requestDoc(CourseChatImagesDocument, { source, limit, offset }, getAdminToken());
+  const data = await requestDoc(CourseChatImagesDocument, { roomID, source, limit, offset }, getAdminToken());
   return data.adminListCourseChatImages;
 };
 
