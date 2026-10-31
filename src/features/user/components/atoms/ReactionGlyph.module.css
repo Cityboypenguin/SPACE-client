@@ -1,0 +1,37 @@
+/* 文字スタンプ。丸みのある太い文字を、淡い色の角丸ラベルに載せて、ほんの少し傾ける。
+   色と傾きは reactionStamps.ts の定義から変数で渡される。 */
+.stamp {
+  --stamp-color: #64748b;
+  --stamp-tilt: 0deg;
+
+  display: inline-block;
+  padding: 0.0625rem 0.625rem;
+  border: 2px solid color-mix(in srgb, var(--stamp-color) 60%, var(--color-bg-elevated));
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--stamp-color) 14%, var(--color-bg-elevated));
+  color: color-mix(in srgb, var(--stamp-color) 72%, var(--color-text));
+  /* 丸ゴシックがある端末ではそれを使う（外部のフォントは読み込まない）。 */
+  font-family: 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN W4', 'Zen Maru Gothic', 'M PLUS Rounded 1c', 'Yu Gothic UI', system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  white-space: nowrap;
+  transform: rotate(var(--stamp-tilt));
+}
+
+/* 画像のスタンプ。高さは定義（imageHeight）から渡され、幅は絵の縦横比のまま。 */
+.stampImage {
+  display: block;
+  height: 1.75rem;
+  width: auto;
+  max-width: 11rem;
+  object-fit: contain;
+  -webkit-user-drag: none;
+}
+
+/* スタンプ単体のメッセージで、画像が無いときの文字スタンプ */
+.stampLarge {
+  font-size: 1.5rem;
+  padding: 0.125rem 1rem;
+}

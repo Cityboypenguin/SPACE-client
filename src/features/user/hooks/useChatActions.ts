@@ -3,7 +3,10 @@ import {
   sendMessage,
   updateMessage,
   deleteMessage,
+  addMessageReaction,
+  removeMessageReaction,
   type Message,
+  type MessageReaction,
 } from '../api/message';
 import { uploadMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -13,6 +16,8 @@ import { containsMentionText, type Mention, type MentionCandidate } from '../../
 export const useChatActions = (
   roomId: string | undefined,
   addMessage: (msg: Message) => void,
+  // リアクションを付け外しした結果で表示を更新する（授業内チャットだけが渡す）。
+  setMessageReactions?: (messageID: string, reactions: MessageReaction[]) => void,
 ) => {
   const [content, setContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -60,6 +65,24 @@ export const useChatActions = (
     }
   };
 
+  // スタンプだけを1件のメッセージとして送る。本文・添付・メンションは付けない。
+  // 返信先を選んでいるときは、そのメッセージへの返信になる。
+  const handleSendStamp = async (stampID: string) => {
+    if (sending) return;
+    if (!roomId) return;
+    setSending(true);
+    setSendError('');
+    try {
+      const data = await sendMessage(roomId, '', undefined, replyTarget?.ID ?? null, undefined, stampID);
+      setReplyTarget(null);
+      addMessage(data.sendMessage);
+    } catch (err) {
+      setSendError(toUserMessage(err, 'スタンプの送信に失敗しました。時間をおいてから再度お試しください。'));
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleDelete = async (msgId: string) => {
     if (!roomId) return;
     const result = await AppSwal.fire({
@@ -73,6 +96,21 @@ export const useChatActions = (
       await deleteMessage(roomId, msgId);
     } catch (err) {
       setSendError(toUserMessage(err, 'メッセージの削除に失敗しました。時間をおいてから再度お試しください。'));
+    }
+  };
+
+  // リアクションを付ける（reacted=false のとき）／外す（reacted=true のとき）。
+  // 結果は messageUpdated の購読でも届くが、接続が切れていても自分の操作が画面に
+  // 出るよう、戻り値の最新の集計でも表示を更新する。
+  const handleToggleReaction = async (msgId: string, emoji: string, reacted: boolean) => {
+    if (!roomId) return;
+    try {
+      const updated = reacted
+        ? (await removeMessageReaction(roomId, msgId, emoji)).removeMessageReaction
+        : (await addMessageReaction(roomId, msgId, emoji)).addMessageReaction;
+      setMessageReactions?.(updated.ID, updated.reactions);
+    } catch (err) {
+      setSendError(toUserMessage(err, 'リアクションに失敗しました。時間をおいてから再度お試しください。'));
     }
   };
 
@@ -107,7 +145,9 @@ export const useChatActions = (
     setReplyTarget,
     addPendingMention,
     handleSend,
+    handleSendStamp,
     handleDelete,
     handleSaveEdit,
+    handleToggleReaction,
   };
 };

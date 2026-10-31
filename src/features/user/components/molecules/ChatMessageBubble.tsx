@@ -2,8 +2,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ImageLightbox } from '../../../../components/organisms/ImageLightbox';
 import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
-import { type Message, type Media, type MessageUser, type ReplyTarget } from '../../api/message';
+import { type Message, type Media, type MessageUser, type ReplyTarget, type MessageReaction } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
+import { ReactionGlyph } from '../atoms/ReactionGlyph';
+import { isStampReaction, reactionLabel } from '../../constants/reactionStamps';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import humanIcon from '../../../../assets/パーツ_人間.svg';
 import { isAnonymousUser } from '../../lib/anonymous';
@@ -146,7 +148,9 @@ const ReplyQuote = ({
   const thumbnail = replyTo.media.find((m) => m.contentType.startsWith('image/'));
   const fileCount = replyTo.media.filter((m) => !m.contentType.startsWith('image/')).length;
   const imageCount = replyTo.media.length - fileCount;
-  const preview = replyTo.content.trim() !== ''
+  const preview = replyTo.stampID
+    ? `スタンプ（${reactionLabel(replyTo.stampID)}）`
+    : replyTo.content.trim() !== ''
     ? replyTo.content
     : imageCount > 0
       ? `画像${imageCount}件`
@@ -175,6 +179,42 @@ const ReplyQuote = ({
   );
 };
 
+// 吹き出しの下に並べる、絵文字ごとのリアクションの集計。押すと自分のリアクションを付け外しする。
+// onToggle が無いとき（書き込み不可のルーム）は集計を見せるだけで押せない。
+const ReactionBar = ({
+  reactions,
+  isMine,
+  onToggle,
+  allowedEmojis,
+}: {
+  reactions: MessageReaction[];
+  isMine: boolean;
+  onToggle?: (emoji: string, reacted: boolean) => void;
+  // いま付けてよい絵文字・スタンプ。ここに無いもの（一覧から抜かれたもの）は、
+  // すでに付けた本人は外せるが、他の人が新しく付けることはできない。
+  allowedEmojis: string[];
+}) => {
+  if (reactions.length === 0) return null;
+  return (
+    <div className={`${styles.reactionBar} ${isMine ? styles.reactionBarMine : styles.reactionBarTheirs}`}>
+      {reactions.map((r) => (
+        <button
+          key={r.emoji}
+          type="button"
+          disabled={!onToggle || (!r.reactedByMe && !allowedEmojis.includes(r.emoji))}
+          aria-pressed={r.reactedByMe}
+          aria-label={`${reactionLabel(r.emoji)} ${r.count}件${r.reactedByMe ? '（付けています）' : ''}`}
+          className={`${styles.reactionChip} ${isStampReaction(r.emoji) ? styles.reactionChipStamp : ''} ${r.reactedByMe ? styles.reactionChipActive : ''}`}
+          onClick={() => onToggle?.(r.emoji, r.reactedByMe)}
+        >
+          <ReactionGlyph emoji={r.emoji} />
+          <span className={styles.reactionCount}>{r.count}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
 type Props = {
   msg: Message;
   isMine: boolean;
@@ -197,6 +237,11 @@ type Props = {
   // 先頭だけアイコンと名前を出し、末尾だけ時刻を出す。渡されなければ単独扱い。
   isGroupStart?: boolean;
   isGroupEnd?: boolean;
+  // リアクション。reactionEmojis はサーバーが許す絵文字、onToggleReaction は付け外し
+  // （reacted は押す前に自分が付けていたか）。書き込み不可のルームでは onToggleReaction
+  // を渡さず、集計の表示だけにする。
+  reactionEmojis?: string[];
+  onToggleReaction?: (emoji: string, reacted: boolean) => void;
 };
 
 export const ChatMessageBubble = ({
@@ -204,15 +249,20 @@ export const ChatMessageBubble = ({
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
   onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor, editable = true,
   onReply, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
+  reactionEmojis = [], onToggleReaction,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUserID, onMentionClick } = useMentionNavigation();
+  // スタンプだけのメッセージ。本文・添付は無く、吹き出しなしでスタンプを大きく出す。
+  const isStamp = !!msg.stampID;
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
-  const canEdit = editable && isMine && msg.content.trim() !== '';
+  const canEdit = editable && isMine && !isStamp && msg.content.trim() !== '';
   const canReply = !!onReply && !isEditing;
-  const canShowActions = (canEdit || canDelete || canReply) && !isEditing;
+  const reactions = msg.reactions ?? [];
+  const canReact = !!onToggleReaction && reactionEmojis.length > 0;
+  const canShowActions = (canEdit || canDelete || canReply || canReact) && !isEditing;
   const isReply = !!msg.replyToID;
   const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 
@@ -227,13 +277,23 @@ export const ChatMessageBubble = ({
   });
 
   const [menuOpen, setMenuOpen] = useState(false);
+  // 「リアクションを付ける」を押すと、メニューが絵文字の一覧に切り替わる。
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
+  // メニューを開くときは、必ず通常のメニュー（返信・編集・削除）から始める。
+  const handleMenuOpenChange = (next: boolean) => {
+    if (next) setReactionPickerOpen(false);
+    setMenuOpen(next);
+  };
   // タップとスクロール／スワイプを見分けるための記録。
   const touchStartedAt = useRef(0);
   const movedDuringTouch = useRef(false);
   // メニューをどちらへ開くか。一覧の端で見切れないよう、上下・左右とも実測して決める。
   const [openUpward, setOpenUpward] = useState(true);
+  // 絵文字の一覧を開いたときの、一覧の最大の高さ(px)。メッセージ一覧の端からはみ出さないよう、実際の空きから決める。
+  const [pickerMaxHeight, setPickerMaxHeight] = useState<number | undefined>(undefined);
   const [alignStart, setAlignStart] = useState(true);
   const menuAnchorRef = useRef<HTMLSpanElement>(null);
+  const reactionPickerRef = useRef<HTMLDivElement>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -258,9 +318,12 @@ export const ChatMessageBubble = ({
       ? scroller.getBoundingClientRect()
       : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
 
-    const neededHeight = dropdown.offsetHeight + 4;
     const roomAbove = anchorRect.top - bounds.top;
     const roomBelow = bounds.bottom - anchorRect.bottom;
+    // 一覧は広い側の空きに収まる高さまでに制限し、収まらない分は一覧の中でスクロールさせる。
+    const pickerCap = reactionPickerOpen ? Math.floor(Math.max(120, Math.min(320, Math.max(roomAbove, roomBelow) - 16))) : undefined;
+    setPickerMaxHeight(pickerCap);
+    const neededHeight = Math.min(dropdown.offsetHeight, pickerCap ?? Infinity) + 4;
     // 上に入るなら上（吹き出しを隠しにくい）。入らないなら広い方へ。
     setOpenUpward(roomAbove >= neededHeight || roomAbove >= roomBelow);
 
@@ -270,7 +333,14 @@ export const ChatMessageBubble = ({
     const roomFromLeft = bounds.right - anchorRect.left;
     const roomFromRight = anchorRect.right - bounds.left;
     setAlignStart(roomFromLeft >= neededWidth || roomFromLeft >= roomFromRight);
-  }, [menuOpen]);
+  }, [menuOpen, reactionPickerOpen]);
+
+  // 「リアクションを付ける」を押すと、その項目が消えて一覧に切り替わる。キーボードで操作している人が
+  // フォーカスを見失わないよう、一覧の最初のボタンへフォーカスを移す。
+  useEffect(() => {
+    if (!reactionPickerOpen) return;
+    reactionPickerRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+  }, [reactionPickerOpen]);
 
   // DropdownMenu の useClickOutside は mousedown しか見ていないので、
   // タッチ端末での「外側をタップして閉じる」ぶんはここで面倒を見る。
@@ -309,14 +379,14 @@ export const ChatMessageBubble = ({
     if (movedDuringTouch.current) return;
     if (Date.now() - touchStartedAt.current > TAP_MAX_DURATION_MS) return;
     if ((e.target as HTMLElement).closest('a, button, img, textarea')) return;
-    setMenuOpen(true);
+    handleMenuOpenChange(true);
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!canShowActions) return;
     // ブラウザ標準のメニューではなく、「···」と同じメニューを出す
     e.preventDefault();
-    setMenuOpen(true);
+    handleMenuOpenChange(true);
   };
 
   // 吹き出しの外側、時刻の真上に浮かせる。DropdownMenu 自身の .wrap は
@@ -329,13 +399,51 @@ export const ChatMessageBubble = ({
     >
       <DropdownMenu
         open={menuOpen}
-        onOpenChange={setMenuOpen}
+        onOpenChange={handleMenuOpenChange}
         ariaLabel="メッセージの操作"
         triggerClassName={styles.messageMenuTrigger}
         dropdownClassName={`${styles.messageMenuDropdown} ${openUpward ? styles.messageMenuDropdownUp : styles.messageMenuDropdownDown} ${alignStart ? styles.messageMenuDropdownStart : styles.messageMenuDropdownEnd}`}
       >
-        {(close) => (
+        {(close) => reactionPickerOpen ? (
+          <div
+            ref={reactionPickerRef}
+            className={styles.reactionPicker}
+            style={pickerMaxHeight ? { maxHeight: `${pickerMaxHeight}px` } : undefined}
+            role="group"
+            aria-label="リアクションを選ぶ"
+          >
+            {[
+              { key: 'emojis', className: styles.reactionPickerEmojis, items: reactionEmojis.filter((e) => !isStampReaction(e)) },
+              { key: 'stamps', className: styles.reactionPickerStamps, items: reactionEmojis.filter(isStampReaction) },
+            ].filter((group) => group.items.length > 0).map((group) => (
+              <div key={group.key} className={group.className}>
+                {group.items.map((emoji) => {
+                  const reacted = reactions.some((r) => r.emoji === emoji && r.reactedByMe);
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      aria-pressed={reacted}
+                      aria-label={`${reactionLabel(emoji)}を${reacted ? '外す' : '付ける'}`}
+                      className={`${styles.reactionPickerButton} ${reacted ? styles.reactionPickerButtonActive : ''}`}
+                      onClick={() => { close(); onToggleReaction?.(emoji, reacted); }}
+                    >
+                      <ReactionGlyph emoji={emoji} compact />
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        ) : (
           <>
+            {canReact && (
+              <DropdownMenuItem onClick={() => setReactionPickerOpen(true)}>
+                {/* 項目は「アイコン列 + 文字」の2列なので、他の項目の SVG アイコンと同じ列に絵文字を置く */}
+                <span aria-hidden="true">😊</span>
+                リアクションを付ける
+              </DropdownMenuItem>
+            )}
             {canReply && (
               <DropdownMenuItem icon={replyMenuIcon} themedIcon onClick={() => { close(); onReply?.(); }}>
                 返信
@@ -456,7 +564,16 @@ export const ChatMessageBubble = ({
                 * 返信のときは、本文が空（画像のみ）でも引用を入れるためにバブルを出す。
                 * 返信でない場合の見た目は従来どおり（本文があるときだけバブル）。
                 */}
-              {isReply ? (
+              {isStamp ? (
+                <div className={`${styles.stampMessage} ${isMine ? styles.stampMessageMine : styles.stampMessageTheirs}`}>
+                  {isReply && (
+                    <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
+                      <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
+                    </div>
+                  )}
+                  <ReactionGlyph emoji={msg.stampID!} large />
+                </div>
+              ) : isReply ? (
                 <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
                   <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
                   {hasText && renderMessageBody(msg.content)}
@@ -469,6 +586,7 @@ export const ChatMessageBubble = ({
                 )
               )}
               {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
+              <ReactionBar reactions={reactions} isMine={isMine} onToggle={onToggleReaction} allowedEmojis={reactionEmojis} />
             </>
           )}
         </div>

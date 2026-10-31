@@ -21,8 +21,18 @@ export type ReplyTarget = {
   ID: string;
   user: MessageUser;
   content: string;
+  // スタンプだけのメッセージのスタンプのID。通常のメッセージは null。
+  stampID?: string | null;
   media: Media[];
   isMine: boolean;
+};
+
+// 絵文字ごとのリアクションの集計。付けられた順で並び、1つも無ければ空配列。
+export type MessageReaction = {
+  emoji: string;
+  count: number;
+  // 自分がこの絵文字を付けているか。
+  reactedByMe: boolean;
 };
 
 export type Message = {
@@ -30,6 +40,9 @@ export type Message = {
   roomID: string;
   user: MessageUser;
   content: string;
+  // スタンプだけのメッセージのスタンプのID（"stamp:xxx"）。通常のメッセージは null。
+  // このときの本文は空で、添付・メンションも持たない。
+  stampID?: string | null;
   media: Media[];
   createdAt: string;
   updatedAt: string;
@@ -39,6 +52,7 @@ export type Message = {
   replyTo?: ReplyTarget | null;
   // 本文中のメンション（コミュニティのみ）。表示側は text を本文と突き合わせて着色する。
   mentions: Mention[];
+  reactions: MessageReaction[];
 };
 
 export type Room = {
@@ -68,6 +82,7 @@ export const MESSAGE_FIELDS = `
     avatarUrl
   }
   content
+  stampID
   media {${MEDIA_FIELDS_RAW}}
   createdAt
   updatedAt
@@ -82,6 +97,7 @@ export const MESSAGE_FIELDS = `
       avatarUrl
     }
     content
+    stampID
     media {${MEDIA_FIELDS_RAW}}
     isMine
   }
@@ -93,6 +109,11 @@ export const MESSAGE_FIELDS = `
       avatarUrl
     }
     text
+  }
+  reactions {
+    emoji
+    count
+    reactedByMe
   }
 `;
 
@@ -125,8 +146,8 @@ const GetOrCreateDMRoomDocument = graphql(`
 `);
 
 const SendMessageDocument = graphql(`
-  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $mentionUserIDs: [ID!], $replyToID: ID) {
-    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID) {
+  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $mentionUserIDs: [ID!], $replyToID: ID, $stampID: String) {
+    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID, stampID: $stampID) {
       ID
       roomID
       user {
@@ -136,6 +157,7 @@ const SendMessageDocument = graphql(`
         avatarUrl
       }
       content
+      stampID
       media {
         ...MediaFields
       }
@@ -152,6 +174,7 @@ const SendMessageDocument = graphql(`
           avatarUrl
         }
         content
+        stampID
         media {
           ...MediaFields
         }
@@ -165,6 +188,11 @@ const SendMessageDocument = graphql(`
           avatarUrl
         }
         text
+      }
+      reactions {
+        emoji
+        count
+        reactedByMe
       }
     }
   }
@@ -182,6 +210,7 @@ const UpdateMessageDocument = graphql(`
         avatarUrl
       }
       content
+      stampID
       media {
         ...MediaFields
       }
@@ -198,6 +227,7 @@ const UpdateMessageDocument = graphql(`
           avatarUrl
         }
         content
+        stampID
         media {
           ...MediaFields
         }
@@ -212,7 +242,44 @@ const UpdateMessageDocument = graphql(`
         }
         text
       }
+      reactions {
+        emoji
+        count
+        reactedByMe
+      }
     }
+  }
+`);
+
+const AddMessageReactionDocument = graphql(`
+  mutation AddMessageReaction($roomID: ID!, $messageID: ID!, $emoji: String!) {
+    addMessageReaction(roomID: $roomID, messageID: $messageID, emoji: $emoji) {
+      ID
+      reactions {
+        emoji
+        count
+        reactedByMe
+      }
+    }
+  }
+`);
+
+const RemoveMessageReactionDocument = graphql(`
+  mutation RemoveMessageReaction($roomID: ID!, $messageID: ID!, $emoji: String!) {
+    removeMessageReaction(roomID: $roomID, messageID: $messageID, emoji: $emoji) {
+      ID
+      reactions {
+        emoji
+        count
+        reactedByMe
+      }
+    }
+  }
+`);
+
+const MessageReactionEmojisDocument = graphql(`
+  query MessageReactionEmojis {
+    messageReactionEmojis
   }
 `);
 
@@ -241,6 +308,7 @@ const ListMessagesDocument = graphql(`
           avatarUrl
         }
         content
+        stampID
         media {
           ...MediaFields
         }
@@ -257,6 +325,7 @@ const ListMessagesDocument = graphql(`
             avatarUrl
           }
           content
+          stampID
           media {
             ...MediaFields
           }
@@ -270,6 +339,11 @@ const ListMessagesDocument = graphql(`
             avatarUrl
           }
           text
+        }
+        reactions {
+          emoji
+          count
+          reactedByMe
         }
       }
       hasMoreBefore
@@ -386,9 +460,11 @@ export const sendMessage = async (
   replyToID?: string | null,
   // メンション先のユーザーID（コミュニティのみ）。サジェストから選んだ相手だけを渡す。
   mentionUserIDs?: string[],
+  // スタンプだけのメッセージを送るときのスタンプのID。このとき content は空、添付・メンションは付けない。
+  stampID?: string | null,
 ) => {
   const token = getUserToken();
-  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, mentionUserIDs, replyToID }, token);
+  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, mentionUserIDs, replyToID, stampID }, token);
 };
 
 export type ListMessagesOptions = {
@@ -427,6 +503,23 @@ export const updateMessage = async (
 ) => {
   const token = getUserToken();
   return await requestDoc(UpdateMessageDocument, { roomID, id, content, mentionUserIDs }, token);
+};
+
+// 付ける・外すの結果は messageUpdated の購読でも全員に届く（自分にも届く）。戻り値には
+// 更新後の集計が入っているので、接続が切れていても自分の画面はこちらで更新できる。
+// 冪等なので連打してもエラーにならない。
+export const addMessageReaction = async (roomID: string, messageID: string, emoji: string) => {
+  return await requestDoc(AddMessageReactionDocument, { roomID, messageID, emoji }, getUserToken());
+};
+
+export const removeMessageReaction = async (roomID: string, messageID: string, emoji: string) => {
+  return await requestDoc(RemoveMessageReactionDocument, { roomID, messageID, emoji }, getUserToken());
+};
+
+// サーバーが許しているリアクションの絵文字。画面側で一覧を持たず、サーバーの一覧に従う。
+export const getMessageReactionEmojis = async (): Promise<string[]> => {
+  const data = await requestDoc(MessageReactionEmojisDocument, {}, getUserToken());
+  return data.messageReactionEmojis;
 };
 
 export const deleteMessage = async (roomID: string, id: string) => {

@@ -8,6 +8,8 @@ import { type Message } from '../../api/message';
 import { storageUrl } from '../../../../lib/storage';
 import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
 import { MentionSuggestionList } from './MentionSuggestionList';
+import { StampPicker } from './StampPicker';
+import { reactionLabel } from '../../constants/reactionStamps';
 import { applyMention, getActiveNameMention, type MentionCandidate } from '../../../../lib/mentions';
 
 const ACCEPTED_FILE_TYPES = [
@@ -21,6 +23,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
 // 返信先バーに出す1行プレビュー。本文が無いときは添付の種類で代替する。
 const replyPreviewText = (msg: Message): string => {
+  if (msg.stampID) return `スタンプ（${reactionLabel(msg.stampID)}）`;
   if (msg.content.trim() !== '') return msg.content;
   const imageCount = msg.media.filter((m) => m.contentType.startsWith('image/')).length;
   const fileCount = msg.media.length - imageCount;
@@ -48,11 +51,15 @@ type Props = {
   onMentionSelect?: (candidate: MentionCandidate) => void;
   // 入力中の表示名 prefix。null はメンション入力中でないことを表す。
   onMentionQueryChange?: (query: string | null) => void;
+  // スタンプだけのメッセージを送れるルームだけが渡す。stampOptions は送れるスタンプのID。
+  stampOptions?: string[];
+  onSendStamp?: (stampID: string) => void;
 };
 
 export const ChatInput = ({
   value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
   replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryChange,
+  stampOptions = [], onSendStamp,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -313,6 +320,9 @@ export const ChatInput = ({
             className={`${styles.clipIcon} ${theme === 'dark' ? styles.clipIconDark : ''}`}
           />
         </button>
+        {onSendStamp && stampOptions.length > 0 && (
+          <StampPicker stamps={stampOptions} onPick={onSendStamp} disabled={disabled || isBlocked} />
+        )}
         <input
           ref={fileInputRef}
           type="file"
