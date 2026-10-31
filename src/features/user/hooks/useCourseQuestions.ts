@@ -188,6 +188,12 @@ export const useCourseQuestions = (roomId: string | undefined) => {
     }));
   }, []);
 
+  // 一覧にまだ読み込まれていない質問（通知から開いた質問など）を、一覧の末尾に足す。
+  // 件数と読み込み位置は変えない（総数は一覧の取得が持つ。続きを読み込むときは重複を除く）。
+  const ensureQuestion = useCallback((q: Question) => {
+    setState((prev) => (prev.questions.some((e) => e.ID === q.ID) ? prev : { ...prev, questions: [...prev.questions, q] }));
+  }, []);
+
   const removeQuestion = useCallback((questionID: string) => {
     setState((prev) => ({
       ...prev,
@@ -204,6 +210,7 @@ export const useCourseQuestions = (roomId: string | undefined) => {
     loadMore,
     addQuestion,
     updateQuestion,
+    ensureQuestion,
     bumpAnswerCount,
     removeQuestion,
   };

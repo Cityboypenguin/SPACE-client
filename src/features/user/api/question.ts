@@ -317,6 +317,40 @@ const QuestionAnswersDocument = graphql(`
   }
 `);
 
+// 通知から開くなど、一覧にまだ読み込まれていない質問を1件だけ取る。
+const QuestionByIdDocument = graphql(`
+  query QuestionById($id: ID!) {
+    question(id: $id) {
+      ID
+      roomID
+      user {
+        ID
+        name
+        accountID
+        avatarUrl
+      }
+      body
+      isAnswered
+      isMine
+      bestAnswer {
+        ID
+        body
+      }
+      answerCount
+      media {
+        ...MediaFields
+      }
+      addenda {
+        ID
+        body
+        createdAt
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`);
+
 const AddQuestionAddendumDocument = graphql(`
   mutation AddQuestionAddendum($questionID: ID!, $body: String!) {
     addQuestionAddendum(questionID: $questionID, body: $body) {
@@ -367,6 +401,11 @@ export const addQuestionAddendum = async (questionID: string, body: string): Pro
 export const addAnswerAddendum = async (answerID: string, body: string): Promise<AnswerAddendaUpdate> => {
   const data = await requestDoc(AddAnswerAddendumDocument, { answerID, body }, getUserToken());
   return data.addAnswerAddendum;
+};
+
+export const getQuestion = async (id: string): Promise<Question | null> => {
+  const data = await requestDoc(QuestionByIdDocument, { id }, getUserToken());
+  return data.question ?? null;
 };
 
 export const listQuestions = async (roomID: string, limit = 50, offset = 0): Promise<QuestionPage> => {

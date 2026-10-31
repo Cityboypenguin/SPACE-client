@@ -116,8 +116,8 @@ export const NotificationDetailPage = () => {
       return;
     }
     if (!notification?.targetType || !notification?.targetID) return;
-    if (isAddendumNotification(notification.type) && notification.targetType === 'room') {
-      navigate(courseQuestionBoxLink(notification.targetID));
+    if (isAddendumNotification(notification.type)) {
+      if (notification.targetQuestion) navigate(courseQuestionBoxLink(notification.targetQuestion.roomID, notification.targetQuestion.ID));
       return;
     }
     if (DM_TYPES.has(notification.type) && notification.targetType === 'room') {
@@ -200,7 +200,9 @@ export const NotificationDetailPage = () => {
               </div>
             )}
 
-            {(replyLink || (notification.targetType && notification.targetID && TARGET_PATH[notification.targetType])) && (
+            {(replyLink
+              || (isAddendumNotification(notification.type) && notification.targetQuestion)
+              || (notification.targetType && notification.targetID && TARGET_PATH[notification.targetType])) && (
               <button className={styles.actionBtn} onClick={handleTargetLink}>
                 {ACTION_LABEL[notification.type] ?? '詳細へいく'}
               </button>
