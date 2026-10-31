@@ -2011,6 +2011,112 @@
   }
 }
 
+/* Admin pages use a few legacy light-only declarations and inline styles.
+   Keep their layout intact while mapping the shared surfaces to the app theme. */
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .page,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .pageCentered,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .pageWide,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .dashboardPage,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .pageNarrow,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .pageMedium {
+  background-color: var(--color-bg) !important;
+  color: var(--color-text);
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .card,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .sectionCard,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .tablePanel,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .tablePanelPlain,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .kpiCard,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .relationshipCard,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .analyticsCard,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .maintenanceCard {
+  border-color: var(--color-border) !important;
+  background: var(--color-bg-elevated) !important;
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 24%);
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .title,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .titleLarge,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .titleSmall,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .cardTitle,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .sectionTitle,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .dashboardTitle,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .dashboardSectionTitle,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) label,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) th,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) td,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) p,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) span {
+  color: var(--color-text);
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .pageHeader,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .tableHeaderRow,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .tableHeaderRowStrong,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .compactHeaderRow,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .infoTable th,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .courseChatTableHeader {
+  border-color: var(--color-border) !important;
+  background: var(--color-surface) !important;
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .tableRow,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .clickableRow,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .hoverRow,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .tableCell,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .tableCellLarge,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .compactTableCell,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .infoTable td {
+  border-color: var(--color-border) !important;
+  color: var(--color-text);
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) input,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) select,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) textarea,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .input,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .select,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .formInput {
+  border-color: var(--color-border) !important;
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .backButton,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .secondaryButton,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .paginationButton,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .ghostButton,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .secondaryButtonLarge,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) button:not(.primaryButton):not(.dangerButton):not(.dangerButtonSmall) {
+  border-color: var(--color-border);
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .emptyState,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .emptyText,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .cellMuted,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .mutedText,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .subText,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .dateCell,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .helpText {
+  color: var(--color-text-muted) !important;
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .errorText,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .centerError {
+  color: var(--color-danger) !important;
+}
+
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .tableRow:hover,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .hoverRow:hover,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .backButton:hover,
+:global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .secondaryButton:hover {
+  background-color: var(--color-surface) !important;
+}
+
 :global(body[data-admin-sidebar='collapsed']) .pageCentered,
 :global(body[data-admin-sidebar='collapsed']) .page {
   margin-left: 56px;

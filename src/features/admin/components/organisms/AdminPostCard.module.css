@@ -33,7 +33,7 @@
 
 .deletedBadge {
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-bg-elevated);
   font-size: 0.7rem;
   font-weight: bold;
   padding: 0.15rem 0.4rem;
