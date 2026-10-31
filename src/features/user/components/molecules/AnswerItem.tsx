@@ -8,6 +8,7 @@ import { useTheme } from '../../../../context/useTheme';
 import { ClampedText } from '../../../../components/atoms/ClampedText';
 import { type Answer } from '../../api/question';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { AddendumSection } from './AddendumSection';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import styles from '../QuestionBox.module.css';
 
@@ -23,6 +24,7 @@ type Props = {
   onSelectBest: () => Promise<void>;
   onCancelBest: () => Promise<void>;
   onUpdate: (body: string, deletedMediaIDs: string[]) => Promise<void>;
+  onAddAddendum: (body: string) => Promise<void>;
   onDelete: () => Promise<void>;
   onLike: () => Promise<void>;
   onUnlike: () => Promise<void>;
@@ -33,7 +35,7 @@ type Props = {
 
 export const AnswerItem = ({
   answer, roomWritable, isBest, canSelectBest, canCancelBest,
-  onSelectBest, onCancelBest, onUpdate, onDelete, onLike, onUnlike, rootRef,
+  onSelectBest, onCancelBest, onUpdate, onAddAddendum, onDelete, onLike, onUnlike, rootRef,
 }: Props) => {
   const { theme } = useTheme();
   const [editing, setEditing] = useState(false);
@@ -207,6 +209,10 @@ export const AnswerItem = ({
         <div className={styles.mediaPreviewGrid}>
           <PostMediaGrid media={answer.media} />
         </div>
+      )}
+
+      {!editing && (
+        <AddendumSection addenda={answer.addenda} canAdd={answer.isMine && roomWritable} onAdd={onAddAddendum} />
       )}
 
       <div className={styles.answerFooter}>

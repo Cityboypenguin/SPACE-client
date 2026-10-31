@@ -34,3 +34,17 @@ export const replyNotificationLink = (
   if (!builder) return null;
   return `${builder(roomID)}?messageID=${encodeURIComponent(messageID)}`;
 };
+
+// 授業内チャットの質問・回答への追記（サーバー: usecase/addendum）。遷移先は授業の質問箱。
+export const QUESTION_ADDENDUM_TYPE = 'question_addendum';
+export const ANSWER_ADDENDUM_TYPE = 'answer_addendum';
+
+export const isAddendumNotification = (type: string | null | undefined): boolean =>
+  type === QUESTION_ADDENDUM_TYPE || type === ANSWER_ADDENDUM_TYPE;
+
+// 授業の質問箱を開くパス。questionID が分かるとき（リアルタイムの通知）は、その質問を開く。
+export const courseQuestionBoxLink = (roomID: string, questionID?: string | null): string => {
+  const params = new URLSearchParams({ tab: 'question' });
+  if (questionID) params.set('questionID', questionID);
+  return `${ROOM_PATH.course(roomID)}?${params.toString()}`;
+};

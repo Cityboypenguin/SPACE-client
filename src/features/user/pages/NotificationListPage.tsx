@@ -16,7 +16,7 @@ import {
   type NotificationActor,
 } from '../api/notification';
 import { listAnnouncements } from '../api/announcement';
-import { MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
+import { ANSWER_ADDENDUM_TYPE, MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, QUESTION_ADDENDUM_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
@@ -86,6 +86,8 @@ const TYPE_ICON: Record<string, ReactNode> = {
   [MENTION_TYPE]: <MentionIcon />,
   [MESSAGE_MENTION_TYPE]: <MentionIcon />,
   dm: <ChatIcon />,
+  [QUESTION_ADDENDUM_TYPE]: <ChatIcon />,
+  [ANSWER_ADDENDUM_TYPE]: <ChatIcon />,
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
   announcement: <BellIcon />,

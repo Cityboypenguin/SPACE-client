@@ -4,6 +4,7 @@ import { useQuestionAnswers } from '../../hooks/useQuestionAnswers';
 import {
   createQuestion, answerQuestion, selectBestAnswer, cancelBestAnswer,
   updateQuestionBody, deleteQuestion, updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
+  addQuestionAddendum, addAnswerAddendum,
 } from '../../api/question';
 import { uploadMediaFiles } from '../../api/media';
 import { CreateQuestionForm } from '../molecules/CreateQuestionForm';
@@ -74,6 +75,16 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
     updateQuestion(updated);
   };
 
+  const handleAddQuestionAddendum = async (questionID: string, body: string) => {
+    const updated = await addQuestionAddendum(questionID, body);
+    updateQuestion(updated);
+  };
+
+  const handleAddAnswerAddendum = async (_questionID: string, answerID: string, body: string) => {
+    const updated = await addAnswerAddendum(answerID, body);
+    answersState.updateAnswer(updated);
+  };
+
   const handleDeleteQuestion = async (questionID: string) => {
     await deleteQuestion(questionID);
     removeQuestion(questionID);
@@ -117,7 +128,9 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
           onCancelBestAnswer={handleCancelBestAnswer}
           onUpdateQuestion={handleUpdateQuestion}
           onDeleteQuestion={handleDeleteQuestion}
+          onAddQuestionAddendum={handleAddQuestionAddendum}
           onUpdateAnswer={handleUpdateAnswer}
+          onAddAnswerAddendum={handleAddAnswerAddendum}
           onDeleteAnswer={handleDeleteAnswer}
           onLikeAnswer={handleLikeAnswer}
           onUnlikeAnswer={handleUnlikeAnswer}

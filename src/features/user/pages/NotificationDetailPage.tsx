@@ -10,7 +10,7 @@ import {
   deleteNotifications,
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
-import { MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
+import { ANSWER_ADDENDUM_TYPE, MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, QUESTION_ADDENDUM_TYPE, courseQuestionBoxLink, isAddendumNotification, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { stableCacheOptions } from '../cache/swrOptions';
 import styles from './NotificationDetailPage.module.css';
@@ -22,6 +22,8 @@ const TYPE_LABEL: Record<string, string> = {
   [MESSAGE_REPLY_TYPE]: 'チャットの返信',
   [MENTION_TYPE]: 'メンション',
   [MESSAGE_MENTION_TYPE]: 'チャットのメンション',
+  [QUESTION_ADDENDUM_TYPE]: '質問への追記',
+  [ANSWER_ADDENDUM_TYPE]: '回答への追記',
   dm: 'DM',
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
@@ -33,6 +35,8 @@ const ACTION_LABEL: Record<string, string> = {
   dm: 'DMへいく',
   [MESSAGE_REPLY_TYPE]: 'メッセージへいく',
   [MESSAGE_MENTION_TYPE]: 'メッセージへいく',
+  [QUESTION_ADDENDUM_TYPE]: '質問箱へいく',
+  [ANSWER_ADDENDUM_TYPE]: '質問箱へいく',
   [MENTION_TYPE]: '投稿へいく',
   favorite: '投稿へいく',
   reply: '投稿へいく',
@@ -112,6 +116,10 @@ export const NotificationDetailPage = () => {
       return;
     }
     if (!notification?.targetType || !notification?.targetID) return;
+    if (isAddendumNotification(notification.type) && notification.targetType === 'room') {
+      navigate(courseQuestionBoxLink(notification.targetID));
+      return;
+    }
     if (DM_TYPES.has(notification.type) && notification.targetType === 'room') {
       navigate(`/dm/${notification.targetID}`);
       return;

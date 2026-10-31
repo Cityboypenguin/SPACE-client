@@ -10,7 +10,7 @@ import { NotificationContext } from './notificationContextValue';
 import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
 import { emitRoomChanged, type RoomChangedEvent } from '../hooks/useUnreadSubscription';
-import { isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
+import { courseQuestionBoxLink, isAddendumNotification, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { getUnreadNotificationCount, issueNotificationStreamTicket } from '../api/notification';
 
 import { SSE_URL, refreshUserAccessToken } from '../../../lib/graphql';
@@ -27,6 +27,8 @@ type SSENotificationPayload = {
   // message_reply のときだけ載る追加フィールド（遷移先の組み立て用）
   roomID?: string;
   roomType?: string;
+  // 追記の通知（question_addendum / answer_addendum）だけに載る。開く質問の手がかり。
+  questionID?: string;
 };
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
@@ -204,6 +206,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           } else if (payload.type === 'dm' && payload.targetType === 'room' && payload.targetID) {
             // DM は通知詳細をスキップして個別 DM ルームへ直行（通知一覧のタップ挙動と揃える）
             link = `/dm/${payload.targetID}`;
+          } else if (isAddendumNotification(payload.type) && payload.roomID) {
+            // 追記の通知は授業の質問箱の、その質問を開く
+            link = courseQuestionBoxLink(payload.roomID, payload.questionID);
           } else if (isMessageJumpNotification(payload.type)) {
             // 返信・チャットのメンション通知はルームを開いて該当メッセージまでジャンプする
             link = replyNotificationLink(payload.roomType, payload.roomID, payload.targetID) ?? link;

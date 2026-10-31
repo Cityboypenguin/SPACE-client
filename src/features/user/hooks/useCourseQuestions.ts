@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   listQuestions,
-  type Question, type QuestionBestAnswerUpdate, type QuestionBodyUpdate,
-  QUESTION_FIELDS,
+  type Question, type QuestionBestAnswerUpdate, type QuestionBodyUpdate, type QuestionAddendaUpdate,
+  QUESTION_FIELDS, ADDENDUM_FIELDS_RAW,
 } from '../api/question';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -30,6 +30,7 @@ const QUESTION_UPDATED_SUBSCRIPTION = `
         ID
         body
       }
+      addenda {${ADDENDUM_FIELDS_RAW}}
       updatedAt
     }
   }
@@ -44,7 +45,7 @@ const QUESTION_DELETED_SUBSCRIPTION = `
 `;
 
 type QuestionAddedData = { questionAdded: Question };
-type QuestionUpdatedData = { questionUpdated: QuestionBestAnswerUpdate & QuestionBodyUpdate };
+type QuestionUpdatedData = { questionUpdated: QuestionBestAnswerUpdate & QuestionBodyUpdate & QuestionAddendaUpdate };
 type QuestionDeletedData = { questionDeleted: Pick<Question, 'ID'> };
 
 const PAGE_SIZE = 50;
@@ -169,7 +170,7 @@ export const useCourseQuestions = (roomId: string | undefined) => {
 
   // q は questionUpdated 購読からの部分オブジェクト(selectBestAnswer/cancelBestAnswer
   // の応答と同じ形)を受け取り、既存の Question に上書きマージする。
-  const updateQuestion = useCallback((q: QuestionBestAnswerUpdate | QuestionBodyUpdate) => {
+  const updateQuestion = useCallback((q: QuestionBestAnswerUpdate | QuestionBodyUpdate | QuestionAddendaUpdate) => {
     setState((prev) => ({
       ...prev,
       questions: prev.questions.map((e) => (e.ID === q.ID ? { ...e, ...q } : e)),
