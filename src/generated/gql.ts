@@ -55,6 +55,10 @@ type Documents = {
     "\n  mutation UpdateInquiryStatus($id: ID!, $status: InquiryStatus!) {\n    updateInquiryStatus(id: $id, status: $status) {\n      id\n      status\n    }\n  }\n": typeof types.UpdateInquiryStatusDocument,
     "\n  mutation ToggleMaintenanceMode($enabled: Boolean!) {\n    toggleMaintenanceMode(enabled: $enabled)\n  }\n": typeof types.ToggleMaintenanceModeDocument,
     "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n": typeof types.MaintenanceModeDocument,
+    "\n  query AdminNGWords {\n    adminNGWords {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n": typeof types.AdminNgWordsDocument,
+    "\n  query AdminNGWordStats {\n    adminNGWordStats {\n      total\n      byWord {\n        pattern\n        count\n      }\n      byUser {\n        userID\n        name\n        accountID\n        count\n      }\n    }\n  }\n": typeof types.AdminNgWordStatsDocument,
+    "\n  mutation AdminCreateNGWord($pattern: String!, $matchType: NGWordMatchType!) {\n    adminCreateNGWord(pattern: $pattern, matchType: $matchType) {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n": typeof types.AdminCreateNgWordDocument,
+    "\n  mutation AdminDeleteNGWord($id: ID!) {\n    adminDeleteNGWord(id: $id)\n  }\n": typeof types.AdminDeleteNgWordDocument,
     "\n  fragment AdminPostFields on Post {\n    ID\n    content\n    createdAt\n    updatedAt\n    deletedAt\n    replyCount\n    user {\n      ID\n      name\n      accountID\n      avatarUrl\n    }\n    favoriteCount\n    isFavoritedByMe\n    media {\n      ...MediaFields\n      createdAt\n    }\n  }\n": typeof types.AdminPostFieldsFragmentDoc,
     "\n  query GetAdminPosts($keyword: String, $status: AdminPostStatus, $limit: Int, $offset: Int) {\n    adminListPosts(keyword: $keyword, status: $status, limit: $limit, offset: $offset) {\n      items {\n        ...AdminPostFields\n      }\n      total\n    }\n  }\n": typeof types.GetAdminPostsDocument,
     "\n  query GetPostByIDIncludeDeleted($id: ID!) {\n    getPostByIDIncludeDeleted(id: $id) {\n      ...AdminPostFields\n      rootPost {\n        ...AdminPostFields\n      }\n      replies(limit: 50) {\n        ...AdminPostFields\n      }\n    }\n  }\n": typeof types.GetPostByIdIncludeDeletedDocument,
@@ -243,6 +247,10 @@ const documents: Documents = {
     "\n  mutation UpdateInquiryStatus($id: ID!, $status: InquiryStatus!) {\n    updateInquiryStatus(id: $id, status: $status) {\n      id\n      status\n    }\n  }\n": types.UpdateInquiryStatusDocument,
     "\n  mutation ToggleMaintenanceMode($enabled: Boolean!) {\n    toggleMaintenanceMode(enabled: $enabled)\n  }\n": types.ToggleMaintenanceModeDocument,
     "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n": types.MaintenanceModeDocument,
+    "\n  query AdminNGWords {\n    adminNGWords {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n": types.AdminNgWordsDocument,
+    "\n  query AdminNGWordStats {\n    adminNGWordStats {\n      total\n      byWord {\n        pattern\n        count\n      }\n      byUser {\n        userID\n        name\n        accountID\n        count\n      }\n    }\n  }\n": types.AdminNgWordStatsDocument,
+    "\n  mutation AdminCreateNGWord($pattern: String!, $matchType: NGWordMatchType!) {\n    adminCreateNGWord(pattern: $pattern, matchType: $matchType) {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n": types.AdminCreateNgWordDocument,
+    "\n  mutation AdminDeleteNGWord($id: ID!) {\n    adminDeleteNGWord(id: $id)\n  }\n": types.AdminDeleteNgWordDocument,
     "\n  fragment AdminPostFields on Post {\n    ID\n    content\n    createdAt\n    updatedAt\n    deletedAt\n    replyCount\n    user {\n      ID\n      name\n      accountID\n      avatarUrl\n    }\n    favoriteCount\n    isFavoritedByMe\n    media {\n      ...MediaFields\n      createdAt\n    }\n  }\n": types.AdminPostFieldsFragmentDoc,
     "\n  query GetAdminPosts($keyword: String, $status: AdminPostStatus, $limit: Int, $offset: Int) {\n    adminListPosts(keyword: $keyword, status: $status, limit: $limit, offset: $offset) {\n      items {\n        ...AdminPostFields\n      }\n      total\n    }\n  }\n": types.GetAdminPostsDocument,
     "\n  query GetPostByIDIncludeDeleted($id: ID!) {\n    getPostByIDIncludeDeleted(id: $id) {\n      ...AdminPostFields\n      rootPost {\n        ...AdminPostFields\n      }\n      replies(limit: 50) {\n        ...AdminPostFields\n      }\n    }\n  }\n": types.GetPostByIdIncludeDeletedDocument,
@@ -568,6 +576,22 @@ export function graphql(source: "\n  mutation ToggleMaintenanceMode($enabled: Bo
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n"): (typeof documents)["\n  query MaintenanceMode {\n    maintenanceMode\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminNGWords {\n    adminNGWords {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  query AdminNGWords {\n    adminNGWords {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminNGWordStats {\n    adminNGWordStats {\n      total\n      byWord {\n        pattern\n        count\n      }\n      byUser {\n        userID\n        name\n        accountID\n        count\n      }\n    }\n  }\n"): (typeof documents)["\n  query AdminNGWordStats {\n    adminNGWordStats {\n      total\n      byWord {\n        pattern\n        count\n      }\n      byUser {\n        userID\n        name\n        accountID\n        count\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminCreateNGWord($pattern: String!, $matchType: NGWordMatchType!) {\n    adminCreateNGWord(pattern: $pattern, matchType: $matchType) {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  mutation AdminCreateNGWord($pattern: String!, $matchType: NGWordMatchType!) {\n    adminCreateNGWord(pattern: $pattern, matchType: $matchType) {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminDeleteNGWord($id: ID!) {\n    adminDeleteNGWord(id: $id)\n  }\n"): (typeof documents)["\n  mutation AdminDeleteNGWord($id: ID!) {\n    adminDeleteNGWord(id: $id)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
