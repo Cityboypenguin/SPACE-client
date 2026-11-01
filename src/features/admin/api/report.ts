@@ -13,13 +13,13 @@ export type Report = {
   reason: string;
   customReason: string | null;
   content: string | null;
-  reportedMessage: ReportedMessage | null;
+  reportedContent: ReportedContent | null;
   status: string;
   createdAt: string;
 };
 
-// 通報を受けた時点のメッセージ。あとから編集・削除されても変わらない。
-export type ReportedMessage = {
+// 通報を受けた時点の内容。あとから編集・削除されても変わらない。
+export type ReportedContent = {
   roomType: string;
   roomName: string;
   authorID: string | null;
@@ -27,6 +27,8 @@ export type ReportedMessage = {
   authorAccountID: string | null;
   content: string;
   media: { ID: string; url: string; contentType: string }[];
+  parentBody: string | null;
+  pollOptions: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -47,7 +49,7 @@ const SearchReportsDocument = graphql(`
         reason
         customReason
         content
-        reportedMessage {
+        reportedContent {
           roomType
           roomName
           authorID
@@ -59,6 +61,8 @@ const SearchReportsDocument = graphql(`
             url
             contentType
           }
+          parentBody
+          pollOptions
           createdAt
           updatedAt
         }
@@ -84,7 +88,7 @@ const GetReportDocument = graphql(`
         name
         accountID
       }
-      reportedMessage {
+      reportedContent {
         roomType
         roomName
         authorID
@@ -96,6 +100,8 @@ const GetReportDocument = graphql(`
           url
           contentType
         }
+        parentBody
+        pollOptions
         createdAt
         updatedAt
       }
