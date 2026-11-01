@@ -30,6 +30,7 @@ const replyPreviewText = (msg: Message): string => {
 };
 
 type Props = {
+  onCreateThread?: () => void;
   value: string;
   onChange: (val: string) => void;
   onSubmit: (e: { preventDefault(): void }) => void;
@@ -51,9 +52,19 @@ type Props = {
 };
 
 export const ChatInput = ({
-  value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
+  onCreateThread, value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
   replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryChange,
 }: Props) => {
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!actionsOpen) return;
+    const dismiss = (event: PointerEvent) => { if (!actionsRef.current?.contains(event.target as Node)) setActionsOpen(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setActionsOpen(false); };
+    document.addEventListener('pointerdown', dismiss);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', escape); };
+  }, [actionsOpen]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
@@ -300,7 +311,13 @@ export const ChatInput = ({
         </div>
       )}
       <form onSubmit={handleFormSubmit} className={styles.inputForm}>
-        <button
+        {onCreateThread ? <div ref={actionsRef} className={styles.composerActions}>
+          <button type="button" className={styles.composerAddButton} aria-label="チャットに追加" aria-haspopup="menu" aria-expanded={actionsOpen} onClick={() => setActionsOpen(value => !value)} disabled={disabled || isBlocked}>＋</button>
+          {actionsOpen && <div className={styles.composerMenu} role="menu" aria-label="チャットに追加">
+            <button type="button" role="menuitem" disabled={selectedFiles.length >= MAX_FILES} onClick={() => { setActionsOpen(false); fileInputRef.current?.click(); }}>ファイルを添付</button>
+            <button type="button" role="menuitem" onClick={() => { setActionsOpen(false); onCreateThread(); }}>スレッドを作成</button>
+          </div>}
+        </div> : <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
@@ -312,7 +329,7 @@ export const ChatInput = ({
             alt="添付"
             className={`${styles.clipIcon} ${theme === 'dark' ? styles.clipIconDark : ''}`}
           />
-        </button>
+        </button>}
         <input
           ref={fileInputRef}
           type="file"

@@ -4,7 +4,8 @@ import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
-import { ThreadWorkspace } from '../components/organisms/ThreadWorkspace';
+import { useThreadActions } from '../hooks/useThreadActions';
+import { ThreadWorkspace, ThreadListButton } from '../components/organisms/ThreadWorkspace';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { ChatUnreadSeparator } from '../../../components/atoms/ChatUnreadSeparator';
@@ -37,6 +38,7 @@ let hardReloadPending = (() => {
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const threadActions = useThreadActions();
   const location = useLocation();
   useResetViewportScroll([roomId]);
   const locationState = location.state as { communityID?: string; community?: Community; showDetail?: boolean } | null;
@@ -207,6 +209,7 @@ export const CommunityRoomPage = () => {
   const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.user.ID === currentUserID);
 
   return (
+    <ThreadWorkspace parentRoomID={roomId ?? ""} writable={!room?.isMessagingDisabled}>
     <div className={styles.container}>
       <UserSidebar />
 
@@ -231,9 +234,9 @@ export const CommunityRoomPage = () => {
           <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
           <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         </button>
+        <ThreadListButton />
       </div>
 
-      {roomId && <ThreadWorkspace parentRoomID={roomId} writable={!room?.isMessagingDisabled} />}
       <div className={styles.messageListWrapper}>
         <div className={styles.messageList} ref={messageListRef}>
           <div ref={topSentinelRef} className={styles.scrollSentinel} />
@@ -289,6 +292,7 @@ export const CommunityRoomPage = () => {
       </div>
 
       <ChatInput
+        onCreateThread={threadActions.create}
         value={content}
         onChange={setContent}
         onSubmit={handleSend}
@@ -330,5 +334,6 @@ export const CommunityRoomPage = () => {
         />
       )}
     </div>
+    </ThreadWorkspace>
   );
 };

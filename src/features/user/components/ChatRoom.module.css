@@ -1109,5 +1109,24 @@
   filter: invert(1);
 }
 
-.threadAnnouncement { display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px; margin:8px 0; font-size:.85rem; color:var(--color-chat-meta,#666); }
-.threadAnnouncement button { font:inherit; font-weight:600; color:var(--color-primary,#3659bd); background:var(--color-bubble-theirs,#f5f5f5); border:1px solid var(--color-border,#ddd); border-radius:10px; padding:10px 16px; cursor:pointer; max-width:100%; overflow-wrap:anywhere; }
+.threadMessage { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0 16px; text-align: left; }
+.threadMessageBody { min-width: 0; max-width: min(100%, 520px); flex: 1; }
+.threadMessageAuthor { display: flex; align-items: baseline; gap: 10px; font-size: .82rem; }
+.threadMessageAuthor strong { color: var(--color-text); }
+.threadMessageAuthor time { font-size: .7rem; color: var(--color-chat-meta); }
+.threadMessageTitle { margin: 4px 0 12px; font-size: .95rem; line-height: 1.6; color: var(--color-text); overflow-wrap: anywhere; }
+.threadBranch { position: relative; padding-left: 18px; }
+.threadBranch::before { content: ''; position: absolute; left: -27px; top: -8px; width: 35px; height: 32px; border-left: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); border-bottom-left-radius: 10px; }
+.threadCard { display: flex; flex-direction: column; gap: 9px; width: 100%; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 7px; font: inherit; text-align: left; cursor: pointer; background: var(--color-bubble-theirs); color: var(--color-text); }
+.threadCard:hover { border-color: var(--color-primary); }
+.threadCardTop { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; font-size: .85rem; }
+.threadCardTop strong { overflow-wrap: anywhere; }
+.threadCardTop > span { color: var(--color-primary); font-size: .78rem; }
+.threadCardHint { color: var(--color-chat-meta); font-size: .75rem; }
+.composerActions { position: relative; display: flex; align-items: center; }
+.composerAddButton { width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: var(--color-bubble-theirs); color: var(--color-chat-meta); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+.composerAddButton:hover { color: var(--color-text); }
+.composerMenu { position: absolute; left: 0; bottom: calc(100% + 14px); width: 200px; padding: 5px; border: 1px solid var(--color-border); border-radius: 8px; box-shadow: 0 6px 24px #0002; background: var(--color-bg-elevated); z-index: 30; }
+.composerMenu button { display: block; width: 100%; padding: 12px; border: 0; border-radius: 5px; font: inherit; font-size: .85rem; color: var(--color-text); background: none; text-align: left; cursor: pointer; }
+.composerMenu button:hover { background: var(--color-bubble-theirs); }
+.composerMenu button:disabled { opacity: .4; cursor: default; }

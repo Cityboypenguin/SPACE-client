@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
-import { ThreadWorkspace } from '../components/organisms/ThreadWorkspace';
+import { ThreadWorkspace, ThreadListButton } from '../components/organisms/ThreadWorkspace';
 import { CourseChatTab } from '../components/organisms/CourseChatTab';
 import { QuestionList } from '../components/organisms/QuestionList';
 import { PollList } from '../components/organisms/PollList';
@@ -88,6 +88,7 @@ export const CourseRoomPage = () => {
   if (!roomId) return null;
 
   return (
+    <ThreadWorkspace parentRoomID={roomId} writable={isWritable}>
     <div className={styles.container}>
       <UserSidebar />
 
@@ -124,6 +125,7 @@ export const CourseRoomPage = () => {
                 </div>
               )}
             </div>
+            <ThreadListButton />
             <button
               type="button"
               className={styles.pollButton}
@@ -162,9 +164,8 @@ export const CourseRoomPage = () => {
             </div>
           )}
 
-          {activeTab === 'chat' && <ThreadWorkspace parentRoomID={roomId} writable={isWritable} />}
           {activeTab === 'chat' && (
-            <CourseChatTab roomId={roomId} roomWritable={isWritable} aroundMessageId={aroundMessageId} />
+            <CourseChatTab roomId={roomId} roomWritable={isWritable} aroundMessageId={aroundMessageId} allowThreadCreation />
           )}
           {activeTab === 'question' && (
             <QuestionList
@@ -177,5 +178,6 @@ export const CourseRoomPage = () => {
         </>
       )}
     </div>
+    </ThreadWorkspace>
   );
 };

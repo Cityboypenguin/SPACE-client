@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { getMentionCandidates } from '../../api/message';
 import { ChatMessageBubble } from '../molecules/ChatMessageBubble';
+import { useThreadActions } from '../../hooks/useThreadActions';
 import { ChatInput } from '../molecules/ChatInput';
 import { ReportModal } from './ReportModal';
 import { ChatDateSeparator } from '../../../../components/atoms/ChatDateSeparator';
@@ -19,11 +20,13 @@ import styles from '../ChatRoom.module.css';
 type Props = {
   roomId: string;
   roomWritable: boolean;
+  allowThreadCreation?: boolean;
   // 返信通知から開いたときのジャンプ先メッセージID
   aroundMessageId?: string | null;
 };
 
-export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) => {
+export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThreadCreation = false }: Props) => {
+  const threadActions = useThreadActions();
   const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
@@ -154,6 +157,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
 
       {roomWritable && (
         <ChatInput
+          onCreateThread={allowThreadCreation ? threadActions.create : undefined}
           value={content}
           onChange={setContent}
           onSubmit={handleSend}
