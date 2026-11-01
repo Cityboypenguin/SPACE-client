@@ -10,6 +10,7 @@ import { Tabs } from '../../../components/molecules/Tabs';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { BarChartIcon } from '../../../components/atoms/BarChartIcon';
 import { UnreadCountBadge } from '../../../components/atoms/UnreadCountBadge';
+import { useUnansweredQuestionCount } from '../hooks/useUnansweredQuestionCount';
 import { useCoursePolls } from '../hooks/useCoursePolls';
 import { getRoom, type Room } from '../api/message';
 import { getMyTimetable, getCurrentSemester, type Course } from '../api/course';
@@ -18,11 +19,6 @@ import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
 import styles from '../components/ChatRoom.module.css';
 
 type TabKey = 'chat' | 'question';
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'chat', label: 'チャット' },
-  { key: 'question', label: '質問箱' },
-];
 
 export const CourseRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -40,6 +36,11 @@ export const CourseRoomPage = () => {
   useResetViewportScroll([roomId]);
 
   const pollsState = useCoursePolls(roomId);
+  const unansweredQuestionCount = useUnansweredQuestionCount(roomId);
+  const tabs: { key: TabKey; label: string; badge?: number }[] = [
+    { key: 'chat', label: 'チャット' },
+    { key: 'question', label: '質問箱', badge: unansweredQuestionCount },
+  ];
   const unvotedPollCount = pollsState.unvotedTotal;
   const pollButtonLabel = unvotedPollCount > 0
     ? `投票画面へ移動（未投票 ${unvotedPollCount}件）`
@@ -150,7 +151,7 @@ export const CourseRoomPage = () => {
       ) : (
         <>
           <div className={styles.roomTabs}>
-            <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+            <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
           </div>
 
           {isArchived && (

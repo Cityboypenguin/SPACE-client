@@ -23,6 +23,12 @@
   outline: none;
 }
 
+.tabBadge {
+  display: inline-flex;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
 .tab:focus,
 .tab:focus-visible {
   outline: none;

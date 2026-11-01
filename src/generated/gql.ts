@@ -197,6 +197,7 @@ type Documents = {
     "\n  mutation LikeAnswer($id: ID!) {\n    likeAnswer(id: $id) {\n      ID\n      likeCount\n      likedByMe\n    }\n  }\n": typeof types.LikeAnswerDocument,
     "\n  mutation UnlikeAnswer($id: ID!) {\n    unlikeAnswer(id: $id) {\n      ID\n      likeCount\n      likedByMe\n    }\n  }\n": typeof types.UnlikeAnswerDocument,
     "\n  query QuestionAnswers($id: ID!, $limit: Int, $offset: Int) {\n    question(id: $id) {\n      ID\n      answers(limit: $limit, offset: $offset) {\n        items {\n          ID\n          questionID\n          user {\n            ID\n            name\n            accountID\n            avatarUrl\n          }\n          body\n          media {\n            ...MediaFields\n          }\n          createdAt\n          isMine\n          likeCount\n          likedByMe\n        }\n        total\n      }\n    }\n  }\n": typeof types.QuestionAnswersDocument,
+    "\n  query UnansweredQuestionCount($roomID: ID!) {\n    unansweredQuestionCount(roomID: $roomID)\n  }\n": typeof types.UnansweredQuestionCountDocument,
     "\n  mutation CreateReport($input: CreateReportInput!) {\n    createReport(input: $input) {\n      ID\n      targetType\n      targetID\n      reporter {\n        ID\n        name\n        accountID\n      }\n      reason\n      customReason\n    }\n  }\n": typeof types.CreateReportDocument,
     "\n  query MyTermsConsentStatus {\n    myTermsConsentStatus {\n      isConsented\n      currentTerms {\n        ID\n        version\n        documentUrl\n        effectiveDate\n        createdAt\n      }\n    }\n  }\n": typeof types.MyTermsConsentStatusDocument,
     "\n  mutation ConsentToTerms($termsID: ID!) {\n    consentToTerms(termsID: $termsID)\n  }\n": typeof types.ConsentToTermsDocument,
@@ -391,6 +392,7 @@ const documents: Documents = {
     "\n  mutation LikeAnswer($id: ID!) {\n    likeAnswer(id: $id) {\n      ID\n      likeCount\n      likedByMe\n    }\n  }\n": types.LikeAnswerDocument,
     "\n  mutation UnlikeAnswer($id: ID!) {\n    unlikeAnswer(id: $id) {\n      ID\n      likeCount\n      likedByMe\n    }\n  }\n": types.UnlikeAnswerDocument,
     "\n  query QuestionAnswers($id: ID!, $limit: Int, $offset: Int) {\n    question(id: $id) {\n      ID\n      answers(limit: $limit, offset: $offset) {\n        items {\n          ID\n          questionID\n          user {\n            ID\n            name\n            accountID\n            avatarUrl\n          }\n          body\n          media {\n            ...MediaFields\n          }\n          createdAt\n          isMine\n          likeCount\n          likedByMe\n        }\n        total\n      }\n    }\n  }\n": types.QuestionAnswersDocument,
+    "\n  query UnansweredQuestionCount($roomID: ID!) {\n    unansweredQuestionCount(roomID: $roomID)\n  }\n": types.UnansweredQuestionCountDocument,
     "\n  mutation CreateReport($input: CreateReportInput!) {\n    createReport(input: $input) {\n      ID\n      targetType\n      targetID\n      reporter {\n        ID\n        name\n        accountID\n      }\n      reason\n      customReason\n    }\n  }\n": types.CreateReportDocument,
     "\n  query MyTermsConsentStatus {\n    myTermsConsentStatus {\n      isConsented\n      currentTerms {\n        ID\n        version\n        documentUrl\n        effectiveDate\n        createdAt\n      }\n    }\n  }\n": types.MyTermsConsentStatusDocument,
     "\n  mutation ConsentToTerms($termsID: ID!) {\n    consentToTerms(termsID: $termsID)\n  }\n": types.ConsentToTermsDocument,
@@ -1148,6 +1150,10 @@ export function graphql(source: "\n  mutation UnlikeAnswer($id: ID!) {\n    unli
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query QuestionAnswers($id: ID!, $limit: Int, $offset: Int) {\n    question(id: $id) {\n      ID\n      answers(limit: $limit, offset: $offset) {\n        items {\n          ID\n          questionID\n          user {\n            ID\n            name\n            accountID\n            avatarUrl\n          }\n          body\n          media {\n            ...MediaFields\n          }\n          createdAt\n          isMine\n          likeCount\n          likedByMe\n        }\n        total\n      }\n    }\n  }\n"): (typeof documents)["\n  query QuestionAnswers($id: ID!, $limit: Int, $offset: Int) {\n    question(id: $id) {\n      ID\n      answers(limit: $limit, offset: $offset) {\n        items {\n          ID\n          questionID\n          user {\n            ID\n            name\n            accountID\n            avatarUrl\n          }\n          body\n          media {\n            ...MediaFields\n          }\n          createdAt\n          isMine\n          likeCount\n          likedByMe\n        }\n        total\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query UnansweredQuestionCount($roomID: ID!) {\n    unansweredQuestionCount(roomID: $roomID)\n  }\n"): (typeof documents)["\n  query UnansweredQuestionCount($roomID: ID!) {\n    unansweredQuestionCount(roomID: $roomID)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

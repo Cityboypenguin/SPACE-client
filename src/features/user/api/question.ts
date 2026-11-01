@@ -296,6 +296,17 @@ export const listQuestions = async (roomID: string, limit = 50, offset = 0): Pro
   return data.questions;
 };
 
+const UnansweredQuestionCountDocument = graphql(`
+  query UnansweredQuestionCount($roomID: ID!) {
+    unansweredQuestionCount(roomID: $roomID)
+  }
+`);
+
+export const getUnansweredQuestionCount = async (roomID: string): Promise<number> => {
+  const data = await requestDoc(UnansweredQuestionCountDocument, { roomID }, getUserToken());
+  return data.unansweredQuestionCount;
+};
+
 export const createQuestion = async (roomID: string, body: string, mediaInputs?: MediaInput[]): Promise<Question> => {
   const data = await requestDoc(CreateQuestionDocument, { roomID, body, mediaInputs }, getUserToken());
   return data.createQuestion;
