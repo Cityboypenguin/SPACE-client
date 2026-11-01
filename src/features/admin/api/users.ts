@@ -58,8 +58,8 @@ const UsersDocument = graphql(`
 // searchUsers は公開型の User（email を持たない）を返すため、管理者向けの
 // 台帳表示に必要な email は adminSearchUsers（UserAccount）からしか取れない。
 const SearchUsersDocument = graphql(`
-  query AdminSearchUsers($keyword: String!) {
-    adminSearchUsers(keyword: $keyword) {
+  query AdminSearchUsers($keyword: String!, $limit: Int, $offset: Int) {
+    adminSearchUsers(keyword: $keyword, limit: $limit, offset: $offset) {
       items {
         ID
         accountID
@@ -167,8 +167,8 @@ export const getUsers = async (limit = 20, offset = 0) => {
   return await requestDoc(UsersDocument, { limit, offset }, getAdminToken());
 };
 
-export const searchUsers = async (keyword: string) => {
-  return await requestDoc(SearchUsersDocument, { keyword }, getAdminToken());
+export const searchUsers = async (keyword: string, limit = 20, offset = 0) => {
+  return await requestDoc(SearchUsersDocument, { keyword, limit, offset }, getAdminToken());
 };
 
 export const getUserByID = async (id: string) => {

@@ -13,7 +13,7 @@ import appIcon from '../../../../assets/Senshu-Universe.svg';
 import appLogo from '../../../../assets/Senshu-Universe_logo.svg';
 import homeIcon from '../../../../assets/パーツ_ホーム.svg';
 import dmIcon from '../../../../assets/パーツ_メール.svg';
-import communityIcon from '../../../../assets/パーツ_コミュニティマーク.svg';
+import communityIcon from '../../../../assets/パーツ_コミュニティマーク白塗り.svg';
 import timetableIcon from '../../../../assets/パーツ_時間割.svg';
 import notificationIcon from '../../../../assets/パーツ_通知.svg';
 import searchIcon from '../../../../assets/パーツ_検索.svg';

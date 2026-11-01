@@ -63,8 +63,8 @@ export const CommunityCreatePage = () => {
     try {
       if (selectedFile) {
         const { presignedCommunityIconUploadUrl } = await getPresignedCommunityIconUploadUrl(selectedFile.type);
-        const { uploadUrl, objectKey } = presignedCommunityIconUploadUrl;
-        await uploadAvatarToStorage(uploadUrl, selectedFile);
+        const { objectKey } = presignedCommunityIconUploadUrl;
+        await uploadAvatarToStorage(presignedCommunityIconUploadUrl, selectedFile);
         finalIconKey = objectKey;
       }
       await createCommunity(name.trim(), description.trim(), finalIconKey);

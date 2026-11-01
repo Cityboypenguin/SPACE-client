@@ -35,50 +35,69 @@ export const AdminAnnouncementListPage: React.FC = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.pageNarrow}>
-        <div className={styles.headerRow}>
-          <div>
-            <h1 className={styles.titleSmall}>お知らせ管理</h1>
-            <div className={styles.listMetaRowSpaced}>
-              <span className={styles.countText}>全 {total} 件</span>
-              <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/admin/announcements/new')}
-            className={styles.primaryButton}
-          >
-            新規作成
-          </button>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>お知らせ管理</h1>
         </div>
 
-        {error && <p className={styles.errorText}>{error}</p>}
+        <div className={styles.toolbar}>
+          <div>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/announcements/new')}
+              className={styles.primaryButton}
+            >
+              新規作成
+            </button>
+          </div>
+          <div className={styles.toolbarGroup}>
+            <span className={styles.countText}>全 {total} 件</span>
+            <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
+          </div>
+        </div>
+
+        {error && <p className={styles.centerError}>{error}</p>}
 
         {announcements.length === 0 && !error ? (
           <p className={styles.emptyState}>お知らせはありません</p>
         ) : (
-          <ul className={styles.plainList}>
-            {announcements.map((a) => (
-              <li
-                key={a.ID}
-                onClick={() => navigate(`/admin/announcements/${a.ID}`)}
-                className={styles.listItem}
-              >
-                <span className={styles.listItemTitle}>{a.title}</span>
-                <span className={styles.listItemMeta}>
-                  {new Date(a.createdAt).toLocaleString('ja-JP')}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className={styles.tablePanelPlain}>
+            <table className={styles.table}>
+              <thead>
+                <tr className={styles.tableHeaderRow}>
+                  <th className={styles.tableCellLarge}>タイトル</th>
+                  <th className={styles.tableCellLarge} style={{ width: '220px' }}>作成日時</th>
+                </tr>
+              </thead>
+              <tbody>
+                {announcements.map((a) => (
+                  <tr
+                    key={a.ID}
+                    onClick={() => navigate(`/admin/announcements/${a.ID}`)}
+                    className={styles.tableRow}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td className={styles.tableCellLarge} style={{ fontWeight: 500 }}>
+                      {a.title}
+                    </td>
+                    <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                      {new Date(a.createdAt).toLocaleString('ja-JP')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        <AdminPagination
-          page={page}
-          totalPages={totalPages}
-          onPrev={() => loadPage(page - 1)}
-          onNext={() => loadPage(page + 1)}
-        />
+        {totalPages > 1 && (
+          <AdminPagination
+            page={page}
+            totalPages={totalPages}
+            onPrev={() => loadPage(page - 1)}
+            onNext={() => loadPage(page + 1)}
+          />
+        )}
       </main>
     </div>
   );

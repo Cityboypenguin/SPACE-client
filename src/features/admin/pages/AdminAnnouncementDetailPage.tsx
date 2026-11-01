@@ -64,23 +64,35 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AdminHeader />
-      <main className={styles.formPage}>
-        <button
-          onClick={() => navigate('/admin/announcements')}
-        >
-          <ChevronLeft /> お知らせ一覧に戻る
-        </button>
+      <main className={styles.pageCentered} style={{ maxWidth: '900px', width: '100%', boxSizing: 'border-box' }}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>お知らせ管理</h1>
+        </div>
+
+        {/* ツールバーエリアとして「一覧に戻る」を配置し下余白を統一 */}
+        <div className={styles.toolbar} style={{ marginBottom: '24px' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/announcements')}
+            className={styles.paginationButton}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          >
+            <ChevronLeft /> 一覧に戻る
+          </button>
+        </div>
 
         {error && <p className={styles.formError}>{error}</p>}
 
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '16px' }}>お知らせ詳細</h2>
+
         {loading ? (
-          <p className={styles.centerMuted}>読み込み中...</p>
+          <p className={styles.cellMuted}>読み込み中...</p>
         ) : !announcement ? (
-          <p className={styles.centerMuted}>お知らせが見つかりません</p>
+          <p className={styles.cellMuted}>お知らせが見つかりません</p>
         ) : isEditing ? (
-          <form onSubmit={handleUpdate} className={styles.adminForm}>
+          <form onSubmit={handleUpdate} className={styles.adminForm} style={{ textAlign: 'left' }}>
             <h2 className={styles.formSectionTitle}>お知らせを編集</h2>
             <div>
               <label className={styles.fieldLabel}>
@@ -105,7 +117,7 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                 className={`${styles.formInput} ${styles.monoTextarea}`}
               />
             </div>
-            <div className={styles.buttonRow}>
+            <div className={styles.buttonRow} style={{ justifyContent: 'flex-start' }}>
               <button
                 type="submit"
                 disabled={submitting}
@@ -128,19 +140,21 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
             </div>
           </form>
         ) : (
-          <div className={styles.detailCard}>
-            <div className={styles.detailCardHeader}>
+          <div className={styles.tablePanelPlain} style={{ padding: '24px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <span className={styles.noticeBadge}>
                 運営からのお知らせ
               </span>
               <div className={styles.buttonRowCompact}>
                 <button
+                  type="button"
                   onClick={() => setIsEditing(true)}
                   className={styles.secondaryButtonSmall}
                 >
                   編集
                 </button>
                 <button
+                  type="button"
                   onClick={handleDelete}
                   disabled={submitting}
                   className={`${styles.dangerButtonSmall} ${submitting ? styles.disabled : ''}`}
@@ -149,13 +163,15 @@ export const AdminAnnouncementDetailPage: React.FC = () => {
                 </button>
               </div>
             </div>
-            <h1 className={styles.detailTitle}>
+
+            <h1 className={styles.detailTitle} style={{ textAlign: 'left', margin: '0 0 8px 0', fontSize: '1.5rem' }}>
               {announcement.title}
             </h1>
-            <p className={styles.detailMeta}>
+            <p className={styles.detailMeta} style={{ textAlign: 'left', color: '#64748b', fontSize: '0.85rem', marginBottom: '20px' }}>
               {new Date(announcement.createdAt).toLocaleString('ja-JP')}
             </p>
-            <div className={styles.markdownBody}>
+            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '16px 0' }} />
+            <div className={styles.markdownBody} style={{ textAlign: 'left', lineHeight: 1.7, color: '#1e293b' }}>
               <ReactMarkdown>{announcement.body}</ReactMarkdown>
             </div>
           </div>

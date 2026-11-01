@@ -1,25 +1,86 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { logoutAdmin, ADMIN_TOKEN_KEY, ADMIN_REFRESH_TOKEN_KEY } from '../../api/auth';
 import { getInquiries } from '../../api/inquiry';
+import { getPendingReportCount } from '../../api/report';
+import { UnreadCountBadge } from '../../../../components/atoms/UnreadCountBadge';
 import styles from './AdminHeader.module.css';
+
+// SVG アイコンのインポート
+import homeIcon from '../../../../assets/パーツ_ホーム.svg';
+import postIcon from '../../../../assets/パーツ_メッセージ編集.svg';
+import communityIcon from '../../../../assets/パーツ_コミュニティマーク.svg';
+import timetableIcon from '../../../../assets/パーツ_時間割.svg';
+import settingsIcon from '../../../../assets/パーツ_設定.svg';
+import reportIcon from '../../../../assets/パーツ_通報.svg';
+
+const NAV_ITEMS = [
+  { label: 'ダッシュボード', path: '/admin', icon: homeIcon, iconSize: 20 },
+  { label: 'アナリティクス', path: '/admin/analytics', emoji: '📊' },
+  { label: 'ユーザー管理', path: '/admin/users', emoji: '👥' },
+  { label: 'コミュニティ管理', path: '/admin/communities', icon: communityIcon, iconSize: 20 },
+  { label: '投稿管理', path: '/admin/posts', icon: postIcon, iconSize: 20 },
+  { label: '授業管理', path: '/admin/courses', icon: timetableIcon, iconSize: 20 },
+  { label: '授業内チャット管理', path: '/admin/course-chats', emoji: '💬' },
+  { label: '通報管理', path: '/admin/reports', icon: reportIcon, iconSize: 20 },
+  { label: '問い合わせ管理', path: '/admin/inquiries', emoji: '✉️' },
+  { label: 'お知らせ管理', path: '/admin/announcements', emoji: '📢' },
+  { label: '利用規約管理', path: '/admin/terms', emoji: '📜' },
+  { label: '管理者管理', path: '/admin/administrators', emoji: '👮', exact: true },
+  { label: '新規管理者登録', path: '/admin/register', emoji: '➕' },
+  { label: 'メンテナンス', path: '/admin/maintenance', icon: settingsIcon, iconSize: 20 },
+];
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
+  const location = useLocation();
+  
+  const [expanded, setExpanded] = useState(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
+  // 未対応件数のステート（問い合わせ・通報）
+  const [pendingInquiryCount, setPendingInquiryCount] = useState(0);
+  const [pendingReportCount, setPendingReportCount] = useState(0);
 
-  const refreshPendingCount = () => {
-    getInquiries('PENDING')
-      .then((inquiries) => setPendingCount(inquiries.total))
+  // 未読問い合わせ件数の取得
+  const refreshPendingInquiries = () => {
+    getInquiries('PENDING', 1, 0)
+      .then((inquiries) => setPendingInquiryCount(inquiries.total))
+      .catch(() => {});
+  };
+
+  // 未対応通報件数の取得
+  const refreshPendingReports = () => {
+    getPendingReportCount()
+      .then((count) => setPendingReportCount(count))
       .catch(() => {});
   };
 
   useEffect(() => {
-    refreshPendingCount();
-    window.addEventListener('inquiry-status-updated', refreshPendingCount);
-    return () => window.removeEventListener('inquiry-status-updated', refreshPendingCount);
+    refreshPendingInquiries();
+    refreshPendingReports();
+
+    window.addEventListener('inquiry-status-updated', refreshPendingInquiries);
+    window.addEventListener('report-status-updated', refreshPendingReports);
+
+    return () => {
+      window.removeEventListener('inquiry-status-updated', refreshPendingInquiries);
+      window.removeEventListener('report-status-updated', refreshPendingReports);
+    };
   }, []);
+
+  // サイドバーの開閉状態を body の data 属性へ反映
+  useEffect(() => {
+    if (expanded) {
+      document.body.setAttribute('data-admin-sidebar', 'expanded');
+    } else {
+      document.body.setAttribute('data-admin-sidebar', 'collapsed');
+    }
+  }, [expanded]);
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+  };
 
   const handleLogout = async () => {
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -35,53 +96,121 @@ export const AdminHeader = () => {
     navigate('/admin/login');
   };
 
+  const isNavActive = (path: string, exact?: boolean) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin' || location.pathname === '/admin/';
+    }
+    if (exact) {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <>
-      <header className={styles.header}>
-        <h2 className={styles.logo} onClick={() => navigate('/admin')}>管理画面</h2>
-        <nav className={styles.nav}>
-          <button className={styles.navButton} onClick={() => navigate('/admin')}>ダッシュボード</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/analytics')}>アナリティクス</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/users')}>ユーザー管理</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/communities')}>コミュニティ管理</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/courses')}>授業管理</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/posts')}>投稿管理</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/reports')}>通報管理</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/inquiries')}>
-            問い合わせ管理
-            {pendingCount > 0 && (
-              <span className={styles.badge}>
-                {pendingCount > 99 ? '99+' : pendingCount}
-              </span>
-            )}
+      <header className={`${styles.header} ${expanded ? styles.expanded : ''}`}>
+        {/* ハンバーガーボタン ＋ タイトル */}
+        <div className={styles.topHeader}>
+          <button
+            type="button"
+            className={styles.hamburgerBtn}
+            onClick={() => setExpanded((prev) => !prev)}
+            aria-label="メニュー開閉"
+          >
+            <span className={styles.hamburgerIcon}>
+              <span />
+              <span />
+              <span />
+            </span>
           </button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/announcements')}>お知らせ管理</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/terms')}>利用規約管理</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/administrators')}>管理者管理</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/register')}>新規管理者登録</button>
-          <button className={styles.navButton} onClick={() => navigate('/admin/maintenance')}>メンテナンス</button>
+          <span className={styles.logoText} onClick={() => handleNavigate('/admin')}>
+            管理画面
+          </span>
+        </div>
+
+        <nav className={styles.nav}>
+          {NAV_ITEMS.map((item) => {
+            const isActive = isNavActive(item.path, item.exact);
+
+            const badgeCount =
+              item.label === '問い合わせ管理' ? pendingInquiryCount :
+              item.label === '通報管理' ? pendingReportCount : 0;
+
+            return (
+              <button
+                key={item.path}
+                type="button"
+                className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                onClick={() => handleNavigate(item.path)}
+                title={!expanded ? item.label : undefined}
+              >
+                <span className={styles.iconWrap}>
+                  {item.icon ? (
+                    <img
+                      src={item.icon}
+                      alt={item.label}
+                      width={item.iconSize ?? 20}
+                      height={item.iconSize ?? 20}
+                      className={styles.icon}
+                    />
+                  ) : (
+                    <span className={styles.icon} style={{ fontSize: '18px' }}>
+                      {item.emoji}
+                    </span>
+                  )}
+
+                  {badgeCount > 0 && (
+                    <span className={styles.badgeSlot}>
+                      <UnreadCountBadge count={badgeCount} />
+                    </span>
+                  )}
+                </span>
+                <span className={styles.label}>{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
-        <button className={styles.logoutButton} onClick={() => setShowConfirm(true)}>ログアウト</button>
+
+        {/* 最下部：ログアウトボタン */}
+        <div className={styles.bottom}>
+          <button
+            type="button"
+            className={`${styles.navItem} ${styles.logoutBtn}`}
+            onClick={() => setShowLogoutConfirm(true)}
+            title={!expanded ? 'ログアウト' : undefined}
+          >
+            <span className={styles.iconWrap}>
+              <span className={styles.icon} style={{ fontSize: '18px' }}>🚪</span>
+            </span>
+            <span className={styles.label}>ログアウト</span>
+          </button>
+        </div>
       </header>
 
-      {showConfirm && (
+      {/* ログアウト確認ダイアログ */}
+      {showLogoutConfirm && (
         <div
           className={styles.modalOverlay}
-          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowLogoutConfirm(false);
+          }}
         >
           <div className={styles.modalCard}>
-            <p className={styles.modalTitle}>
-              ログアウトしますか？
-            </p>
+            <p className={styles.modalTitle}>ログアウトしますか？</p>
             <div className={styles.modalActions}>
               <button
-                onClick={() => setShowConfirm(false)}
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
                 className={styles.modalCancelBtn}
               >
                 キャンセル
               </button>
               <button
-                onClick={() => { setShowConfirm(false); void handleLogout(); }}
+                type="button"
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  void handleLogout();
+                }}
                 className={styles.modalDangerBtn}
               >
                 ログアウト
