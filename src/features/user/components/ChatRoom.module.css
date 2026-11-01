@@ -269,6 +269,7 @@
 }
 
 .inputField {
+  min-width: 0;
   flex: 1;
   resize: none;
   overflow-y: auto;
@@ -289,6 +290,7 @@
 }
 
 .inputFieldWrap {
+  min-width: 0;
   position: relative;
   flex: 1;
   display: flex;
@@ -1117,14 +1119,11 @@
 .threadCardTop strong { overflow-wrap: anywhere; }
 .threadCardTop > span { color: var(--color-primary); font-size: .78rem; }
 .threadCardHint { color: var(--color-chat-meta); font-size: .75rem; }
-.composerActions { position: relative; display: flex; align-items: center; }
-.composerAddButton { width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: var(--color-bubble-theirs); color: var(--color-chat-meta); font-size: 1.5rem; line-height: 1; cursor: pointer; }
-.composerAddButton:hover { color: var(--color-text); }
-.composerMenu { position: absolute; left: 0; bottom: calc(100% + 14px); width: 200px; padding: 5px; border: 1px solid var(--color-border); border-radius: 8px; box-shadow: 0 6px 24px #0002; background: var(--color-bg-elevated); z-index: 30; }
-.composerMenu button { display: block; width: 100%; padding: 12px; border: 0; border-radius: 5px; font: inherit; font-size: .85rem; color: var(--color-text); background: none; text-align: left; cursor: pointer; }
-.composerMenu button:hover { background: var(--color-bubble-theirs); }
-.composerMenu button:disabled { opacity: .4; cursor: default; }
 
 
 .threadBranchMine { padding-left: 0; }
 .threadBranchMine::before { display: none; }
+
+.createThreadButton { display: inline-flex; align-items: center; justify-content: center; align-self: center; flex: 0 0 36px; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--color-chat-meta); }
+.createThreadButton:hover { background: var(--color-bubble-theirs); }
+.createThreadButton:disabled { opacity: .4; cursor: default; }

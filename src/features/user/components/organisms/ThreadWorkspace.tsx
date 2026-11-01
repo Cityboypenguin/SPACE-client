@@ -121,7 +121,7 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
       </div> : isListing ? <div className={styles.panelBody}>
         <div className={styles.listHeading}><span>最近のスレッド</span>{writable && <button type="button" className={styles.textButton} onClick={navigation.create}>＋ 新規作成</button>}</div>
         {listError ? <p role="alert">{toUserMessage(listError, '一覧を取得できませんでした。')}</p> : !threads ? <p className={styles.description}>読み込み中…</p> : <>
-          {threads.length === 0 && <div className={styles.empty}><strong>まだスレッドはありません</strong><p>チャットの「＋」から、新しい話題を始められます。</p></div>}
+          {threads.length === 0 && <div className={styles.empty}><strong>まだスレッドはありません</strong><p>入力欄のスレッド作成ボタンから、新しい話題を始められます。</p></div>}
           <ul className={styles.list}>{threads.map(item => <li key={item.roomID}>
             <button className={styles.listItem} type="button" onClick={() => navigation.open(item.roomID)}>
               <span className={styles.listItemTop}><strong>{item.title}</strong><span aria-hidden="true">›</span></span>

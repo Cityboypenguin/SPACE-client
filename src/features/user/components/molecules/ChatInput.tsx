@@ -55,16 +55,6 @@ export const ChatInput = ({
   onCreateThread, value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
   replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryChange,
 }: Props) => {
-  const [actionsOpen, setActionsOpen] = useState(false);
-  const actionsRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!actionsOpen) return;
-    const dismiss = (event: PointerEvent) => { if (!actionsRef.current?.contains(event.target as Node)) setActionsOpen(false); };
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setActionsOpen(false); };
-    document.addEventListener('pointerdown', dismiss);
-    document.addEventListener('keydown', escape);
-    return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', escape); };
-  }, [actionsOpen]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
@@ -311,14 +301,9 @@ export const ChatInput = ({
         </div>
       )}
       <form onSubmit={handleFormSubmit} className={styles.inputForm}>
-        {onCreateThread ? <div ref={actionsRef} className={styles.composerActions}>
-          <button type="button" className={styles.composerAddButton} aria-label="チャットに追加" aria-haspopup="menu" aria-expanded={actionsOpen} onClick={() => setActionsOpen(value => !value)} disabled={disabled || isBlocked}>＋</button>
-          {actionsOpen && <div className={styles.composerMenu} role="menu" aria-label="チャットに追加">
-            <button type="button" role="menuitem" disabled={selectedFiles.length >= MAX_FILES} onClick={() => { setActionsOpen(false); fileInputRef.current?.click(); }}>ファイルを添付</button>
-            <button type="button" role="menuitem" onClick={() => { setActionsOpen(false); onCreateThread(); }}>スレッドを作成</button>
-          </div>}
-        </div> : <button
+        <button
           type="button"
+          aria-label="ファイルを添付"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
           title={isBlocked ? 'このルームには送信できないため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
@@ -329,6 +314,19 @@ export const ChatInput = ({
             alt="添付"
             className={`${styles.clipIcon} ${theme === 'dark' ? styles.clipIconDark : ''}`}
           />
+        </button>
+        {onCreateThread && <button
+          type="button"
+          className={styles.createThreadButton}
+          onClick={onCreateThread}
+          disabled={disabled || isBlocked}
+          aria-label="スレッドを作成"
+          title="スレッドを作成"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+            <path d="M4 4h10m2 8v4H9l-5 4V4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M19 3v6m-3-3h6M8 8h4M8 12h4" strokeLinecap="round" />
+          </svg>
         </button>}
         <input
           ref={fileInputRef}

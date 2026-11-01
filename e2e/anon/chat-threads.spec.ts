@@ -60,11 +60,14 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   const main = page.getByRole('main');
   await expect(main.getByTestId('thread-unread-dot')).toBeVisible();
   await main.getByPlaceholder('メッセージを入力...').fill('親チャットの下書き');
-  await main.getByRole('button', {name:'チャットに追加'}).click();
-  await page.getByRole('menuitem', {name:'スレッドを作成'}).click();
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await main.getByRole('button', {name:'ファイルを添付',exact:true}).click();
+  expect((await fileChooserPromise).isMultiple()).toBe(true);
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await main.getByRole('button', {name:'スレッドを作成',exact:true}).click();
   await page.getByLabel('タイトル', {exact:true}).fill('課題の相談');
-  await page.getByRole('button', {name:'スレッドを作成', exact:true}).click();
   const panel = page.locator('section[aria-labelledby]');
+  await panel.getByRole('button', {name:'スレッドを作成', exact:true}).click();
   await expect(panel.getByRole('heading', {name:'課題の相談'})).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(main).toBeVisible();
@@ -128,7 +131,7 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   expect(mobilePanel!.width).toBe(390);
   const sendBox = await panel.getByRole('button', {name:'送信', exact:true}).boundingBox();
   expect(sendBox!.y + sendBox!.height).toBeLessThanOrEqual(844);
-  await expect(panel.getByRole('button', {name:'チャットに追加'})).toHaveCount(0);
+  await expect(panel.getByRole('button', {name:'スレッドを作成',exact:true})).toHaveCount(0);
   await page.screenshot({path:test.info().outputPath('threads-mobile.png')});
   // Opening the list from inside a thread must return to that same thread.
   await panel.getByRole('button', {name:'スレッド一覧', exact:true}).click();
