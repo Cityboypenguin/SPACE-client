@@ -162,6 +162,9 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <div className={styles.toolbarGroup}>
+            <Link to="/admin/reports/notification-recipients" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+              通知先メール
+            </Link>
             <span className={styles.countText}>全 {total} 件</span>
             <AdminPageSizeSelect value={pageSize} onChange={setPageSize} />
           </div>

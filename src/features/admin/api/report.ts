@@ -135,6 +135,52 @@ const SetReportServiceStatusDocument = graphql(`
   }
 `);
 
+export type ReportNotificationRecipient = {
+  ID: string;
+  email: string;
+  createdAt: string;
+};
+
+const ReportNotificationRecipientsDocument = graphql(`
+  query ReportNotificationRecipients {
+    reportNotificationRecipients {
+      ID
+      email
+      createdAt
+    }
+  }
+`);
+
+const AddReportNotificationRecipientDocument = graphql(`
+  mutation AddReportNotificationRecipient($email: String!) {
+    addReportNotificationRecipient(email: $email) {
+      ID
+      email
+      createdAt
+    }
+  }
+`);
+
+const RemoveReportNotificationRecipientDocument = graphql(`
+  mutation RemoveReportNotificationRecipient($id: ID!) {
+    removeReportNotificationRecipient(id: $id)
+  }
+`);
+
+export const getReportNotificationRecipients = async (): Promise<ReportNotificationRecipient[]> => {
+  const data = await requestDoc(ReportNotificationRecipientsDocument, {}, getAdminToken());
+  return data.reportNotificationRecipients;
+};
+
+export const addReportNotificationRecipient = async (email: string): Promise<ReportNotificationRecipient> => {
+  const data = await requestDoc(AddReportNotificationRecipientDocument, { email }, getAdminToken());
+  return data.addReportNotificationRecipient;
+};
+
+export const removeReportNotificationRecipient = async (id: string): Promise<void> => {
+  await requestDoc(RemoveReportNotificationRecipientDocument, { id }, getAdminToken());
+};
+
 export const getReports = async (filterStatus?: string, targetType?: string, limit = 20, offset = 0): Promise<ReportPage> => {
   const filter: { status?: ReportStatus; targetType?: ReportTargetType } = {};
   if (filterStatus && filterStatus !== 'ALL') {

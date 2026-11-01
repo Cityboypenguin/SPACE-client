@@ -72,6 +72,9 @@ type Documents = {
     "\n  mutation AdminCreateReport($input: CreateReportInput!) {\n    createReport(input: $input) {\n      ID\n      status\n    }\n  }\n": typeof types.AdminCreateReportDocument,
     "\n  query GetReportServiceStatus {\n    isReportServiceEnabled\n  }\n": typeof types.GetReportServiceStatusDocument,
     "\n  mutation SetReportServiceStatus($enabled: Boolean!) {\n    setReportServiceStatus(enabled: $enabled)\n  }\n": typeof types.SetReportServiceStatusDocument,
+    "\n  query ReportNotificationRecipients {\n    reportNotificationRecipients {\n      ID\n      email\n      createdAt\n    }\n  }\n": typeof types.ReportNotificationRecipientsDocument,
+    "\n  mutation AddReportNotificationRecipient($email: String!) {\n    addReportNotificationRecipient(email: $email) {\n      ID\n      email\n      createdAt\n    }\n  }\n": typeof types.AddReportNotificationRecipientDocument,
+    "\n  mutation RemoveReportNotificationRecipient($id: ID!) {\n    removeReportNotificationRecipient(id: $id)\n  }\n": typeof types.RemoveReportNotificationRecipientDocument,
     "\n  query PresignedTermsDocumentUploadUrl {\n    presignedTermsDocumentUploadUrl {\n      headers {\n        name\n        value\n      }\n      uploadUrl\n      objectKey\n    }\n  }\n": typeof types.PresignedTermsDocumentUploadUrlDocument,
     "\n  query AdminListTerms {\n    adminListTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": typeof types.AdminListTermsDocument,
     "\n  query AdminListConsents($termsID: ID!, $limit: Int, $offset: Int) {\n    adminListConsents(termsID: $termsID, limit: $limit, offset: $offset) {\n      items {\n        ID\n        user {\n          ID\n          accountID\n          name\n          email\n        }\n        consentedAt\n      }\n      total\n    }\n  }\n": typeof types.AdminListConsentsDocument,
@@ -263,6 +266,9 @@ const documents: Documents = {
     "\n  mutation AdminCreateReport($input: CreateReportInput!) {\n    createReport(input: $input) {\n      ID\n      status\n    }\n  }\n": types.AdminCreateReportDocument,
     "\n  query GetReportServiceStatus {\n    isReportServiceEnabled\n  }\n": types.GetReportServiceStatusDocument,
     "\n  mutation SetReportServiceStatus($enabled: Boolean!) {\n    setReportServiceStatus(enabled: $enabled)\n  }\n": types.SetReportServiceStatusDocument,
+    "\n  query ReportNotificationRecipients {\n    reportNotificationRecipients {\n      ID\n      email\n      createdAt\n    }\n  }\n": types.ReportNotificationRecipientsDocument,
+    "\n  mutation AddReportNotificationRecipient($email: String!) {\n    addReportNotificationRecipient(email: $email) {\n      ID\n      email\n      createdAt\n    }\n  }\n": types.AddReportNotificationRecipientDocument,
+    "\n  mutation RemoveReportNotificationRecipient($id: ID!) {\n    removeReportNotificationRecipient(id: $id)\n  }\n": types.RemoveReportNotificationRecipientDocument,
     "\n  query PresignedTermsDocumentUploadUrl {\n    presignedTermsDocumentUploadUrl {\n      headers {\n        name\n        value\n      }\n      uploadUrl\n      objectKey\n    }\n  }\n": types.PresignedTermsDocumentUploadUrlDocument,
     "\n  query AdminListTerms {\n    adminListTerms {\n      ID\n      version\n      documentUrl\n      effectiveDate\n      createdAt\n    }\n  }\n": types.AdminListTermsDocument,
     "\n  query AdminListConsents($termsID: ID!, $limit: Int, $offset: Int) {\n    adminListConsents(termsID: $termsID, limit: $limit, offset: $offset) {\n      items {\n        ID\n        user {\n          ID\n          accountID\n          name\n          email\n        }\n        consentedAt\n      }\n      total\n    }\n  }\n": types.AdminListConsentsDocument,
@@ -642,6 +648,18 @@ export function graphql(source: "\n  query GetReportServiceStatus {\n    isRepor
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation SetReportServiceStatus($enabled: Boolean!) {\n    setReportServiceStatus(enabled: $enabled)\n  }\n"): (typeof documents)["\n  mutation SetReportServiceStatus($enabled: Boolean!) {\n    setReportServiceStatus(enabled: $enabled)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query ReportNotificationRecipients {\n    reportNotificationRecipients {\n      ID\n      email\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  query ReportNotificationRecipients {\n    reportNotificationRecipients {\n      ID\n      email\n      createdAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AddReportNotificationRecipient($email: String!) {\n    addReportNotificationRecipient(email: $email) {\n      ID\n      email\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  mutation AddReportNotificationRecipient($email: String!) {\n    addReportNotificationRecipient(email: $email) {\n      ID\n      email\n      createdAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RemoveReportNotificationRecipient($id: ID!) {\n    removeReportNotificationRecipient(id: $id)\n  }\n"): (typeof documents)["\n  mutation RemoveReportNotificationRecipient($id: ID!) {\n    removeReportNotificationRecipient(id: $id)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
