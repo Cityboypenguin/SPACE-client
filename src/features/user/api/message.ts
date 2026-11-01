@@ -1,3 +1,4 @@
+import { mutate } from 'swr';
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { putToStorage, type PresignedUpload } from '../../../lib/storage';
@@ -26,6 +27,7 @@ export type ReplyTarget = {
 };
 
 export type Message = {
+  thread?: { roomID: string; parentRoomID: string; title: string; isClosed: boolean; messageCount?: number } | null;
   ID: string;
   roomID: string;
   user: MessageUser;
@@ -63,6 +65,7 @@ export type Room = {
 export const MESSAGE_FIELDS = `
   ID
   roomID
+  thread { roomID parentRoomID title isClosed messageCount }
   user {
     ID
     name
@@ -132,6 +135,7 @@ const SendMessageDocument = graphql(`
     sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID) {
       ID
       roomID
+      thread { roomID parentRoomID title isClosed messageCount }
       user {
         ID
         name
@@ -178,6 +182,7 @@ const UpdateMessageDocument = graphql(`
     updateMessage(roomID: $roomID, id: $id, content: $content, mentionUserIDs: $mentionUserIDs) {
       ID
       roomID
+      thread { roomID parentRoomID title isClosed messageCount }
       user {
         ID
         name
@@ -237,6 +242,7 @@ const ListMessagesDocument = graphql(`
       items {
         ID
         roomID
+        thread { roomID parentRoomID title isClosed messageCount }
         user {
           ID
           name
@@ -396,7 +402,9 @@ export const getMentionCandidates = async (
 // 確定している最後」を渡すこと（useRoomMessages.ts のコメント参照）。
 export const markRoomAsRead = async (roomID: string, lastReadMessageID?: string | null) => {
   const token = getUserToken();
-  return await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
+  const result = await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
+  void mutate(key => Array.isArray(key) && key[0] === 'thread-unread', undefined, { revalidate: true, populateCache: false, throwOnError: false });
+  return result;
 };
 
 export const getOrCreateDMRoom = async (targetUserID: string) => {

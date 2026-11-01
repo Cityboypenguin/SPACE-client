@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ThreadCard } from './ThreadCard';
 import { ImageLightbox } from '../../../../components/organisms/ImageLightbox';
 import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
@@ -211,17 +212,18 @@ export const ChatMessageBubble = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUserID, onMentionClick } = useMentionNavigation();
-  const hasText = msg.content.trim() !== '';
+  const isThread = !!msg.thread;
+  const hasText = (msg.thread?.title ?? msg.content).trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
   // 本文も添付も無いメッセージは送れない。それでも空なのは、添付を上げた人が
   // 退会して個人情報ごと消され、添付だけが無くなったとき。
   const filesRemoved = !hasText && !hasMedia;
-  const canEdit = editable && isMine && msg.content.trim() !== '';
-  const canReply = !!onReply && !isEditing;
-  const canReport = !!onReport && !isMine && !isEditing;
-  const canShowActions = (canEdit || canDelete || canReply || canReport) && !isEditing;
-  const isReply = !!msg.replyToID;
-  const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
+  const canEdit = !isThread && editable && isMine && msg.content.trim() !== '';
+  const canReply = !isThread && !!onReply && !isEditing;
+  const canReport = !isThread && !!onReport && !isMine && !isEditing;
+  const canShowActions = !isThread && (canEdit || canDelete || canReply || canReport) && !isEditing;
+  const isReply = !isThread && !!msg.replyToID;
+  const isEdited = !isThread && new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 
   // チャット本文の描画。URL とメンションだけを扱う（ハッシュタグは renderChatText 側で対象外）。
   const renderMessageBody = (text: string) => renderChatText({
@@ -476,7 +478,7 @@ export const ChatMessageBubble = ({
                 </div>
               ) : hasText ? (
                 <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                  {renderMessageBody(msg.content)}
+                  {msg.thread ? msg.thread.title : renderMessageBody(msg.content)}
                 </div>
               ) : (
                 filesRemoved && (
@@ -491,6 +493,7 @@ export const ChatMessageBubble = ({
         </div>
         {!isMine && messageMeta}
       </div>
+      {msg.thread && <ThreadCard thread={msg.thread} isMine={isMine} />}
     </div>
   );
 

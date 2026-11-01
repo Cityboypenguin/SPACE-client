@@ -1,3 +1,4 @@
+import { mutate } from 'swr';
 import { useState } from 'react';
 import {
   sendMessage,
@@ -53,6 +54,7 @@ export const useChatActions = (
       setReplyTarget(null);
       setPendingMentions([]);
       addMessage(data.sendMessage);
+      void mutate(['chat-thread', roomId]).catch(() => undefined);
     } catch (err) {
       setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
     } finally {
@@ -71,6 +73,7 @@ export const useChatActions = (
     if (!result.isConfirmed) return;
     try {
       await deleteMessage(roomId, msgId);
+      void mutate(['chat-thread', roomId]).catch(() => undefined);
     } catch (err) {
       setSendError(toUserMessage(err, 'メッセージの削除に失敗しました。時間をおいてから再度お試しください。'));
     }

@@ -269,6 +269,7 @@
 }
 
 .inputField {
+  min-width: 0;
   flex: 1;
   resize: none;
   overflow-y: auto;
@@ -289,6 +290,7 @@
 }
 
 .inputFieldWrap {
+  min-width: 0;
   position: relative;
   flex: 1;
   display: flex;
@@ -1108,3 +1110,20 @@
 .clipIconDark {
   filter: invert(1);
 }
+
+.threadBranch { position: relative; padding-left: 28px; margin: 12px 0 8px; width: max-content; max-width: min(100%, 520px); box-sizing: border-box; }
+.threadBranch::before { content: ''; position: absolute; left: 12px; top: -12px; width: 16px; height: 32px; border-left: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); border-bottom-left-radius: 10px; }
+.threadCard { display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 8px 14px; border: 1px solid var(--color-border); border-radius: 7px; font: inherit; text-align: left; cursor: pointer; background: var(--color-bubble-theirs); color: var(--color-text); }
+.threadCard:hover { border-color: var(--color-primary); }
+.threadCardTop { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; font-size: .85rem; }
+.threadCardTop strong { overflow-wrap: anywhere; }
+.threadCardTop > span { color: var(--color-primary); font-size: .78rem; }
+.threadCardHint { color: var(--color-chat-meta); font-size: .75rem; }
+
+
+.threadBranchMine { padding-left: 0; }
+.threadBranchMine::before { display: none; }
+
+.createThreadButton { display: inline-flex; align-items: center; justify-content: center; align-self: center; flex: 0 0 36px; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--color-chat-meta); }
+.createThreadButton:hover { background: var(--color-bubble-theirs); }
+.createThreadButton:disabled { opacity: .4; cursor: default; }

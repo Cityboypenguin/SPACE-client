@@ -30,6 +30,7 @@ const replyPreviewText = (msg: Message): string => {
 };
 
 type Props = {
+  onCreateThread?: () => void;
   value: string;
   onChange: (val: string) => void;
   onSubmit: (e: { preventDefault(): void }) => void;
@@ -51,7 +52,7 @@ type Props = {
 };
 
 export const ChatInput = ({
-  value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
+  onCreateThread, value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
   replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryChange,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -302,6 +303,7 @@ export const ChatInput = ({
       <form onSubmit={handleFormSubmit} className={styles.inputForm}>
         <button
           type="button"
+          aria-label="ファイルを添付"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
           title={isBlocked ? 'このルームには送信できないため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
@@ -313,6 +315,19 @@ export const ChatInput = ({
             className={`${styles.clipIcon} ${theme === 'dark' ? styles.clipIconDark : ''}`}
           />
         </button>
+        {onCreateThread && <button
+          type="button"
+          className={styles.createThreadButton}
+          onClick={onCreateThread}
+          disabled={disabled || isBlocked}
+          aria-label="スレッドを作成"
+          title="スレッドを作成"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+            <path d="M4 4h10m2 8v4H9l-5 4V4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M19 3v6m-3-3h6M8 8h4M8 12h4" strokeLinecap="round" />
+          </svg>
+        </button>}
         <input
           ref={fileInputRef}
           type="file"
