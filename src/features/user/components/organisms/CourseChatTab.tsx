@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import useSWR from 'swr';
+import { getMentionCandidates } from '../../api/message';
 import { ChatMessageBubble } from '../molecules/ChatMessageBubble';
 import { ChatInput } from '../molecules/ChatInput';
 import { ChatDateSeparator } from '../../../../components/atoms/ChatDateSeparator';
@@ -21,7 +23,7 @@ type Props = {
 };
 
 export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) => {
-  const { messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
+  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -30,9 +32,12 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
     editingId, setEditingId,
     editContent, setEditContent,
     replyTarget, setReplyTarget,
+    addPendingMention,
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
 
+  const [mentionPrefix, setMentionPrefix] = useState<string | null>(null);
+  const {data: mentionCandidates} = useSWR(room?.type==='community' && mentionPrefix!==null ? ['mention-candidates',roomId,mentionPrefix] : null, () => getMentionCandidates(roomId,mentionPrefix ?? ''));
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
@@ -152,6 +157,9 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
           onFileSelect={setSelectedFiles}
           selectedFiles={selectedFiles}
           disabled={sending}
+          mentionCandidates={mentionCandidates ?? []}
+          onMentionSelect={room?.type==='community' ? addPendingMention : undefined}
+          onMentionQueryChange={setMentionPrefix}
           replyTarget={replyTarget}
           onCancelReply={() => setReplyTarget(null)}
         />

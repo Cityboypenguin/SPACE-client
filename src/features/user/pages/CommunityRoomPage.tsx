@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
+import { ThreadWorkspace } from '../components/organisms/ThreadWorkspace';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { ChatUnreadSeparator } from '../../../components/atoms/ChatUnreadSeparator';
@@ -231,6 +232,7 @@ export const CommunityRoomPage = () => {
         </button>
       </div>
 
+      {roomId && <ThreadWorkspace parentRoomID={roomId} writable={!room?.isMessagingDisabled} />}
       <div className={styles.messageListWrapper}>
         <div className={styles.messageList} ref={messageListRef}>
           <div ref={topSentinelRef} className={styles.scrollSentinel} />

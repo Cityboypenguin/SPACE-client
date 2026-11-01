@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ImageLightbox } from '../../../../components/organisms/ImageLightbox';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message, type Media, type MessageUser, type ReplyTarget } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
@@ -205,6 +205,7 @@ export const ChatMessageBubble = ({
   onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor, editable = true,
   onReply, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
 }: Props) => {
+  const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUserID, onMentionClick } = useMentionNavigation();
@@ -476,6 +477,16 @@ export const ChatMessageBubble = ({
       </div>
     </div>
   );
+
+  if (msg.thread) {
+    const thread = msg.thread;
+    return <div data-message-id={msg.ID} className={styles.threadAnnouncement}>
+      <span>{msg.user.name}さんがスレッドを作成しました</span>
+      <button type="button" onClick={() => setSearchParams(prev => { const next = new URLSearchParams(prev); next.set('thread', thread.roomID); return next; })}>
+        ＃ {thread.title} {thread.isClosed && '（クローズ）'} →
+      </button>
+    </div>;
+  }
 
   const groupStartClass = isGroupStart ? styles.messageGroupStart : '';
 

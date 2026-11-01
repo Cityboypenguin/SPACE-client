@@ -26,6 +26,7 @@ export type ReplyTarget = {
 };
 
 export type Message = {
+  thread?: { roomID: string; parentRoomID: string; title: string; isClosed: boolean } | null;
   ID: string;
   roomID: string;
   user: MessageUser;
@@ -61,6 +62,7 @@ export type Room = {
 export const MESSAGE_FIELDS = `
   ID
   roomID
+  thread { roomID parentRoomID title isClosed }
   user {
     ID
     name
@@ -129,6 +131,7 @@ const SendMessageDocument = graphql(`
     sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID) {
       ID
       roomID
+      thread { roomID parentRoomID title isClosed }
       user {
         ID
         name
@@ -175,6 +178,7 @@ const UpdateMessageDocument = graphql(`
     updateMessage(roomID: $roomID, id: $id, content: $content, mentionUserIDs: $mentionUserIDs) {
       ID
       roomID
+      thread { roomID parentRoomID title isClosed }
       user {
         ID
         name
@@ -234,6 +238,7 @@ const ListMessagesDocument = graphql(`
       items {
         ID
         roomID
+        thread { roomID parentRoomID title isClosed }
         user {
           ID
           name
