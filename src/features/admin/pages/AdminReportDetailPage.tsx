@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
-import { ReportedMessageView } from '../components/molecules/ReportedMessageView';
+import { ReportedContentView } from '../components/molecules/ReportedContentView';
 import { adminUpdateReportStatus, getReport, type ReportDetail } from '../api/report';
 import { reasonJa, statusJa, targetTypeJa } from '../lib/reportLabels';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -9,7 +9,7 @@ import styles from '../styles/AdminShared.module.css';
 
 const linkStyle = { color: '#2563eb', textDecoration: 'underline' };
 
-// 通報対象の管理画面。メッセージには専用の画面が無く、通報時点の内容をこのページで見る。
+// 通報対象の管理画面。メッセージ・質問・回答・投票には専用の画面が無く、通報時点の内容をこのページで見る。
 const getTargetUrl = (report: ReportDetail) => {
   if (report.targetType === 'POST') return `/admin/posts/${report.targetID}`;
   if (report.targetType === 'USER') return `/admin/users/${report.targetID}`;
@@ -121,10 +121,10 @@ export const AdminReportDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {report.reportedMessage && (
+            {report.reportedContent && (
               <div className={styles.detailSection}>
-                <p className={styles.detailSectionLabel}>通報時点のメッセージ</p>
-                <ReportedMessageView message={report.reportedMessage} />
+                <p className={styles.detailSectionLabel}>通報時点の内容</p>
+                <ReportedContentView content={report.reportedContent} />
               </div>
             )}
 

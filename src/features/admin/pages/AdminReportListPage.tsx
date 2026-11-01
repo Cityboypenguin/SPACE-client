@@ -14,12 +14,12 @@ import styles from '../styles/AdminShared.module.css';
 import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 
-type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY' | 'MESSAGE';
+type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY' | 'MESSAGE' | 'QUESTION' | 'ANSWER' | 'POLL';
 
 // 一覧に出す本文の抜粋。全文と添付は詳細ページで見る。
 const getContentPreview = (report: Report) => {
-  if (report.reportedMessage) {
-    const { authorName, content, media } = report.reportedMessage;
+  if (report.reportedContent) {
+    const { authorName, content, media } = report.reportedContent;
     return `${authorName}: ${content || `添付 ${media.length} 件`}`;
   }
   return report.targetType === 'POST' ? report.content : null;
@@ -171,8 +171,8 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {/* 対象タイプ切り替えタブ */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-          {(['ALL', 'POST', 'USER', 'COMMUNITY', 'MESSAGE'] as TargetTypeFilter[]).map((tab) => {
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+          {(['ALL', 'POST', 'USER', 'COMMUNITY', 'MESSAGE', 'QUESTION', 'ANSWER', 'POLL'] as TargetTypeFilter[]).map((tab) => {
             const isActive = activeTab === tab;
             const labelMap: Record<TargetTypeFilter, string> = {
               ALL: 'すべての通報',
@@ -180,6 +180,9 @@ export const ReportsPage: React.FC = () => {
               USER: 'ユーザー',
               COMMUNITY: 'コミュニティ',
               MESSAGE: 'メッセージ',
+              QUESTION: '質問',
+              ANSWER: '回答',
+              POLL: '投票',
             };
             return (
               <button

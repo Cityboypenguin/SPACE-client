@@ -4,6 +4,7 @@ import { BarChartIcon } from '../../../../components/atoms/BarChartIcon';
 import { CheckIcon } from '../../../../components/atoms/CheckIcon';
 import { AppSwal } from '../../../../lib/swal';
 import { AuthorLabel } from './AuthorLabel';
+import { ReportModal } from '../organisms/ReportModal';
 import styles from '../PollBox.module.css';
 
 type Props = {
@@ -26,6 +27,7 @@ const formatDeadline = (deadline: string) => {
 };
 
 export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onDelete }: Props) => {
+  const [reporting, setReporting] = useState(false);
   const [selected, setSelected] = useState<string[]>(() => votedOptionIDs(poll));
   const [voting, setVoting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -131,6 +133,11 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
               削除する
             </button>
           )}
+          {!poll.isMine && (
+            <button type="button" className={styles.deleteLink} onClick={() => setReporting(true)}>
+              通報する
+            </button>
+          )}
         </div>
       </div>
 
@@ -180,6 +187,16 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
       <p className={styles.respondedCount}>{poll.voterCount}人が回答済み</p>
 
       {error && <p className={styles.cardError}>{error}</p>}
+
+      {reporting && (
+        <ReportModal
+          isOpen
+          onClose={() => setReporting(false)}
+          targetType="POLL"
+          targetID={poll.ID}
+          postContent={poll.question}
+        />
+      )}
     </div>
   );
 };

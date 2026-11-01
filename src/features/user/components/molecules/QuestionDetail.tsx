@@ -8,6 +8,8 @@ import { AnswerItem } from './AnswerItem';
 import { ImageAttachButton, ImageAttachPreviews } from './ImageAttachControl';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { ScrollSentinel } from '../../../../components/atoms/ScrollSentinel';
+import { ReportModal } from '../organisms/ReportModal';
+import reportIcon from '../../../../assets/パーツ_通報.svg';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { AuthorLabel } from './AuthorLabel';
 import styles from '../QuestionBox.module.css';
@@ -47,6 +49,7 @@ export const QuestionDetail = ({
   onBack, onAnswerSubmit, onSelectBestAnswer, onCancelBestAnswer, onUpdateQuestion, onDeleteQuestion,
   onUpdateAnswer, onDeleteAnswer, onLikeAnswer, onUnlikeAnswer,
 }: Props) => {
+  const [reportingQuestion, setReportingQuestion] = useState(false);
   const answerTextareaRef = useRef<HTMLTextAreaElement>(null);
   const editQuestionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const answerPanelRef = useRef<HTMLDivElement>(null);
@@ -170,12 +173,12 @@ export const QuestionDetail = ({
     <div className={styles.detail}>
       <section className={`${styles.questionPanel} ${questionTextExpanded ? styles.questionPanelExpanded : ''}`}>
         <div
-          className={`${styles.detailQuestionBlock} ${question.isMine ? styles.detailQuestionBlockWithMenu : ''} ${questionTextExpanded ? styles.detailQuestionBlockExpanded : ''}`}
+          className={`${styles.detailQuestionBlock} ${styles.detailQuestionBlockWithMenu} ${questionTextExpanded ? styles.detailQuestionBlockExpanded : ''}`}
         >
-          {question.isMine && (
-            <div className={styles.detailMenuAbs}>
-              <DropdownMenu>
-                {(close) => (
+          <div className={styles.detailMenuAbs}>
+            <DropdownMenu>
+              {(close) => (
+                question.isMine ? (
                   <>
                     {roomWritable && (
                       <DropdownMenuItem
@@ -190,10 +193,14 @@ export const QuestionDetail = ({
                       削除
                     </DropdownMenuItem>
                   </>
-                )}
-              </DropdownMenu>
-            </div>
-          )}
+                ) : (
+                  <DropdownMenuItem icon={reportIcon} themedIcon danger onClick={() => { close(); setReportingQuestion(true); }}>
+                    通報
+                  </DropdownMenuItem>
+                )
+              )}
+            </DropdownMenu>
+          </div>
 
           <div className={styles.detailAuthor}>
             <AuthorLabel user={question.user} />
@@ -333,6 +340,16 @@ export const QuestionDetail = ({
           </form>
         )}
       </section>
+
+      {reportingQuestion && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportingQuestion(false)}
+          targetType="QUESTION"
+          targetID={question.ID}
+          postContent={question.body}
+        />
+      )}
     </div>
   );
 };

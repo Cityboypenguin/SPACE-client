@@ -4,6 +4,9 @@ export const targetTypeJa: Record<string, string> = {
   COMMUNITY: 'コミュニティ',
   COMMENT: 'コメント',
   MESSAGE: 'メッセージ',
+  QUESTION: '質問',
+  ANSWER: '回答',
+  POLL: '投票',
 };
 
 export const statusJa: Record<string, string> = {

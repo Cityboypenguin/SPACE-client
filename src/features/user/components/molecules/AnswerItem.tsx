@@ -8,6 +8,8 @@ import { useTheme } from '../../../../context/useTheme';
 import { ClampedText } from '../../../../components/atoms/ClampedText';
 import { type Answer } from '../../api/question';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { ReportModal } from '../organisms/ReportModal';
+import reportIcon from '../../../../assets/パーツ_通報.svg';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { AuthorLabel } from './AuthorLabel';
 import styles from '../QuestionBox.module.css';
@@ -47,7 +49,9 @@ export const AnswerItem = ({
   // ベストアンサーに選ばれている間は編集・削除できない。
   const canEditOrDelete = answer.isMine && !isBest;
   const canEdit = canEditOrDelete && roomWritable;
-  const hasMenuActions = canEditOrDelete;
+  const canReport = !answer.isMine;
+  const hasMenuActions = canEditOrDelete || canReport;
+  const [reporting, setReporting] = useState(false);
 
   const editRemainingMedia = answer.media.filter((m) => !editDeletedMediaIDs.includes(m.ID));
   // 投稿時と同じく、本文か写真のどちらかが残っていれば保存できる。
@@ -137,18 +141,25 @@ export const AnswerItem = ({
       {hasMenuActions && !editing && (
         <DropdownMenu wrapStyle={{ position: 'absolute', top: '0.75rem', right: '1rem' }} disabled={busy}>
           {(close) => (
-            canEditOrDelete && (
-              <>
-                {canEdit && (
-                  <DropdownMenuItem icon={editIcon} themedIcon onClick={() => { close(); startEditing(); }}>
-                    編集
+            <>
+              {canEditOrDelete && (
+                <>
+                  {canEdit && (
+                    <DropdownMenuItem icon={editIcon} themedIcon onClick={() => { close(); startEditing(); }}>
+                      編集
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); void handleDelete(); }}>
+                    削除
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); void handleDelete(); }}>
-                  削除
+                </>
+              )}
+              {canReport && (
+                <DropdownMenuItem icon={reportIcon} themedIcon danger onClick={() => { close(); setReporting(true); }}>
+                  通報
                 </DropdownMenuItem>
-              </>
-            )
+              )}
+            </>
           )}
         </DropdownMenu>
       )}
@@ -259,6 +270,16 @@ export const AnswerItem = ({
       </div>
 
       {error && <p className={styles.inlineError}>{error}</p>}
+
+      {reporting && (
+        <ReportModal
+          isOpen
+          onClose={() => setReporting(false)}
+          targetType="ANSWER"
+          targetID={answer.ID}
+          postContent={answer.body}
+        />
+      )}
     </div>
   );
 };
