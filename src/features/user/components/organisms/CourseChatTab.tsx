@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChatMessageBubble } from '../molecules/ChatMessageBubble';
 import { ChatInput } from '../molecules/ChatInput';
+import { ReportModal } from './ReportModal';
 import { ChatDateSeparator } from '../../../../components/atoms/ChatDateSeparator';
 import { ChatUnreadSeparator } from '../../../../components/atoms/ChatUnreadSeparator';
 import { NewMessagesBadge } from '../molecules/NewMessagesBadge';
+import type { Message } from '../../api/message';
 import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
 import { useChatScroll } from '../../hooks/useChatScroll';
@@ -32,6 +34,8 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
     replyTarget, setReplyTarget,
     handleSend, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage);
+
+  const [reportingMessage, setReportingMessage] = useState<Message | null>(null);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -127,6 +131,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
                   onReply={roomWritable ? () => setReplyTarget(msg) : undefined}
+                  onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
@@ -154,6 +159,16 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
           disabled={sending}
           replyTarget={replyTarget}
           onCancelReply={() => setReplyTarget(null)}
+        />
+      )}
+
+      {reportingMessage && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportingMessage(null)}
+          targetType="MESSAGE"
+          targetID={reportingMessage.ID}
+          postContent={reportingMessage.content}
         />
       )}
     </>

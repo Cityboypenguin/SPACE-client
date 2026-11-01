@@ -16,6 +16,7 @@ const AdminCommunityDetailPage = lazy(() => import('../pages/AdminCommunityDetai
 const AdminPostListPage = lazy(() => import('../pages/AdminPostListPage').then((m) => ({ default: m.AdminPostListPage })));
 const AdminPostDetailPage = lazy(() => import('../pages/AdminPostDetailPage').then((m) => ({ default: m.AdminPostDetailPage })));
 const ReportsPage = lazy(() => import('../pages/AdminReportListPage').then((m) => ({ default: m.ReportsPage })));
+const AdminReportDetailPage = lazy(() => import('../pages/AdminReportDetailPage').then((m) => ({ default: m.AdminReportDetailPage })));
 const AdminInquiryListPage = lazy(() => import('../pages/AdminInquiryListPage').then((m) => ({ default: m.AdminInquiryListPage })));
 const AdminInquiryDetailPage = lazy(() => import('../pages/AdminInquiryDetailPage').then((m) => ({ default: m.AdminInquiryDetailPage })));
 const AdminAnnouncementListPage = lazy(() => import('../pages/AdminAnnouncementListPage').then((m) => ({ default: m.AdminAnnouncementListPage })));
@@ -128,6 +129,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <ReportsPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="reports/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminReportDetailPage />
           </AdminProtectedRoute>
         }
       />

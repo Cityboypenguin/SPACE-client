@@ -13,6 +13,7 @@ import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
 import { useSwipeToReply } from '../../hooks/useSwipeToReply';
 import replyMenuIcon from '../../../../assets/パーツ_コメント.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
+import reportIcon from '../../../../assets/パーツ_通報.svg';
 import { reservedAspectRatio } from '../../../../lib/media';
 import { reportDimensionsOnLoad } from '../../../../lib/reportMediaDimensions';
 import styles from '../ChatRoom.module.css';
@@ -190,6 +191,8 @@ type Props = {
   isAnonymousAuthor?: boolean;
   // 引用返信。書き込み不可のルームでは onReply を渡さず返信ボタンを出さない。
   onReply?: () => void;
+  // 相手のメッセージの通報。自分のメッセージには出さない。
+  onReport?: () => void;
   onJumpToMessage?: (messageId: string) => void;
   // 書き込み不可のルーム(履修をやめた授業・終了した学期)では自分のメッセージでも編集させない。
   editable?: boolean;
@@ -203,7 +206,7 @@ export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
   onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor, editable = true,
-  onReply, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
+  onReply, onReport, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -212,7 +215,8 @@ export const ChatMessageBubble = ({
   const hasMedia = msg.media && msg.media.length > 0;
   const canEdit = editable && isMine && msg.content.trim() !== '';
   const canReply = !!onReply && !isEditing;
-  const canShowActions = (canEdit || canDelete || canReply) && !isEditing;
+  const canReport = !!onReport && !isMine && !isEditing;
+  const canShowActions = (canEdit || canDelete || canReply || canReport) && !isEditing;
   const isReply = !!msg.replyToID;
   const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 
@@ -349,6 +353,11 @@ export const ChatMessageBubble = ({
             {canDelete && (
               <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); onDelete(); }}>
                 削除
+              </DropdownMenuItem>
+            )}
+            {canReport && (
+              <DropdownMenuItem icon={reportIcon} themedIcon danger onClick={() => { close(); onReport?.(); }}>
+                通報
               </DropdownMenuItem>
             )}
           </>

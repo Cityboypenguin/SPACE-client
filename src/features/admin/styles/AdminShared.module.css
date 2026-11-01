@@ -1297,7 +1297,8 @@
   color: var(--color-warning);
 }
 
-.statusBadgeLarge[data-status='IN_PROGRESS'] {
+.statusBadgeLarge[data-status='IN_PROGRESS'],
+.statusBadgeLarge[data-status='REVIEWING'] {
   background: #dbeafe;
   color: #1d4ed8;
 }
