@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { CourseChatAdminTabs } from '../components/molecules/CourseChatAdminTabs';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 import {
   deleteCourseChatImage,
@@ -91,8 +92,9 @@ export const AdminCourseChatImagesPage = () => {
       <AdminHeader />
       <main className={styles.pageCentered}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.titleLarge}>授業内チャットの画像管理</h1>
+          <h1 className={styles.titleLarge}>授業内チャット管理</h1>
         </div>
+        <CourseChatAdminTabs />
         <p className={styles.cellMuted} style={{ marginBottom: '16px' }}>
           授業内チャットのチャット・質問・回答に上がった画像を、新しい順にまとめて表示します。授業資料の共有などを見つけたら削除してください（ファイルも消え、元に戻せません）。
         </p>

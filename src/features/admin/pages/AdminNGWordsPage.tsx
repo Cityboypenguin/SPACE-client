@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { CourseChatAdminTabs } from '../components/molecules/CourseChatAdminTabs';
 import type { NgWordMatchType } from '../../../generated/graphql';
 import {
   createNGWord,
@@ -93,8 +94,9 @@ export const AdminNGWordsPage = () => {
       <AdminHeader />
       <main className={styles.pageCentered} style={{ maxWidth: '900px' }}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.titleLarge}>NGワード管理</h1>
+          <h1 className={styles.titleLarge}>授業内チャット管理</h1>
         </div>
+        <CourseChatAdminTabs />
         <p className={styles.cellMuted} style={{ marginBottom: '16px' }}>
           授業内チャットのメッセージ・質問・回答にここの言葉が含まれていると、投稿の前に止めます（どの言葉に当たったかは本人に伝えません）。
           管理者の投稿は止めません。大文字・小文字と全角・半角は区別しません（正規表現も同じ）。
