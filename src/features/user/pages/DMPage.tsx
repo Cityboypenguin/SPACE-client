@@ -1,13 +1,15 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { ChatInput } from '../components/molecules/ChatInput';
+import { ReportModal } from '../components/organisms/ReportModal';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { ChatUnreadSeparator } from '../../../components/atoms/ChatUnreadSeparator';
 import { findFirstUnreadIndex, isSameMessageGroup } from '../lib/messageGrouping';
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { useAuth } from '../context/useAuth';
+import type { Message } from '../api/message';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
 import { useChatScroll } from '../hooks/useChatScroll';
@@ -27,6 +29,7 @@ export const DMPage = () => {
   const navigate = useNavigate();
   useResetViewportScroll([roomId]);
   const { userId: currentUserID } = useAuth();
+  const [reportingMessage, setReportingMessage] = useState<Message | null>(null);
   const {
     room,
     messages,
@@ -228,6 +231,7 @@ export const DMPage = () => {
                   onDelete={() => handleDelete(msg.ID)}
                   isReadByPartner={isLastReadByPartner}
                   onReply={isBlocked ? undefined : () => setReplyTarget(msg)}
+                  onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
@@ -266,6 +270,16 @@ export const DMPage = () => {
         replyTarget={replyTarget}
         onCancelReply={() => setReplyTarget(null)}
       />
+
+      {reportingMessage && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportingMessage(null)}
+          targetType="MESSAGE"
+          targetID={reportingMessage.ID}
+          postContent={reportingMessage.content}
+        />
+      )}
     </div>
   );
 };

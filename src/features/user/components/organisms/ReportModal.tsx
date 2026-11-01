@@ -8,7 +8,7 @@ import styles from './ReportModal.module.css';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: 'POST' | 'USER' | 'COMMUNITY';
+  targetType: 'POST' | 'USER' | 'COMMUNITY' | 'MESSAGE';
   targetID: string;
   postContent?: string;
 }
@@ -24,6 +24,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
   const title =
     targetType === 'POST' ? '投稿を通報する' :
     targetType === 'USER' ? 'ユーザーを通報する' :
+    targetType === 'MESSAGE' ? 'メッセージを通報する' :
     'コミュニティを通報する';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,7 +53,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
 
         {postContent && (
           <div className={styles.postPreview}>
-            <span className={styles.postPreviewLabel}>対象の投稿内容:</span>
+            <span className={styles.postPreviewLabel}>{targetType === 'MESSAGE' ? '対象のメッセージ:' : '対象の投稿内容:'}</span>
             {postContent}
           </div>
         )}

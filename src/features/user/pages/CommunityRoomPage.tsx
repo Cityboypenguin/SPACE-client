@@ -11,7 +11,7 @@ import { findFirstUnreadIndex, isSameMessageGroup } from '../lib/messageGrouping
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
-import { getMentionCandidates } from '../api/message';
+import { getMentionCandidates, type Message } from '../api/message';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useAuth } from '../context/useAuth';
@@ -142,6 +142,7 @@ export const CommunityRoomPage = () => {
   const openDetail = () => setShowDetail(true);
   const closeDetail = () => setShowDetail(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportingMessage, setReportingMessage] = useState<Message | null>(null);
 
   const stateCommunity = locationState?.community ?? null;
   const { data: communities, mutate: mutateCommunities } = useSWR(
@@ -267,6 +268,7 @@ export const CommunityRoomPage = () => {
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
                   onReply={() => setReplyTarget(msg)}
+                  onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
@@ -314,6 +316,15 @@ export const CommunityRoomPage = () => {
           onClose={() => setIsReportOpen(false)}
           targetType="COMMUNITY"
           targetID={community.ID}
+        />
+      )}
+      {reportingMessage && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportingMessage(null)}
+          targetType="MESSAGE"
+          targetID={reportingMessage.ID}
+          postContent={reportingMessage.content}
         />
       )}
     </div>
