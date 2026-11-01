@@ -10,6 +10,7 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   let created = false;
   let sentRoom: unknown;
   let reportedTarget: unknown;
+  let hasUnread = true;
   const subscriptions: Array<{id: string; room: string; query: string; send: (value: string) => void}> = [];
   const broadcast = (field: string, room: string, message: MessageFixture) => {
     for (const entry of subscriptions) if (entry.room === room && entry.query.includes(field)) entry.send(JSON.stringify({id: entry.id, type:'next', payload:{data:{[field]: message}}}));
@@ -29,13 +30,16 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
       messages.thread1.push({ID:'other1',roomID:'thread1',user:{...user,ID:'u2',name:'相手'},content:'相手の会話',media:[],createdAt:now,updatedAt:now,isMine:false,mentions:[],thread:null});
       const announcement: MessageFixture = {ID:'a1',roomID:'parent1',user,content:'スレッドを作成しました',media:[],createdAt:now,updatedAt:now,isMine:true,mentions:[],thread:{...thread}};
       messages.parent1.push(announcement);broadcast('messageAdded','parent1',announcement);
+      const otherAnnouncement:MessageFixture={...announcement,ID:'a2',user:{...user,ID:'u2',name:'相手'},isMine:false,thread:{...thread,roomID:'thread-other',title:'別の話題'}};
+      messages.parent1.push(otherAnnouncement);broadcast('messageAdded','parent1',otherAnnouncement);
       data = {createChatThread:{...thread}};
     } else if (query.includes('mutation UpdateChatThread')) {
       if(v.title !== undefined) thread.title=v.title;
       if(v.closed !== undefined) {thread.isClosed=v.closed;thread.canWrite=!v.closed;}
       messages.parent1[0].thread = {...thread};broadcast('messageUpdated','parent1',messages.parent1[0]);
       data={updateChatThread:{...thread}};
-    } else if (query.includes('query ChatThreadList')) data={chatThreads:created?[{...thread}]:[]};
+    } else if (query.includes('query HasUnreadChatThreads')) data={hasUnreadChatThreads:hasUnread};
+    else if (query.includes('query ChatThreadList')) data={chatThreads:created?[{...thread}]:[]};
     else if (query.includes('query ChatThreadDetail')) data={chatThread:created?{...thread}:null};
     else if (query.includes('query GetRoom')) data={room:{ID:v.id,name:v.id==='parent1'?'コミュニティ':thread.title,type:'community',user:[],isMessagingDisabled:false,lastReadAt:null,lastReadMessageID:null,unreadCount:0}};
     else if (query.includes('query ListMessages')) data={messages:{items:messages[v.roomID] ?? [],hasMoreBefore:false,hasMoreAfter:false}};
@@ -44,16 +48,17 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
       const msg:MessageFixture={ID:'m1',roomID:v.roomID,user,content:v.content,media:[],createdAt:now,updatedAt:now,isMine:true,mentions:[],thread:null};
       messages[v.roomID].push(msg);thread.messageCount++;data={sendMessage:msg};
     } else if(query.includes('mutation CreateReport')) {reportedTarget=v.input;data={createReport:{ID:'report1'}};}
-    else if(query.includes('MarkRoomAsRead')) data={markRoomAsRead:true};
+    else if(query.includes('MarkRoomAsRead')) {if(v.roomID==='thread1') hasUnread=false;data={markRoomAsRead:true};}
     await route.fulfill({json:{data}});
   });
-  await page.route('**/thread-ui-test', route => route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="ja"><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>スレッドUIテスト</title></head><body><div id="root"></div><script type="module">
+  await page.route(/\/thread-ui-test(?:\?.*)?$/, route => route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="ja"><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>スレッドUIテスト</title></head><body><div id="root"></div><script type="module">
     import RefreshRuntime from '/@react-refresh';
     RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>type=>type;window.__vite_plugin_react_preamble_installed__=true;
     await import('/e2e/fixtures/thread-harness.js');
   </script></body></html>`}));
   await page.goto('/thread-ui-test');
   const main = page.getByRole('main');
+  await expect(main.getByTestId('thread-unread-dot')).toBeVisible();
   await main.getByPlaceholder('メッセージを入力...').fill('親チャットの下書き');
   await main.getByRole('button', {name:'チャットに追加'}).click();
   await page.getByRole('menuitem', {name:'スレッドを作成'}).click();
@@ -63,7 +68,22 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   await expect(panel.getByRole('heading', {name:'課題の相談'})).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(main).toBeVisible();
+  await expect(main.getByTestId('thread-unread-dot')).toHaveCount(0);
   await expect(main.getByPlaceholder('メッセージを入力...')).toHaveValue('親チャットの下書き');
+  const ownCard = main.locator('[data-message-id="a1"]').getByRole('button');
+  const otherCard = main.locator('[data-message-id="a2"]').getByRole('button');
+  await expect(ownCard).toBeVisible();
+  await expect(otherCard).toBeVisible();
+  const ownCardBox = await ownCard.boundingBox();
+  const otherCardBox = await otherCard.boundingBox();
+  expect(ownCardBox!.x + ownCardBox!.width).toBeGreaterThan(otherCardBox!.x + otherCardBox!.width);
+  await expect(main.locator('[data-message-id="a1"]').getByText('課題の相談',{exact:true}).first()).toHaveCSS('background-color','rgb(59, 130, 246)');
+  await expect(main.locator('[data-message-id="a2"]').getByText('別の話題',{exact:true}).first()).toHaveCSS('background-color','rgb(241, 245, 249)');
+  await expect(main.locator('[data-message-id="a1"]').getByText('テスト',{exact:true})).toHaveCount(0);
+  const announcementName = main.locator('[data-message-id="a2"]').getByText('相手',{exact:true});
+  const normalName = panel.locator('[data-message-id="other1"]').getByText('相手',{exact:true});
+  await expect(announcementName).toHaveCSS('color',await normalName.evaluate(element => getComputedStyle(element).color));
+  await expect(announcementName).toHaveCSS('font-size',await normalName.evaluate(element => getComputedStyle(element).fontSize));
   const parentBox = await main.boundingBox();
   const panelBox = await panel.boundingBox();
   expect(parentBox!.x + parentBox!.width).toBeLessThanOrEqual(panelBox!.x + 1);
@@ -95,7 +115,7 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   await expect(panel.getByText('このスレッドはクローズされています。')).toBeVisible();
   await expect(panel.getByPlaceholder('メッセージを入力...')).toHaveCount(0);
   await panel.getByRole('button', {name:'親チャットに戻る'}).click();
-  await main.getByRole('button', {name:'スレッド一覧'}).click();
+  await main.getByRole('button', {name:/^スレッド一覧/}).click();
   await panel.getByRole('button', {name:/変更後の相談/}).click();
   await panel.getByRole('button', {name:'スレッド設定'}).click();
   await panel.getByRole('button', {name:'再開する'}).click();
@@ -110,6 +130,23 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   expect(sendBox!.y + sendBox!.height).toBeLessThanOrEqual(844);
   await expect(panel.getByRole('button', {name:'チャットに追加'})).toHaveCount(0);
   await page.screenshot({path:test.info().outputPath('threads-mobile.png')});
+  // Opening the list from inside a thread must return to that same thread.
+  await panel.getByRole('button', {name:'スレッド一覧', exact:true}).click();
+  await panel.getByRole('button', {name:'スレッドに戻る'}).click();
+  await expect(panel.getByRole('heading', {name:'変更後の相談'})).toBeVisible();
+  // A thread opened from the list returns to that list, including on mobile.
+  await panel.getByRole('button', {name:'スレッド一覧に戻る'}).click();
+  await expect(panel.getByRole('heading', {name:'スレッド', exact:true})).toBeVisible();
+  await expect(main).toBeHidden();
+  // Cancelling creation from the list also returns to the list.
+  await panel.getByRole('button', {name:'＋ 新規作成'}).click();
+  await panel.getByRole('button', {name:'スレッド一覧に戻る'}).click();
+  await expect(panel.getByRole('heading', {name:'スレッド', exact:true})).toBeVisible();
+  await panel.getByRole('button', {name:'親チャットに戻る'}).click();
+  await expect(main).toBeVisible();
+  // A card opened from the chat returns directly to that chat.
+  await announcement.getByRole('button').click();
+  await expect(panel.getByRole('button', {name:'親チャットに戻る'})).toBeVisible();
   await panel.getByRole('button', {name:'親チャットに戻る'}).click();
   await expect(main).toBeVisible();
   await expect(main.getByPlaceholder('メッセージを入力...')).toHaveValue('親チャットの下書き');
@@ -117,4 +154,28 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   await page.evaluate(() => document.documentElement.setAttribute('data-theme','dark'));
   await expect(announcement.getByRole('button')).toHaveCSS('background-color','rgb(30, 41, 59)');
   await page.screenshot({path:test.info().outputPath('threads-announcement-dark.png')});
+  // The red dot also appears on mobile when another thread receives a message.
+  hasUnread = true;
+  await page.evaluate(async () => {
+    const modulePath = '/src/features/user/hooks/useUnreadSubscription.ts';
+    const { emitRoomChanged } = await import(modulePath);
+    emitRoomChanged({ roomID:'thread-other', hasNewMessage:true });
+  });
+  await expect(main.getByTestId('thread-unread-dot')).toBeVisible();
+  await expect(main.getByRole('button', {name:'スレッド一覧（未読あり）'})).toBeVisible();
+  // Reloading the thread entry preserves its in-app list origin.
+  await main.getByRole('button', {name:/^スレッド一覧/}).click();
+  await panel.getByRole('button', {name:/変更後の相談/}).click();
+  await page.reload();
+  await expect(panel.getByRole('button', {name:'スレッド一覧に戻る'})).toBeVisible();
+  await panel.getByRole('button', {name:'スレッド一覧に戻る'}).click();
+  await expect(panel.getByRole('heading', {name:'スレッド', exact:true})).toBeVisible();
+  await panel.getByRole('button', {name:'親チャットに戻る'}).click();
+  await expect(main).toBeVisible();
+  // Direct links have no entry history: stay in the app and preserve other query parameters.
+  await page.goto('/thread-ui-test?thread=thread1&messageID=keep');
+  await panel.getByRole('button', {name:'親チャットに戻る'}).click();
+  await expect(main).toBeVisible();
+  expect(new URL(page.url()).searchParams.get('messageID')).toBe('keep');
+  expect(new URL(page.url()).searchParams.has('thread')).toBe(false);
 });

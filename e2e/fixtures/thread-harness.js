@@ -16,7 +16,7 @@ createRoot(document.getElementById('root')).render(
       React.createElement(ThreadWorkspace, {parentRoomID:'parent1',writable:true},
         React.createElement('main', {className:chatStyles.container},
           React.createElement('header', {style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 24px',borderBottom:'1px solid var(--color-border)'}},
-            React.createElement('strong',null,'コミュニティ'), React.createElement(ThreadListButton)),
+            React.createElement('strong',null,'コミュニティ'), React.createElement(ThreadListButton,{parentRoomID:'parent1'})),
           React.createElement(CourseChatTab, {roomId:'parent1',roomWritable:true,allowThreadCreation:true}),
         ),
       ),

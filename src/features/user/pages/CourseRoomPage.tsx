@@ -125,7 +125,7 @@ export const CourseRoomPage = () => {
                 </div>
               )}
             </div>
-            <ThreadListButton />
+            <ThreadListButton parentRoomID={roomId ?? ''} />
             <button
               type="button"
               className={styles.pollButton}

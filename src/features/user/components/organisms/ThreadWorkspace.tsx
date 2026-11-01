@@ -1,19 +1,31 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
-import { createThread, getThread, listThreads, updateThread } from '../../api/thread';
+import { createThread, getThread, hasUnreadThreads, listThreads, updateThread } from '../../api/thread';
+import { useUnreadSubscription } from '../../hooks/useUnreadSubscription';
 import { useThreadActions } from '../../hooks/useThreadActions';
 import { CourseChatTab } from './CourseChatTab';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import styles from './ThreadWorkspace.module.css';
 
-export function ThreadListButton() {
+export function ThreadListButton({ parentRoomID, compact = false }: { parentRoomID: string; compact?: boolean }) {
   const actions = useThreadActions();
-  return <button type="button" className={styles.headerButton} data-thread-list-button onClick={actions.list} aria-label="スレッド一覧" title="スレッド一覧">
+  const { data: unread, mutate: refreshUnread } = useSWR(
+    parentRoomID ? ['thread-unread', parentRoomID] : null,
+    () => hasUnreadThreads(parentRoomID), { refreshInterval: 15000, dedupingInterval: 500 },
+  );
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useUnreadSubscription(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => { void refreshUnread(); }, 150);
+  });
+  useEffect(() => () => { if (refreshTimer.current) clearTimeout(refreshTimer.current); }, []);
+  return <button type="button" className={styles.headerButton} data-thread-list-button onClick={actions.list} aria-label={unread ? 'スレッド一覧（未読あり）' : 'スレッド一覧'} title="スレッド一覧">
+    {unread && <span className={styles.unreadDot} data-testid="thread-unread-dot" aria-hidden="true" />}
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
       <path d="M4 4h16v12H9l-5 4V4Z" strokeLinejoin="round" /><path d="M8 8h8M8 12h5" strokeLinecap="round" />
     </svg>
-    <span>スレッド</span>
+    <span className={styles.headerLabel} hidden={compact}>スレッド</span>
   </button>;
 }
 
@@ -31,7 +43,8 @@ export function ThreadWorkspace({ parentRoomID, writable, children }: Props) {
 }
 
 function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
+  const navigation = useThreadActions();
   const activeID = params.get('thread');
   const mode = params.get('threadView');
   const isCreating = mode === 'create';
@@ -56,14 +69,6 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
     if (!isCreating) headingRef.current?.focus({ preventScroll: true });
   }, [isCreating]);
 
-  const navigatePanel = (id: string | null, view?: string) => setParams(previous => {
-    const next = new URLSearchParams(previous);
-    next.delete('thread');
-    next.delete('threadView');
-    if (id) next.set('thread', id);
-    if (view) next.set('threadView', view);
-    return next;
-  });
   const submit = async (event: { preventDefault(): void }) => {
     event.preventDefault();
     if (busy || !title.trim() || !writable) return;
@@ -71,7 +76,7 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
     setError('');
     try {
       const created = await createThread(parentRoomID, title.trim());
-      navigatePanel(created.roomID);
+      navigation.open(created.roomID);
       await refreshList();
     } catch (cause) {
       setError(toUserMessage(cause, 'スレッドを作成できませんでした。'));
@@ -94,14 +99,14 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
 
   return <section className={styles.panel} aria-labelledby={titleId}>
       <header className={styles.panelHeader}>
-        <button type="button" className={styles.iconButton} onClick={() => navigatePanel(null)} aria-label="親チャットに戻る" title="親チャットに戻る">
+        <button type="button" className={styles.iconButton} onClick={navigation.back} aria-label={navigation.backLabel} title={navigation.backLabel}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
         <div className={styles.headingBlock}>
           <span className={styles.eyebrow}>{activeID ? 'スレッド' : 'チャット'}</span>
           <h2 id={titleId} ref={headingRef} tabIndex={-1}>{heading}</h2>
         </div>
-        {activeID && <button type="button" className={styles.iconButton} onClick={() => navigatePanel(null, 'list')} aria-label="スレッド一覧" title="スレッド一覧"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4Z" strokeLinejoin="round" /><path d="M8 8h8M8 12h5" strokeLinecap="round" /></svg></button>}
+        {activeID && <ThreadListButton parentRoomID={parentRoomID} compact />}
         {validThread?.canManage && writable && <button type="button" className={styles.iconButton} onClick={() => setSettingsOpen(value => !value)} aria-label="スレッド設定" aria-expanded={settingsOpen}>⋯</button>}
       </header>
       {error && <p className={styles.error} role="alert">{error}</p>}
@@ -114,11 +119,11 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
           <button className={styles.primaryButton} type="submit" disabled={busy || !title.trim()}>{busy ? '作成中…' : 'スレッドを作成'}</button>
         </form> : <p className={styles.notice}>現在このチャットではスレッドを作成できません。</p>}
       </div> : isListing ? <div className={styles.panelBody}>
-        <div className={styles.listHeading}><span>最近のスレッド</span>{writable && <button type="button" className={styles.textButton} onClick={() => navigatePanel(null, 'create')}>＋ 新規作成</button>}</div>
+        <div className={styles.listHeading}><span>最近のスレッド</span>{writable && <button type="button" className={styles.textButton} onClick={navigation.create}>＋ 新規作成</button>}</div>
         {listError ? <p role="alert">{toUserMessage(listError, '一覧を取得できませんでした。')}</p> : !threads ? <p className={styles.description}>読み込み中…</p> : <>
           {threads.length === 0 && <div className={styles.empty}><strong>まだスレッドはありません</strong><p>チャットの「＋」から、新しい話題を始められます。</p></div>}
           <ul className={styles.list}>{threads.map(item => <li key={item.roomID}>
-            <button className={styles.listItem} type="button" onClick={() => navigatePanel(item.roomID)}>
+            <button className={styles.listItem} type="button" onClick={() => navigation.open(item.roomID)}>
               <span className={styles.listItemTop}><strong>{item.title}</strong><span aria-hidden="true">›</span></span>
               <span className={styles.meta}>{item.messageCount}件のメッセージ{item.isClosed ? ' · クローズ済み' : ''} · {new Date(item.lastMessageAt || item.createdAt).toLocaleDateString('ja-JP')}</span>
               {item.unreadCount > 0 && <span className={styles.badge}>未読 {item.unreadCount}件</span>}

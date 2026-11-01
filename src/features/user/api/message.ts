@@ -1,3 +1,4 @@
+import { mutate } from 'swr';
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { putToStorage, type PresignedUpload } from '../../../lib/storage';
@@ -401,7 +402,9 @@ export const getMentionCandidates = async (
 // 確定している最後」を渡すこと（useRoomMessages.ts のコメント参照）。
 export const markRoomAsRead = async (roomID: string, lastReadMessageID?: string | null) => {
   const token = getUserToken();
-  return await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
+  const result = await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
+  void mutate(key => Array.isArray(key) && key[0] === 'thread-unread', undefined, { revalidate: true, populateCache: false, throwOnError: false });
+  return result;
 };
 
 export const getOrCreateDMRoom = async (targetUserID: string) => {

@@ -234,7 +234,7 @@ export const CommunityRoomPage = () => {
           <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
           <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         </button>
-        <ThreadListButton />
+        <ThreadListButton parentRoomID={roomId ?? ''} />
       </div>
 
       <div className={styles.messageListWrapper}>

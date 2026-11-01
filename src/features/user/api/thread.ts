@@ -22,3 +22,11 @@ export async function updateThread(roomID: string, values: {title?: string; clos
  const data = await request<{updateChatThread: ChatThread}>(`mutation UpdateChatThread($roomID: ID!, $title: String, $closed: Boolean) { updateChatThread(roomID: $roomID, title: $title, closed: $closed) { ${fields} } }`, {roomID, ...values}, getUserToken());
  return data.updateChatThread;
 }
+
+export async function hasUnreadThreads(parentRoomID: string) {
+  const data = await request<{hasUnreadChatThreads: boolean}>(
+    `query HasUnreadChatThreads($parentRoomID: ID!) { hasUnreadChatThreads(parentRoomID: $parentRoomID) }`,
+    {parentRoomID}, getUserToken(),
+  );
+  return data.hasUnreadChatThreads;
+}
