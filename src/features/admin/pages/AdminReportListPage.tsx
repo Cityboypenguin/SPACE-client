@@ -9,25 +9,20 @@ import {
   updateReportServiceStatus,
   type Report,
 } from '../api/report';
+import { reasonJa, statusJa, targetTypeJa } from '../lib/reportLabels';
 import styles from '../styles/AdminShared.module.css';
 import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 
-type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY';
+type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY' | 'MESSAGE';
 
-const targetTypeJa: Record<string, string> = {
-  POST: '投稿',
-  USER: 'ユーザー',
-  COMMUNITY: 'コミュニティ',
-  COMMENT: 'コメント',
-};
-
-const statusJa: Record<string, string> = {
-  PENDING: '未対応',
-  UNRESOLVED: '未対応',
-  REVIEWING: '対応中',
-  RESOLVED: '対応済',
-  DISMISSED: '却下（問題なし）',
+// 一覧に出す本文の抜粋。全文と添付は詳細ページで見る。
+const getContentPreview = (report: Report) => {
+  if (report.reportedMessage) {
+    const { authorName, content, media } = report.reportedMessage;
+    return `${authorName}: ${content || `添付 ${media.length} 件`}`;
+  }
+  return report.targetType === 'POST' ? report.content : null;
 };
 
 export const ReportsPage: React.FC = () => {
@@ -119,17 +114,6 @@ export const ReportsPage: React.FC = () => {
     }
   };
 
-  const getTargetUrl = (targetID: string, targetType: string) => {
-    if (!targetID || targetID === '#') return '#';
-    const type = targetType?.toUpperCase();
-    
-    if (type === 'POST') return `/admin/posts/${targetID}`;
-    if (type === 'USER') return `/admin/users/${targetID}`;
-    if (type === 'COMMUNITY') return `/admin/communities/${targetID}`;
-    if (type === 'COMMENT') return `/admin/comments/${targetID}`;
-    return '#';
-  };
-  
   const isProcessing = isStatusLoading || isUpdating;
 
   return (
@@ -185,13 +169,14 @@ export const ReportsPage: React.FC = () => {
 
         {/* 対象タイプ切り替えタブ */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-          {(['ALL', 'POST', 'USER', 'COMMUNITY'] as TargetTypeFilter[]).map((tab) => {
+          {(['ALL', 'POST', 'USER', 'COMMUNITY', 'MESSAGE'] as TargetTypeFilter[]).map((tab) => {
             const isActive = activeTab === tab;
             const labelMap: Record<TargetTypeFilter, string> = {
               ALL: 'すべての通報',
               POST: '投稿',
               USER: 'ユーザー',
               COMMUNITY: 'コミュニティ',
+              MESSAGE: 'メッセージ',
             };
             return (
               <button
@@ -223,7 +208,7 @@ export const ReportsPage: React.FC = () => {
             </thead>
             <tbody>
               {reports.map((report) => {
-                const targetUrl = getTargetUrl(report.targetID, report.targetType);
+                const contentPreview = getContentPreview(report);
                 const currentStatus = report.status?.toUpperCase();
 
                 return (
@@ -233,17 +218,28 @@ export const ReportsPage: React.FC = () => {
                     </td>
 
                     <td className={styles.tableCellLarge}>
-                      <Link to={targetUrl} style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                      <Link to={`/admin/reports/${report.ID}`} style={{ color: '#2563eb', textDecoration: 'underline' }}>
                         詳細を確認する
                       </Link>
-                      {report.targetType === 'POST' && report.content && (
-                        <div className={styles.cellMuted} style={{ marginTop: '4px', fontSize: '0.85rem' }}>
-                          {report.content}
+                      {contentPreview && (
+                        <div
+                          className={styles.cellMuted}
+                          style={{
+                            marginTop: '4px',
+                            fontSize: '0.85rem',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            overflowWrap: 'anywhere',
+                          }}
+                        >
+                          {contentPreview}
                         </div>
                       )}
                     </td>
 
-                    <td className={styles.tableCellLarge}>{report.reason}</td>
+                    <td className={styles.tableCellLarge}>{reasonJa[report.reason] ?? report.reason}</td>
 
                     <td className={styles.tableCellLarge}>
                       {report.customReason || <span className={styles.cellMuted}>(入力なし)</span>}

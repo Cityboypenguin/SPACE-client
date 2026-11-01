@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('チャットからスレッドを作成し、案内と一覧から開いて会話・変更できる', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('space_user_token','thread-ui-test'));
   const user = { ID: 'u1', name: 'テスト', accountID: 'test', avatarUrl: null };
   const now = '2026-11-01T10:00:00+09:00';
   const thread = { roomID: 'thread1', parentRoomID: 'parent1', title: '課題の相談', isClosed: false, canManage: true, canWrite: true, createdAt: now, updatedAt: now, messageCount: 0, unreadCount: 0, lastMessageAt: null as string | null };
@@ -8,6 +9,7 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   const messages: Record<string, MessageFixture[]> = { parent1: [], thread1: [] };
   let created = false;
   let sentRoom: unknown;
+  let reportedTarget: unknown;
   const subscriptions: Array<{id: string; room: string; query: string; send: (value: string) => void}> = [];
   const broadcast = (field: string, room: string, message: MessageFixture) => {
     for (const entry of subscriptions) if (entry.room === room && entry.query.includes(field)) entry.send(JSON.stringify({id: entry.id, type:'next', payload:{data:{[field]: message}}}));
@@ -24,6 +26,7 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
     let data: unknown = {};
     if (query.includes('mutation CreateChatThread')) {
       created = true; thread.title = v.title;
+      messages.thread1.push({ID:'other1',roomID:'thread1',user:{...user,ID:'u2',name:'相手'},content:'相手の会話',media:[],createdAt:now,updatedAt:now,isMine:false,mentions:[],thread:null});
       const announcement: MessageFixture = {ID:'a1',roomID:'parent1',user,content:'スレッドを作成しました',media:[],createdAt:now,updatedAt:now,isMine:true,mentions:[],thread:{...thread}};
       messages.parent1.push(announcement);broadcast('messageAdded','parent1',announcement);
       data = {createChatThread:{...thread}};
@@ -40,7 +43,8 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
       sentRoom=v.roomID;
       const msg:MessageFixture={ID:'m1',roomID:v.roomID,user,content:v.content,media:[],createdAt:now,updatedAt:now,isMine:true,mentions:[],thread:null};
       messages[v.roomID].push(msg);thread.messageCount++;data={sendMessage:msg};
-    } else if(query.includes('MarkRoomAsRead')) data={markRoomAsRead:true};
+    } else if(query.includes('mutation CreateReport')) {reportedTarget=v.input;data={createReport:{ID:'report1'}};}
+    else if(query.includes('MarkRoomAsRead')) data={markRoomAsRead:true};
     await route.fulfill({json:{data}});
   });
   await page.route('**/thread-ui-test', route => route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="ja"><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>スレッドUIテスト</title></head><body><div id="root"></div><script type="module">
@@ -58,6 +62,14 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   await dialog.getByRole('button',{name:'送信',exact:true}).click();
   await expect(dialog.getByText('スレッド内の会話',{exact:true})).toBeVisible();
   expect(sentRoom).toBe('thread1');
+  const otherMessage=dialog.locator('[data-message-id="other1"]');
+  await otherMessage.hover();
+  await otherMessage.getByRole('button',{name:'メッセージの操作'}).click();
+  await dialog.getByRole('button',{name:'通報',exact:true}).click();
+  await expect(dialog.getByRole('heading',{name:'メッセージを通報する'})).toBeVisible();
+  await dialog.getByRole('button',{name:'通報する',exact:true}).click();
+  await expect(dialog.getByRole('heading',{name:'メッセージを通報する'})).toHaveCount(0);
+  expect(reportedTarget).toMatchObject({targetType:'MESSAGE',targetID:'other1'});
   await dialog.getByRole('button',{name:'閉じる',exact:true}).click();
   await expect(page.getByText('テストさんがスレッドを作成しました')).toBeVisible();
   await page.getByRole('button',{name:'＃ 課題の相談 →'}).click();

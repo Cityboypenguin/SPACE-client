@@ -3,6 +3,7 @@ import { type Poll } from '../../api/poll';
 import { BarChartIcon } from '../../../../components/atoms/BarChartIcon';
 import { CheckIcon } from '../../../../components/atoms/CheckIcon';
 import { AppSwal } from '../../../../lib/swal';
+import { AuthorLabel } from './AuthorLabel';
 import styles from '../PollBox.module.css';
 
 type Props = {
@@ -109,6 +110,9 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
 
   return (
     <div className={`${styles.card} ${isTeacherPoll ? styles.cardTeacher : ''}`}>
+      <div className={styles.author}>
+        <AuthorLabel user={poll.user} />
+      </div>
       <div className={styles.cardHeader}>
         <div className={styles.questionRow}>
           <span className={styles.questionIcon}><BarChartIcon size={16} /></span>

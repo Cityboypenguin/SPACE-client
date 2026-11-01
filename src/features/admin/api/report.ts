@@ -13,8 +13,26 @@ export type Report = {
   reason: string;
   customReason: string | null;
   content: string | null;
+  reportedMessage: ReportedMessage | null;
   status: string;
   createdAt: string;
+};
+
+// 通報を受けた時点のメッセージ。あとから編集・削除されても変わらない。
+export type ReportedMessage = {
+  roomType: string;
+  roomName: string;
+  authorID: string | null;
+  authorName: string;
+  authorAccountID: string | null;
+  content: string;
+  media: { ID: string; url: string; contentType: string }[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReportDetail = Report & {
+  reporter: { ID: string; name: string; accountID: string };
 };
 
 export type ReportPage = { items: Report[]; total: number };
@@ -29,10 +47,60 @@ const SearchReportsDocument = graphql(`
         reason
         customReason
         content
+        reportedMessage {
+          roomType
+          roomName
+          authorID
+          authorName
+          authorAccountID
+          content
+          media {
+            ID
+            url
+            contentType
+          }
+          createdAt
+          updatedAt
+        }
         status
         createdAt
       }
       total
+    }
+  }
+`);
+
+const GetReportDocument = graphql(`
+  query GetReport($id: ID!) {
+    getReport(id: $id) {
+      ID
+      targetType
+      targetID
+      reason
+      customReason
+      content
+      reporter {
+        ID
+        name
+        accountID
+      }
+      reportedMessage {
+        roomType
+        roomName
+        authorID
+        authorName
+        authorAccountID
+        content
+        media {
+          ID
+          url
+          contentType
+        }
+        createdAt
+        updatedAt
+      }
+      status
+      createdAt
     }
   }
 `);
@@ -79,6 +147,11 @@ export const getReports = async (filterStatus?: string, targetType?: string, lim
   if (Object.keys(filter).length > 0) variables.filter = filter;
   const data = await requestDoc(SearchReportsDocument, variables, getAdminToken());
   return data.searchReports as ReportPage;
+};
+
+export const getReport = async (id: string): Promise<ReportDetail | null> => {
+  const data = await requestDoc(GetReportDocument, { id }, getAdminToken());
+  return data.getReport as ReportDetail | null;
 };
 
 /**

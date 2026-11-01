@@ -4,15 +4,14 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message, type Media, type MessageUser, type ReplyTarget } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
-import { Avatar } from '../../../../components/atoms/Avatar';
 import humanIcon from '../../../../assets/パーツ_人間.svg';
-import { isAnonymousUser } from '../../lib/anonymous';
 import { storageUrl } from '../../../../lib/storage';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
 import { useSwipeToReply } from '../../hooks/useSwipeToReply';
 import replyMenuIcon from '../../../../assets/パーツ_コメント.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
+import reportIcon from '../../../../assets/パーツ_通報.svg';
 import { reservedAspectRatio } from '../../../../lib/media';
 import { reportDimensionsOnLoad } from '../../../../lib/reportMediaDimensions';
 import styles from '../ChatRoom.module.css';
@@ -25,6 +24,9 @@ const TAP_MAX_DURATION_MS = 400;
 
 // マウスではなく指で操作する端末か。長押しやテキスト選択の扱いを分けるのに使う。
 const isCoarsePointer = () => window.matchMedia('(pointer: coarse)').matches;
+
+// 添付を上げた人が退会して削除され、添付だけが無くなったメッセージに出す文言。
+const FILES_REMOVED_TEXT = 'ファイルは削除されました';
 
 const getFileIcon = (contentType: string): string => {
   if (contentType.includes('word')) return '📝';
@@ -107,9 +109,9 @@ const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolea
 // 引用カードに出す返信先のアイコン。カード全体が <button> なので、<div> を含む
 // Avatar / <a> を張る UserAvatar ではなく画像1枚で組む（ボタンの中に置ける要素で
 // 収める・引用のタップがプロフィール遷移に化けないようにする、の両方が理由）。
-// 授業チャットの匿名投稿者は avatarUrl を持たないため、既定の人型アイコンが出る。
+// アイコン未設定の投稿者には既定の人型アイコンが出る。
 const ReplyQuoteAvatar = ({ user }: { user: MessageUser }) => {
-  const url = isAnonymousUser(user) ? null : storageUrl(user.avatarUrl);
+  const url = storageUrl(user.avatarUrl);
   return (
     <span className={styles.replyQuoteAvatar}>
       <img
@@ -152,7 +154,7 @@ const ReplyQuote = ({
       ? `画像${imageCount}件`
       : fileCount > 0
         ? `ファイル${fileCount}件`
-        : '';
+        : FILES_REMOVED_TEXT;
 
   return (
     <button
@@ -187,9 +189,10 @@ type Props = {
   onEditContentChange: (val: string) => void;
   onDelete: () => void;
   isReadByPartner?: boolean;
-  isAnonymousAuthor?: boolean;
   // 引用返信。書き込み不可のルームでは onReply を渡さず返信ボタンを出さない。
   onReply?: () => void;
+  // 相手のメッセージの通報。自分のメッセージには出さない。
+  onReport?: () => void;
   onJumpToMessage?: (messageId: string) => void;
   // 書き込み不可のルーム(履修をやめた授業・終了した学期)では自分のメッセージでも編集させない。
   editable?: boolean;
@@ -202,8 +205,8 @@ type Props = {
 export const ChatMessageBubble = ({
   msg, isMine, canDelete, isEditing,
   editContent, onStartEdit, onSaveEdit, onCancelEdit,
-  onEditContentChange, onDelete, isReadByPartner, isAnonymousAuthor, editable = true,
-  onReply, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
+  onEditContentChange, onDelete, isReadByPartner, editable = true,
+  onReply, onReport, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
 }: Props) => {
   const [, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -211,9 +214,13 @@ export const ChatMessageBubble = ({
   const { currentUserID, onMentionClick } = useMentionNavigation();
   const hasText = msg.content.trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
+  // 本文も添付も無いメッセージは送れない。それでも空なのは、添付を上げた人が
+  // 退会して個人情報ごと消され、添付だけが無くなったとき。
+  const filesRemoved = !hasText && !hasMedia;
   const canEdit = editable && isMine && msg.content.trim() !== '';
   const canReply = !!onReply && !isEditing;
-  const canShowActions = (canEdit || canDelete || canReply) && !isEditing;
+  const canReport = !!onReport && !isMine && !isEditing;
+  const canShowActions = (canEdit || canDelete || canReply || canReport) && !isEditing;
   const isReply = !!msg.replyToID;
   const isEdited = new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 
@@ -352,6 +359,11 @@ export const ChatMessageBubble = ({
                 削除
               </DropdownMenuItem>
             )}
+            {canReport && (
+              <DropdownMenuItem icon={reportIcon} themedIcon danger onClick={() => { close(); onReport?.(); }}>
+                通報
+              </DropdownMenuItem>
+            )}
           </>
         )}
       </DropdownMenu>
@@ -392,8 +404,8 @@ export const ChatMessageBubble = ({
       {!isMine && isGroupStart && (
         <span
           className={styles.senderName}
-          onClick={isAnonymousAuthor ? undefined : () => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
-          style={{ cursor: isAnonymousAuthor ? 'default' : 'pointer' }}
+          onClick={() => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
+          style={{ cursor: 'pointer' }}
         >
           {msg.user.name}
         </span>
@@ -461,11 +473,16 @@ export const ChatMessageBubble = ({
                 <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
                   <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
                   {hasText && renderMessageBody(msg.content)}
+                  {filesRemoved && <span className={styles.filesRemoved}>{FILES_REMOVED_TEXT}</span>}
+                </div>
+              ) : hasText ? (
+                <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
+                  {renderMessageBody(msg.content)}
                 </div>
               ) : (
-                hasText && (
+                filesRemoved && (
                   <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                    {renderMessageBody(msg.content)}
+                    <span className={styles.filesRemoved}>{FILES_REMOVED_TEXT}</span>
                   </div>
                 )
               )}
@@ -502,11 +519,7 @@ export const ChatMessageBubble = ({
     <div className={`${styles.theirRow} ${styles.messageHighlightTarget} ${groupStartClass}`} data-message-id={msg.ID}>
       {/* 続きのメッセージではアイコンを出さないが、吹き出しの左端は揃えたいので場所だけ空ける */}
       {isGroupStart ? (
-        isAnonymousAuthor ? (
-          <Avatar name={msg.user.name} size={32} />
-        ) : (
-          <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
-        )
+        <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
       ) : (
         <span className={styles.avatarSpacer} aria-hidden="true" />
       )}

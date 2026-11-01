@@ -1,5 +1,6 @@
 import { type Question } from '../../api/question';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { AuthorLabel } from './AuthorLabel';
 import styles from '../QuestionBox.module.css';
 
 type Props = {
@@ -24,6 +25,7 @@ export const QuestionCard = ({ question, onOpen }: Props) => {
   return (
     <div role="button" tabIndex={0} className={styles.card} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}>
       <span className={styles.cardTopLine}>
+        <AuthorLabel user={question.user} />
         {!question.isAnswered && <span className={styles.unansweredBadge}>未回答</span>}
         <span className={styles.cardTime}>{formatRelativeTime(question.createdAt)}</span>
       </span>

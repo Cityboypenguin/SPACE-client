@@ -5,7 +5,7 @@ import {
   deleteMessage,
   type Message,
 } from '../api/message';
-import { uploadMediaFiles } from '../api/media';
+import { uploadMessageMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { AppSwal } from '../../../lib/swal';
 import { containsMentionText, type Mention, type MentionCandidate } from '../../../lib/mentions';
@@ -41,7 +41,7 @@ export const useChatActions = (
     setSending(true);
     setSendError('');
     try {
-      const mediaInputs = await uploadMediaFiles(selectedFiles);
+      const mediaInputs = await uploadMessageMediaFiles(selectedFiles);
       const trimmed = content.trim();
       // 選択後に本文を書き換えて "@表示名" が消えた相手は送らない（サーバーでも同じ検証をする）。
       const mentionUserIDs = pendingMentions

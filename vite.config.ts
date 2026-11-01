@@ -34,6 +34,11 @@ export default defineConfig({
         target: 'http://host.docker.internal:9000',
         changeOrigin: true,
       },
+      // DM の添付の置き場（compose.yaml の MESSAGE_MEDIA_CONTAINER）。
+      '/space-message-media': {
+        target: 'http://host.docker.internal:9000',
+        changeOrigin: true,
+      },
     },
   },
 })

@@ -1297,7 +1297,8 @@
   color: var(--color-warning);
 }
 
-.statusBadgeLarge[data-status='IN_PROGRESS'] {
+.statusBadgeLarge[data-status='IN_PROGRESS'],
+.statusBadgeLarge[data-status='REVIEWING'] {
   background: #dbeafe;
   color: #1d4ed8;
 }
@@ -1834,6 +1835,11 @@
 .userStatusBadge[data-status='active'] {
   background: #dcfce7;
   color: #16a34a;
+}
+
+.userStatusBadge[data-status='deactivated'] {
+  background: #f3f4f6;
+  color: #4b5563;
 }
 
 .definitionList {

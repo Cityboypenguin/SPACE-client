@@ -3,15 +3,16 @@ import useSWR from 'swr';
 import { getMentionCandidates } from '../../api/message';
 import { ChatMessageBubble } from '../molecules/ChatMessageBubble';
 import { ChatInput } from '../molecules/ChatInput';
+import { ReportModal } from './ReportModal';
 import { ChatDateSeparator } from '../../../../components/atoms/ChatDateSeparator';
 import { ChatUnreadSeparator } from '../../../../components/atoms/ChatUnreadSeparator';
 import { NewMessagesBadge } from '../molecules/NewMessagesBadge';
+import type { Message } from '../../api/message';
 import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
 import { useChatScroll } from '../../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../../hooks/useScrollToMessage';
-import { isAnonymousUser } from '../../lib/anonymous';
 import { findFirstUnreadIndex, isSameMessageGroup } from '../../lib/messageGrouping';
 import styles from '../ChatRoom.module.css';
 
@@ -38,6 +39,8 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
 
   const [mentionPrefix, setMentionPrefix] = useState<string | null>(null);
   const {data: mentionCandidates} = useSWR(room?.type==='community' && mentionPrefix!==null ? ['mention-candidates',roomId,mentionPrefix] : null, () => getMentionCandidates(roomId,mentionPrefix ?? ''));
+  const [reportingMessage, setReportingMessage] = useState<Message | null>(null);
+
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
@@ -61,7 +64,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
 
   // ルームを開いた時点の既読位置。開いている間に既読が進んでも区切り線は動かさない(DM・コミュニティと同じ)。
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
-  // 授業チャットは匿名表示のため、自分の投稿かどうかは user.ID ではなく isMine で判定する。
+  // 自分の投稿かどうかはサーバが付ける isMine で判定する。
   const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.isMine);
 
   const loadOlderWithScrollRestore = async () => {
@@ -125,13 +128,13 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
                   editable={roomWritable}
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
-                  isAnonymousAuthor={isAnonymousUser(msg.user)}
                   onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
                   onSaveEdit={() => handleSaveEdit(msg.ID)}
                   onCancelEdit={() => setEditingId(null)}
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
                   onReply={roomWritable ? () => setReplyTarget(msg) : undefined}
+                  onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
@@ -162,6 +165,16 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
           onMentionQueryChange={setMentionPrefix}
           replyTarget={replyTarget}
           onCancelReply={() => setReplyTarget(null)}
+        />
+      )}
+
+      {reportingMessage && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportingMessage(null)}
+          targetType="MESSAGE"
+          targetID={reportingMessage.ID}
+          postContent={reportingMessage.content}
         />
       )}
     </>

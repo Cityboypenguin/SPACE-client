@@ -13,6 +13,9 @@ export type Course = {
   year: number;
   semester: string;
   createdAt: string;
+  // シラバスから消えて廃止扱いになった授業。時間割の取得・保存でだけ選んでいる
+  // （検索には廃止済みの授業が出てこないので選ばない）。
+  discontinued?: boolean;
 };
 
 export type TimetableEntry = {
@@ -81,6 +84,7 @@ const MyTimetableDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
       }
     }
   }
@@ -117,6 +121,7 @@ const SetTimetableEntryColorDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
       }
     }
   }
@@ -147,6 +152,7 @@ const SetMyTimetableDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
       }
     }
   }

@@ -10,6 +10,14 @@ import styles from '../styles/AdminShared.module.css';
 
 const STATUS_FROZEN = 'frozen';
 
+// 利用者の状態の表示名。deactivated は退会手続き中（15日の猶予の間）で、本人が
+// ログインすれば取り消せる。完全に削除した人は個人情報が無いのでこの画面には来ない。
+const STATUS_LABELS: Record<string, string> = {
+  active: 'アクティブ',
+  frozen: '凍結中',
+  deactivated: '退会手続き中',
+};
+
 export const AdminUserDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -117,7 +125,7 @@ export const AdminUserDetailPage = () => {
 
         {/* 2カラムレイアウト: alignItems: 'stretch' で左右の高さを自動一致 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', marginBottom: '32px', alignItems: 'stretch' }}>
-          
+
           {/* 左カラム: プロフィール基本情報 ＋ ボタン */}
           <div>
             <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '16px' }}>
@@ -147,9 +155,9 @@ export const AdminUserDetailPage = () => {
                     <td className={styles.tableCellLarge}>
                       <span
                         className={styles.userStatusBadge}
-                        data-status={isFrozen ? 'frozen' : 'active'}
+                        data-status={user.status}
                       >
-                        {isFrozen ? '凍結中' : 'アクティブ'}
+                        {STATUS_LABELS[user.status] ?? user.status}
                       </span>
                     </td>
                   </tr>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import {
   listCourses,
+  listCourseYears,
   deleteCourse,
   type CourseWithRegisteredCount,
 } from '../api/courses';
@@ -11,6 +12,8 @@ import { usePersistedPageSize } from '../hooks/usePersistedPageSize';
 import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 import styles from '../styles/AdminShared.module.css';
+import syncStyles from '../styles/AdminCourseSync.module.css';
+import { TIMETABLE_DAYS } from '../../user/components/timetableConstants';
 
 // ソートキーの型定義
 type SortField = 'registeredCount' | 'messageCount' | 'createdAt';
@@ -26,6 +29,14 @@ export const AdminCourseChatListPage: React.FC = () => {
   const [pageSize, setPageSize] = usePersistedPageSize('courseChats');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [years, setYears] = useState<number[]>([]);
+  const [filterYear, setFilterYear] = useState('');
+  const [filterSemester, setFilterSemester] = useState('');
+  const [filterDayOfWeek, setFilterDayOfWeek] = useState('');
+  useEffect(() => {
+    listCourseYears().then(setYears).catch(() => setError('年度の取得に失敗しました'));
+  }, []);
 
   // 検索・ソート用ステート
   const [filterKeyword, setFilterKeyword] = useState('');
@@ -51,6 +62,9 @@ export const AdminCourseChatListPage: React.FC = () => {
       listCourses(
         {
           keyword: keyword.trim() || undefined,
+          year: filterYear ? Number(filterYear) : undefined,
+          semester: filterSemester || undefined,
+          dayOfWeek: filterDayOfWeek || undefined,
           sortBy,
           sortOrder: order,
         },
@@ -69,7 +83,7 @@ export const AdminCourseChatListPage: React.FC = () => {
         })
         .finally(() => setLoading(false));
     },
-    [pageSize, appliedKeyword, sortField, sortOrder]
+    [pageSize, appliedKeyword, sortField, sortOrder, filterYear, filterSemester, filterDayOfWeek]
   );
 
   useEffect(() => {
@@ -128,6 +142,20 @@ export const AdminCourseChatListPage: React.FC = () => {
           <h1 className={styles.titleLarge}>チャット管理</h1>
         </div>
 
+        <div className={styles.filterForm}>
+          <select aria-label="年度" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className={styles.select}>
+            <option value="">年度（すべて）</option>
+            {years.map((year) => <option key={year} value={year}>{year}年度</option>)}
+          </select>
+          <select aria-label="学期" value={filterSemester} onChange={(e) => setFilterSemester(e.target.value)} className={styles.select}>
+            <option value="">学期（すべて）</option>
+            {['前期', '後期', '通年'].map((term) => <option key={term} value={term}>{term}</option>)}
+          </select>
+          <select aria-label="曜日" value={filterDayOfWeek} onChange={(e) => setFilterDayOfWeek(e.target.value)} className={styles.select}>
+            <option value="">曜日（すべて）</option>
+            {TIMETABLE_DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
+          </select>
+        </div>
         {/* ツールバー & 検索・ソート */}
         <div className={styles.toolbar}>
           <form
@@ -215,6 +243,7 @@ export const AdminCourseChatListPage: React.FC = () => {
                     style={{ cursor: 'pointer' }}
                   >
                     <td className={styles.tableCellLarge} style={{ fontWeight: 500 }}>
+                      {chat.discontinued && <span className={syncStyles.discontinuedBadge}>廃止</span>}
                       {chat.courseName}
                       {chat.teacherName && (
                         <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '8px' }}>

@@ -1,6 +1,6 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
-import { storageUrl } from '../../../lib/storage';
+import { putToStorage, type PresignedUpload } from '../../../lib/storage';
 import { getUserToken } from './auth';
 import { MEDIA_FIELDS_RAW, type Media, type MediaInput } from '../../../lib/media';
 import { type Mention, type MentionCandidate } from '../../../lib/mentions';
@@ -48,6 +48,8 @@ export type Room = {
   type: string;
   user: MessageUser[];
   isMessagingDisabled: boolean;
+  // DM の相手が退会している（退会手続き中・削除済み）。入力欄を閉じた理由の出し分けに使う。
+  isPartnerWithdrawn: boolean;
   lastReadAt?: string | null;
   // 既読位置のメッセージID。未読ページの取得（messages(after:)）はこれを起点にする。
   // まだ一度も読んでいない、またはサーバ側で既読位置を時刻でしか持っていない行では null。
@@ -117,6 +119,7 @@ const GetOrCreateDMRoomDocument = graphql(`
         avatarUrl
       }
       isMessagingDisabled
+      isPartnerWithdrawn
       lastReadAt
       lastReadMessageID
       unreadCount
@@ -302,6 +305,7 @@ const GetRoomDocument = graphql(`
         avatarUrl
       }
       isMessagingDisabled
+      isPartnerWithdrawn
       lastReadAt
       lastReadMessageID
       unreadCount
@@ -325,6 +329,7 @@ const MyDMRoomsDocument = graphql(`
           avatarUrl
         }
         isMessagingDisabled
+        isPartnerWithdrawn
         lastReadAt
         lastReadMessageID
         unreadCount
@@ -352,6 +357,26 @@ const PresignedMediaUploadUrlDocument = graphql(`
     presignedMediaUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
+      headers {
+        name
+        value
+      }
+    }
+  }
+`);
+
+// DM の添付は投稿の添付とは別の置き場に入る（匿名読み取りを許していないコンテナー）。
+// 口が分かれているのはそのため。こちらを使わずに上げると、DM の添付が
+// URL を知る誰にでも見える場所へ入る。
+const PresignedMessageMediaUploadUrlDocument = graphql(`
+  query PresignedMessageMediaUploadUrl($contentType: String!) {
+    presignedMessageMediaUploadUrl(contentType: $contentType) {
+      uploadUrl
+      objectKey
+      headers {
+        name
+        value
+      }
     }
   }
 `);
@@ -468,11 +493,16 @@ export const getPresignedMediaUploadUrl = async (contentType: string) => {
   return await requestDoc(PresignedMediaUploadUrlDocument, { contentType }, token);
 };
 
-export const uploadFileToStorage = async (uploadUrl: string, file: File): Promise<void> => {
-  const res = await fetch(storageUrl(uploadUrl) ?? uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  });
+export const getPresignedMessageMediaUploadUrl = async (contentType: string) => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await requestDoc(PresignedMessageMediaUploadUrlDocument, { contentType }, token);
+};
+
+export const uploadFileToStorage = async (
+  presigned: PresignedUpload,
+  file: File,
+): Promise<void> => {
+  const res = await putToStorage(presigned, file, file.type);
   if (!res.ok) throw new Error('ファイルのアップロードに失敗しました。');
 };

@@ -96,8 +96,8 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
       let newAvatarKey: string | undefined = undefined;
       if (selectedFile) {
         const response = await getPresignedCommunityIconUploadUrl(selectedFile.type);
-        const { uploadUrl, objectKey } = response.presignedCommunityIconUploadUrl;
-        await uploadAvatarToStorage(uploadUrl, selectedFile);
+        const { objectKey } = response.presignedCommunityIconUploadUrl;
+        await uploadAvatarToStorage(response.presignedCommunityIconUploadUrl, selectedFile);
         newAvatarKey = objectKey;
       } else if (isIconDeleted) {
         newAvatarKey = 'none';
