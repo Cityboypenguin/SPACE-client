@@ -48,7 +48,8 @@ export const AdminMaintenancePage = () => {
         {loading ? (
           <p className={styles.cellMuted} style={{ padding: '20px 0' }}>読み込み中...</p>
         ) : (
-          <div className={styles.maintenanceCard}>
+          <>
+            <div className={styles.maintenanceCard}>
             <p className={styles.statusParagraph}>
               現在の状態：
               <strong className={maintenanceEnabled ? styles.errorText : styles.successText}>
@@ -72,7 +73,9 @@ export const AdminMaintenancePage = () => {
                 メンテナンス中はユーザーのログイン・操作がすべてブロックされます。
               </p>
             )}
-          </div>
+            </div>
+
+          </>
         )}
       </main>
 

@@ -66,6 +66,8 @@ type Documents = {
     "\n  mutation UpdateInquiryStatus($id: ID!, $status: InquiryStatus!) {\n    updateInquiryStatus(id: $id, status: $status) {\n      id\n      status\n    }\n  }\n": typeof types.UpdateInquiryStatusDocument,
     "\n  mutation ToggleMaintenanceMode($enabled: Boolean!) {\n    toggleMaintenanceMode(enabled: $enabled)\n  }\n": typeof types.ToggleMaintenanceModeDocument,
     "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n": typeof types.MaintenanceModeDocument,
+    "\n  mutation ToggleCourseChat($enabled: Boolean!) {\n    toggleCourseChat(enabled: $enabled)\n  }\n": typeof types.ToggleCourseChatDocument,
+    "\n  query CourseChatEnabled {\n    courseChatEnabled\n  }\n": typeof types.CourseChatEnabledDocument,
     "\n  query AdminNGWords {\n    adminNGWords {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n": typeof types.AdminNgWordsDocument,
     "\n  query AdminNGWordStats {\n    adminNGWordStats {\n      total\n      byWord {\n        pattern\n        count\n      }\n      byUser {\n        userID\n        name\n        accountID\n        count\n      }\n    }\n  }\n": typeof types.AdminNgWordStatsDocument,
     "\n  mutation AdminCreateNGWord($pattern: String!, $matchType: NGWordMatchType!) {\n    adminCreateNGWord(pattern: $pattern, matchType: $matchType) {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n": typeof types.AdminCreateNgWordDocument,
@@ -203,11 +205,9 @@ type Documents = {
     "\n  mutation UpdateMyProfile($input: UpdateMyProfileInput!) {\n    updateMyProfile(input: $input) {\n      username\n      bio\n      avatarUrl\n      createdAt\n      updatedAt\n      user {\n        ID\n        accountID\n        name\n        role\n        status\n        avatarUrl\n        createdAt\n        updatedAt\n      }\n    }\n  }\n": typeof types.UpdateMyProfileDocument,
     "\n  query Questions($roomID: ID!, $limit: Int, $offset: Int) {\n    questions(roomID: $roomID, limit: $limit, offset: $offset) {\n      items {\n        ID\n        roomID\n        user {\n          ID\n          name\n          accountID\n          avatarUrl\n        }\n        body\n        isAnswered\n        isMine\n        bestAnswer {\n          ID\n          body\n        }\n        answerCount\n        media {\n          ...MediaFields\n        }\n        addenda {\n          ID\n          body\n          createdAt\n        }\n        createdAt\n        updatedAt\n      }\n      total\n    }\n  }\n": typeof types.QuestionsDocument,
     "\n  mutation CreateQuestion($roomID: ID!, $body: String!, $mediaInputs: [MediaUploadInput!]) {\n    createQuestion(roomID: $roomID, body: $body, mediaInputs: $mediaInputs) {\n      ID\n      roomID\n      user {\n        ID\n        name\n        accountID\n        avatarUrl\n      }\n      body\n      isAnswered\n      isMine\n      bestAnswer {\n        ID\n        body\n      }\n      answerCount\n      media {\n        ...MediaFields\n      }\n      addenda {\n        ID\n        body\n        createdAt\n      }\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.CreateQuestionDocument,
-    "\n  mutation UpdateQuestion($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {\n    updateQuestion(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {\n      ID\n      body\n      media {\n        ...MediaFields\n      }\n      updatedAt\n    }\n  }\n": typeof types.UpdateQuestionDocument,
     "\n  mutation AnswerQuestion($questionID: ID!, $body: String!, $mediaInputs: [MediaUploadInput!]) {\n    answerQuestion(questionID: $questionID, body: $body, mediaInputs: $mediaInputs) {\n      ID\n      questionID\n      user {\n        ID\n        name\n        accountID\n        avatarUrl\n      }\n      body\n      media {\n        ...MediaFields\n      }\n      addenda {\n        ID\n        body\n        createdAt\n      }\n      createdAt\n      isMine\n      likeCount\n      likedByMe\n    }\n  }\n": typeof types.AnswerQuestionDocument,
     "\n  mutation SelectBestAnswer($questionID: ID!, $answerID: ID!) {\n    selectBestAnswer(questionID: $questionID, answerID: $answerID) {\n      ID\n      isAnswered\n      bestAnswer {\n        ID\n        body\n      }\n      updatedAt\n    }\n  }\n": typeof types.SelectBestAnswerDocument,
     "\n  mutation CancelBestAnswer($questionID: ID!) {\n    cancelBestAnswer(questionID: $questionID) {\n      ID\n      isAnswered\n      bestAnswer {\n        ID\n        body\n      }\n      updatedAt\n    }\n  }\n": typeof types.CancelBestAnswerDocument,
-    "\n  mutation UpdateAnswer($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {\n    updateAnswer(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {\n      ID\n      body\n      media {\n        ...MediaFields\n      }\n    }\n  }\n": typeof types.UpdateAnswerDocument,
     "\n  mutation DeleteAnswer($id: ID!) {\n    deleteAnswer(id: $id)\n  }\n": typeof types.DeleteAnswerDocument,
     "\n  mutation LikeAnswer($id: ID!) {\n    likeAnswer(id: $id) {\n      ID\n      likeCount\n      likedByMe\n    }\n  }\n": typeof types.LikeAnswerDocument,
     "\n  mutation UnlikeAnswer($id: ID!) {\n    unlikeAnswer(id: $id) {\n      ID\n      likeCount\n      likedByMe\n    }\n  }\n": typeof types.UnlikeAnswerDocument,
@@ -278,6 +278,8 @@ const documents: Documents = {
     "\n  mutation UpdateInquiryStatus($id: ID!, $status: InquiryStatus!) {\n    updateInquiryStatus(id: $id, status: $status) {\n      id\n      status\n    }\n  }\n": types.UpdateInquiryStatusDocument,
     "\n  mutation ToggleMaintenanceMode($enabled: Boolean!) {\n    toggleMaintenanceMode(enabled: $enabled)\n  }\n": types.ToggleMaintenanceModeDocument,
     "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n": types.MaintenanceModeDocument,
+    "\n  mutation ToggleCourseChat($enabled: Boolean!) {\n    toggleCourseChat(enabled: $enabled)\n  }\n": types.ToggleCourseChatDocument,
+    "\n  query CourseChatEnabled {\n    courseChatEnabled\n  }\n": types.CourseChatEnabledDocument,
     "\n  query AdminNGWords {\n    adminNGWords {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n": types.AdminNgWordsDocument,
     "\n  query AdminNGWordStats {\n    adminNGWordStats {\n      total\n      byWord {\n        pattern\n        count\n      }\n      byUser {\n        userID\n        name\n        accountID\n        count\n      }\n    }\n  }\n": types.AdminNgWordStatsDocument,
     "\n  mutation AdminCreateNGWord($pattern: String!, $matchType: NGWordMatchType!) {\n    adminCreateNGWord(pattern: $pattern, matchType: $matchType) {\n      ID\n      pattern\n      matchType\n      createdAt\n    }\n  }\n": types.AdminCreateNgWordDocument,
@@ -415,11 +417,9 @@ const documents: Documents = {
     "\n  mutation UpdateMyProfile($input: UpdateMyProfileInput!) {\n    updateMyProfile(input: $input) {\n      username\n      bio\n      avatarUrl\n      createdAt\n      updatedAt\n      user {\n        ID\n        accountID\n        name\n        role\n        status\n        avatarUrl\n        createdAt\n        updatedAt\n      }\n    }\n  }\n": types.UpdateMyProfileDocument,
     "\n  query Questions($roomID: ID!, $limit: Int, $offset: Int) {\n    questions(roomID: $roomID, limit: $limit, offset: $offset) {\n      items {\n        ID\n        roomID\n        user {\n          ID\n          name\n          accountID\n          avatarUrl\n        }\n        body\n        isAnswered\n        isMine\n        bestAnswer {\n          ID\n          body\n        }\n        answerCount\n        media {\n          ...MediaFields\n        }\n        addenda {\n          ID\n          body\n          createdAt\n        }\n        createdAt\n        updatedAt\n      }\n      total\n    }\n  }\n": types.QuestionsDocument,
     "\n  mutation CreateQuestion($roomID: ID!, $body: String!, $mediaInputs: [MediaUploadInput!]) {\n    createQuestion(roomID: $roomID, body: $body, mediaInputs: $mediaInputs) {\n      ID\n      roomID\n      user {\n        ID\n        name\n        accountID\n        avatarUrl\n      }\n      body\n      isAnswered\n      isMine\n      bestAnswer {\n        ID\n        body\n      }\n      answerCount\n      media {\n        ...MediaFields\n      }\n      addenda {\n        ID\n        body\n        createdAt\n      }\n      createdAt\n      updatedAt\n    }\n  }\n": types.CreateQuestionDocument,
-    "\n  mutation UpdateQuestion($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {\n    updateQuestion(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {\n      ID\n      body\n      media {\n        ...MediaFields\n      }\n      updatedAt\n    }\n  }\n": types.UpdateQuestionDocument,
     "\n  mutation AnswerQuestion($questionID: ID!, $body: String!, $mediaInputs: [MediaUploadInput!]) {\n    answerQuestion(questionID: $questionID, body: $body, mediaInputs: $mediaInputs) {\n      ID\n      questionID\n      user {\n        ID\n        name\n        accountID\n        avatarUrl\n      }\n      body\n      media {\n        ...MediaFields\n      }\n      addenda {\n        ID\n        body\n        createdAt\n      }\n      createdAt\n      isMine\n      likeCount\n      likedByMe\n    }\n  }\n": types.AnswerQuestionDocument,
     "\n  mutation SelectBestAnswer($questionID: ID!, $answerID: ID!) {\n    selectBestAnswer(questionID: $questionID, answerID: $answerID) {\n      ID\n      isAnswered\n      bestAnswer {\n        ID\n        body\n      }\n      updatedAt\n    }\n  }\n": types.SelectBestAnswerDocument,
     "\n  mutation CancelBestAnswer($questionID: ID!) {\n    cancelBestAnswer(questionID: $questionID) {\n      ID\n      isAnswered\n      bestAnswer {\n        ID\n        body\n      }\n      updatedAt\n    }\n  }\n": types.CancelBestAnswerDocument,
-    "\n  mutation UpdateAnswer($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {\n    updateAnswer(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {\n      ID\n      body\n      media {\n        ...MediaFields\n      }\n    }\n  }\n": types.UpdateAnswerDocument,
     "\n  mutation DeleteAnswer($id: ID!) {\n    deleteAnswer(id: $id)\n  }\n": types.DeleteAnswerDocument,
     "\n  mutation LikeAnswer($id: ID!) {\n    likeAnswer(id: $id) {\n      ID\n      likeCount\n      likedByMe\n    }\n  }\n": types.LikeAnswerDocument,
     "\n  mutation UnlikeAnswer($id: ID!) {\n    unlikeAnswer(id: $id) {\n      ID\n      likeCount\n      likedByMe\n    }\n  }\n": types.UnlikeAnswerDocument,
@@ -660,6 +660,14 @@ export function graphql(source: "\n  mutation ToggleMaintenanceMode($enabled: Bo
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n"): (typeof documents)["\n  query MaintenanceMode {\n    maintenanceMode\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ToggleCourseChat($enabled: Boolean!) {\n    toggleCourseChat(enabled: $enabled)\n  }\n"): (typeof documents)["\n  mutation ToggleCourseChat($enabled: Boolean!) {\n    toggleCourseChat(enabled: $enabled)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query CourseChatEnabled {\n    courseChatEnabled\n  }\n"): (typeof documents)["\n  query CourseChatEnabled {\n    courseChatEnabled\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -1211,10 +1219,6 @@ export function graphql(source: "\n  mutation CreateQuestion($roomID: ID!, $body
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation UpdateQuestion($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {\n    updateQuestion(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {\n      ID\n      body\n      media {\n        ...MediaFields\n      }\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateQuestion($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {\n    updateQuestion(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {\n      ID\n      body\n      media {\n        ...MediaFields\n      }\n      updatedAt\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
 export function graphql(source: "\n  mutation AnswerQuestion($questionID: ID!, $body: String!, $mediaInputs: [MediaUploadInput!]) {\n    answerQuestion(questionID: $questionID, body: $body, mediaInputs: $mediaInputs) {\n      ID\n      questionID\n      user {\n        ID\n        name\n        accountID\n        avatarUrl\n      }\n      body\n      media {\n        ...MediaFields\n      }\n      addenda {\n        ID\n        body\n        createdAt\n      }\n      createdAt\n      isMine\n      likeCount\n      likedByMe\n    }\n  }\n"): (typeof documents)["\n  mutation AnswerQuestion($questionID: ID!, $body: String!, $mediaInputs: [MediaUploadInput!]) {\n    answerQuestion(questionID: $questionID, body: $body, mediaInputs: $mediaInputs) {\n      ID\n      questionID\n      user {\n        ID\n        name\n        accountID\n        avatarUrl\n      }\n      body\n      media {\n        ...MediaFields\n      }\n      addenda {\n        ID\n        body\n        createdAt\n      }\n      createdAt\n      isMine\n      likeCount\n      likedByMe\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -1224,10 +1228,6 @@ export function graphql(source: "\n  mutation SelectBestAnswer($questionID: ID!,
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation CancelBestAnswer($questionID: ID!) {\n    cancelBestAnswer(questionID: $questionID) {\n      ID\n      isAnswered\n      bestAnswer {\n        ID\n        body\n      }\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  mutation CancelBestAnswer($questionID: ID!) {\n    cancelBestAnswer(questionID: $questionID) {\n      ID\n      isAnswered\n      bestAnswer {\n        ID\n        body\n      }\n      updatedAt\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  mutation UpdateAnswer($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {\n    updateAnswer(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {\n      ID\n      body\n      media {\n        ...MediaFields\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateAnswer($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {\n    updateAnswer(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {\n      ID\n      body\n      media {\n        ...MediaFields\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

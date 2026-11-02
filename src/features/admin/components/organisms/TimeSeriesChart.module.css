@@ -74,7 +74,7 @@
 .toggleButton[data-active='true'] {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-bg-elevated);
 }
 
 .toggleButton[data-active='true'][data-metric='posts'] {

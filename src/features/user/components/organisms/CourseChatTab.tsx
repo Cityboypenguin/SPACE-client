@@ -132,7 +132,8 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThre
                   msg={msg}
                   isMine={msg.isMine}
                   canDelete={msg.isMine}
-                  editable={roomWritable}
+                  // 授業チャットは編集できない（スレッドは親のルームと同じ type を持つ）。
+                  editable={roomWritable && room?.type !== 'course'}
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
                   onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
