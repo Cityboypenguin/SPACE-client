@@ -46,6 +46,7 @@ jobs:
       MESSAGE_ENCRYPTION_KEY: OaI4511ozclMgQhEkD7NBgWeQmgsyjRp2jI2o+LRN3g=
       ACTIVITY_ARCHIVE_HMAC_KEY: e2e-only-activity-archive-hmac-key
       OPAQUE_ID_SECRET: e2e-only-opaque-id-secret
+      # このテストはファイルを保存しないので、置き場は起動せず、届かない宛先のままにする。
       MINIO_ENDPOINT: 127.0.0.1:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
@@ -100,13 +101,6 @@ jobs:
         with:
           node-version: 20
           cache: npm
-
-      - name: Start MinIO
-        run: |
-          docker run -d --name minio --network host -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin minio/minio server /data
-          for i in $(seq 1 30); do curl -sf http://127.0.0.1:9000/minio/health/live && break; sleep 1; done
-          docker run --rm --network host --entrypoint sh minio/mc -c \
-            "mc alias set l http://127.0.0.1:9000 minioadmin minioadmin && mc mb l/space-storage l/space-storage-private l/space-message-media && mc anonymous set download l/space-storage"
 
       - name: Start the server
         working-directory: server
