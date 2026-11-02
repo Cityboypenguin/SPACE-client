@@ -187,7 +187,6 @@ export const getMyProfile = async () => {
 export const updateMyProfile = async (input: {
   accountID?: string;
   name?: string;
-  email?: string;
   password?: string;
   currentPassword?: string;
 }) => {

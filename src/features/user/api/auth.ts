@@ -25,8 +25,8 @@ const LoginUserDocument = graphql(`
 `);
 
 const LogoutUserDocument = graphql(`
-  mutation LogoutUser($token: String!) {
-    logoutUser(token: $token)
+  mutation LogoutUser($token: String!, $refreshToken: String) {
+    logoutUser(token: $token, refreshToken: $refreshToken)
   }
 `);
 
@@ -59,8 +59,10 @@ export const loginUser = async (email: string, password: string) => {
   return await requestDoc(LoginUserDocument, { input: { email, password } });
 };
 
+// リフレッシュトークンも渡して止めてもらう（渡さないと、ログアウト後も更新に使えてしまう）。
 export const logoutUser = async (token: string) => {
-  return await requestDoc(LogoutUserDocument, { token });
+  const refreshToken = localStorage.getItem(USER_REFRESH_TOKEN_KEY);
+  return await requestDoc(LogoutUserDocument, { token, refreshToken });
 };
 
 export const sendEmailOTP = async (email: string) => {

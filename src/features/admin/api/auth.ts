@@ -19,8 +19,8 @@ const LoginAdminDocument = graphql(`
 `);
 
 const LogoutAdminDocument = graphql(`
-  mutation LogoutAdmin($token: String!) {
-    logoutAdministrator(token: $token)
+  mutation LogoutAdmin($token: String!, $refreshToken: String) {
+    logoutAdministrator(token: $token, refreshToken: $refreshToken)
   }
 `);
 
@@ -28,6 +28,8 @@ export const loginAdmin = async (email: string, password: string) => {
   return await requestDoc(LoginAdminDocument, { input: { email, password } });
 };
 
+// リフレッシュトークンも渡して止めてもらう（渡さないと、ログアウト後も更新に使えてしまう）。
 export const logoutAdmin = async (token: string) => {
-  return await requestDoc(LogoutAdminDocument, { token });
+  const refreshToken = localStorage.getItem(ADMIN_REFRESH_TOKEN_KEY);
+  return await requestDoc(LogoutAdminDocument, { token, refreshToken });
 };

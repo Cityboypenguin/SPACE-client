@@ -15,7 +15,7 @@ import { courseQuestionBoxLink, isAddendumNotification, isMessageJumpNotificatio
 import { getUnreadNotificationCount, issueNotificationStreamTicket } from '../api/notification';
 
 import { SSE_URL, refreshUserAccessToken } from '../../../lib/graphql';
-import { USER_TOKEN_KEY } from '../../../lib/authStorage';
+import { USER_ID_KEY, USER_TOKEN_KEY } from '../../../lib/authStorage';
 
 type SSENotificationPayload = {
   id: string;
@@ -40,6 +40,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [pendingTerms, setPendingTerms] = useState<TermsOfService | null>(null);
   const [consentChecking, setConsentChecking] = useState(false);
   const addToastRef = useRef(addToast);
+  // 最後に受け取った SSE イベントの番号。つなぎ直すときに ?lastEventId= で渡すと、
+  // サーバーが切れていた間のイベント（直近 100 件・10 分）を送り直してくれる。
+  // ブラウザも Last-Event-ID を覚えるが、それは同じ EventSource の中だけで、
+  // チケットを取り直して張り直す新しい EventSource には引き継がれない。
+  // 接続の effect はトークンが更新されるたびに張り直されるので、effect の外（ref）に持つ。
+  // 別の人がログインしたら番号を捨てる（番号は利用者ごとに数えている）。
+  const lastEventRef = useRef<{ userId: string | null; id: number }>({ userId: null, id: -1 });
 
   useEffect(() => {
     addToastRef.current = addToast;
@@ -122,6 +129,14 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     // 初回接続は [token] useEffect 側がすでに consent を確認済みなのでスキップする
     let isFirstConnect = true;
 
+    const owner = localStorage.getItem(USER_ID_KEY);
+    if (lastEventRef.current.userId !== owner) lastEventRef.current = { userId: owner, id: -1 };
+    // 番号が付くのは利用者ごとのイベント（notification・room_changed）だけ。
+    const rememberEventId = (e: MessageEvent) => {
+      const n = Number(e.lastEventId);
+      if (Number.isInteger(n) && n > lastEventRef.current.id) lastEventRef.current.id = n;
+    };
+
     // 接続は「チケットを1枚もらう → それを付けて EventSource を張る」の2段階。
     //
     // 以前はアクセストークンをそのまま ?token= に載せていたが、URL はアクセスログ・
@@ -152,7 +167,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       }
       if (stopped) return; // 発行を待っている間に cleanup された
 
-      const source = new EventSource(`${SSE_URL}?ticket=${encodeURIComponent(ticket)}`);
+      const lastEventId = lastEventRef.current.id;
+      const resume = lastEventId >= 0 ? `&lastEventId=${lastEventId}` : '';
+      const source = new EventSource(`${SSE_URL}?ticket=${encodeURIComponent(ticket)}${resume}`);
       es = source;
 
       source.addEventListener('connected', () => {
@@ -193,6 +210,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       // 旧 unread_room は購読しない: サーバはもう送らないし、仮に古いサーバへ繋いでも
       // unreadCount だけを頼りにした更新は今の一覧の作りと噛み合わない。
       source.addEventListener('room_changed', (e: MessageEvent) => {
+        rememberEventId(e);
         try {
           emitRoomChanged(JSON.parse(e.data as string) as RoomChangedEvent);
         } catch {
@@ -201,6 +219,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       });
 
       source.addEventListener('notification', (e: MessageEvent) => {
+        rememberEventId(e);
         console.log('[SSE] notification raw data:', e.data);
         try {
           const payload = JSON.parse(e.data as string) as SSENotificationPayload & { replayed?: boolean };
