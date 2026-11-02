@@ -15,6 +15,8 @@ import { AdminPagination } from '../components/molecules/AdminPagination';
 import styles from '../styles/AdminShared.module.css';
 import syncStyles from '../styles/AdminCourseSync.module.css';
 import { TIMETABLE_DAYS } from '../../user/components/timetableConstants';
+import { ADMIN_TOKEN_KEY } from '../api/auth';
+import { getCourseChatEnabled, toggleCourseChat } from '../api/maintenance';
 
 // ソートキーの型定義
 type SortField = 'registeredCount' | 'messageCount' | 'createdAt';
@@ -46,6 +48,10 @@ export const AdminCourseChatListPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [courseChatEnabled, setCourseChatEnabled] = useState(true);
+  const [courseChatLoading, setCourseChatLoading] = useState(true);
+  const [courseChatToggling, setCourseChatToggling] = useState(false);
+  const [showCourseChatConfirm, setShowCourseChatConfirm] = useState(false);
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -90,6 +96,34 @@ export const AdminCourseChatListPage: React.FC = () => {
   useEffect(() => {
     void Promise.resolve().then(() => loadPage(0));
   }, [loadPage]);
+
+  useEffect(() => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!token) {
+      setCourseChatLoading(false);
+      return;
+    }
+    getCourseChatEnabled(token)
+      .then(setCourseChatEnabled)
+      .catch(() => setError('授業内チャットの状態取得に失敗しました'))
+      .finally(() => setCourseChatLoading(false));
+  }, []);
+
+  const handleCourseChatToggle = async () => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!token) return;
+    setShowCourseChatConfirm(false);
+    setCourseChatToggling(true);
+    setError('');
+    try {
+      const next = await toggleCourseChat(!courseChatEnabled, token);
+      setCourseChatEnabled(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '授業内チャットの切り替えに失敗しました');
+    } finally {
+      setCourseChatToggling(false);
+    }
+  };
 
   // 検索フォーム送信ハンドラー
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -178,6 +212,17 @@ export const AdminCourseChatListPage: React.FC = () => {
           </form>
 
           <div className={styles.toolbarGroup}>
+            <span className={courseChatEnabled ? styles.successText : styles.errorText}>
+              授業内チャット: {courseChatLoading ? '確認中...' : courseChatEnabled ? '利用可能' : '停止中'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowCourseChatConfirm(true)}
+              disabled={courseChatLoading || courseChatToggling}
+              className={courseChatEnabled ? styles.dangerButtonSmall : styles.primaryButton}
+            >
+              {courseChatToggling ? '更新中...' : courseChatEnabled ? '一括停止' : 'サービス再開'}
+            </button>
             {/* ソート用のドロップダウン選択肢 */}
             <select
               value={`${sortField}-${sortOrder}`}
@@ -287,6 +332,36 @@ export const AdminCourseChatListPage: React.FC = () => {
           />
         )}
       </main>
+
+      {showCourseChatConfirm && (
+        <div
+          className={styles.modalOverlay}
+          onClick={(event) => { if (event.target === event.currentTarget) setShowCourseChatConfirm(false); }}
+        >
+          <div className={styles.confirmDialog}>
+            <p className={styles.confirmTitle}>
+              {courseChatEnabled ? '授業内チャットを停止しますか？' : '授業内チャットを再開しますか？'}
+            </p>
+            <p className={styles.confirmText}>
+              {courseChatEnabled
+                ? '停止すると、授業チャット・質問箱・投票が利用できなくなります。時間割は引き続き利用できます。'
+                : '授業チャット・質問箱・投票を再び利用できるようにします。'}
+            </p>
+            <div className={styles.confirmActions}>
+              <button type="button" onClick={() => setShowCourseChatConfirm(false)} className={styles.secondaryButtonLarge}>
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleCourseChatToggle(); }}
+                className={`${styles.primaryButtonLargeRounded} ${courseChatEnabled ? styles.dangerFillButton : styles.successButton}`}
+              >
+                {courseChatEnabled ? '停止する' : '再開する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
