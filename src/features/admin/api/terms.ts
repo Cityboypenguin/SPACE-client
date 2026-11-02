@@ -34,6 +34,7 @@ export const uploadTermsDocument = async (uploadUrl: string, file: File): Promis
   const buffer = await file.arrayBuffer();
   const res = await fetch(storageUrl(uploadUrl) ?? uploadUrl, {
     method: 'PUT',
+    headers: { 'Content-Type': 'text/markdown' },
     body: new Blob([buffer]),
   });
   if (!res.ok) throw new Error(`upload failed: ${res.status}`);
