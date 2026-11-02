@@ -13,6 +13,7 @@ import {
   type Question,
   type Poll,
 } from '../api/courses';
+import { reactionLabel } from '../../user/constants/reactionStamps';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import styles from '../styles/AdminShared.module.css';
@@ -231,7 +232,12 @@ export const AdminCourseChatDetailPage = () => {
                               <div>{question.user.name}</div>
                               <span className={styles.subText}>@{question.user.accountID}</span>
                             </td>
-                            <td className={styles.cellWrap}>{question.body}</td>
+                            <td className={styles.cellWrap}>
+                              {question.body}
+                              {question.addenda.map((addendum) => (
+                                <div key={addendum.ID} className={styles.subText}>追記: {addendum.body}</div>
+                              ))}
+                            </td>
                             <td>{question.isAnswered ? '解決済み' : '未解決'}</td>
                             <td>
                               <button
@@ -346,7 +352,9 @@ export const AdminCourseChatDetailPage = () => {
                             <div className={styles.userName}>{message.user.name}</div>
                             <span className={styles.subText}>@{message.user.accountID}</span>
                           </td>
-                          <td className={styles.cellWrap}>{message.content}</td>
+                          <td className={styles.cellWrap}>
+                            {message.stampID ? `スタンプ（${reactionLabel(message.stampID)}）` : message.content}
+                          </td>
                           <td className={styles.dateCell}>
                             {new Date(message.createdAt).toLocaleString('ja-JP')}
                           </td>

@@ -21,7 +21,12 @@ const NAV_ITEMS = [
   { label: 'コミュニティ管理', path: '/admin/communities', icon: communityIcon, iconSize: 20 },
   { label: '投稿管理', path: '/admin/posts', icon: postIcon, iconSize: 20 },
   { label: '授業管理', path: '/admin/courses', icon: timetableIcon, iconSize: 20 },
-  { label: '授業内チャット管理', path: '/admin/course-chats', emoji: '💬' },
+  {
+    label: '授業内チャット管理',
+    path: '/admin/course-chats',
+    emoji: '💬',
+    alsoActive: ['/admin/course-chat-images', '/admin/ng-words'],
+  },
   { label: '通報管理', path: '/admin/reports', icon: reportIcon, iconSize: 20 },
   { label: '問い合わせ管理', path: '/admin/inquiries', emoji: '✉️' },
   { label: 'お知らせ管理', path: '/admin/announcements', emoji: '📢' },
@@ -96,9 +101,12 @@ export const AdminHeader = () => {
     navigate('/admin/login');
   };
 
-  const isNavActive = (path: string, exact?: boolean) => {
+  const isNavActive = (path: string, exact?: boolean, alsoActive?: string[]) => {
     if (path === '/admin') {
       return location.pathname === '/admin' || location.pathname === '/admin/';
+    }
+    if (alsoActive?.some((p) => location.pathname.startsWith(p))) {
+      return true;
     }
     if (exact) {
       return location.pathname === path;
@@ -130,7 +138,7 @@ export const AdminHeader = () => {
 
         <nav className={styles.nav}>
           {NAV_ITEMS.map((item) => {
-            const isActive = isNavActive(item.path, item.exact);
+            const isActive = isNavActive(item.path, item.exact, item.alsoActive);
 
             const badgeCount =
               item.label === '問い合わせ管理' ? pendingInquiryCount :

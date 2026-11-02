@@ -29,6 +29,8 @@ const AdminTermsDetailPage = lazy(() => import('../pages/AdminTermsDetailPage').
 const AdminMaintenancePage = lazy(() => import('../pages/AdminMaintenancePage').then((m) => ({ default: m.AdminMaintenancePage })));
 const AdminAnalyticsPage = lazy(() => import('../pages/AdminAnalyticsPage').then((m) => ({ default: m.AdminAnalyticsPage })));
 const AdminCourseManagementPage = lazy(() => import('../pages/AdminCourseManagementPage').then((m) => ({ default: m.AdminCourseManagementPage })));
+const AdminNGWordsPage = lazy(() => import('../pages/AdminNGWordsPage').then((m) => ({ default: m.AdminNGWordsPage })));
+const AdminCourseChatImagesPage = lazy(() => import('../pages/AdminCourseChatImagesPage').then((m) => ({ default: m.AdminCourseChatImagesPage })));
 const AdminCourseChatListPage = lazy(() => import('../pages/AdminCourseChatListpage').then((m) => ({ default: m.AdminCourseChatListPage })));
 const AdminCourseChatDetailPage = lazy(() => import('../pages/AdminCourseChatDetailPage').then((m) => ({ default: m.AdminCourseChatDetailPage })));
 const AdminCourseSyncPage = lazy(() => import('../pages/AdminCourseSyncPage').then((m) => ({ default: m.AdminCourseSyncPage })));
@@ -235,6 +237,22 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminCourseManagementPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="ng-words"
+        element={
+          <AdminProtectedRoute>
+            <AdminNGWordsPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="course-chat-images"
+        element={
+          <AdminProtectedRoute>
+            <AdminCourseChatImagesPage />
           </AdminProtectedRoute>
         }
       />

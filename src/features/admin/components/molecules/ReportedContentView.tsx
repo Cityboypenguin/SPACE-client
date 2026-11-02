@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { ReportedContent } from '../../api/report';
 import { storageUrl } from '../../../../lib/storage';
+import { reactionLabel } from '../../../user/constants/reactionStamps';
 import styles from '../../styles/AdminShared.module.css';
 
 const roomTypeJa: Record<string, string> = {
@@ -45,6 +46,15 @@ export const ReportedContentView = ({ content }: { content: ReportedContent }) =
         {content.content}
       </div>
     )}
+    {content.stampID && (
+      <div style={{ marginTop: '8px' }}>スタンプ（{reactionLabel(content.stampID)}）</div>
+    )}
+    {content.addenda.map((addendum, i) => (
+      <div key={i} style={{ marginTop: '8px' }}>
+        <div className={styles.cellMuted}>追記</div>
+        <div className={styles.preWrapContent} style={{ overflowWrap: 'anywhere' }}>{addendum}</div>
+      </div>
+    ))}
     {content.pollOptions.length > 0 && (
       <ul style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
         {content.pollOptions.map((option, i) => (

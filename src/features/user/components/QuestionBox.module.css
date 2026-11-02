@@ -685,3 +685,64 @@
     padding-inline: 1.25rem;
   }
 }
+
+/* 質問・回答への追記。元の本文とは別の枠で、足された順に並べる。 */
+.addendumSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.addendumItem {
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 6px 6px 0;
+  background: var(--color-bg-elevated);
+}
+
+.addendumLabel {
+  display: inline-block;
+  margin-bottom: 0.15rem;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.addendumBody {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.addendumTime {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.addendumOpenButton {
+  align-self: flex-start;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.addendumOpenButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.addendumForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

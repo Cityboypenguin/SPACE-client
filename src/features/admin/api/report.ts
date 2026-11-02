@@ -27,6 +27,8 @@ export type ReportedContent = {
   authorAccountID: string | null;
   content: string;
   media: { ID: string; url: string; contentType: string }[];
+  stampID: string | null;
+  addenda: string[];
   parentBody: string | null;
   pollOptions: string[];
   createdAt: string;
@@ -61,6 +63,8 @@ const SearchReportsDocument = graphql(`
             url
             contentType
           }
+          stampID
+          addenda
           parentBody
           pollOptions
           createdAt
@@ -100,6 +104,8 @@ const GetReportDocument = graphql(`
           url
           contentType
         }
+        stampID
+        addenda
         parentBody
         pollOptions
         createdAt

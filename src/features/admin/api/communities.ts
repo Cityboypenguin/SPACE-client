@@ -18,6 +18,8 @@ export type Message = {
   roomID: string;
   user: MessageUser;
   content: string;
+  // スタンプだけのメッセージのスタンプのID。このとき content は空。
+  stampID?: string | null;
   media: Media[];
   createdAt: string;
   updatedAt: string;
@@ -229,6 +231,7 @@ const ListRoomMessagesDocument = graphql(`
           avatarUrl
         }
         content
+        stampID
         media {
           ...MediaFields
         }

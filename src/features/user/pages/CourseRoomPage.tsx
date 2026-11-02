@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -32,11 +32,22 @@ export const CourseRoomPage = () => {
   // 返信通知からは ?messageID=... 付きで開かれ、そのメッセージを中心に表示する。
   const [searchParams] = useSearchParams();
   const aroundMessageId = searchParams.get('messageID');
-  const [activeTab, setActiveTab] = useState<TabKey>('chat');
+  // 追記の通知からは ?tab=question&questionID=... 付きで開かれ、その質問を開く。
+  const tabParam = searchParams.get('tab');
+  const questionIDParam = searchParams.get('questionID');
+  const [activeTab, setActiveTab] = useState<TabKey>(tabParam === 'question' ? 'question' : 'chat');
   const [isPollView, setIsPollView] = useState(false);
   // 質問箱で開いていた質問は、チャットタブへ切り替えて戻ってきても復元できるよう
   // QuestionList ではなくここで保持する(QuestionList はタブ切替のたびにアンマウントされる)。
-  const [selectedQuestionID, setSelectedQuestionID] = useState<string | null>(null);
+  const [selectedQuestionID, setSelectedQuestionID] = useState<string | null>(tabParam === 'question' ? questionIDParam : null);
+  // 同じ授業のページを開いたまま追記の通知を開いたとき（URL だけが変わる）も、その質問へ移る。
+  useEffect(() => {
+    if (tabParam !== 'question') return;
+    void Promise.resolve().then(() => {
+      setActiveTab('question');
+      setSelectedQuestionID(questionIDParam);
+    });
+  }, [tabParam, questionIDParam]);
   useResetViewportScroll([roomId]);
 
   const pollsState = useCoursePolls(roomId);

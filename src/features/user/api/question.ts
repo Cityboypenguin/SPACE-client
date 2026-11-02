@@ -6,12 +6,20 @@ import { MEDIA_FIELDS_RAW } from '../../../lib/media';
 
 export type { Media, MediaInput };
 
+// 質問・回答への追記1件。元の本文は変えず、別の枠に足したもの。
+export type Addendum = {
+  ID: string;
+  body: string;
+  createdAt: string;
+};
+
 export type Answer = {
   ID: string;
   questionID: string;
   user: MessageUser;
   body: string;
   media: Media[];
+  addenda: Addendum[];
   createdAt: string;
   isMine: boolean;
   likeCount: number;
@@ -33,10 +41,18 @@ export type Question = {
   // 毎回20件ぶん読んでいた。answerCount は COUNT(*) 1本で、行は取らない。
   answerCount: number;
   media: Media[];
+  addenda: Addendum[];
   createdAt: string;
   updatedAt: string;
   isMine: boolean;
 };
+
+// 追記のフィールド選択（購読の文字列からも使う）。
+export const ADDENDUM_FIELDS_RAW = `
+  ID
+  body
+  createdAt
+`;
 
 // useCourseQuestions.ts の WebSocket サブスクリプション（codegen 対象外の
 // subscribeToGraphQL 経由）が参照するため、フィールド選択の文字列定数を公開する
@@ -59,6 +75,7 @@ export const QUESTION_FIELDS = `
   }
   answerCount
   media {${MEDIA_FIELDS_RAW}}
+  addenda {${ADDENDUM_FIELDS_RAW}}
   createdAt
   updatedAt
 `;
@@ -74,6 +91,7 @@ export const ANSWER_FIELDS = `
   }
   body
   media {${MEDIA_FIELDS_RAW}}
+  addenda {${ADDENDUM_FIELDS_RAW}}
   createdAt
   isMine
   likeCount
@@ -102,6 +120,11 @@ const QuestionsDocument = graphql(`
         answerCount
         media {
           ...MediaFields
+        }
+        addenda {
+          ID
+          body
+          createdAt
         }
         createdAt
         updatedAt
@@ -132,6 +155,11 @@ const CreateQuestionDocument = graphql(`
       answerCount
       media {
         ...MediaFields
+      }
+      addenda {
+        ID
+        body
+        createdAt
       }
       createdAt
       updatedAt
@@ -172,6 +200,11 @@ const AnswerQuestionDocument = graphql(`
       body
       media {
         ...MediaFields
+      }
+      addenda {
+        ID
+        body
+        createdAt
       }
       createdAt
       isMine
@@ -268,12 +301,77 @@ const QuestionAnswersDocument = graphql(`
           media {
             ...MediaFields
           }
+          addenda {
+            ID
+            body
+            createdAt
+          }
           createdAt
           isMine
           likeCount
           likedByMe
         }
         total
+      }
+    }
+  }
+`);
+
+// 通知から開くなど、一覧にまだ読み込まれていない質問を1件だけ取る。
+const QuestionByIdDocument = graphql(`
+  query QuestionById($id: ID!) {
+    question(id: $id) {
+      ID
+      roomID
+      user {
+        ID
+        name
+        accountID
+        avatarUrl
+      }
+      body
+      isAnswered
+      isMine
+      bestAnswer {
+        ID
+        body
+      }
+      answerCount
+      media {
+        ...MediaFields
+      }
+      addenda {
+        ID
+        body
+        createdAt
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`);
+
+const AddQuestionAddendumDocument = graphql(`
+  mutation AddQuestionAddendum($questionID: ID!, $body: String!) {
+    addQuestionAddendum(questionID: $questionID, body: $body) {
+      ID
+      addenda {
+        ID
+        body
+        createdAt
+      }
+    }
+  }
+`);
+
+const AddAnswerAddendumDocument = graphql(`
+  mutation AddAnswerAddendum($answerID: ID!, $body: String!) {
+    addAnswerAddendum(answerID: $answerID, body: $body) {
+      ID
+      addenda {
+        ID
+        body
+        createdAt
       }
     }
   }
@@ -290,6 +388,25 @@ export type AnswerLikeUpdate = Pick<Answer, 'ID' | 'likeCount' | 'likedByMe'>;
 export type AnswerBodyUpdate = Pick<Answer, 'ID' | 'body' | 'media'>;
 // updateQuestion の応答は本文と添付写真だけを含む部分オブジェクト。
 export type QuestionBodyUpdate = Pick<Question, 'ID' | 'body' | 'media' | 'updatedAt'>;
+
+// addQuestionAddendum / addAnswerAddendum の応答は、追記の一覧だけを含む部分オブジェクト。
+export type QuestionAddendaUpdate = Pick<Question, 'ID' | 'addenda'>;
+export type AnswerAddendaUpdate = Pick<Answer, 'ID' | 'addenda'>;
+
+export const addQuestionAddendum = async (questionID: string, body: string): Promise<QuestionAddendaUpdate> => {
+  const data = await requestDoc(AddQuestionAddendumDocument, { questionID, body }, getUserToken());
+  return data.addQuestionAddendum;
+};
+
+export const addAnswerAddendum = async (answerID: string, body: string): Promise<AnswerAddendaUpdate> => {
+  const data = await requestDoc(AddAnswerAddendumDocument, { answerID, body }, getUserToken());
+  return data.addAnswerAddendum;
+};
+
+export const getQuestion = async (id: string): Promise<Question | null> => {
+  const data = await requestDoc(QuestionByIdDocument, { id }, getUserToken());
+  return data.question ?? null;
+};
 
 export const listQuestions = async (roomID: string, limit = 50, offset = 0): Promise<QuestionPage> => {
   const data = await requestDoc(QuestionsDocument, { roomID, limit, offset }, getUserToken());

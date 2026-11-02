@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { listMessages, getRoom, markRoomAsRead, MESSAGE_FIELDS, type Message, type Room } from '../api/message';
+import { listMessages, getRoom, markRoomAsRead, MESSAGE_FIELDS, type Message, type MessageReaction, type Room } from '../api/message';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 import { toUserMessage } from '../../../lib/errorMessages';
 
@@ -390,6 +390,16 @@ export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMes
     newestIDRef.current = msg.ID;
   };
 
+  // リアクションを付け外しした直後に、その結果で表示を更新する。messageUpdated の購読でも
+  // 同じ内容が届くが、接続が切れている間やイベントを取りこぼしたときに、自分の操作の結果が
+  // 画面に出ないままになるのを防ぐ（購読と同じ内容で上書きするだけなので、重ねて届いても害はない）。
+  const setMessageReactions = useCallback((messageID: string, reactions: MessageReaction[]) => {
+    setState((prev) => ({
+      ...prev,
+      messages: prev.messages.map((m) => (m.ID === messageID ? { ...m, reactions } : m)),
+    }));
+  }, []);
+
   return {
     ...state,
     hasMoreBefore,
@@ -399,6 +409,7 @@ export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMes
     loadOlderMessages,
     loadNewerMessages,
     addMessage,
+    setMessageReactions,
     pendingScrollId,
     jumpToMessage,
     clearPendingScroll,

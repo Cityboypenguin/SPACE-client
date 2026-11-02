@@ -11,6 +11,8 @@ import { NewMessagesBadge } from '../molecules/NewMessagesBadge';
 import type { Message } from '../../api/message';
 import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
+import { useMessageReactionEmojis } from '../../hooks/useMessageReactionEmojis';
+import { isStampReaction } from '../../constants/reactionStamps';
 import { useChatScroll } from '../../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../../hooks/useScrollToMessage';
@@ -27,7 +29,7 @@ type Props = {
 
 export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThreadCreation = false }: Props) => {
   const threadActions = useThreadActions();
-  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
+  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, setMessageReactions, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -37,8 +39,10 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThre
     editContent, setEditContent,
     replyTarget, setReplyTarget,
     addPendingMention,
-    handleSend, handleDelete, handleSaveEdit,
-  } = useChatActions(roomId, addMessage);
+    handleSend, handleSendStamp, handleDelete, handleSaveEdit, handleToggleReaction,
+  } = useChatActions(roomId, addMessage, setMessageReactions);
+  // 書き込めるルームだけ、リアクションを付け外しできる（閲覧のみのルームは集計の表示だけ）。
+  const reactionEmojis = useMessageReactionEmojis(roomWritable);
 
   const [mentionPrefix, setMentionPrefix] = useState<string | null>(null);
   const {data: mentionCandidates} = useSWR(room?.type==='community' && mentionPrefix!==null ? ['mention-candidates',roomId,mentionPrefix] : null, () => getMentionCandidates(roomId,mentionPrefix ?? ''));
@@ -139,6 +143,8 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThre
                   onReply={roomWritable ? () => setReplyTarget(msg) : undefined}
                   onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
+                  reactionEmojis={reactionEmojis}
+                  onToggleReaction={roomWritable ? (emoji, reacted) => handleToggleReaction(msg.ID, emoji, reacted) : undefined}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
                 />
@@ -169,6 +175,8 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThre
           onMentionQueryChange={setMentionPrefix}
           replyTarget={replyTarget}
           onCancelReply={() => setReplyTarget(null)}
+          stampOptions={reactionEmojis.filter(isStampReaction)}
+          onSendStamp={handleSendStamp}
         />
       )}
 

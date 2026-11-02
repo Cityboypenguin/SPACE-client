@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { CourseChatAdminTabs } from '../components/molecules/CourseChatAdminTabs';
 import {
   listCourses,
   listCourseYears,
@@ -139,8 +140,9 @@ export const AdminCourseChatListPage: React.FC = () => {
       <AdminHeader />
       <main className={styles.pageCentered}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.titleLarge}>チャット管理</h1>
+          <h1 className={styles.titleLarge}>授業内チャット管理</h1>
         </div>
+        <CourseChatAdminTabs />
 
         <div className={styles.filterForm}>
           <select aria-label="年度" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className={styles.select}>

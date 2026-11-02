@@ -493,6 +493,7 @@ export type Question = {
   user: ChatUser;
   body: string;
   isAnswered: boolean;
+  addenda: { ID: string; body: string }[];
   // 一覧では件数しか使わない。回答そのものが要る画面ができたら、その画面だけが
   // answers を選ぶこと（一覧のクエリへ戻さない）。
   answerCount: number;
@@ -533,6 +534,10 @@ const AdminGetCourseQuestionsDocument = graphql(`
         # 回答の本文と投稿者を全部取り、その length を件数にしていた。
         # 質問200件 × 回答200件で、最大4万行が1回の応答に乗っていた。
         answerCount
+        addenda {
+          ID
+          body
+        }
         createdAt
       }
       total

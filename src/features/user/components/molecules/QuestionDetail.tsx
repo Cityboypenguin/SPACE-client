@@ -5,6 +5,7 @@ import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { AppSwal } from '../../../../lib/swal';
 import { type Question, type Answer } from '../../api/question';
 import { AnswerItem } from './AnswerItem';
+import { AddendumSection } from './AddendumSection';
 import { ImageAttachButton, ImageAttachPreviews } from './ImageAttachControl';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { ScrollSentinel } from '../../../../components/atoms/ScrollSentinel';
@@ -28,7 +29,9 @@ type Props = {
   onCancelBestAnswer: (questionID: string) => Promise<void>;
   onUpdateQuestion: (questionID: string, body: string, deletedMediaIDs: string[]) => Promise<void>;
   onDeleteQuestion: (questionID: string) => Promise<void>;
+  onAddQuestionAddendum: (questionID: string, body: string) => Promise<void>;
   onUpdateAnswer: (questionID: string, answerID: string, body: string, deletedMediaIDs: string[]) => Promise<void>;
+  onAddAnswerAddendum: (questionID: string, answerID: string, body: string) => Promise<void>;
   onDeleteAnswer: (questionID: string, answerID: string) => Promise<void>;
   onLikeAnswer: (questionID: string, answerID: string) => Promise<void>;
   onUnlikeAnswer: (questionID: string, answerID: string) => Promise<void>;
@@ -47,7 +50,7 @@ const formatRelativeTime = (value: string) => {
 export const QuestionDetail = ({
   question, roomWritable, answers, totalAnswers, hasMoreAnswers, loadingMoreAnswers, loadMoreAnswers,
   onBack, onAnswerSubmit, onSelectBestAnswer, onCancelBestAnswer, onUpdateQuestion, onDeleteQuestion,
-  onUpdateAnswer, onDeleteAnswer, onLikeAnswer, onUnlikeAnswer,
+  onAddQuestionAddendum, onUpdateAnswer, onAddAnswerAddendum, onDeleteAnswer, onLikeAnswer, onUnlikeAnswer,
 }: Props) => {
   const [reportingQuestion, setReportingQuestion] = useState(false);
   const answerTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -266,6 +269,13 @@ export const QuestionDetail = ({
               <PostMediaGrid media={question.media} large />
             </div>
           )}
+          {!editingQuestion && (
+            <AddendumSection
+              addenda={question.addenda}
+              canAdd={question.isMine && roomWritable}
+              onAdd={(body) => onAddQuestionAddendum(question.ID, body)}
+            />
+          )}
           <span className={styles.detailTime}>{formatRelativeTime(question.createdAt)}</span>
           <div className={styles.detailMeta}>
             <span>回答{totalAnswers}件</span>
@@ -297,6 +307,7 @@ export const QuestionDetail = ({
                 onSelectBest={() => onSelectBestAnswer(question.ID, answer.ID)}
                 onCancelBest={() => onCancelBestAnswer(question.ID)}
                 onUpdate={(body, deletedMediaIDs) => onUpdateAnswer(question.ID, answer.ID, body, deletedMediaIDs)}
+                onAddAddendum={(body) => onAddAnswerAddendum(question.ID, answer.ID, body)}
                 onDelete={() => onDeleteAnswer(question.ID, answer.ID)}
                 onLike={() => onLikeAnswer(question.ID, answer.ID)}
                 onUnlike={() => onUnlikeAnswer(question.ID, answer.ID)}
