@@ -31,8 +31,8 @@ export const AdminCommunityDetailPage = () => {
   );
   const [members, setMembers] = useState<CommunityMember[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState(community?.name ?? '');
+  const [description, setDescription] = useState(community?.description ?? '');
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -104,13 +104,6 @@ export const AdminCommunityDetailPage = () => {
   useEffect(() => {
     if (!community) void Promise.resolve().then(fetchCommunity);
   }, [community, fetchCommunity]);
-
-  useEffect(() => {
-    if (community) {
-      setName(community.name);
-      setDescription(community.description || '');
-    }
-  }, [community]);
 
   useEffect(() => {
     void Promise.resolve().then(fetchMembers);

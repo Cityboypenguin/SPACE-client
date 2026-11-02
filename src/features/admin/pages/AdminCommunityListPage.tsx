@@ -118,7 +118,7 @@ export const AdminCommunityListPage = () => {
             </thead>
             <tbody>
               {communities.map((community, index) => {
-                const communityId = community.ID || (community as any).id;
+                const communityId = community.ID;
                 const formattedDate = community.createdAt
                   ? new Date(community.createdAt).toLocaleDateString('ja-JP')
                   : '-';

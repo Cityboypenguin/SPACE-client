@@ -281,6 +281,13 @@
   box-sizing: border-box;
 }
 
+/* 入力欄が狭いスレッドでも、プレースホルダーが2行目へ折り返して切れないように */
+.inputField:placeholder-shown {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .inputField:disabled {
   cursor: default;
 }

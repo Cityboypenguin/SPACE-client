@@ -207,11 +207,11 @@ export const updateCommunity = async (
   id: string,
   input: { name?: string; description?: string },
 ) => {
-  return await requestDoc(UpdateCommunityDocument as any, { id, input }, getAdminToken());
+  return await requestDoc(UpdateCommunityDocument, { id, input }, getAdminToken());
 };
 
 export const kickUserFromCommunity = async (communityID: string, userID: string) => {
-  return await requestDoc(UpdateCommunityMembersDocument as any, { communityID, updates: [{ userID, action: 'KICK' }] }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'KICK' }] }, getAdminToken());
 };
 
 export const getCommunityMembers = async (communityID: string, limit = 50, offset = 0) => {
@@ -244,11 +244,11 @@ const ListRoomMessagesDocument = graphql(`
 `);
 
 export const promoteToCommunityOwner = async (communityID: string, userID: string) => {
-  return await requestDoc(UpdateCommunityMembersDocument as any, { communityID, updates: [{ userID, action: 'PROMOTE' }] }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'PROMOTE' }] }, getAdminToken());
 };
 
 export const demoteFromCommunityOwner = async (communityID: string, userID: string) => {
-  return await requestDoc(UpdateCommunityMembersDocument as any, { communityID, updates: [{ userID, action: 'DEMOTE' }] }, getAdminToken());
+  return await requestDoc(UpdateCommunityMembersDocument, { communityID, updates: [{ userID, action: 'DEMOTE' }] }, getAdminToken());
 };
 
 const DeleteMessageDocument = graphql(`
@@ -265,7 +265,7 @@ export const listRoomMessages = async (
   before?: string,
 ): Promise<{ messages: { items: Message[]; hasMoreBefore: boolean } }> => {
   const data = await requestDoc(
-    ListRoomMessagesDocument as any,
+    ListRoomMessagesDocument,
     { roomID, limit, ...(before ? { before } : {}) },
     getAdminToken(),
   );
@@ -273,5 +273,5 @@ export const listRoomMessages = async (
 };
 
 export const adminDeleteMessage = async (roomID: string, messageID: string) => {
-  return await requestDoc(DeleteMessageDocument as any, { roomID, id: messageID }, getAdminToken());
+  return await requestDoc(DeleteMessageDocument, { roomID, id: messageID }, getAdminToken());
 };
