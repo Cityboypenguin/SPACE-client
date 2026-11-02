@@ -746,3 +746,10 @@
   flex-direction: column;
   gap: 0.5rem;
 }
+
+/* 本文も添付も無くなった質問・回答（添付が削除されたとき） */
+.filesRemoved {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-style: italic;
+}

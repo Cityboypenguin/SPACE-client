@@ -574,6 +574,69 @@ export const adminDeleteQuestion = async (id: string): Promise<boolean> => {
   return data.adminDeleteQuestion;
 };
 
+const AdminDeleteQuestionAddendumDocument = graphql(`
+  mutation AdminDeleteQuestionAddendum($id: ID!) {
+    adminDeleteQuestionAddendum(id: $id)
+  }
+`);
+
+const AdminDeleteAnswerAddendumDocument = graphql(`
+  mutation AdminDeleteAnswerAddendum($id: ID!) {
+    adminDeleteAnswerAddendum(id: $id)
+  }
+`);
+
+// 質問を開いたときだけ読む、回答とその追記（一覧のクエリには載せない）。
+const AdminQuestionAnswersDocument = graphql(`
+  query AdminQuestionAnswers($id: ID!, $limit: Int, $offset: Int) {
+    question(id: $id) {
+      ID
+      answers(limit: $limit, offset: $offset) {
+        items {
+          ID
+          body
+          user {
+            ID
+            name
+            accountID
+          }
+          addenda {
+            ID
+            body
+          }
+        }
+        total
+      }
+    }
+  }
+`);
+
+export type AdminAnswerWithAddenda = {
+  ID: string;
+  body: string;
+  user: { ID: string; name: string; accountID: string };
+  addenda: { ID: string; body: string }[];
+};
+
+export const adminListQuestionAnswers = async (
+  questionID: string,
+  limit: number,
+  offset: number,
+): Promise<{ items: AdminAnswerWithAddenda[]; total: number }> => {
+  const data = await requestDoc(AdminQuestionAnswersDocument, { id: questionID, limit, offset }, getAdminToken());
+  return data.question?.answers ?? { items: [], total: 0 };
+};
+
+export const adminDeleteQuestionAddendum = async (id: string): Promise<boolean> => {
+  const data = await requestDoc(AdminDeleteQuestionAddendumDocument, { id }, getAdminToken());
+  return data.adminDeleteQuestionAddendum;
+};
+
+export const adminDeleteAnswerAddendum = async (id: string): Promise<boolean> => {
+  const data = await requestDoc(AdminDeleteAnswerAddendumDocument, { id }, getAdminToken());
+  return data.adminDeleteAnswerAddendum;
+};
+
 const AdminGetCoursePollsDocument = graphql(`
   query AdminGetCoursePolls($roomID: ID!, $limit: Int, $offset: Int) {
     polls(roomID: $roomID, limit: $limit, offset: $offset) {

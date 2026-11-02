@@ -1,25 +1,24 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ThreadCard } from './ThreadCard';
-import { ImageLightbox } from '../../../../components/organisms/ImageLightbox';
 import { useNavigate, useLocation } from 'react-router-dom';
 import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
-import { type Message, type Media, type MessageUser, type ReplyTarget, type MessageReaction } from '../../api/message';
+import { type Message } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { ReactionGlyph } from '../atoms/ReactionGlyph';
-import { isStampReaction, reactionLabel } from '../../constants/reactionStamps';
-import humanIcon from '../../../../assets/パーツ_人間.svg';
-import { storageUrl } from '../../../../lib/storage';
+import { reactionLabel } from '../../constants/reactionStamps';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
 import { useSwipeToReply } from '../../hooks/useSwipeToReply';
 import replyMenuIcon from '../../../../assets/パーツ_コメント.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import reportIcon from '../../../../assets/パーツ_通報.svg';
-import { reservedAspectRatio } from '../../../../lib/media';
-import { reportDimensionsOnLoad } from '../../../../lib/reportMediaDimensions';
 import styles from '../ChatRoom.module.css';
 import { renderChatText } from '../../../../lib/renderTextWithLinks';
 import { useMentionNavigation } from '../../hooks/useMentionNavigation';
+import { MediaList } from './ChatMessageMedia';
+import { FILES_REMOVED_TEXT } from '../../constants/filesRemoved';
+import { ReplyQuote } from './ChatReplyQuote';
+import { ReactionBar } from './ChatReactionBar';
 
 // これより長く触れていたら「タップ」ではなく長押しとみなし、メニューを開かない。
 // 長押しは OS 標準のテキスト選択（コピー）に使ってもらう。
@@ -27,196 +26,6 @@ const TAP_MAX_DURATION_MS = 400;
 
 // マウスではなく指で操作する端末か。長押しやテキスト選択の扱いを分けるのに使う。
 const isCoarsePointer = () => window.matchMedia('(pointer: coarse)').matches;
-
-// 添付を上げた人が退会して削除され、添付だけが無くなったメッセージに出す文言。
-const FILES_REMOVED_TEXT = 'ファイルは削除されました';
-
-const getFileIcon = (contentType: string): string => {
-  if (contentType.includes('word')) return '📝';
-  if (contentType.includes('excel') || contentType.includes('spreadsheet')) return '📊';
-  if (contentType.includes('zip') || contentType.includes('compressed')) return '🗜️';
-  if (contentType.startsWith('video/')) return '🎥';
-  if (contentType.startsWith('audio/')) return '🎵';
-  return '📎';
-};
-
-const MediaList = ({ mediaItems, isMine }: { mediaItems: Media[]; isMine: boolean }) => {
-  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
-
-  const images = mediaItems.filter((m) => m.contentType.startsWith('image/'));
-  const files = mediaItems.filter((m) => !m.contentType.startsWith('image/'));
-
-  const imageUrls = images.map((m) => storageUrl(m.url));
-
-  return (
-    <>
-      {images.length > 0 && (
-        <div className={[
-          styles.messageMediaGrid,
-          isMine ? styles.messageMediaGridMine : styles.messageMediaGridTheirs,
-          images.length === 1 ? styles.messageMediaGridSingle : styles.messageMediaGridMultiple,
-        ].join(' ')}>
-          {images.map((m, i) => {
-            const url = storageUrl(m.url);
-            // 1枚のときだけ高さが縦横比で決まる（複数枚は正方形固定）ので、そこだけ
-            // ロード前に領域を確保する。これがないとロード完了時に高さが変わり、
-            // 初回表示のスクロール位置がずれる。
-            const aspectRatio = images.length === 1 ? reservedAspectRatio(m) : undefined;
-            return (
-              <img
-                key={m.ID}
-                src={url}
-                alt="添付画像"
-                onClick={() => setActiveImageIndex(i)}
-                onLoad={reportDimensionsOnLoad(m)}
-                className={`${styles.messageImageThumb} ${images.length === 1 ? styles.messageImageSingle : ''}`}
-                style={aspectRatio ? { aspectRatio } : undefined}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {files.length > 0 && (
-        <div className={`${styles.messageFileList} ${isMine ? styles.messageFileListMine : styles.messageFileListTheirs}`}>
-          {files.map((m) => (
-            <a
-              key={m.ID}
-              href={storageUrl(m.url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.messageFileLink}
-            >
-              <div
-                className={`${styles.messageFileChip} ${isMine ? styles.mediaFileChipMine : styles.mediaFileChipTheirs}`}
-              >
-                <span className={styles.messageFileIcon}>{getFileIcon(m.contentType)}</span>
-                <span>{m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}</span>
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
-
-      {activeImageIndex !== null && (
-        <ImageLightbox
-          urls={imageUrls}
-          initialIndex={activeImageIndex}
-          onClose={() => setActiveImageIndex(null)}
-        />
-      )}
-    </>
-  );
-};
-
-// 引用カードに出す返信先のアイコン。カード全体が <button> なので、<div> を含む
-// Avatar / <a> を張る UserAvatar ではなく画像1枚で組む（ボタンの中に置ける要素で
-// 収める・引用のタップがプロフィール遷移に化けないようにする、の両方が理由）。
-// アイコン未設定の投稿者には既定の人型アイコンが出る。
-const ReplyQuoteAvatar = ({ user }: { user: MessageUser }) => {
-  const url = storageUrl(user.avatarUrl);
-  return (
-    <span className={styles.replyQuoteAvatar}>
-      <img
-        src={url ?? humanIcon}
-        alt=""
-        className={url ? styles.replyQuoteAvatarImg : styles.replyQuoteAvatarDefault}
-      />
-    </span>
-  );
-};
-
-// 引用返信の返信先プレビュー。LINE と同じくバブルの内側（本文の上）に収め、
-// タップで元メッセージへジャンプする。返信先に画像があればサムネイルを右に出す。
-// replyTo が null（= 返信先が削除済み）のときは削除表示にし、タップは無効。
-const ReplyQuote = ({
-  replyTo,
-  isMine,
-  onJump,
-}: {
-  replyTo: ReplyTarget | null | undefined;
-  isMine: boolean;
-  onJump?: (messageId: string) => void;
-}) => {
-  const toneClass = isMine ? styles.replyQuoteMine : styles.replyQuoteTheirs;
-
-  if (!replyTo) {
-    return (
-      <div className={`${styles.replyQuote} ${toneClass} ${styles.replyQuoteDeleted}`}>
-        <span className={styles.replyQuoteText}>削除されたメッセージ</span>
-      </div>
-    );
-  }
-
-  const thumbnail = replyTo.media.find((m) => m.contentType.startsWith('image/'));
-  const fileCount = replyTo.media.filter((m) => !m.contentType.startsWith('image/')).length;
-  const imageCount = replyTo.media.length - fileCount;
-  const preview = replyTo.stampID
-    ? `スタンプ（${reactionLabel(replyTo.stampID)}）`
-    : replyTo.content.trim() !== ''
-    ? replyTo.content
-    : imageCount > 0
-      ? `画像${imageCount}件`
-      : fileCount > 0
-        ? `ファイル${fileCount}件`
-        : FILES_REMOVED_TEXT;
-
-  return (
-    <button
-      type="button"
-      className={`${styles.replyQuote} ${toneClass}`}
-      onClick={() => onJump?.(replyTo.ID)}
-    >
-      <span className={styles.replyQuoteBody}>
-        {/* 自分の発言への返信でも「自分」ではなく名前を出す（誰への返信かが一目で分かるように） */}
-        <span className={styles.replyQuoteHeader}>
-          <ReplyQuoteAvatar user={replyTo.user} />
-          <span className={styles.replyQuoteName}>{replyTo.user.name}</span>
-        </span>
-        <span className={styles.replyQuoteText}>{preview}</span>
-      </span>
-      {thumbnail && (
-        <img src={storageUrl(thumbnail.url)} alt="" className={styles.replyQuoteThumb} />
-      )}
-    </button>
-  );
-};
-
-// 吹き出しの下に並べる、絵文字ごとのリアクションの集計。押すと自分のリアクションを付け外しする。
-// onToggle が無いとき（書き込み不可のルーム）は集計を見せるだけで押せない。
-const ReactionBar = ({
-  reactions,
-  isMine,
-  onToggle,
-  allowedEmojis,
-}: {
-  reactions: MessageReaction[];
-  isMine: boolean;
-  onToggle?: (emoji: string, reacted: boolean) => void;
-  // いま付けてよい絵文字・スタンプ。ここに無いもの（一覧から抜かれたもの）は、
-  // すでに付けた本人は外せるが、他の人が新しく付けることはできない。
-  allowedEmojis: string[];
-}) => {
-  if (reactions.length === 0) return null;
-  return (
-    <div className={`${styles.reactionBar} ${isMine ? styles.reactionBarMine : styles.reactionBarTheirs}`}>
-      {reactions.map((r) => (
-        <button
-          key={r.emoji}
-          type="button"
-          disabled={!onToggle || (!r.reactedByMe && !allowedEmojis.includes(r.emoji))}
-          aria-pressed={r.reactedByMe}
-          aria-label={`${reactionLabel(r.emoji)} ${r.count}件${r.reactedByMe ? '（付けています）' : ''}`}
-          className={`${styles.reactionChip} ${isStampReaction(r.emoji) ? styles.reactionChipStamp : ''} ${r.reactedByMe ? styles.reactionChipActive : ''}`}
-          onClick={() => onToggle?.(r.emoji, r.reactedByMe)}
-        >
-          <ReactionGlyph emoji={r.emoji} />
-          <span className={styles.reactionCount}>{r.count}</span>
-        </button>
-      ))}
-    </div>
-  );
-};
 
 type Props = {
   msg: Message;
@@ -286,7 +95,7 @@ export const ChatMessageBubble = ({
   });
 
   const [menuOpen, setMenuOpen] = useState(false);
-  // 「リアクションを付ける」を押すと、メニューが絵文字の一覧に切り替わる。
+  // 「リアクションを付ける」を押すと、メニューがスタンプの一覧に切り替わる。
   const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
   // メニューを開くときは、必ず通常のメニュー（返信・編集・削除）から始める。
   const handleMenuOpenChange = (next: boolean) => {
@@ -421,28 +230,21 @@ export const ChatMessageBubble = ({
             role="group"
             aria-label="リアクションを選ぶ"
           >
-            {[
-              { key: 'emojis', className: styles.reactionPickerEmojis, items: reactionEmojis.filter((e) => !isStampReaction(e)) },
-              { key: 'stamps', className: styles.reactionPickerStamps, items: reactionEmojis.filter(isStampReaction) },
-            ].filter((group) => group.items.length > 0).map((group) => (
-              <div key={group.key} className={group.className}>
-                {group.items.map((emoji) => {
-                  const reacted = reactions.some((r) => r.emoji === emoji && r.reactedByMe);
-                  return (
-                    <button
-                      key={emoji}
-                      type="button"
-                      aria-pressed={reacted}
-                      aria-label={`${reactionLabel(emoji)}を${reacted ? '外す' : '付ける'}`}
-                      className={`${styles.reactionPickerButton} ${reacted ? styles.reactionPickerButtonActive : ''}`}
-                      onClick={() => { close(); onToggleReaction?.(emoji, reacted); }}
-                    >
-                      <ReactionGlyph emoji={emoji} compact />
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+              {reactionEmojis.map((emoji) => {
+                const reacted = reactions.some((r) => r.emoji === emoji && r.reactedByMe);
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    aria-pressed={reacted}
+                    aria-label={`${reactionLabel(emoji)}を${reacted ? '外す' : '付ける'}`}
+                    className={`${styles.reactionPickerButton} ${reacted ? styles.reactionPickerButtonActive : ''}`}
+                    onClick={() => { close(); onToggleReaction?.(emoji, reacted); }}
+                  >
+                    <ReactionGlyph emoji={emoji} compact />
+                  </button>
+                );
+              })}
           </div>
         ) : (
           <>

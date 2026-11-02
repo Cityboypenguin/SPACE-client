@@ -1,0 +1,23 @@
+.link {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.block {
+  margin-top: 8px;
+}
+
+.text {
+  overflow-wrap: anywhere;
+}
+
+.options {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.image {
+  display: block;
+  max-width: 100%;
+  max-height: 400px;
+}

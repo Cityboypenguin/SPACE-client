@@ -11,6 +11,7 @@ import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { ReportModal } from '../organisms/ReportModal';
 import reportIcon from '../../../../assets/パーツ_通報.svg';
 import { AddendumSection } from './AddendumSection';
+import { FILES_REMOVED_TEXT } from '../../constants/filesRemoved';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { AuthorLabel } from './AuthorLabel';
 import styles from '../QuestionBox.module.css';
@@ -199,7 +200,9 @@ export const AnswerItem = ({
           </button>
         </form>
       ) : (
-        <ClampedText text={answer.body} maxLines={6} className={styles.answerBody} />
+        answer.body.trim() === '' && answer.media.length === 0
+          ? <p className={styles.filesRemoved}>{FILES_REMOVED_TEXT}</p>
+          : <ClampedText text={answer.body} maxLines={6} className={styles.answerBody} />
       )}
 
       {editing && editRemainingMedia.length > 0 && (

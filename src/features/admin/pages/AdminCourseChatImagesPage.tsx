@@ -12,6 +12,7 @@ import {
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
 import styles from '../styles/AdminShared.module.css';
+import courseStyles from '../styles/CourseChatAdmin.module.css';
 
 const PAGE_SIZE = 24;
 
@@ -96,11 +97,11 @@ export const AdminCourseChatImagesPage = () => {
           <h1 className={styles.titleLarge}>授業内チャット管理</h1>
         </div>
         <CourseChatAdminTabs />
-        <p className={styles.cellMuted} style={{ marginBottom: '16px' }}>
+        <p className={`${styles.cellMuted} ${courseStyles.intro}`}>
           授業内チャットのチャット・質問・回答に上がった画像を、新しい順にまとめて表示します。授業資料の共有などを見つけたら削除してください（ファイルも消え、元に戻せません）。
         </p>
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className={courseStyles.toolbar}>
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -111,12 +112,12 @@ export const AdminCourseChatImagesPage = () => {
               {t.label}
             </button>
           ))}
-          <span className={styles.countText} style={{ marginLeft: 'auto' }}>全 {total} 枚</span>
+          <span className={`${styles.countText} ${courseStyles.count}`}>全 {total} 枚</span>
         </div>
         {room && (
-          <p style={{ marginBottom: '12px' }}>
+          <p className={courseStyles.roomFilter}>
             授業「{room.name}」だけを表示中
-            <button type="button" className={styles.paginationButton} style={{ marginLeft: '8px' }} onClick={() => { setRoom(null); setPage(0); }}>
+            <button type="button" className={`${styles.paginationButton} ${courseStyles.clearFilter}`} onClick={() => { setRoom(null); setPage(0); }}>
               絞り込みを解除
             </button>
           </p>
@@ -126,25 +127,25 @@ export const AdminCourseChatImagesPage = () => {
         {loading && items.length === 0 && <p className={styles.cellMuted}>読み込み中...</p>}
         {!loading && !error && items.length === 0 && <p className={styles.cellMuted}>画像はありません。</p>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+        <div className={courseStyles.imageGrid}>
           {items.map((img) => (
-            <div key={img.ID} className={styles.card} style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <a href={storageUrl(img.url)} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+            <div key={img.ID} className={`${styles.card} ${courseStyles.imageCard}`}>
+              <a href={storageUrl(img.url)} target="_blank" rel="noopener noreferrer" className={courseStyles.imageLink}>
                 <img
                   src={storageUrl(img.url)}
                   alt=""
                   loading="lazy"
-                  style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '6px', background: 'var(--color-bg-elevated)' }}
+                  className={courseStyles.image}
                 />
               </a>
-              <div style={{ fontSize: '0.8rem', lineHeight: 1.5 }}>
+              <div className={courseStyles.imageMeta}>
                 <div><strong>{sourceLabel[img.source]}</strong>{img.targetDeleted && <span className={styles.errorText}>（投稿は削除済み）</span>}</div>
                 <div>
                   <button
                     type="button"
                     title="この授業の画像だけを表示"
                     onClick={() => { setRoom({ id: img.roomID, name: img.courseName }); setPage(0); }}
-                    style={{ border: 0, background: 'none', padding: 0, color: 'var(--color-primary)', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}
+                    className={courseStyles.roomLink}
                   >
                     {img.courseName}
                   </button>
