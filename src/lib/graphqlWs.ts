@@ -92,7 +92,13 @@ export function createGraphQLWsClient(getToken: () => string | null) {
 
         case 'next':
           if (msg.id && msg.payload) {
-            subscriptions.get(msg.id)?.onData((msg.payload as { data: unknown }).data);
+            const { data, errors } = msg.payload as { data: unknown; errors?: unknown };
+            // 購読を拒否されたときは data が null で届く。購読側は data があるものとして読むので渡さない。
+            if (data == null) {
+              if (errors) subscriptions.get(msg.id)?.onError?.(errors);
+              break;
+            }
+            subscriptions.get(msg.id)?.onData(data);
           }
           break;
 
