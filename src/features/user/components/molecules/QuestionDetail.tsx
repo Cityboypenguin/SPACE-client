@@ -6,6 +6,7 @@ import { AppSwal } from '../../../../lib/swal';
 import { type Question, type Answer } from '../../api/question';
 import { AnswerItem } from './AnswerItem';
 import { AddendumSection } from './AddendumSection';
+import { FILES_REMOVED_TEXT } from '../../constants/filesRemoved';
 import { ImageAttachButton, ImageAttachPreviews } from './ImageAttachControl';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
 import { ScrollSentinel } from '../../../../components/atoms/ScrollSentinel';
@@ -257,12 +258,16 @@ export const QuestionDetail = ({
               </div>
             </form>
           ) : (
-            <ClampedText
-              text={question.body}
-              className={styles.detailTitle}
-              fillContainer
-              onExpandedChange={setQuestionTextExpanded}
-            />
+            question.body.trim() === '' && question.media.length === 0
+              ? <p className={styles.filesRemoved}>{FILES_REMOVED_TEXT}</p>
+              : (
+                <ClampedText
+                  text={question.body}
+                  className={styles.detailTitle}
+                  fillContainer
+                  onExpandedChange={setQuestionTextExpanded}
+                />
+              )
           )}
           {!editingQuestion && question.media.length > 0 && (
             <div className={styles.mediaPreviewGrid}>

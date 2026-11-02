@@ -1229,30 +1229,16 @@
   }
 }
 
-/* メニューの「リアクションを付ける」を押したときに出る一覧。絵文字（格子）の下に文字スタンプを並べる。 */
+/* メニューの「リアクションを付ける」を押したときに出るスタンプの一覧。 */
 .reactionPicker {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.25rem;
   width: min(17rem, 80vw);
   /* スタンプが増えて縦に長くなっても画面からはみ出さないよう、中でスクロールさせる */
   max-height: min(20rem, 55vh);
   overflow-y: auto;
   padding: 0.25rem;
-}
-
-.reactionPickerEmojis {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
-  gap: 0.25rem;
-}
-
-.reactionPickerStamps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--color-border);
 }
 
 .reactionPickerButton {
@@ -1281,10 +1267,6 @@
 }
 
 @media (pointer: coarse) {
-  .reactionPickerEmojis {
-    grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
-  }
-
   .reactionPickerButton {
     min-width: 2.75rem;
     min-height: 2.75rem;

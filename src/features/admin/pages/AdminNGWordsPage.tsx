@@ -14,6 +14,7 @@ import {
 } from '../api/ngWords';
 import { toUserMessage } from '../../../lib/errorMessages';
 import styles from '../styles/AdminShared.module.css';
+import courseStyles from '../styles/CourseChatAdmin.module.css';
 
 const matchTypeLabel: Record<NgWordMatchType, string> = {
   WORD: '含む',
@@ -92,21 +93,21 @@ export const AdminNGWordsPage = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.pageCentered} style={{ maxWidth: '900px' }}>
+      <main className={`${styles.pageCentered} ${courseStyles.ngPage}`}>
         <div className={styles.pageHeader}>
           <h1 className={styles.titleLarge}>授業内チャット管理</h1>
         </div>
         <CourseChatAdminTabs />
-        <p className={styles.cellMuted} style={{ marginBottom: '16px' }}>
+        <p className={`${styles.cellMuted} ${courseStyles.intro}`}>
           授業内チャットのメッセージ・質問・回答・追記・投票・スレッドの題名にここの言葉が含まれていると、投稿の前に止めます（どの言葉に当たったかは本人に伝えません）。
           管理者の投稿は止めません。大文字・小文字と全角・半角は区別しません（正規表現も同じ）。
         </p>
 
         {error && <p className={styles.formError}>{error}</p>}
 
-        <section className={styles.card} style={{ padding: '16px', marginBottom: '24px' }}>
+        <section className={`${styles.card} ${courseStyles.addCard}`}>
           <h2 className={styles.sectionTitle}>NGワードを追加</h2>
-          <form onSubmit={handleAdd} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <form onSubmit={handleAdd} className={courseStyles.addForm}>
             <input
               className={styles.input}
               value={pattern}
@@ -115,8 +116,7 @@ export const AdminNGWordsPage = () => {
               aria-label="NGワード"
             />
             <select
-              className={styles.select}
-              style={{ width: 'auto' }}
+              className={`${styles.select} ${courseStyles.autoWidth}`}
               value={matchType}
               onChange={(e) => setMatchType(e.target.value as NgWordMatchType)}
               aria-label="照合のしかた"
@@ -134,7 +134,7 @@ export const AdminNGWordsPage = () => {
           {patternTooLong && <p className={styles.formError}>NGワードは{MAX_PATTERN_CHARS}文字以内で入力してください。</p>}
         </section>
 
-        <section style={{ marginBottom: '32px' }}>
+        <section className={courseStyles.wordsSection}>
           <h2 className={styles.sectionTitle}>登録中のNGワード（{words.length}件）</h2>
           {loading ? (
             <p className={styles.cellMuted}>読み込み中...</p>
@@ -172,9 +172,9 @@ export const AdminNGWordsPage = () => {
           <h2 className={styles.sectionTitle}>止めた回数{stats ? `（合計 ${stats.total} 回）` : ''}</h2>
           {loaded && stats && stats.total === 0 && <p className={styles.cellMuted}>まだ止めた投稿はありません。</p>}
           {stats && stats.total > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+            <div className={courseStyles.statsGrid}>
               <div className={styles.tableWrap}>
-                <h3 className={styles.sectionTitle} style={{ fontSize: '0.95rem' }}>言葉ごと（多い順）</h3>
+                <h3 className={`${styles.sectionTitle} ${courseStyles.statsTitle}`}>言葉ごと（多い順）</h3>
                 <table className={styles.table}>
                   <thead>
                     <tr className={styles.tableHeaderRowStrong}>
@@ -193,7 +193,7 @@ export const AdminNGWordsPage = () => {
                 </table>
               </div>
               <div className={styles.tableWrap}>
-                <h3 className={styles.sectionTitle} style={{ fontSize: '0.95rem' }}>言った人ごと（多い順）</h3>
+                <h3 className={`${styles.sectionTitle} ${courseStyles.statsTitle}`}>言った人ごと（多い順）</h3>
                 <table className={styles.table}>
                   <thead>
                     <tr className={styles.tableHeaderRowStrong}>

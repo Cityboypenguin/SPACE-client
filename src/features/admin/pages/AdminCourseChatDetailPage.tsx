@@ -14,6 +14,7 @@ import {
   type Poll,
 } from '../api/courses';
 import { reactionLabel } from '../../user/constants/reactionStamps';
+import { AdminAddendumList } from '../components/molecules/AdminAddendumList';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import styles from '../styles/AdminShared.module.css';
@@ -234,9 +235,13 @@ export const AdminCourseChatDetailPage = () => {
                             </td>
                             <td className={styles.cellWrap}>
                               {question.body}
-                              {question.addenda.map((addendum) => (
-                                <div key={addendum.ID} className={styles.subText}>追記: {addendum.body}</div>
-                              ))}
+                              <AdminAddendumList
+                                questionID={question.ID}
+                                addenda={question.addenda}
+                                answerCount={question.answerCount}
+                                onQuestionAddendaChange={(addenda) => setQuestions((prev) => prev.map((q) => (q.ID === question.ID ? { ...q, addenda } : q)))}
+                                onError={setQuestionsError}
+                              />
                             </td>
                             <td>{question.isAnswered ? '解決済み' : '未解決'}</td>
                             <td>
