@@ -281,8 +281,7 @@ export const AdminPostListPage = () => {
               {filteredPosts.map((post, index) => {
                 const isDeleted = post.deletedAt != null;
                 const isSelected = selectedPostId === post.ID;
-                const p = post as any;
-                const likesCount = p.favoriteCount ?? p.likeCount ?? p.likesCount ?? 0;
+                const likesCount = post.favoriteCount;
                 const repliesCount = post.replyCount ?? post.replies?.length ?? 0;
 
                 return (
@@ -595,10 +594,7 @@ export const AdminPostListPage = () => {
                         </span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <img src={favoriteIcon} alt="いいね" width={14} height={14} />{' '}
-                          {(() => {
-                            const dp = detailData as any;
-                            return dp.favoriteCount ?? dp.likeCount ?? dp.likesCount ?? 0;
-                          })()}
+                          {detailData.favoriteCount}
                         </span>
                       </div>
                     </div>

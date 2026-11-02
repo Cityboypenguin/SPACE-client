@@ -66,3 +66,60 @@ export const deleteCourseChatImage = async (mediaID: string): Promise<boolean> =
   const data = await requestDoc(DeleteCourseChatImageDocument, { mediaID }, getAdminToken());
   return data.adminDeleteCourseChatImage;
 };
+
+export type RemovedCourseChatImage = {
+  ID: string;
+  source: CourseChatImageSource;
+  url: string;
+  roomID: string;
+  courseName: string;
+  uploaderID: string;
+  uploaderName: string;
+  uploaderAccountID: string;
+  createdAt: string;
+  removedAt: string;
+  reported: boolean;
+  expiresAt?: string | null;
+};
+
+const RemovedCourseChatImagesDocument = graphql(`
+  query AdminListRemovedCourseChatImages($roomID: ID, $limit: Int, $offset: Int) {
+    adminListRemovedCourseChatImages(roomID: $roomID, limit: $limit, offset: $offset) {
+      total
+      items {
+        ID
+        source
+        url
+        roomID
+        courseName
+        uploaderID
+        uploaderName
+        uploaderAccountID
+        createdAt
+        removedAt
+        reported
+        expiresAt
+      }
+    }
+  }
+`);
+
+const RestoreCourseChatImageDocument = graphql(`
+  mutation AdminRestoreCourseChatImage($mediaID: ID!) {
+    adminRestoreCourseChatImage(mediaID: $mediaID)
+  }
+`);
+
+export const listRemovedCourseChatImages = async (
+  roomID: string | undefined,
+  limit: number,
+  offset: number,
+): Promise<{ items: RemovedCourseChatImage[]; total: number }> => {
+  const data = await requestDoc(RemovedCourseChatImagesDocument, { roomID, limit, offset }, getAdminToken());
+  return data.adminListRemovedCourseChatImages;
+};
+
+export const restoreCourseChatImage = async (mediaID: string): Promise<boolean> => {
+  const data = await requestDoc(RestoreCourseChatImageDocument, { mediaID }, getAdminToken());
+  return data.adminRestoreCourseChatImage;
+};
