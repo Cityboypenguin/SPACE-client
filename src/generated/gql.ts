@@ -29,7 +29,7 @@ type Documents = {
     "\n  mutation UpdateAnnouncement($id: ID!, $input: UpdateAnnouncementInput!) {\n    updateAnnouncement(id: $id, input: $input) {\n      ID\n      title\n      body\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.UpdateAnnouncementDocument,
     "\n  mutation DeleteAnnouncement($id: ID!) {\n    deleteAnnouncement(id: $id)\n  }\n": typeof types.DeleteAnnouncementDocument,
     "\n  mutation LoginAdmin($input: LoginInput!) {\n    loginAdministrator(input: $input) {\n      token\n      refreshToken\n      administrator {\n        ID\n        name\n        email\n      }\n    }\n  }\n": typeof types.LoginAdminDocument,
-    "\n  mutation LogoutAdmin($token: String!) {\n    logoutAdministrator(token: $token)\n  }\n": typeof types.LogoutAdminDocument,
+    "\n  mutation LogoutAdmin($token: String!, $refreshToken: String) {\n    logoutAdministrator(token: $token, refreshToken: $refreshToken)\n  }\n": typeof types.LogoutAdminDocument,
     "\n  query AdminListCommunities(\n    $keyword: String\n    $sortBy: AdminCommunitySortField\n    $sortOrder: SortOrder\n    $limit: Int\n    $offset: Int\n  ) {\n    adminListCommunities(keyword: $keyword, sortBy: $sortBy, sortOrder: $sortOrder, limit: $limit, offset: $offset) {\n      items {\n        community {\n          ID\n          roomID\n          name\n          description\n          memberCount\n          createdAt\n          updatedAt\n        }\n        owner {\n          ID\n          name\n          accountID\n        }\n      }\n      total\n    }\n  }\n": typeof types.AdminListCommunitiesDocument,
     "\n  query AdminGetCommunity($id: ID!) {\n    adminGetCommunity(id: $id) {\n      community {\n        ID\n        roomID\n        name\n        description\n        memberCount\n        createdAt\n        updatedAt\n      }\n      owner {\n        ID\n        name\n        accountID\n      }\n    }\n  }\n": typeof types.AdminGetCommunityDocument,
     "\n  mutation AdminUpdateCommunity($id: ID!, $input: UpdateCommunityInput!) {\n    updateCommunity(id: $id, input: $input) {\n      ID\n      roomID\n      name\n      description\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.AdminUpdateCommunityDocument,
@@ -106,7 +106,7 @@ type Documents = {
     "\n  query AdminGetProfileByUserID($userID: ID!) {\n    getProfileByUserID(userID: $userID) {\n      username\n      bio\n      avatarUrl\n      createdAt\n      updatedAt\n      user {\n        ID\n        accountID\n        name\n        role\n        status\n      }\n    }\n  }\n": typeof types.AdminGetProfileByUserIdDocument,
     "\n  query ListAnnouncements($limit: Int, $offset: Int) {\n    announcements(limit: $limit, offset: $offset) {\n      items {\n        ID\n        title\n        body\n        createdAt\n      }\n      total\n    }\n  }\n": typeof types.ListAnnouncementsDocument,
     "\n  mutation LoginUser($input: LoginInput!) {\n    loginUser(input: $input) {\n      token\n      refreshToken\n      accountRestored\n      user {\n        ID\n        accountID\n        name\n        email\n        role\n        status\n      }\n    }\n  }\n": typeof types.LoginUserDocument,
-    "\n  mutation LogoutUser($token: String!) {\n    logoutUser(token: $token)\n  }\n": typeof types.LogoutUserDocument,
+    "\n  mutation LogoutUser($token: String!, $refreshToken: String) {\n    logoutUser(token: $token, refreshToken: $refreshToken)\n  }\n": typeof types.LogoutUserDocument,
     "\n  mutation SendEmailOTP($email: String!) {\n    sendEmailOTP(email: $email)\n  }\n": typeof types.SendEmailOtpDocument,
     "\n  mutation VerifyEmailOTP($email: String!, $otp: String!) {\n    verifyEmailOTP(email: $email, otp: $otp)\n  }\n": typeof types.VerifyEmailOtpDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      ID\n      accountID\n      name\n      email\n      role\n      status\n    }\n  }\n": typeof types.CreateUserDocument,
@@ -242,7 +242,7 @@ const documents: Documents = {
     "\n  mutation UpdateAnnouncement($id: ID!, $input: UpdateAnnouncementInput!) {\n    updateAnnouncement(id: $id, input: $input) {\n      ID\n      title\n      body\n      createdAt\n      updatedAt\n    }\n  }\n": types.UpdateAnnouncementDocument,
     "\n  mutation DeleteAnnouncement($id: ID!) {\n    deleteAnnouncement(id: $id)\n  }\n": types.DeleteAnnouncementDocument,
     "\n  mutation LoginAdmin($input: LoginInput!) {\n    loginAdministrator(input: $input) {\n      token\n      refreshToken\n      administrator {\n        ID\n        name\n        email\n      }\n    }\n  }\n": types.LoginAdminDocument,
-    "\n  mutation LogoutAdmin($token: String!) {\n    logoutAdministrator(token: $token)\n  }\n": types.LogoutAdminDocument,
+    "\n  mutation LogoutAdmin($token: String!, $refreshToken: String) {\n    logoutAdministrator(token: $token, refreshToken: $refreshToken)\n  }\n": types.LogoutAdminDocument,
     "\n  query AdminListCommunities(\n    $keyword: String\n    $sortBy: AdminCommunitySortField\n    $sortOrder: SortOrder\n    $limit: Int\n    $offset: Int\n  ) {\n    adminListCommunities(keyword: $keyword, sortBy: $sortBy, sortOrder: $sortOrder, limit: $limit, offset: $offset) {\n      items {\n        community {\n          ID\n          roomID\n          name\n          description\n          memberCount\n          createdAt\n          updatedAt\n        }\n        owner {\n          ID\n          name\n          accountID\n        }\n      }\n      total\n    }\n  }\n": types.AdminListCommunitiesDocument,
     "\n  query AdminGetCommunity($id: ID!) {\n    adminGetCommunity(id: $id) {\n      community {\n        ID\n        roomID\n        name\n        description\n        memberCount\n        createdAt\n        updatedAt\n      }\n      owner {\n        ID\n        name\n        accountID\n      }\n    }\n  }\n": types.AdminGetCommunityDocument,
     "\n  mutation AdminUpdateCommunity($id: ID!, $input: UpdateCommunityInput!) {\n    updateCommunity(id: $id, input: $input) {\n      ID\n      roomID\n      name\n      description\n      createdAt\n      updatedAt\n    }\n  }\n": types.AdminUpdateCommunityDocument,
@@ -319,7 +319,7 @@ const documents: Documents = {
     "\n  query AdminGetProfileByUserID($userID: ID!) {\n    getProfileByUserID(userID: $userID) {\n      username\n      bio\n      avatarUrl\n      createdAt\n      updatedAt\n      user {\n        ID\n        accountID\n        name\n        role\n        status\n      }\n    }\n  }\n": types.AdminGetProfileByUserIdDocument,
     "\n  query ListAnnouncements($limit: Int, $offset: Int) {\n    announcements(limit: $limit, offset: $offset) {\n      items {\n        ID\n        title\n        body\n        createdAt\n      }\n      total\n    }\n  }\n": types.ListAnnouncementsDocument,
     "\n  mutation LoginUser($input: LoginInput!) {\n    loginUser(input: $input) {\n      token\n      refreshToken\n      accountRestored\n      user {\n        ID\n        accountID\n        name\n        email\n        role\n        status\n      }\n    }\n  }\n": types.LoginUserDocument,
-    "\n  mutation LogoutUser($token: String!) {\n    logoutUser(token: $token)\n  }\n": types.LogoutUserDocument,
+    "\n  mutation LogoutUser($token: String!, $refreshToken: String) {\n    logoutUser(token: $token, refreshToken: $refreshToken)\n  }\n": types.LogoutUserDocument,
     "\n  mutation SendEmailOTP($email: String!) {\n    sendEmailOTP(email: $email)\n  }\n": types.SendEmailOtpDocument,
     "\n  mutation VerifyEmailOTP($email: String!, $otp: String!) {\n    verifyEmailOTP(email: $email, otp: $otp)\n  }\n": types.VerifyEmailOtpDocument,
     "\n  mutation CreateUser($input: CreateUserInput!) {\n    createUser(input: $input) {\n      ID\n      accountID\n      name\n      email\n      role\n      status\n    }\n  }\n": types.CreateUserDocument,
@@ -517,7 +517,7 @@ export function graphql(source: "\n  mutation LoginAdmin($input: LoginInput!) {\
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation LogoutAdmin($token: String!) {\n    logoutAdministrator(token: $token)\n  }\n"): (typeof documents)["\n  mutation LogoutAdmin($token: String!) {\n    logoutAdministrator(token: $token)\n  }\n"];
+export function graphql(source: "\n  mutation LogoutAdmin($token: String!, $refreshToken: String) {\n    logoutAdministrator(token: $token, refreshToken: $refreshToken)\n  }\n"): (typeof documents)["\n  mutation LogoutAdmin($token: String!, $refreshToken: String) {\n    logoutAdministrator(token: $token, refreshToken: $refreshToken)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -825,7 +825,7 @@ export function graphql(source: "\n  mutation LoginUser($input: LoginInput!) {\n
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation LogoutUser($token: String!) {\n    logoutUser(token: $token)\n  }\n"): (typeof documents)["\n  mutation LogoutUser($token: String!) {\n    logoutUser(token: $token)\n  }\n"];
+export function graphql(source: "\n  mutation LogoutUser($token: String!, $refreshToken: String) {\n    logoutUser(token: $token, refreshToken: $refreshToken)\n  }\n"): (typeof documents)["\n  mutation LogoutUser($token: String!, $refreshToken: String) {\n    logoutUser(token: $token, refreshToken: $refreshToken)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
