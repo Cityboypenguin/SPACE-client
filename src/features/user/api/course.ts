@@ -90,6 +90,12 @@ const MyTimetableDocument = graphql(`
   }
 `);
 
+const CourseChatStatusDocument = graphql(`
+  query CourseChatStatus {
+    courseChatEnabled
+  }
+`);
+
 const CurrentSemesterDocument = graphql(`
   query CurrentSemester {
     currentSemester {
@@ -263,6 +269,12 @@ export const getUserTimetableProfile = async (
 export const getCurrentSemester = async (): Promise<CurrentSemester> => {
   const data = await requestDoc(CurrentSemesterDocument, {}, getUserToken());
   return data.currentSemester;
+};
+
+// 授業チャットが一括停止されていないか。
+export const getCourseChatEnabled = async (): Promise<boolean> => {
+  const data = await requestDoc(CourseChatStatusDocument, {}, getUserToken());
+  return data.courseChatEnabled;
 };
 
 export const getCourseYears = async (): Promise<number[]> => {

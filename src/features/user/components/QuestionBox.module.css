@@ -247,12 +247,6 @@
   color: var(--color-text);
 }
 
-.editQuestionForm {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
 .editActions {
   display: flex;
   gap: 0.5rem;

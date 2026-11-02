@@ -15,6 +15,7 @@ import { getRoom, type Room } from '../api/message';
 import { getMyTimetable, getCurrentSemester, type Course } from '../api/course';
 import { stableCacheOptions, semesterCacheOptions } from '../cache/swrOptions';
 import { useResetViewportScroll } from '../hooks/useResetViewportScroll';
+import { useCourseChatEnabled } from '../hooks/useCourseChatEnabled';
 import styles from '../components/ChatRoom.module.css';
 
 type TabKey = 'chat' | 'question';
@@ -49,15 +50,17 @@ export const CourseRoomPage = () => {
     });
   }, [tabParam, questionIDParam]);
   useResetViewportScroll([roomId]);
+  // 管理者が一括停止すると、開いたままの画面もその場で閉じる（SSE の course_chat_status）。
+  const courseChatEnabled = useCourseChatEnabled();
 
-  const pollsState = useCoursePolls(roomId);
+  const pollsState = useCoursePolls(courseChatEnabled ? roomId : undefined);
   const unvotedPollCount = pollsState.unvotedTotal;
   const pollButtonLabel = unvotedPollCount > 0
     ? `投票画面へ移動（未投票 ${unvotedPollCount}件）`
     : '投票画面へ移動';
 
   const { data: room } = useSWR<Room | null>(
-    roomId ? ['course-room', roomId] : null,
+    roomId && courseChatEnabled ? ['course-room', roomId] : null,
     async ([, id]: [string, string]) => (await getRoom(id)).room ?? null,
     stableCacheOptions,
   );
@@ -98,8 +101,7 @@ export const CourseRoomPage = () => {
 
   if (!roomId) return null;
 
-  return (
-    <ThreadWorkspace parentRoomID={roomId} writable={isWritable}>
+  const page = (
     <div className={styles.container}>
       <UserSidebar />
 
@@ -136,27 +138,35 @@ export const CourseRoomPage = () => {
                 </div>
               )}
             </div>
-            <ThreadListButton parentRoomID={roomId ?? ''} />
-            <button
-              type="button"
-              className={styles.pollButton}
-              onClick={() => setIsPollView(true)}
-              aria-label={pollButtonLabel}
-              title={pollButtonLabel}
-            >
-              {unvotedPollCount > 0 && (
-                <span className={styles.pollButtonBadge}>
-                  <UnreadCountBadge count={unvotedPollCount} />
-                </span>
-              )}
-              <BarChartIcon />
-              投票
-            </button>
+            {courseChatEnabled && (
+              <>
+                <ThreadListButton parentRoomID={roomId ?? ''} />
+                <button
+                  type="button"
+                  className={styles.pollButton}
+                  onClick={() => setIsPollView(true)}
+                  aria-label={pollButtonLabel}
+                  title={pollButtonLabel}
+                >
+                  {unvotedPollCount > 0 && (
+                    <span className={styles.pollButtonBadge}>
+                      <UnreadCountBadge count={unvotedPollCount} />
+                    </span>
+                  )}
+                  <BarChartIcon />
+                  投票
+                </button>
+              </>
+            )}
           </>
         )}
       </div>
 
-      {isPollView ? (
+      {!courseChatEnabled ? (
+        <div className={styles.roomNotice} role="status">
+          授業内チャットはメンテナンス中のため、現在利用できません。
+        </div>
+      ) : isPollView ? (
         <PollList roomId={roomId} roomWritable={isWritable} pollsState={pollsState} />
       ) : (
         <>
@@ -189,6 +199,9 @@ export const CourseRoomPage = () => {
         </>
       )}
     </div>
-    </ThreadWorkspace>
   );
+
+  return courseChatEnabled ? (
+    <ThreadWorkspace parentRoomID={roomId} writable={isWritable}>{page}</ThreadWorkspace>
+  ) : page;
 };

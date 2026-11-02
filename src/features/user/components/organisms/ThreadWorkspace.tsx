@@ -57,14 +57,29 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
   const [busy, setBusy] = useState(false);
   const [offset, setOffset] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // 一覧の件数や未読は、新着の知らせ（room_changed）を受けて取り直す。定期の確認は知らせが切れていたときの保険。
   const { data: threads, error: listError, mutate: refreshList } = useSWR(
     isListing ? ['chat-threads', parentRoomID, offset] : null,
-    () => listThreads(parentRoomID, offset), { refreshInterval: 15000 },
+    () => listThreads(parentRoomID, offset), { refreshInterval: 2 * 60 * 1000 },
   );
+  // タイトルの変更やクローズは知らせが無いので定期に確認する。書き込みはクローズ後ならサーバーが断る。
   const { data: thread, error: threadError, mutate: refreshThread } = useSWR(
     activeID ? ['chat-thread', activeID] : null,
-    () => getThread(activeID!), { refreshInterval: 10000 },
+    () => getThread(activeID!), { refreshInterval: 60 * 1000 },
   );
+  const listRefreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useUnreadSubscription((event) => {
+    if (!isListing) return;
+    // 親チャットの新着は、スレッドの作成の案内かもしれないので見る。
+    if (event.roomID !== parentRoomID && !threads?.some(item => item.roomID === event.roomID)) return;
+    // 賑やかなチャットで知らせが途切れなく届いても取り直しが止まらないよう、最初の1件で予約し、3秒に1回までにする。
+    if (listRefreshTimer.current) return;
+    listRefreshTimer.current = setTimeout(() => {
+      listRefreshTimer.current = null;
+      void refreshList();
+    }, 3000);
+  });
+  useEffect(() => () => { if (listRefreshTimer.current) clearTimeout(listRefreshTimer.current); }, []);
 
   useEffect(() => {
     if (!isCreating) headingRef.current?.focus({ preventScroll: true });

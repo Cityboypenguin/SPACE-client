@@ -130,6 +130,7 @@ type Documents = {
     "\n  query PresignedCommunityIconUploadUrl($contentType: String!) {\n    presignedCommunityIconUploadUrl(contentType: $contentType) {\n      uploadUrl\n      objectKey\n      headers {\n        name\n        value\n      }\n    }\n  }\n": typeof types.PresignedCommunityIconUploadUrlDocument,
     "\n  query SearchCourses($dayOfWeek: String!, $period: Int!, $keyword: String, $limit: Int, $offset: Int) {\n    searchCourses(dayOfWeek: $dayOfWeek, period: $period, keyword: $keyword, limit: $limit, offset: $offset) {\n      items {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n      total\n    }\n  }\n": typeof types.SearchCoursesDocument,
     "\n  query MyTimetable($year: Int, $semester: String) {\n    myTimetable(year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n        discontinued\n      }\n    }\n  }\n": typeof types.MyTimetableDocument,
+    "\n  query CourseChatStatus {\n    courseChatEnabled\n  }\n": typeof types.CourseChatStatusDocument,
     "\n  query CurrentSemester {\n    currentSemester {\n      year\n      semester\n    }\n  }\n": typeof types.CurrentSemesterDocument,
     "\n  query CourseYears {\n    courseYears\n  }\n": typeof types.CourseYearsDocument,
     "\n  mutation SetTimetableEntryColor($id: ID!, $color: TimetableEntryColor!) {\n    setTimetableEntryColor(id: $id, color: $color) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n        discontinued\n      }\n    }\n  }\n": typeof types.SetTimetableEntryColorDocument,
@@ -342,6 +343,7 @@ const documents: Documents = {
     "\n  query PresignedCommunityIconUploadUrl($contentType: String!) {\n    presignedCommunityIconUploadUrl(contentType: $contentType) {\n      uploadUrl\n      objectKey\n      headers {\n        name\n        value\n      }\n    }\n  }\n": types.PresignedCommunityIconUploadUrlDocument,
     "\n  query SearchCourses($dayOfWeek: String!, $period: Int!, $keyword: String, $limit: Int, $offset: Int) {\n    searchCourses(dayOfWeek: $dayOfWeek, period: $period, keyword: $keyword, limit: $limit, offset: $offset) {\n      items {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n      total\n    }\n  }\n": types.SearchCoursesDocument,
     "\n  query MyTimetable($year: Int, $semester: String) {\n    myTimetable(year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n        discontinued\n      }\n    }\n  }\n": types.MyTimetableDocument,
+    "\n  query CourseChatStatus {\n    courseChatEnabled\n  }\n": types.CourseChatStatusDocument,
     "\n  query CurrentSemester {\n    currentSemester {\n      year\n      semester\n    }\n  }\n": types.CurrentSemesterDocument,
     "\n  query CourseYears {\n    courseYears\n  }\n": types.CourseYearsDocument,
     "\n  mutation SetTimetableEntryColor($id: ID!, $color: TimetableEntryColor!) {\n    setTimetableEntryColor(id: $id, color: $color) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n        discontinued\n      }\n    }\n  }\n": types.SetTimetableEntryColorDocument,
@@ -916,6 +918,10 @@ export function graphql(source: "\n  query SearchCourses($dayOfWeek: String!, $p
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query MyTimetable($year: Int, $semester: String) {\n    myTimetable(year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n        discontinued\n      }\n    }\n  }\n"): (typeof documents)["\n  query MyTimetable($year: Int, $semester: String) {\n    myTimetable(year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n        discontinued\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query CourseChatStatus {\n    courseChatEnabled\n  }\n"): (typeof documents)["\n  query CourseChatStatus {\n    courseChatEnabled\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
