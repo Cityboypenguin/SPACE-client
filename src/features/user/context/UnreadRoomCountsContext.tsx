@@ -4,9 +4,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { getUnreadDMCount } from '../api/message';
-import { getMyCourseRoomUnreadCounts } from '../api/course';
-import { getUnreadCommunityCount } from '../api/community';
+import { getMyUnreadRoomCounts, getMyUnreadRoomCountsSeparately } from '../api/message';
 import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { UnreadRoomCountsContext } from './unreadRoomCountsContextValue';
@@ -16,13 +14,24 @@ export const UnreadRoomCountsProvider = ({ children }: { children: ReactNode }) 
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
   const [courseUnreadCounts, setCourseUnreadCounts] = useState<Record<string, number>>({});
 
-  const refresh = useCallback(() => {
-    getUnreadDMCount().then(setDmUnreadCount).catch(() => {});
-    getUnreadCommunityCount().then(setCommunityUnreadCount).catch(() => {});
-    getMyCourseRoomUnreadCounts()
-      .then((counts) => setCourseUnreadCounts(Object.fromEntries(counts.map((c) => [c.roomID, c.unreadCount]))))
-      .catch(() => {});
+  const applyCourseCounts = useCallback((counts: { roomID: string; unreadCount: number }[]) => {
+    setCourseUnreadCounts(Object.fromEntries(counts.map((c) => [c.roomID, c.unreadCount])));
   }, []);
+
+  const refresh = useCallback(() => {
+    getMyUnreadRoomCounts()
+      .then((counts) => {
+        setDmUnreadCount(counts.myUnreadDMCount);
+        setCommunityUnreadCount(counts.myUnreadCommunityCount);
+        applyCourseCounts(counts.myCourseRoomUnreadCounts);
+      })
+      .catch(() => {
+        const { dm, community, course } = getMyUnreadRoomCountsSeparately();
+        dm.then(setDmUnreadCount).catch(() => {});
+        community.then(setCommunityUnreadCount).catch(() => {});
+        course.then(applyCourseCounts).catch(() => {});
+      });
+  }, [applyCourseCounts]);
 
   useEffect(() => {
     void Promise.resolve().then(refresh);

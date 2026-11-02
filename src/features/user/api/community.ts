@@ -263,17 +263,6 @@ export const getRandomCommunities = async (limit: number): Promise<Community[]> 
   return data.randomCommunities;
 };
 
-const MyUnreadCommunityCountDocument = graphql(`
-  query MyUnreadCommunityCount {
-    myUnreadCommunityCount
-  }
-`);
-
-export const getUnreadCommunityCount = async (): Promise<number> => {
-  const data = await requestDoc(MyUnreadCommunityCountDocument, {}, getUserToken());
-  return data.myUnreadCommunityCount;
-};
-
 export const getPresignedCommunityIconUploadUrl = async (contentType: string) => {
   const token = getUserToken();
   if (!token) throw new Error('認証が必要です。');

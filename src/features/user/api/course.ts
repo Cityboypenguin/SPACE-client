@@ -127,15 +127,6 @@ const SetTimetableEntryColorDocument = graphql(`
   }
 `);
 
-const MyCourseRoomUnreadCountsDocument = graphql(`
-  query MyCourseRoomUnreadCounts {
-    myCourseRoomUnreadCounts {
-      roomID
-      unreadCount
-    }
-  }
-`);
-
 const SetMyTimetableDocument = graphql(`
   mutation SetMyTimetable($year: Int!, $semester: String!, $baselineEntryIDs: [ID!]!, $courseIDs: [ID!]!) {
     setMyTimetable(year: $year, semester: $semester, baselineEntryIDs: $baselineEntryIDs, courseIDs: $courseIDs) {
@@ -215,7 +206,7 @@ export const getUserTimetable = async (
     );
   } catch (error) {
     if (isPrivateTimetableError(error)) {
-      throw new Error('timetable is private');
+      throw new Error('timetable is private', { cause: error });
     }
     throw error;
   }
@@ -298,13 +289,3 @@ export const setMyTimetable = async (
   return data.setMyTimetable;
 };
 
-export type CourseRoomUnread = {
-  roomID: string;
-  unreadCount: number;
-};
-
-// 現在の学期の時間割に入っている授業チャットごとの未読件数。
-export const getMyCourseRoomUnreadCounts = async (): Promise<CourseRoomUnread[]> => {
-  const data = await requestDoc(MyCourseRoomUnreadCountsDocument, {}, getUserToken());
-  return data.myCourseRoomUnreadCounts;
-};

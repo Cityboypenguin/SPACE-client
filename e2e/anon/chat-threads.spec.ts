@@ -39,14 +39,17 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
       messages.parent1[0].thread = {...thread};broadcast('messageUpdated','parent1',messages.parent1[0]);
       data={updateChatThread:{...thread}};
     } else if (query.includes('query HasUnreadChatThreads')) data={hasUnreadChatThreads:hasUnread};
+    else if (query.includes('query MessageReactionEmojis')) data={messageReactionEmojis:[]};
     else if (query.includes('query ChatThreadList')) data={chatThreads:created?[{...thread}]:[]};
     else if (query.includes('query ChatThreadDetail')) data={chatThread:created?{...thread}:null};
-    else if (query.includes('query GetRoom')) data={room:{ID:v.id,name:v.id==='parent1'?'コミュニティ':thread.title,type:'community',user:[],isMessagingDisabled:false,lastReadAt:null,lastReadMessageID:null,unreadCount:0}};
+    else if (query.includes('query GetRoom')) data={room:{ID:v.id,name:v.id==='parent1'?'コミュニティ':thread.title,type:'community',user:[],isMessagingDisabled:false,lastReadAt:null,lastReadMessageID:null,unreadCount:v.id==='thread1'&&hasUnread?1:0}};
     else if (query.includes('query ListMessages')) data={messages:{items:messages[v.roomID] ?? [],hasMoreBefore:false,hasMoreAfter:false}};
     else if (query.includes('mutation SendMessage')) {
       sentRoom=v.roomID;
       const msg:MessageFixture={ID:'m1',roomID:v.roomID,user,content:v.content,media:[],createdAt:now,updatedAt:now,isMine:true,mentions:[],thread:null};
       messages[v.roomID].push(msg);thread.messageCount++;data={sendMessage:msg};
+      // サーバーはスレッドへの投稿で親チャットの案内を更新して配る。
+      if(v.roomID==='thread1'){messages.parent1[0].thread={...thread};broadcast('messageUpdated','parent1',messages.parent1[0]);}
     } else if(query.includes('mutation CreateReport')) {reportedTarget=v.input;data={createReport:{ID:'report1'}};}
     else if(query.includes('MarkRoomAsRead')) {if(v.roomID==='thread1') hasUnread=false;data={markRoomAsRead:true};}
     await route.fulfill({json:{data}});
