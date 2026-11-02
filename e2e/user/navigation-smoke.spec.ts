@@ -8,7 +8,7 @@ import { dismissTermsConsentModalIfPresent } from '../support/terms';
 // protectedElement の外（公開ルート）に置かれているため、UserSidebarを描画しない。
 // そのためサイドバー表示チェックの対象から外す。
 const routes: { path: string; heading: string | RegExp; hasSidebar?: boolean }[] = [
-  { path: '/home', heading: 'ホーム' },
+  { path: '/home', heading: 'おすすめ' },
   { path: '/mypage', heading: 'マイページ' },
   { path: '/mypage/settings', heading: '設定' },
   { path: '/mypage/profile-edit', heading: 'プロフィール編集' },
@@ -28,10 +28,11 @@ for (const { path, heading, hasSidebar = true } of routes) {
   test(`${path} が表示される`, async ({ page }) => {
     await page.goto(path);
     await dismissTermsConsentModalIfPresent(page);
-    await expect(page.getByText(heading).first()).toBeVisible();
+    // サイドバーの文字はホバーするまで隠れていて、同じ文言の見出しより先に見つかる。
+    await expect(page.getByText(heading).filter({ visible: true }).first()).toBeVisible();
     if (hasSidebar) {
       // サイドバーが出ている = 未ログインへリダイレクトされていない
-      await expect(page.getByText('ホーム', { exact: true })).toBeVisible();
+      await expect(page.getByRole('navigation').getByRole('button', { name: 'ホーム' })).toBeVisible();
     }
   });
 }

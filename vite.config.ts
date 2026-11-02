@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// 既定は Docker の開発環境。CI などでは環境変数で接続先を変える。
+const apiTarget = process.env.SPACE_API_PROXY_TARGET ?? 'http://host.docker.internal:8080'
+const storageTarget = process.env.SPACE_STORAGE_PROXY_TARGET ?? 'http://host.docker.internal:9000'
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -22,21 +26,21 @@ export default defineConfig({
     host: true, // Dockerコンテナの外からアクセスできるようにする設定
     proxy: {
       '/query': {
-        target: 'http://host.docker.internal:8080',
+        target: apiTarget,
         changeOrigin: true,
         ws: true,
       },
       '/events': {
-        target: 'http://host.docker.internal:8080',
+        target: apiTarget,
         changeOrigin: true,
       },
       '/space-storage': {
-        target: 'http://host.docker.internal:9000',
+        target: storageTarget,
         changeOrigin: true,
       },
       // DM の添付の置き場（compose.yaml の MESSAGE_MEDIA_CONTAINER）。
       '/space-message-media': {
-        target: 'http://host.docker.internal:9000',
+        target: storageTarget,
         changeOrigin: true,
       },
     },
