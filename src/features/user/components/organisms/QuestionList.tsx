@@ -3,7 +3,7 @@ import { useCourseQuestions } from '../../hooks/useCourseQuestions';
 import { useQuestionAnswers } from '../../hooks/useQuestionAnswers';
 import {
   createQuestion, answerQuestion, selectBestAnswer, cancelBestAnswer,
-  updateQuestionBody, deleteQuestion, updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
+  deleteQuestion, updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
 } from '../../api/question';
 import { uploadMediaFiles } from '../../api/media';
 import { CreateQuestionForm } from '../molecules/CreateQuestionForm';
@@ -69,11 +69,6 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
     updateQuestion(updated);
   };
 
-  const handleUpdateQuestion = async (questionID: string, body: string, deletedMediaIDs: string[]) => {
-    const updated = await updateQuestionBody(questionID, body, deletedMediaIDs);
-    updateQuestion(updated);
-  };
-
   const handleDeleteQuestion = async (questionID: string) => {
     await deleteQuestion(questionID);
     removeQuestion(questionID);
@@ -115,7 +110,6 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
           onAnswerSubmit={handleAnswerSubmit}
           onSelectBestAnswer={handleSelectBestAnswer}
           onCancelBestAnswer={handleCancelBestAnswer}
-          onUpdateQuestion={handleUpdateQuestion}
           onDeleteQuestion={handleDeleteQuestion}
           onUpdateAnswer={handleUpdateAnswer}
           onDeleteAnswer={handleDeleteAnswer}

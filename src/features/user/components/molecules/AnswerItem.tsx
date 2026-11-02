@@ -45,7 +45,7 @@ export const AnswerItem = ({
 
   // ベストアンサーに選ばれている間は編集・削除できない。
   const canEditOrDelete = answer.isMine && !isBest;
-  const canEdit = canEditOrDelete && roomWritable;
+  const canEdit = false;
   const hasMenuActions = canEditOrDelete;
 
   const editRemainingMedia = answer.media.filter((m) => !editDeletedMediaIDs.includes(m.ID));

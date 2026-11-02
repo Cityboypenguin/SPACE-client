@@ -117,7 +117,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
                   msg={msg}
                   isMine={msg.isMine}
                   canDelete={msg.isMine}
-                  editable={roomWritable}
+                  editable={false}
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
                   isAnonymousAuthor={isAnonymousUser(msg.user)}

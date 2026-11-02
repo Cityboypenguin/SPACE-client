@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { ClampedText } from '../../../../components/atoms/ClampedText';
-import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
 import { AppSwal } from '../../../../lib/swal';
 import { type Question, type Answer } from '../../api/question';
@@ -23,7 +22,6 @@ type Props = {
   onAnswerSubmit: (questionID: string, body: string, files?: File[]) => Promise<Answer>;
   onSelectBestAnswer: (questionID: string, answerID: string) => Promise<void>;
   onCancelBestAnswer: (questionID: string) => Promise<void>;
-  onUpdateQuestion: (questionID: string, body: string, deletedMediaIDs: string[]) => Promise<void>;
   onDeleteQuestion: (questionID: string) => Promise<void>;
   onUpdateAnswer: (questionID: string, answerID: string, body: string, deletedMediaIDs: string[]) => Promise<void>;
   onDeleteAnswer: (questionID: string, answerID: string) => Promise<void>;
@@ -43,21 +41,16 @@ const formatRelativeTime = (value: string) => {
 
 export const QuestionDetail = ({
   question, roomWritable, answers, totalAnswers, hasMoreAnswers, loadingMoreAnswers, loadMoreAnswers,
-  onBack, onAnswerSubmit, onSelectBestAnswer, onCancelBestAnswer, onUpdateQuestion, onDeleteQuestion,
+  onBack, onAnswerSubmit, onSelectBestAnswer, onCancelBestAnswer, onDeleteQuestion,
   onUpdateAnswer, onDeleteAnswer, onLikeAnswer, onUnlikeAnswer,
 }: Props) => {
   const answerTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const editQuestionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const answerPanelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const answerElementsRef = useRef(new Map<string, HTMLDivElement>());
   const [answerBody, setAnswerBody] = useState('');
   const [answerFiles, setAnswerFiles] = useState<File[]>([]);
   const [answering, setAnswering] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState(false);
-  const [editQuestionBody, setEditQuestionBody] = useState(question.body);
-  // 編集中に外した写真。「保存」を押すまでは実際には削除しない。
-  const [editDeletedMediaIDs, setEditDeletedMediaIDs] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   // 質問本文の「続きを読む」展開中は、テキスト自身ではなく左パネル全体を
@@ -72,10 +65,6 @@ export const QuestionDetail = ({
   useEffect(() => {
     if (answerTextareaRef.current) resizeTextarea(answerTextareaRef.current);
   }, [answerBody]);
-
-  useEffect(() => {
-    if (editQuestionTextareaRef.current) resizeTextarea(editQuestionTextareaRef.current);
-  }, [editQuestionBody, editingQuestion]);
 
   // 回答一覧の下端が見えたら次のページを読み込む(全件取得ではなく無限スクロール)。
   // .answerPanel は768px未満でoverflow:visibleになり実際のスクロールコンテナでは
@@ -110,31 +99,6 @@ export const QuestionDetail = ({
       setError(err instanceof Error ? err.message : '回答の送信に失敗しました。');
     } finally {
       setAnswering(false);
-    }
-  };
-
-  const editRemainingMedia = question.media.filter((m) => !editDeletedMediaIDs.includes(m.ID));
-  // 投稿時と同じく、本文か写真のどちらかが残っていれば保存できる。
-  const canSaveQuestion = !busy && (editQuestionBody.trim() !== '' || editRemainingMedia.length > 0);
-
-  const startEditingQuestion = () => {
-    setEditQuestionBody(question.body);
-    setEditDeletedMediaIDs([]);
-    setEditingQuestion(true);
-  };
-
-  const handleQuestionUpdate = async (e: { preventDefault(): void }) => {
-    e.preventDefault();
-    if (!canSaveQuestion) return;
-    setBusy(true);
-    setError('');
-    try {
-      await onUpdateQuestion(question.ID, editQuestionBody.trim(), editDeletedMediaIDs);
-      setEditingQuestion(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '質問の編集に失敗しました。');
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -174,17 +138,8 @@ export const QuestionDetail = ({
           {question.isMine && (
             <div className={styles.detailMenuAbs}>
               <DropdownMenu>
-                {(close) => (
+                {() => (
                   <>
-                    {roomWritable && (
-                      <DropdownMenuItem
-                        icon={editIcon}
-                        themedIcon
-                        onClick={() => { close(); startEditingQuestion(); }}
-                      >
-                        編集
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={handleQuestionDelete} disabled={busy}>
                       削除
                     </DropdownMenuItem>
@@ -194,62 +149,13 @@ export const QuestionDetail = ({
             </div>
           )}
 
-          {editingQuestion ? (
-            <form onSubmit={handleQuestionUpdate} className={styles.editQuestionForm}>
-              <textarea
-                ref={editQuestionTextareaRef}
-                value={editQuestionBody}
-                rows={2}
-                onChange={(e) => {
-                  setEditQuestionBody(e.target.value);
-                  resizeTextarea(e.target);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                    e.preventDefault();
-                    if (canSaveQuestion) handleQuestionUpdate({ preventDefault: () => { } });
-                  }
-                }}
-                className={styles.textarea}
-                disabled={busy}
-                maxLength={1000}
-              />
-              {editRemainingMedia.length > 0 && (
-                <div className={styles.mediaPreviewRow}>
-                  {editRemainingMedia.map((m) => (
-                    <div key={m.ID} className={styles.mediaThumb}>
-                      <img src={m.url} alt="" className={styles.mediaThumbImg} />
-                      <button
-                        type="button"
-                        className={styles.mediaThumbRemove}
-                        onClick={() => setEditDeletedMediaIDs((prev) => [...prev, m.ID])}
-                        disabled={busy}
-                        aria-label="この写真を外す"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className={styles.editActions}>
-                <button type="submit" className={styles.submitButton} disabled={!canSaveQuestion}>
-                  保存
-                </button>
-                <button type="button" className={styles.secondaryButton} disabled={busy} onClick={() => setEditingQuestion(false)}>
-                  キャンセル
-                </button>
-              </div>
-            </form>
-          ) : (
-            <ClampedText
-              text={question.body}
-              className={styles.detailTitle}
-              fillContainer
-              onExpandedChange={setQuestionTextExpanded}
-            />
-          )}
-          {!editingQuestion && question.media.length > 0 && (
+          <ClampedText
+            text={question.body}
+            className={styles.detailTitle}
+            fillContainer
+            onExpandedChange={setQuestionTextExpanded}
+          />
+          {question.media.length > 0 && (
             <div className={styles.mediaPreviewGrid}>
               <PostMediaGrid media={question.media} large />
             </div>
