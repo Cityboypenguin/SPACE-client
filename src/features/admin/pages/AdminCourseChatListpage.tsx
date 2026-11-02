@@ -49,7 +49,7 @@ export const AdminCourseChatListPage: React.FC = () => {
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [courseChatEnabled, setCourseChatEnabled] = useState(true);
-  const [courseChatLoading, setCourseChatLoading] = useState(true);
+  const [courseChatLoading, setCourseChatLoading] = useState(() => Boolean(localStorage.getItem(ADMIN_TOKEN_KEY)));
   const [courseChatToggling, setCourseChatToggling] = useState(false);
   const [showCourseChatConfirm, setShowCourseChatConfirm] = useState(false);
 
@@ -99,10 +99,7 @@ export const AdminCourseChatListPage: React.FC = () => {
 
   useEffect(() => {
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
-    if (!token) {
-      setCourseChatLoading(false);
-      return;
-    }
+    if (!token) return;
     getCourseChatEnabled(token)
       .then(setCourseChatEnabled)
       .catch(() => setError('授業内チャットの状態取得に失敗しました'))

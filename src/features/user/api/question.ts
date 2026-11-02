@@ -167,19 +167,6 @@ const CreateQuestionDocument = graphql(`
   }
 `);
 
-const UpdateQuestionDocument = graphql(`
-  mutation UpdateQuestion($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {
-    updateQuestion(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {
-      ID
-      body
-      media {
-        ...MediaFields
-      }
-      updatedAt
-    }
-  }
-`);
-
 const DELETE_QUESTION_MUTATION = `
   mutation DeleteQuestion($id: ID!) {
     deleteQuestion(id: $id)
@@ -241,18 +228,6 @@ const CancelBestAnswerDocument = graphql(`
         body
       }
       updatedAt
-    }
-  }
-`);
-
-const UpdateAnswerDocument = graphql(`
-  mutation UpdateAnswer($id: ID!, $body: String!, $deletedMediaIDs: [ID!]) {
-    updateAnswer(id: $id, body: $body, deletedMediaIDs: $deletedMediaIDs) {
-      ID
-      body
-      media {
-        ...MediaFields
-      }
     }
   }
 `);
@@ -384,9 +359,8 @@ export type AnswerPage = { items: Answer[]; total: number };
 // (answers を含まない)。呼び出し側は既存の Question に上書きマージして使う。
 export type QuestionBestAnswerUpdate = Pick<Question, 'ID' | 'isAnswered' | 'bestAnswer' | 'updatedAt'>;
 export type AnswerLikeUpdate = Pick<Answer, 'ID' | 'likeCount' | 'likedByMe'>;
-// updateAnswer の応答は本文と添付写真だけを含む部分オブジェクト。
+// 更新の配信には本文と添付写真も載る（管理者が写真を消したときなど）。
 export type AnswerBodyUpdate = Pick<Answer, 'ID' | 'body' | 'media'>;
-// updateQuestion の応答は本文と添付写真だけを含む部分オブジェクト。
 export type QuestionBodyUpdate = Pick<Question, 'ID' | 'body' | 'media' | 'updatedAt'>;
 
 // addQuestionAddendum / addAnswerAddendum の応答は、追記の一覧だけを含む部分オブジェクト。
@@ -418,15 +392,6 @@ export const createQuestion = async (roomID: string, body: string, mediaInputs?:
   return data.createQuestion;
 };
 
-export const updateQuestionBody = async (
-  id: string,
-  body: string,
-  deletedMediaIDs: string[] = [],
-): Promise<QuestionBodyUpdate> => {
-  const data = await requestDoc(UpdateQuestionDocument, { id, body, deletedMediaIDs }, getUserToken());
-  return data.updateQuestion;
-};
-
 export const deleteQuestion = async (id: string): Promise<boolean> => {
   const data = await request<{ deleteQuestion: boolean }>(DELETE_QUESTION_MUTATION, { id }, getUserToken());
   return data.deleteQuestion;
@@ -445,15 +410,6 @@ export const selectBestAnswer = async (questionID: string, answerID: string): Pr
 export const cancelBestAnswer = async (questionID: string): Promise<QuestionBestAnswerUpdate> => {
   const data = await requestDoc(CancelBestAnswerDocument, { questionID }, getUserToken());
   return data.cancelBestAnswer;
-};
-
-export const updateAnswer = async (
-  id: string,
-  body: string,
-  deletedMediaIDs: string[] = [],
-): Promise<AnswerBodyUpdate> => {
-  const data = await requestDoc(UpdateAnswerDocument, { id, body, deletedMediaIDs }, getUserToken());
-  return data.updateAnswer;
 };
 
 export const deleteAnswer = async (id: string): Promise<boolean> => {

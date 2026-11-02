@@ -3,7 +3,7 @@ import { useCourseQuestions } from '../../hooks/useCourseQuestions';
 import { useQuestionAnswers } from '../../hooks/useQuestionAnswers';
 import {
   createQuestion, answerQuestion, selectBestAnswer, cancelBestAnswer,
-  updateQuestionBody, deleteQuestion, updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
+  deleteQuestion, deleteAnswer, likeAnswer, unlikeAnswer,
   addQuestionAddendum, addAnswerAddendum, getQuestion,
 } from '../../api/question';
 import { uploadMediaFiles } from '../../api/media';
@@ -81,11 +81,6 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
     updateQuestion(updated);
   };
 
-  const handleUpdateQuestion = async (questionID: string, body: string, deletedMediaIDs: string[]) => {
-    const updated = await updateQuestionBody(questionID, body, deletedMediaIDs);
-    updateQuestion(updated);
-  };
-
   const handleAddQuestionAddendum = async (questionID: string, body: string) => {
     const updated = await addQuestionAddendum(questionID, body);
     updateQuestion(updated);
@@ -99,11 +94,6 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
   const handleDeleteQuestion = async (questionID: string) => {
     await deleteQuestion(questionID);
     removeQuestion(questionID);
-  };
-
-  const handleUpdateAnswer = async (_questionID: string, answerID: string, body: string, deletedMediaIDs: string[]) => {
-    const updated = await updateAnswer(answerID, body, deletedMediaIDs);
-    answersState.updateAnswer(updated);
   };
 
   const handleDeleteAnswer = async (questionID: string, answerID: string) => {
@@ -137,10 +127,8 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
           onAnswerSubmit={handleAnswerSubmit}
           onSelectBestAnswer={handleSelectBestAnswer}
           onCancelBestAnswer={handleCancelBestAnswer}
-          onUpdateQuestion={handleUpdateQuestion}
           onDeleteQuestion={handleDeleteQuestion}
           onAddQuestionAddendum={handleAddQuestionAddendum}
-          onUpdateAnswer={handleUpdateAnswer}
           onAddAnswerAddendum={handleAddAnswerAddendum}
           onDeleteAnswer={handleDeleteAnswer}
           onLikeAnswer={handleLikeAnswer}
