@@ -55,6 +55,8 @@ type Documents = {
     "\n  mutation UpdateInquiryStatus($id: ID!, $status: InquiryStatus!) {\n    updateInquiryStatus(id: $id, status: $status) {\n      id\n      status\n    }\n  }\n": typeof types.UpdateInquiryStatusDocument,
     "\n  mutation ToggleMaintenanceMode($enabled: Boolean!) {\n    toggleMaintenanceMode(enabled: $enabled)\n  }\n": typeof types.ToggleMaintenanceModeDocument,
     "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n": typeof types.MaintenanceModeDocument,
+    "\n  mutation ToggleCourseChat($enabled: Boolean!) {\n    toggleCourseChat(enabled: $enabled)\n  }\n": typeof types.ToggleCourseChatDocument,
+    "\n  query CourseChatEnabled {\n    courseChatEnabled\n  }\n": typeof types.CourseChatEnabledDocument,
     "\n  fragment AdminPostFields on Post {\n    ID\n    content\n    createdAt\n    updatedAt\n    deletedAt\n    replyCount\n    user {\n      ID\n      name\n      accountID\n      avatarUrl\n    }\n    favoriteCount\n    isFavoritedByMe\n    media {\n      ...MediaFields\n      createdAt\n    }\n  }\n": typeof types.AdminPostFieldsFragmentDoc,
     "\n  query GetAdminPosts($keyword: String, $status: AdminPostStatus, $limit: Int, $offset: Int) {\n    adminListPosts(keyword: $keyword, status: $status, limit: $limit, offset: $offset) {\n      items {\n        ...AdminPostFields\n      }\n      total\n    }\n  }\n": typeof types.GetAdminPostsDocument,
     "\n  query GetPostByIDIncludeDeleted($id: ID!) {\n    getPostByIDIncludeDeleted(id: $id) {\n      ...AdminPostFields\n      rootPost {\n        ...AdminPostFields\n      }\n      replies(limit: 50) {\n        ...AdminPostFields\n      }\n    }\n  }\n": typeof types.GetPostByIdIncludeDeletedDocument,
@@ -240,6 +242,8 @@ const documents: Documents = {
     "\n  mutation UpdateInquiryStatus($id: ID!, $status: InquiryStatus!) {\n    updateInquiryStatus(id: $id, status: $status) {\n      id\n      status\n    }\n  }\n": types.UpdateInquiryStatusDocument,
     "\n  mutation ToggleMaintenanceMode($enabled: Boolean!) {\n    toggleMaintenanceMode(enabled: $enabled)\n  }\n": types.ToggleMaintenanceModeDocument,
     "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n": types.MaintenanceModeDocument,
+    "\n  mutation ToggleCourseChat($enabled: Boolean!) {\n    toggleCourseChat(enabled: $enabled)\n  }\n": types.ToggleCourseChatDocument,
+    "\n  query CourseChatEnabled {\n    courseChatEnabled\n  }\n": types.CourseChatEnabledDocument,
     "\n  fragment AdminPostFields on Post {\n    ID\n    content\n    createdAt\n    updatedAt\n    deletedAt\n    replyCount\n    user {\n      ID\n      name\n      accountID\n      avatarUrl\n    }\n    favoriteCount\n    isFavoritedByMe\n    media {\n      ...MediaFields\n      createdAt\n    }\n  }\n": types.AdminPostFieldsFragmentDoc,
     "\n  query GetAdminPosts($keyword: String, $status: AdminPostStatus, $limit: Int, $offset: Int) {\n    adminListPosts(keyword: $keyword, status: $status, limit: $limit, offset: $offset) {\n      items {\n        ...AdminPostFields\n      }\n      total\n    }\n  }\n": types.GetAdminPostsDocument,
     "\n  query GetPostByIDIncludeDeleted($id: ID!) {\n    getPostByIDIncludeDeleted(id: $id) {\n      ...AdminPostFields\n      rootPost {\n        ...AdminPostFields\n      }\n      replies(limit: 50) {\n        ...AdminPostFields\n      }\n    }\n  }\n": types.GetPostByIdIncludeDeletedDocument,
@@ -562,6 +566,14 @@ export function graphql(source: "\n  mutation ToggleMaintenanceMode($enabled: Bo
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query MaintenanceMode {\n    maintenanceMode\n  }\n"): (typeof documents)["\n  query MaintenanceMode {\n    maintenanceMode\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ToggleCourseChat($enabled: Boolean!) {\n    toggleCourseChat(enabled: $enabled)\n  }\n"): (typeof documents)["\n  mutation ToggleCourseChat($enabled: Boolean!) {\n    toggleCourseChat(enabled: $enabled)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query CourseChatEnabled {\n    courseChatEnabled\n  }\n"): (typeof documents)["\n  query CourseChatEnabled {\n    courseChatEnabled\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
