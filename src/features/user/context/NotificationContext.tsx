@@ -10,6 +10,7 @@ import { NotificationContext } from './notificationContextValue';
 import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
 import { emitRoomChanged, type RoomChangedEvent } from '../hooks/useUnreadSubscription';
+import { applyCourseChatStatus, refreshCourseChatStatus } from '../hooks/useCourseChatEnabled';
 import { courseQuestionBoxLink, isAddendumNotification, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { getUnreadNotificationCount, issueNotificationStreamTicket } from '../api/notification';
 
@@ -167,6 +168,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         //  作りだったのをやめ、取得はクライアントの責任に寄せた）。
         refreshUnreadCount();
         refreshConsent();
+        refreshCourseChatStatus();
       });
 
       // 通知の状態が変わった、という事実だけが届く（数字は載らない）。
@@ -177,6 +179,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       });
 
       source.addEventListener('terms_updated', refreshConsent);
+
+      source.addEventListener('course_chat_status', (e: MessageEvent) => {
+        try {
+          const { enabled } = JSON.parse(e.data as string) as { enabled?: unknown };
+          if (typeof enabled === 'boolean') applyCourseChatStatus(enabled);
+        } catch {
+          // ignore malformed event
+        }
+      });
 
       // room_changed は「このルームが更新された」という事実だけを運ぶ（未読数は載らない）。
       // 旧 unread_room は購読しない: サーバはもう送らないし、仮に古いサーバへ繋いでも

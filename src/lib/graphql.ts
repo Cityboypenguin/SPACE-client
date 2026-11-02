@@ -231,6 +231,7 @@ export const request = async <T>(
   variables?: Record<string, unknown>,
   token?: string,
   _retrying = false,
+  options?: { keepalive?: boolean },
 ): Promise<T> => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -245,6 +246,7 @@ export const request = async <T>(
     method: 'POST',
     headers,
     body: JSON.stringify({ query, variables }),
+    keepalive: options?.keepalive,
   }));
 
   if (response.status === 503) {

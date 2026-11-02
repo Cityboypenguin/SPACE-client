@@ -7,6 +7,7 @@ import {
 import { getMyUnreadRoomCounts, getMyUnreadRoomCountsSeparately } from '../api/message';
 import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
+import { useKnownCourseChatEnabled } from '../hooks/useCourseChatEnabled';
 import { UnreadRoomCountsContext } from './unreadRoomCountsContextValue';
 
 export const UnreadRoomCountsProvider = ({ children }: { children: ReactNode }) => {
@@ -33,9 +34,11 @@ export const UnreadRoomCountsProvider = ({ children }: { children: ReactNode }) 
       });
   }, [applyCourseCounts]);
 
+  // 授業チャットの停止・再開で、授業ごとの未読の印が消えたり戻ったりする。
+  const courseChatEnabled = useKnownCourseChatEnabled();
   useEffect(() => {
     void Promise.resolve().then(refresh);
-  }, [refresh]);
+  }, [refresh, courseChatEnabled]);
 
   // room_changed はペイロード（roomID / messageID / lastMessage）を使わない。
   // ここが欲しいのは種別ごとの合計と授業ルームごとの件数で、どちらもサーバに数えて
