@@ -211,6 +211,21 @@ const isAuthErrorMessage = (message: string): boolean =>
   message.includes('token is expired') ||
   message.includes('unauthorized');
 
+// 速度制限(429)の待ちの設定。人が集まる時間帯に制限へ当たっても、画面をエラーにせず少し待って
+// やり直す。ばらつきを足すのは、同時に当たった人が同時にやり直して再び当たらないようにするため。
+const RATE_LIMIT_MAX_RETRIES = 3;
+const RATE_LIMIT_BASE_DELAY_MS = 500;
+
+// 429 はサーバーが処理を始める前に断った応答なので、更新系のリクエストでも二重には実行されない。
+const fetchWithRateLimitRetry = async (send: () => Promise<Response>): Promise<Response> => {
+  for (let attempt = 0; ; attempt++) {
+    const response = await send();
+    if (response.status !== 429 || attempt >= RATE_LIMIT_MAX_RETRIES) return response;
+    const delay = RATE_LIMIT_BASE_DELAY_MS * 2 ** attempt + Math.random() * RATE_LIMIT_BASE_DELAY_MS;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+};
+
 export const request = async <T>(
   query: string,
   variables?: Record<string, unknown>,
@@ -226,11 +241,11 @@ export const request = async <T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(API_URL, {
+  const response = await fetchWithRateLimitRetry(() => fetch(API_URL, {
     method: 'POST',
     headers,
     body: JSON.stringify({ query, variables }),
-  });
+  }));
 
   if (response.status === 503) {
     localStorage.setItem('space_maintenance', 'true');
