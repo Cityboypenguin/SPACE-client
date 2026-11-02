@@ -3,10 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { createThread, getThread, hasUnreadThreads, listThreads, updateThread } from '../../api/thread';
 import { useUnreadSubscription } from '../../hooks/useUnreadSubscription';
+import { subscribeToGraphQL } from '../../../../lib/graphqlWs';
 import { useThreadActions } from '../../hooks/useThreadActions';
 import { CourseChatTab } from './CourseChatTab';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import styles from './ThreadWorkspace.module.css';
+
+const CHAT_THREAD_CHANGED_SUBSCRIPTION = `
+  subscription ChatThreadChanged($parentRoomID: ID!) {
+    chatThreadChanged(parentRoomID: $parentRoomID)
+  }
+`;
 
 export function ThreadListButton({ parentRoomID, compact = false }: { parentRoomID: string; compact?: boolean }) {
   const actions = useThreadActions();
@@ -57,29 +64,48 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
   const [busy, setBusy] = useState(false);
   const [offset, setOffset] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // 一覧の件数や未読は、新着の知らせ（room_changed）を受けて取り直す。定期の確認は知らせが切れていたときの保険。
+  // 一覧も詳細も、スレッドの作成・変更・新着の知らせ（chatThreadChanged）を受けて取り直す。
+  // 定期の取得は、知らせが届かなかったとき（削除など知らせの無い変更を含む）の保険。
   const { data: threads, error: listError, mutate: refreshList } = useSWR(
     isListing ? ['chat-threads', parentRoomID, offset] : null,
     () => listThreads(parentRoomID, offset), { refreshInterval: 2 * 60 * 1000 },
   );
-  // タイトルの変更やクローズは知らせが無いので定期に確認する。書き込みはクローズ後ならサーバーが断る。
   const { data: thread, error: threadError, mutate: refreshThread } = useSWR(
     activeID ? ['chat-thread', activeID] : null,
-    () => getThread(activeID!), { refreshInterval: 60 * 1000 },
+    () => getThread(activeID!), { refreshInterval: 2 * 60 * 1000 },
   );
   const listRefreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useUnreadSubscription((event) => {
-    if (!isListing) return;
-    // 親チャットの新着は、スレッドの作成の案内かもしれないので見る。
-    if (event.roomID !== parentRoomID && !threads?.some(item => item.roomID === event.roomID)) return;
-    // 賑やかなチャットで知らせが途切れなく届いても取り直しが止まらないよう、最初の1件で予約し、3秒に1回までにする。
-    if (listRefreshTimer.current) return;
-    listRefreshTimer.current = setTimeout(() => {
+  const refreshRef = useRef({ refreshList, refreshThread });
+  useEffect(() => { refreshRef.current = { refreshList, refreshThread }; }, [refreshList, refreshThread]);
+  useEffect(() => {
+    if (!isListing && !activeID) return;
+    let connectedBefore = false;
+    const unsubscribe = subscribeToGraphQL<{ chatThreadChanged: string }>(
+      CHAT_THREAD_CHANGED_SUBSCRIPTION,
+      { parentRoomID },
+      (data) => {
+        if (activeID && data.chatThreadChanged === activeID) void refreshRef.current.refreshThread();
+        if (!isListing || listRefreshTimer.current) return;
+        // 賑やかなスレッドで知らせが途切れなく届いても取り直しが止まらないよう、最初の1件で予約し、3秒に1回までにする。
+        listRefreshTimer.current = setTimeout(() => {
+          listRefreshTimer.current = null;
+          void refreshRef.current.refreshList();
+        }, 3000);
+      },
+      (err) => console.error('[ThreadPanel] chatThreadChanged subscription error:', err),
+      // 繋ぎ直したときは、切れていた間の変更を取りこぼしているかもしれない。最初の接続は開いたときの取得で足りる。
+      () => {
+        if (!connectedBefore) { connectedBefore = true; return; }
+        if (isListing) void refreshRef.current.refreshList();
+        if (activeID) void refreshRef.current.refreshThread();
+      },
+    );
+    return () => {
+      unsubscribe();
+      if (listRefreshTimer.current) clearTimeout(listRefreshTimer.current);
       listRefreshTimer.current = null;
-      void refreshList();
-    }, 3000);
-  });
-  useEffect(() => () => { if (listRefreshTimer.current) clearTimeout(listRefreshTimer.current); }, []);
+    };
+  }, [parentRoomID, isListing, activeID]);
 
   useEffect(() => {
     if (!isCreating) headingRef.current?.focus({ preventScroll: true });
