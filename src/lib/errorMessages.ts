@@ -40,6 +40,7 @@ const SERVER_ERROR_MAP: Array<[string, string]> = [
   ['community not found', 'コミュニティが見つかりませんでした。'],
 
   // --- アカウント状態エラー ---
+  ['too many login attempts', 'ログインの失敗が続いたため、一時的に停止しています。5分ほど待ってから再度お試しください。'],
   ['account is frozen', 'このアカウントは現在停止されています。お心当たりがある場合は管理者にお問い合わせください。'],
 
   // --- サーバー一時エラー（時間をおいてから） ---

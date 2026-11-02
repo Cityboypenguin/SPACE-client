@@ -477,7 +477,8 @@ export const getMentionCandidates = async (
 export const markRoomAsRead = async (roomID: string, lastReadMessageID?: string | null) => {
   const token = getUserToken();
   const result = await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
-  void mutate(key => Array.isArray(key) && key[0] === 'thread-unread', undefined, { revalidate: true, populateCache: false, throwOnError: false });
+  // そのルーム自身を読んでも、配下のスレッドの未読は変わらない。
+  void mutate(key => Array.isArray(key) && key[0] === 'thread-unread' && key[1] !== roomID, undefined, { revalidate: true, populateCache: false, throwOnError: false });
   return result;
 };
 
@@ -524,8 +525,20 @@ export const listMessages = async (roomID: string, limit = 50, options?: ListMes
   return data.messages;
 };
 
-export const getRoom = async (id: string) => {
-  return await requestDoc(GetRoomDocument, { id }, getUserToken());
+// ルームの画面と、そのメッセージの読み込みが同時に同じルームを引くので、実行中の問い合わせは
+// 1つにまとめる。終わったものは残さない（既読位置などが変わるので、次はまた取り直す）。
+const roomRequestsInFlight = new Map<string, ReturnType<typeof fetchRoom>>();
+
+const fetchRoom = (id: string, token: string | undefined) => requestDoc(GetRoomDocument, { id }, token);
+
+export const getRoom = (id: string) => {
+  const token = getUserToken();
+  const key = `${token ?? ''}:${id}`;
+  const inFlight = roomRequestsInFlight.get(key);
+  if (inFlight) return inFlight;
+  const room = fetchRoom(id, token).finally(() => roomRequestsInFlight.delete(key));
+  roomRequestsInFlight.set(key, room);
+  return room;
 };
 
 export const updateMessage = async (
@@ -572,15 +585,52 @@ export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Ro
   return { items, total: data.myDMRooms.total };
 };
 
+// DM・コミュニティ・授業の未読は同じきっかけで取り直すので、1回の問い合わせにまとめる。
+const MyUnreadRoomCountsDocument = graphql(`
+  query MyUnreadRoomCounts {
+    myUnreadDMCount
+    myUnreadCommunityCount
+    myCourseRoomUnreadCounts {
+      roomID
+      unreadCount
+    }
+  }
+`);
+
 const MyUnreadDMCountDocument = graphql(`
   query MyUnreadDMCount {
     myUnreadDMCount
   }
 `);
 
-export const getUnreadDMCount = async (): Promise<number> => {
-  const data = await requestDoc(MyUnreadDMCountDocument, {}, getUserToken());
-  return data.myUnreadDMCount;
+const MyUnreadCommunityCountDocument = graphql(`
+  query MyUnreadCommunityCount {
+    myUnreadCommunityCount
+  }
+`);
+
+const MyCourseRoomUnreadCountsDocument = graphql(`
+  query MyCourseRoomUnreadCounts {
+    myCourseRoomUnreadCounts {
+      roomID
+      unreadCount
+    }
+  }
+`);
+
+export const getMyUnreadRoomCounts = async () => {
+  return await requestDoc(MyUnreadRoomCountsDocument, {}, getUserToken());
+};
+
+// まとめた問い合わせは1項目の失敗で全部失敗する（どの項目も null にできないため）。
+// 失敗したときだけ別々に取り直し、取れたものは反映できるようにする。
+export const getMyUnreadRoomCountsSeparately = () => {
+  const token = getUserToken();
+  return {
+    dm: requestDoc(MyUnreadDMCountDocument, {}, token).then((d) => d.myUnreadDMCount),
+    community: requestDoc(MyUnreadCommunityCountDocument, {}, token).then((d) => d.myUnreadCommunityCount),
+    course: requestDoc(MyCourseRoomUnreadCountsDocument, {}, token).then((d) => d.myCourseRoomUnreadCounts),
+  };
 };
 
 export const getPresignedMediaUploadUrl = async (contentType: string) => {

@@ -195,8 +195,11 @@ export const useRoomMessages = (roomId: string | undefined, options?: UseRoomMes
           //
           // 未読が25件を超えていて moreAfter が立っている場合、ここで既読にするのは
           // 読み込んだぶんまで。残りはスクロールで追いついたときに既読になる。
-          const lastShownID = messages[messages.length - 1]?.ID;
-          await markRoomAsRead(roomId, lastShownID).catch(() => {});
+          // 未読が無ければ進める既読位置も無い。送ると未読数の取り直しを呼ぶだけになる。
+          if (unreadCount > 0) {
+            const lastShownID = messages[messages.length - 1]?.ID;
+            await markRoomAsRead(roomId, lastShownID).catch(() => {});
+          }
         }
       } catch (err) {
         if (!active) return;

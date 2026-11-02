@@ -54,6 +54,8 @@ export function trackPageLeave() {
   }
 }
 
+// サーバーは受け取った値を足し込むので、送ったぶんはここで手放す。残すと、タブを切り替えるたびや
+// 離脱時（visibilitychange と beforeunload の両方が来る）に同じ閲覧を二重に数えてしまう。
 async function flush() {
   if (state.currentPage) {
     state.completedPages.push({ ...state.currentPage });
@@ -63,17 +65,15 @@ async function flush() {
   const token = localStorage.getItem(USER_TOKEN_KEY);
   if (!token || state.completedPages.length === 0) return;
 
-  const sessionDurationSeconds = Math.round((Date.now() - state.sessionStart) / 1000);
-  const pageViews = state.completedPages.map((p) => ({
-    path: p.path,
-    durationSeconds: Math.round((Date.now() - p.startTime) / 1000),
-    maxScrollDepth: p.maxScrollDepth,
-  }));
-
-  // completedPagesの各ページの実際の滞在時間を計算
   const now = Date.now();
-  const pvWithDuration = state.completedPages.map((p, i) => {
-    const next = state.completedPages[i + 1];
+  const sessionDurationSeconds = Math.round((now - state.sessionStart) / 1000);
+  const pages = state.completedPages;
+  state.completedPages = [];
+  state.sessionStart = now;
+
+  // 各ページの滞在時間は、次のページへ移った時刻までで数える。
+  const pageViews = pages.map((p, i) => {
+    const next = pages[i + 1];
     const end = next ? next.startTime : now;
     return {
       path: p.path,
@@ -83,9 +83,7 @@ async function flush() {
   });
 
   try {
-    await request(RECORD_SESSION_MUTATION, {
-      input: { sessionDurationSeconds, pageViews: pvWithDuration.length > 0 ? pvWithDuration : pageViews },
-    }, token);
+    await request(RECORD_SESSION_MUTATION, { input: { sessionDurationSeconds, pageViews } }, token);
   } catch {
     // セッションデータ送信失敗は無視
   }
@@ -98,6 +96,10 @@ export function initSessionTracker() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       void flush();
+    } else {
+      // 戻ってきたら、開いているページの記録と時間の計測をやり直す。
+      state.sessionStart = Date.now();
+      trackPageEnter(window.location.pathname);
     }
   });
 

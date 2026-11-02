@@ -12,7 +12,8 @@ export function ThreadListButton({ parentRoomID, compact = false }: { parentRoom
   const actions = useThreadActions();
   const { data: unread, mutate: refreshUnread } = useSWR(
     parentRoomID ? ['thread-unread', parentRoomID] : null,
-    () => hasUnreadThreads(parentRoomID), { refreshInterval: 15000, dedupingInterval: 500 },
+    // 新着は useUnreadSubscription で分かるので、定期の確認はリアルタイムが切れていたときの保険。
+    () => hasUnreadThreads(parentRoomID), { refreshInterval: 2 * 60 * 1000, dedupingInterval: 500 },
   );
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useUnreadSubscription(() => {
