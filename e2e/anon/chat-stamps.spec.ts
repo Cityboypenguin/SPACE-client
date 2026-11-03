@@ -202,6 +202,8 @@ for (const chat of [
     await page.addInitScript(() => {
       localStorage.setItem('space_user_token', 'chat-stamp-test');
       localStorage.setItem('space_user_id', 'u1');
+      // 週1回のお知らせが画面を覆わないよう、「1週間表示しない」を選んだ状態にする。
+      localStorage.setItem('weeklyNoticeHiddenAt:u1', String(Date.now()));
     });
     let published = false,
       reacted = false,
