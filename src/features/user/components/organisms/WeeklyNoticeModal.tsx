@@ -14,7 +14,7 @@ const RULES = [
   'responの共有',
   '授業資料の共有',
   '他人の個人情報の無断転載',
-  'その他、マナー違反や不適切な行為',
+  'その他不適切な行為',
 ];
 
 export const WeeklyNoticeModal = ({ onClose }: Props) => {
