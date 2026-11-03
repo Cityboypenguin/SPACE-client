@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+  <meta charset="utf-8" />
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import React from 'react';
+      import { createRoot } from 'react-dom/client';
+      import { ReactionBar } from '/src/features/user/components/molecules/ChatReactionBar.tsx';
+      import { useMessageReactionEmojis } from '/src/features/user/hooks/useMessageReactionEmojis.ts';
+      import { useMessageStampOptions } from '/src/features/user/hooks/useChatStamps.ts';
+      function Fixture() {
+        const allowed = useMessageReactionEmojis(true),
+          messages = useMessageStampOptions(true);
+        const reactions = Array.from({ length: 12 }, (_, i) => ({
+          emoji: 'stamp:test-' + i,
+          count: i === 0 ? 120 : i + 1,
+          reactedByMe: i === 0,
+        }));
+        return React.createElement(
+          'main',
+          null,
+          React.createElement(
+            'div',
+            { id: 'container', style: { width: '300px' } },
+            React.createElement(ReactionBar, {
+              reactions,
+              isMine: false,
+              allowedEmojis: allowed,
+              onToggle: (id) => {
+                window.lastToggled = id;
+              },
+            }),
+          ),
+          React.createElement(
+            'p',
+            { id: 'message-options' },
+            messages.join(','),
+          ),
+          React.createElement(
+            'p',
+            { id: 'reaction-options' },
+            allowed.join(','),
+          ),
+        );
+      }
+      createRoot(document.getElementById('root')).render(
+        React.createElement(Fixture),
+      );
+    </script>
+  </body>
+</html>

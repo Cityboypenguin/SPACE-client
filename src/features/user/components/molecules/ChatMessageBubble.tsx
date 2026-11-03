@@ -5,8 +5,12 @@ import editIcon from '../../../../assets/パーツ_メッセージ編集.svg';
 import { type Message } from '../../api/message';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { ReactionGlyph } from '../atoms/ReactionGlyph';
+import { refreshChatStamps } from '../../hooks/useChatStamps';
 import { reactionLabel } from '../../constants/reactionStamps';
-import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+} from '../../../../components/molecules/DropdownMenu';
 import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
 import { useSwipeToReply } from '../../hooks/useSwipeToReply';
 import replyMenuIcon from '../../../../assets/パーツ_コメント.svg';
@@ -19,6 +23,7 @@ import { MediaList } from './ChatMessageMedia';
 import { FILES_REMOVED_TEXT } from '../../constants/filesRemoved';
 import { ReplyQuote } from './ChatReplyQuote';
 import { ReactionBar } from './ChatReactionBar';
+import { StampCatalogNotice } from './StampCatalogNotice';
 
 // これより長く触れていたら「タップ」ではなく長押しとみなし、メニューを開かない。
 // 長押しは OS 標準のテキスト選択（コピー）に使ってもらう。
@@ -58,11 +63,25 @@ type Props = {
 };
 
 export const ChatMessageBubble = ({
-  msg, isMine, canDelete, isEditing,
-  editContent, onStartEdit, onSaveEdit, onCancelEdit,
-  onEditContentChange, onDelete, isReadByPartner, editable = true,
-  onReply, onReport, onJumpToMessage, isGroupStart = true, isGroupEnd = true,
-  reactionEmojis = [], onToggleReaction,
+  msg,
+  isMine,
+  canDelete,
+  isEditing,
+  editContent,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onEditContentChange,
+  onDelete,
+  isReadByPartner,
+  editable = true,
+  onReply,
+  onReport,
+  onJumpToMessage,
+  isGroupStart = true,
+  isGroupEnd = true,
+  reactionEmojis = [],
+  onToggleReaction,
 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,27 +94,33 @@ export const ChatMessageBubble = ({
   // 本文も添付も無いメッセージは送れない。それでも空なのは、添付を上げた人が
   // 退会して個人情報ごと消されたか、管理者が画像を消して、添付だけが無くなったとき。
   const filesRemoved = !isStamp && !hasText && !hasMedia;
-  const canEdit = !isThread && editable && isMine && !isStamp && msg.content.trim() !== '';
+  const canEdit =
+    !isThread && editable && isMine && !isStamp && msg.content.trim() !== '';
   const canReply = !isThread && !!onReply && !isEditing;
   const canReport = !isThread && !!onReport && !isMine && !isEditing;
   const reactions = msg.reactions ?? [];
   const canReact = !isThread && !!onToggleReaction && reactionEmojis.length > 0;
-  const canShowActions = !isThread && (canEdit || canDelete || canReply || canReport || canReact) && !isEditing;
+  const hasMessageMenu =
+    !isThread && (canEdit || canDelete || canReply || canReport) && !isEditing;
+  const canShowActions = hasMessageMenu || (canReact && !isEditing);
   const isReply = !isThread && !!msg.replyToID;
-  const isEdited = !isThread && new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
+  const isEdited =
+    !isThread &&
+    new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
 
   // チャット本文の描画。URL とメンションだけを扱う（ハッシュタグは renderChatText 側で対象外）。
-  const renderMessageBody = (text: string) => renderChatText({
-    text,
-    linkClassName: styles.messageLink,
-    mentions: msg.mentions,
-    currentUserID,
-    onMentionClick,
-    stopPropagation: true,
-  });
+  const renderMessageBody = (text: string) =>
+    renderChatText({
+      text,
+      linkClassName: styles.messageLink,
+      mentions: msg.mentions,
+      currentUserID,
+      onMentionClick,
+      stopPropagation: true,
+    });
 
   const [menuOpen, setMenuOpen] = useState(false);
-  // 「リアクションを付ける」を押すと、メニューがスタンプの一覧に切り替わる。
+  // 通常の操作メニューと、隣のリアクション一覧は同時には開かない。
   const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
   // メニューを開くときは、必ず通常のメニュー（返信・編集・削除）から始める。
   const handleMenuOpenChange = (next: boolean) => {
@@ -108,7 +133,9 @@ export const ChatMessageBubble = ({
   // メニューをどちらへ開くか。一覧の端で見切れないよう、上下・左右とも実測して決める。
   const [openUpward, setOpenUpward] = useState(true);
   // 絵文字の一覧を開いたときの、一覧の最大の高さ(px)。メッセージ一覧の端からはみ出さないよう、実際の空きから決める。
-  const [pickerMaxHeight, setPickerMaxHeight] = useState<number | undefined>(undefined);
+  const [pickerMaxHeight, setPickerMaxHeight] = useState<number | undefined>(
+    undefined,
+  );
   const [alignStart, setAlignStart] = useState(true);
   const menuAnchorRef = useRef<HTMLSpanElement>(null);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
@@ -126,38 +153,91 @@ export const ChatMessageBubble = ({
   useLayoutEffect(() => {
     if (!menuOpen) return;
     const anchor = menuAnchorRef.current;
-    const dropdown = anchor?.querySelector<HTMLElement>(`.${styles.messageMenuDropdown}`);
+    const dropdown = anchor?.querySelector<HTMLElement>(
+      `.${styles.messageMenuDropdown}`,
+    );
     if (!anchor || !dropdown) return;
 
-    const anchorRect = anchor.getBoundingClientRect();
-    // 見切れの境界はビューポートではなくメッセージ一覧（スクロール領域）
     const scroller = anchor.closest<HTMLElement>(`.${styles.messageList}`);
-    const bounds = scroller
-      ? scroller.getBoundingClientRect()
-      : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
-
-    const roomAbove = anchorRect.top - bounds.top;
-    const roomBelow = bounds.bottom - anchorRect.bottom;
-    // 一覧は広い側の空きに収まる高さまでに制限し、収まらない分は一覧の中でスクロールさせる。
-    const pickerCap = reactionPickerOpen ? Math.floor(Math.max(120, Math.min(320, Math.max(roomAbove, roomBelow) - 16))) : undefined;
-    setPickerMaxHeight(pickerCap);
-    const neededHeight = Math.min(dropdown.offsetHeight, pickerCap ?? Infinity) + 4;
-    // 上に入るなら上（吹き出しを隠しにくい）。入らないなら広い方へ。
-    setOpenUpward(roomAbove >= neededHeight || roomAbove >= roomBelow);
-
-    // 左右も同じ考え方で決める。時刻列は一覧の端に寄っているので、既定の向きに
-    // 任せると自分の発言（左端）でも相手の発言（右端）でも外へはみ出しうる。
-    const neededWidth = dropdown.offsetWidth;
-    const roomFromLeft = bounds.right - anchorRect.left;
-    const roomFromRight = anchorRect.right - bounds.left;
-    setAlignStart(roomFromLeft >= neededWidth || roomFromLeft >= roomFromRight);
+    const updatePlacement = () => {
+      // Each dropdown is positioned relative to its own trigger, not the whole action strip.
+      const triggerRect = dropdown.parentElement!.getBoundingClientRect();
+      const scrollBounds = scroller?.getBoundingClientRect();
+      const bounds = {
+        top: Math.max(0, scrollBounds?.top ?? 0),
+        bottom: Math.min(
+          window.innerHeight,
+          scrollBounds?.bottom ?? window.innerHeight,
+        ),
+        left: Math.max(0, scrollBounds?.left ?? 0),
+        right: Math.min(
+          window.innerWidth,
+          scrollBounds?.right ?? window.innerWidth,
+        ),
+      };
+      const margin =
+        parseFloat(getComputedStyle(document.documentElement).fontSize) / 2;
+      const chrome = getComputedStyle(dropdown);
+      const borderWidth =
+        parseFloat(chrome.borderLeftWidth) +
+        parseFloat(chrome.borderRightWidth);
+      anchor.style.setProperty(
+        '--picker-max-width',
+        `${Math.max(0, bounds.right - bounds.left - 2 * margin - borderWidth)}px`,
+      );
+      const roomAbove = triggerRect.top - bounds.top;
+      const roomBelow = bounds.bottom - triggerRect.bottom;
+      const pickerCap = reactionPickerOpen
+        ? Math.max(
+            0,
+            Math.min(
+              window.innerHeight * 0.6,
+              Math.max(roomAbove, roomBelow) - margin,
+            ),
+          )
+        : undefined;
+      setPickerMaxHeight(pickerCap);
+      const neededHeight =
+        Math.min(dropdown.offsetHeight, pickerCap ?? Infinity) + margin;
+      setOpenUpward(roomAbove >= neededHeight || roomAbove >= roomBelow);
+      const neededWidth = dropdown.offsetWidth;
+      const roomFromLeft = bounds.right - margin - triggerRect.left;
+      const roomFromRight = triggerRect.right - bounds.left - margin;
+      const start =
+        roomFromLeft >= neededWidth || roomFromLeft >= roomFromRight;
+      setAlignStart(start);
+      const idealLeft = start
+        ? triggerRect.left
+        : triggerRect.right - neededWidth;
+      const actualLeft = Math.max(
+        bounds.left + margin,
+        Math.min(idealLeft, bounds.right - margin - neededWidth),
+      );
+      dropdown.style.setProperty(
+        '--picker-shift-x',
+        `${actualLeft - idealLeft}px`,
+      );
+    };
+    updatePlacement();
+    const observer = new ResizeObserver(updatePlacement);
+    observer.observe(dropdown);
+    if (scroller) observer.observe(scroller);
+    window.addEventListener('resize', updatePlacement);
+    scroller?.addEventListener('scroll', updatePlacement, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updatePlacement);
+      scroller?.removeEventListener('scroll', updatePlacement);
+    };
   }, [menuOpen, reactionPickerOpen]);
 
-  // 「リアクションを付ける」を押すと、その項目が消えて一覧に切り替わる。キーボードで操作している人が
-  // フォーカスを見失わないよう、一覧の最初のボタンへフォーカスを移す。
+  // リアクションの一覧を開いたら最初の選択肢へフォーカスを移す。
   useEffect(() => {
     if (!reactionPickerOpen) return;
-    reactionPickerRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    void refreshChatStamps();
+    reactionPickerRef.current
+      ?.querySelector<HTMLButtonElement>('button')
+      ?.focus();
   }, [reactionPickerOpen]);
 
   // DropdownMenu の useClickOutside は mousedown しか見ていないので、
@@ -168,7 +248,8 @@ export const ChatMessageBubble = ({
     if (!menuOpen) return;
     const closeIfOutside = (e: TouchEvent) => {
       const anchor = menuAnchorRef.current;
-      if (anchor && e.target instanceof Node && anchor.contains(e.target)) return;
+      if (anchor && e.target instanceof Node && anchor.contains(e.target))
+        return;
       setMenuOpen(false);
     };
     document.addEventListener('touchstart', closeIfOutside);
@@ -181,7 +262,9 @@ export const ChatMessageBubble = ({
     enabled: canReply,
     direction: isMine ? -1 : 1,
     onReply: () => onReply?.(),
-    onMoveBeyondSlop: () => { movedDuringTouch.current = true; },
+    onMoveBeyondSlop: () => {
+      movedDuringTouch.current = true;
+    },
   });
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -213,25 +296,134 @@ export const ChatMessageBubble = ({
   const actionMenu = canShowActions && (
     <span
       ref={menuAnchorRef}
-      className={`${styles.messageMenu} ${isMine ? styles.messageMenuLeft : styles.messageMenuRight}`}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        event.stopPropagation();
+        menuAnchorRef.current
+          ?.querySelector<HTMLButtonElement>(
+            reactionPickerOpen
+              ? '[aria-label="リアクションを付ける"]'
+              : '[aria-label="メッセージの操作"]',
+          )
+          ?.focus();
+        setMenuOpen(false);
+        setReactionPickerOpen(false);
+      }}
+      className={`${styles.messageMenu} ${isMine ? styles.messageMenuLeft : styles.messageMenuRight} ${menuOpen ? styles.messageMenuOpen : ''}`}
     >
-      <DropdownMenu
-        open={menuOpen}
-        onOpenChange={handleMenuOpenChange}
-        ariaLabel="メッセージの操作"
-        triggerClassName={styles.messageMenuTrigger}
-        dropdownClassName={`${styles.messageMenuDropdown} ${openUpward ? styles.messageMenuDropdownUp : styles.messageMenuDropdownDown} ${alignStart ? styles.messageMenuDropdownStart : styles.messageMenuDropdownEnd}`}
-      >
-        {(close) => reactionPickerOpen ? (
-          <div
-            ref={reactionPickerRef}
-            className={styles.reactionPicker}
-            style={pickerMaxHeight ? { maxHeight: `${pickerMaxHeight}px` } : undefined}
-            role="group"
-            aria-label="リアクションを選ぶ"
-          >
+      {hasMessageMenu && (
+        <DropdownMenu
+          open={menuOpen && !reactionPickerOpen}
+          onOpenChange={handleMenuOpenChange}
+          ariaLabel="メッセージの操作"
+          wrapClassName={styles.messageAction}
+          triggerClassName={styles.messageMenuTrigger}
+          dropdownClassName={`${styles.messageMenuDropdown} ${openUpward ? styles.messageMenuDropdownUp : styles.messageMenuDropdownDown} ${alignStart ? styles.messageMenuDropdownStart : styles.messageMenuDropdownEnd}`}
+        >
+          {(close) => (
+            <>
+              {canReply && (
+                <DropdownMenuItem
+                  icon={replyMenuIcon}
+                  themedIcon
+                  onClick={() => {
+                    close();
+                    onReply?.();
+                  }}
+                >
+                  返信
+                </DropdownMenuItem>
+              )}
+              {canEdit && (
+                <DropdownMenuItem
+                  icon={editIcon}
+                  themedIcon
+                  onClick={() => {
+                    close();
+                    onStartEdit();
+                  }}
+                >
+                  編集
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <DropdownMenuItem
+                  icon={deleteIcon}
+                  themedIcon
+                  danger
+                  onClick={() => {
+                    close();
+                    onDelete();
+                  }}
+                >
+                  削除
+                </DropdownMenuItem>
+              )}
+              {canReport && (
+                <DropdownMenuItem
+                  icon={reportIcon}
+                  themedIcon
+                  danger
+                  onClick={() => {
+                    close();
+                    onReport?.();
+                  }}
+                >
+                  通報
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
+        </DropdownMenu>
+      )}
+      {canReact && (
+        <DropdownMenu
+          open={menuOpen && reactionPickerOpen}
+          onOpenChange={(next) => {
+            setReactionPickerOpen(next);
+            setMenuOpen(next);
+          }}
+          ariaLabel="リアクションを付ける"
+          wrapClassName={styles.messageAction}
+          trigger={
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden="true"
+            >
+              <path d="M20.5 13A8.5 8.5 0 1 1 11 3.5" strokeLinecap="round" />
+              <path
+                d="M8 14.5s1.5 2 4 2 4-2 4-2M8.5 9.5h.01M13.5 9.5h.01M19 2v6M16 5h6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          }
+          triggerClassName={`${styles.messageMenuTrigger} ${styles.reactionAddTrigger}`}
+          dropdownClassName={`${styles.messageMenuDropdown} ${styles.reactionMenuDropdown} ${openUpward ? styles.messageMenuDropdownUp : styles.messageMenuDropdownDown} ${alignStart ? styles.messageMenuDropdownStart : styles.messageMenuDropdownEnd}`}
+        >
+          {(close) => (
+            <div
+              ref={reactionPickerRef}
+              className={styles.reactionPicker}
+              style={
+                pickerMaxHeight
+                  ? { maxHeight: `${pickerMaxHeight}px` }
+                  : undefined
+              }
+              role="group"
+              aria-label="リアクションを選ぶ"
+            >
+              {reactionEmojis.length === 0 && <StampCatalogNotice reaction />}
               {reactionEmojis.map((emoji) => {
-                const reacted = reactions.some((r) => r.emoji === emoji && r.reactedByMe);
+                const reacted = reactions.some(
+                  (r) => r.emoji === emoji && r.reactedByMe,
+                );
                 return (
                   <button
                     key={emoji}
@@ -239,52 +431,28 @@ export const ChatMessageBubble = ({
                     aria-pressed={reacted}
                     aria-label={`${reactionLabel(emoji)}を${reacted ? '外す' : '付ける'}`}
                     className={`${styles.reactionPickerButton} ${reacted ? styles.reactionPickerButtonActive : ''}`}
-                    onClick={() => { close(); onToggleReaction?.(emoji, reacted); }}
+                    onClick={() => {
+                      close();
+                      onToggleReaction?.(emoji, reacted);
+                    }}
                   >
                     <ReactionGlyph emoji={emoji} compact />
                   </button>
                 );
               })}
-          </div>
-        ) : (
-          <>
-            {canReact && (
-              <DropdownMenuItem onClick={() => setReactionPickerOpen(true)}>
-                {/* 項目は「アイコン列 + 文字」の2列なので、他の項目の SVG アイコンと同じ列に絵文字を置く */}
-                <span aria-hidden="true">😊</span>
-                リアクションを付ける
-              </DropdownMenuItem>
-            )}
-            {canReply && (
-              <DropdownMenuItem icon={replyMenuIcon} themedIcon onClick={() => { close(); onReply?.(); }}>
-                返信
-              </DropdownMenuItem>
-            )}
-            {canEdit && (
-              <DropdownMenuItem icon={editIcon} themedIcon onClick={() => { close(); onStartEdit(); }}>
-                編集
-              </DropdownMenuItem>
-            )}
-            {canDelete && (
-              <DropdownMenuItem icon={deleteIcon} themedIcon danger onClick={() => { close(); onDelete(); }}>
-                削除
-              </DropdownMenuItem>
-            )}
-            {canReport && (
-              <DropdownMenuItem icon={reportIcon} themedIcon danger onClick={() => { close(); onReport?.(); }}>
-                通報
-              </DropdownMenuItem>
-            )}
-          </>
-        )}
-      </DropdownMenu>
+            </div>
+          )}
+        </DropdownMenu>
+      )}
     </span>
   );
 
   // 吹き出しの外側に置く情報。下から時刻・既読・編集済みと積み、
-  // ホバー時だけ出るミートボールはその上（絶対配置なので行の高さを増やさない）。
+  // 操作ボタンはその上（絶対配置なので行の高さを増やさない）。
   const messageMeta = (
-    <div className={`${styles.messageMeta} ${isMine ? styles.messageMetaMine : styles.messageMetaTheirs}`}>
+    <div
+      className={`${styles.messageMeta} ${isMine ? styles.messageMetaMine : styles.messageMetaTheirs}`}
+    >
       {actionMenu}
       {isEdited && !isEditing && (
         <span className={styles.editedLabel}>編集済み</span>
@@ -294,14 +462,19 @@ export const ChatMessageBubble = ({
       )}
       {isGroupEnd && (
         <span className={styles.timestamp}>
-          {new Date(msg.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+          {new Date(msg.createdAt).toLocaleTimeString('ja-JP', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </span>
       )}
     </div>
   );
 
   const bubbleContent = (
-    <div className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}>
+    <div
+      className={`${styles.messageBubble} ${isMine ? styles.mine : styles.theirs}`}
+    >
       {/* スワイプで引いたぶんだけ現れる返信アイコン。バブルが退いた側に出す */}
       {swipe.offset !== 0 && (
         <span
@@ -315,7 +488,11 @@ export const ChatMessageBubble = ({
       {!isMine && isGroupStart && (
         <span
           className={styles.senderName}
-          onClick={() => navigate(`/users/${msg.user.ID}`, { state: { from: location.pathname } })}
+          onClick={() =>
+            navigate(`/users/${msg.user.ID}`, {
+              state: { from: location.pathname },
+            })
+          }
           style={{ cursor: 'pointer' }}
         >
           {msg.user.name}
@@ -326,9 +503,11 @@ export const ChatMessageBubble = ({
         className={`${styles.messageRow} ${isMine ? styles.messageRowMine : styles.messageRowTheirs}`}
         style={{
           // スワイプ返信では時刻ごと引く（吹き出しだけ動かすと時刻の上に重なる）
-          transform: swipe.offset !== 0 ? `translateX(${swipe.offset}px)` : undefined,
+          transform:
+            swipe.offset !== 0 ? `translateX(${swipe.offset}px)` : undefined,
           // 指を離したときだけ滑らかに戻す（ドラッグ中は指に追従させる）
-          transition: swipe.offset === 0 ? 'transform 0.18s ease-out' : undefined,
+          transition:
+            swipe.offset === 0 ? 'transform 0.18s ease-out' : undefined,
         }}
       >
         {isMine && messageMeta}
@@ -354,10 +533,18 @@ export const ChatMessageBubble = ({
                   e.target.style.height = `${e.target.scrollHeight}px`;
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Escape') { onCancelEdit(); return; }
-                  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+                  if (e.key === 'Escape') {
+                    onCancelEdit();
+                    return;
+                  }
+                  const isTouch =
+                    window.matchMedia('(pointer: coarse)').matches;
                   if (isTouch) return;
-                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  if (
+                    e.key === 'Enter' &&
+                    !e.shiftKey &&
+                    !e.nativeEvent.isComposing
+                  ) {
                     e.preventDefault();
                     onSaveEdit();
                   }
@@ -365,8 +552,12 @@ export const ChatMessageBubble = ({
                 autoFocus
               />
               <div className={styles.editActions}>
-                <button className={styles.editSaveBtn} onClick={onSaveEdit}>保存</button>
-                <button className={styles.editCancelBtn} onClick={onCancelEdit}>キャンセル</button>
+                <button className={styles.editSaveBtn} onClick={onSaveEdit}>
+                  保存
+                </button>
+                <button className={styles.editCancelBtn} onClick={onCancelEdit}>
+                  キャンセル
+                </button>
               </div>
               {hasMedia && (
                 <div className={styles.editingMediaWrap}>
@@ -377,42 +568,77 @@ export const ChatMessageBubble = ({
           ) : (
             <>
               {/*
-                * 返信のときは、本文が空（画像のみ）でも引用を入れるためにバブルを出す。
-                * 返信でない場合の見た目は従来どおり（本文があるときだけバブル）。
-                */}
+               * 返信のときは、本文が空（画像のみ）でも引用を入れるためにバブルを出す。
+               * 返信でない場合の見た目は従来どおり（本文があるときだけバブル）。
+               */}
               {isStamp ? (
-                <div className={`${styles.stampMessage} ${isMine ? styles.stampMessageMine : styles.stampMessageTheirs}`}>
+                <div
+                  className={`${styles.stampMessage} ${isMine ? styles.stampMessageMine : styles.stampMessageTheirs}`}
+                >
                   {isReply && (
-                    <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                      <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
+                    <div
+                      className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
+                    >
+                      <ReplyQuote
+                        replyTo={msg.replyTo}
+                        isMine={isMine}
+                        onJump={onJumpToMessage}
+                      />
                     </div>
                   )}
                   <ReactionGlyph emoji={msg.stampID!} large />
                 </div>
               ) : isReply ? (
-                <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                  <ReplyQuote replyTo={msg.replyTo} isMine={isMine} onJump={onJumpToMessage} />
+                <div
+                  className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
+                >
+                  <ReplyQuote
+                    replyTo={msg.replyTo}
+                    isMine={isMine}
+                    onJump={onJumpToMessage}
+                  />
                   {hasText && renderMessageBody(msg.content)}
-                  {filesRemoved && <span className={styles.filesRemoved}>{FILES_REMOVED_TEXT}</span>}
+                  {filesRemoved && (
+                    <span className={styles.filesRemoved}>
+                      {FILES_REMOVED_TEXT}
+                    </span>
+                  )}
                 </div>
               ) : hasText ? (
-                <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                  {msg.thread ? msg.thread.title : renderMessageBody(msg.content)}
+                <div
+                  className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
+                >
+                  {msg.thread
+                    ? msg.thread.title
+                    : renderMessageBody(msg.content)}
                 </div>
               ) : (
                 filesRemoved && (
-                  <div className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                    <span className={styles.filesRemoved}>{FILES_REMOVED_TEXT}</span>
+                  <div
+                    className={`${styles.bubble} ${isMine ? styles.bubbleMine : styles.bubbleTheirs}`}
+                  >
+                    <span className={styles.filesRemoved}>
+                      {FILES_REMOVED_TEXT}
+                    </span>
                   </div>
                 )
               )}
               {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
-              <ReactionBar reactions={reactions} isMine={isMine} onToggle={onToggleReaction} allowedEmojis={reactionEmojis} />
             </>
           )}
         </div>
         {!isMine && messageMeta}
       </div>
+      {!isEditing && !isThread && reactions.length > 0 && (
+        <div className={styles.messageReactions}>
+          <ReactionBar
+            reactions={reactions}
+            isMine={isMine}
+            onToggle={onToggleReaction}
+            allowedEmojis={reactionEmojis}
+          />
+        </div>
+      )}
       {msg.thread && <ThreadCard thread={msg.thread} isMine={isMine} />}
     </div>
   );
@@ -421,17 +647,28 @@ export const ChatMessageBubble = ({
 
   if (isMine) {
     return (
-      <div data-message-id={msg.ID} className={`${styles.messageHighlightTarget} ${groupStartClass}`}>
+      <div
+        data-message-id={msg.ID}
+        className={`${styles.messageHighlightTarget} ${groupStartClass}`}
+      >
         {bubbleContent}
       </div>
     );
   }
 
   return (
-    <div className={`${styles.theirRow} ${styles.messageHighlightTarget} ${groupStartClass}`} data-message-id={msg.ID}>
+    <div
+      className={`${styles.theirRow} ${styles.messageHighlightTarget} ${groupStartClass}`}
+      data-message-id={msg.ID}
+    >
       {/* 続きのメッセージではアイコンを出さないが、吹き出しの左端は揃えたいので場所だけ空ける */}
       {isGroupStart ? (
-        <UserAvatar userId={msg.user.ID} name={msg.user.name} avatarUrl={msg.user.avatarUrl} size={32} />
+        <UserAvatar
+          userId={msg.user.ID}
+          name={msg.user.name}
+          avatarUrl={msg.user.avatarUrl}
+          size={32}
+        />
       ) : (
         <span className={styles.avatarSpacer} aria-hidden="true" />
       )}

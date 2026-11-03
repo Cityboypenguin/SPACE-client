@@ -1,0 +1,14 @@
+.notice {
+  padding: 12px;
+  min-width: 180px;
+  max-width: 100%;
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+.notice p {
+  margin: 0 0 8px;
+}
+.notice button {
+  color: var(--color-primary);
+  cursor: pointer;
+}

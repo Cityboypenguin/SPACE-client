@@ -12,7 +12,7 @@ import type { Message } from '../../api/message';
 import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
 import { useMessageReactionEmojis } from '../../hooks/useMessageReactionEmojis';
-import { isStampReaction } from '../../constants/reactionStamps';
+import { useMessageStampOptions } from '../../hooks/useChatStamps';
 import { useChatScroll } from '../../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../../hooks/useScrollToMessage';
@@ -43,6 +43,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThre
   } = useChatActions(roomId, addMessage, setMessageReactions);
   // 書き込めるルームだけ、リアクションを付け外しできる（閲覧のみのルームは集計の表示だけ）。
   const reactionEmojis = useMessageReactionEmojis(roomWritable);
+  const stampOptions = useMessageStampOptions(roomWritable);
 
   const [mentionPrefix, setMentionPrefix] = useState<string | null>(null);
   const {data: mentionCandidates} = useSWR(room?.type==='community' && mentionPrefix!==null ? ['mention-candidates',roomId,mentionPrefix] : null, () => getMentionCandidates(roomId,mentionPrefix ?? ''));
@@ -176,7 +177,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThre
           onMentionQueryChange={setMentionPrefix}
           replyTarget={replyTarget}
           onCancelReply={() => setReplyTarget(null)}
-          stampOptions={reactionEmojis.filter(isStampReaction)}
+          stampOptions={stampOptions}
           onSendStamp={handleSendStamp}
         />
       )}

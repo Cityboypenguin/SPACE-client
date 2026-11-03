@@ -1,6 +1,7 @@
+import { refreshChatStamps } from './useChatStamps';
 import { maskNGWordDraft, showNGWordFeedback } from '../../../lib/ngWordFeedback';
 import { mutate } from 'swr';
-import { useState } from 'react';
+import { useCallback, useState, type SetStateAction } from 'react';
 import {
   sendMessage,
   updateMessage,
@@ -21,7 +22,11 @@ export const useChatActions = (
   // リアクションを付け外しした結果で表示を更新する（授業内チャットだけが渡す）。
   setMessageReactions?: (messageID: string, reactions: MessageReaction[]) => void,
 ) => {
-  const [content, setContent] = useState('');
+  const [draft, setDraft] = useState<{ content: string; mentions: MentionCandidate[] }>({ content: '', mentions: [] });
+  const { content, mentions: pendingMentions } = draft;
+  const setContent = useCallback((value: SetStateAction<string>) => {
+    setDraft((current) => ({ ...current, content: typeof value === 'function' ? value(current.content) : value }));
+  }, []);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
@@ -31,15 +36,13 @@ export const useChatActions = (
   const [replyTarget, setReplyTarget] = useState<Message | null>(null);
   // サジェストから選んだメンション先。コミュニティの "@表示名" は本文からは
   // 終端を決められないため、選択した相手をここに控えて送信時に渡す。
-  const [pendingMentions, setPendingMentions] = useState<MentionCandidate[]>([]);
-
   const addPendingMention = (candidate: MentionCandidate) => {
-    setPendingMentions((prev) => (
-      prev.some((m) => m.ID === candidate.ID) ? prev : [...prev, candidate]
-    ));
+    setDraft((current) => current.mentions.some((mention) => mention.ID === candidate.ID)
+      ? current
+      : { ...current, mentions: [...current.mentions, candidate] });
   };
 
-  const handleSend = async (e: { preventDefault(): void }) => {
+  const handleSend = async (e: { preventDefault(): void; input?: HTMLTextAreaElement | null }) => {
     e.preventDefault();
     // 送信中に再度呼ばれた場合（Enter連打やダブルクリック等）は二重送信を防ぐため即returnする。
     if (sending) return;
@@ -55,14 +58,14 @@ export const useChatActions = (
         .filter((m) => containsMentionText(trimmed, m.name))
         .map((m) => m.ID);
       const data = await sendMessage(roomId, trimmed, mediaInputs, replyTarget?.ID ?? null, mentionUserIDs);
-      setContent('');
+      // The input stays editable while sending. Clear only the submitted draft.
+      setDraft((current) => current.content === content ? { content: '', mentions: [] } : current);
       setSelectedFiles([]);
-      setReplyTarget(null);
-      setPendingMentions([]);
+      setReplyTarget((current) => current?.ID === replyTarget?.ID ? null : current);
       addMessage(data.sendMessage);
       void mutate(['chat-thread', roomId]).catch(() => undefined);
     } catch (err) {
-      if (showNGWordFeedback(err)) {
+      if (showNGWordFeedback(err, e.input)) {
         setContent((current) => maskNGWordDraft(err, current));
       } else {
         setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
@@ -85,6 +88,7 @@ export const useChatActions = (
       addMessage(data.sendMessage);
     } catch (err) {
       setSendError(toUserMessage(err, 'スタンプの送信に失敗しました。時間をおいてから再度お試しください。'));
+      void refreshChatStamps();
     } finally {
       setSending(false);
     }
@@ -119,6 +123,7 @@ export const useChatActions = (
       setMessageReactions?.(updated.ID, updated.reactions);
     } catch (err) {
       setSendError(toUserMessage(err, 'リアクションに失敗しました。時間をおいてから再度お試しください。'));
+      void refreshChatStamps();
     }
   };
 

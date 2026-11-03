@@ -37,7 +37,7 @@ type Props = {
   onCreateThread?: () => void;
   value: string;
   onChange: (val: string) => void;
-  onSubmit: (e: { preventDefault(): void }) => void;
+  onSubmit: (e: { preventDefault(): void; input?: HTMLTextAreaElement | null }) => void;
   onFileSelect: (files: File[]) => void;
   selectedFiles: File[];
   disabled?: boolean;
@@ -66,6 +66,7 @@ export const ChatInput = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
+  const composingRef = useRef(false);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const { theme } = useTheme();
@@ -112,10 +113,14 @@ export const ChatInput = ({
     }
   }, [value]);
 
-  // 送信完了後 (disabled: true → false) にテキストエリアへフォーカスを戻す
+  // Sending only locks submission, not the editable field. The NG-word modal
+  // owns focus restoration; do not update an unrelated global popup here.
   useEffect(() => {
     if (prevDisabledRef.current === true && disabled === false && !AppSwal.isVisible()) {
-      textareaRef.current?.focus();
+      const textarea = textareaRef.current;
+      if (textarea && !textarea.disabled && document.activeElement !== textarea) {
+        textarea.focus({ preventScroll: true });
+      }
     }
     prevDisabledRef.current = disabled;
   }, [disabled]);
@@ -214,7 +219,7 @@ export const ChatInput = ({
   const handleFormSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (!canSubmit) return;
-    onSubmit(e);
+    onSubmit({ preventDefault: () => e.preventDefault(), input: textareaRef.current });
   };
 
   return (
@@ -373,10 +378,16 @@ export const ChatInput = ({
             onKeyUp={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
             onClick={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
             onPaste={handlePaste}
+            onCompositionStart={() => { composingRef.current = true; }}
+            onCompositionEnd={() => { composingRef.current = false; }}
+            onBlur={() => { composingRef.current = false; }}
             onKeyDown={(e) => {
+              // Safari may report isComposing=false for the Enter that commits
+              // Japanese input. Never use that keystroke to send or pick a mention.
+              if (composingRef.current || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
               // 候補が出ているあいだは、送信・改行より先にサジェスト操作を優先する。
               // IME変換中の Enter 等は確定操作なので横取りしない。
-              if (showMentionSuggestions && !e.nativeEvent.isComposing) {
+              if (showMentionSuggestions) {
                 if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                   e.preventDefault();
                   setSuggestActiveIndex((prev) => {
@@ -405,9 +416,9 @@ export const ChatInput = ({
               // 通常通りEnterで送信できるようにする。
               const isTouch = window.matchMedia('(pointer: coarse)').matches;
               if (isTouch) return;
-              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (canSubmit) onSubmit({ preventDefault: () => { } });
+                if (canSubmit) onSubmit({ preventDefault: () => { }, input: textareaRef.current });
               }
             }}
             placeholder={
@@ -417,7 +428,8 @@ export const ChatInput = ({
                 ? 'メッセージを入力...'
                 : 'メッセージを入力... (Shift+Enterで改行)'
             }
-            disabled={disabled || isBlocked}
+            disabled={isBlocked}
+            aria-busy={disabled || undefined}
             className={styles.inputField}
           />
           {isNearOrOverLimit && (

@@ -1,8 +1,10 @@
 import { lazy } from 'react';
+import { useChatStamps } from '../../user/hooks/useChatStamps';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { AdminLoginForm } from '../components/organisms/AdminLoginForm';
 import { AdminProtectedRoute } from './AdminProtectedRoute';
 
+const AdminChatStampsPage = lazy(() => import('../pages/AdminChatStampsPage').then(m=>({default:m.AdminChatStampsPage})));
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 const AdminRegisterPage = lazy(() => import('../pages/AdminRegisterPage').then((m) => ({ default: m.AdminRegisterPage })));
 const AdminUserListPage = lazy(() => import('../pages/AdminUserListPage').then((m) => ({ default: m.AdminUserListPage })));
@@ -36,8 +38,10 @@ const AdminCourseChatDetailPage = lazy(() => import('../pages/AdminCourseChatDet
 const AdminCourseSyncPage = lazy(() => import('../pages/AdminCourseSyncPage').then((m) => ({ default: m.AdminCourseSyncPage })));
 
 export const AdminRoutes = () => {
+  useChatStamps();
   return (
     <Routes>
+      <Route path="chat-stamps" element={<AdminProtectedRoute><AdminChatStampsPage /></AdminProtectedRoute>} />
       <Route path="login" element={<AdminLoginForm />} />
       <Route path="register" element={<AdminRegisterPage />} />
       <Route

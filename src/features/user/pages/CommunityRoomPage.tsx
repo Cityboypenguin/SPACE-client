@@ -19,6 +19,8 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import { useAuth } from '../context/useAuth';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
+import { useMessageReactionEmojis } from '../hooks/useMessageReactionEmojis';
+import { useMessageStampOptions } from '../hooks/useChatStamps';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../hooks/useScrollToMessage';
@@ -46,7 +48,7 @@ export const CommunityRoomPage = () => {
   // 返信通知からは ?messageID=... 付きで開かれ、そのメッセージを中心に表示する。
   const [searchParams] = useSearchParams();
   const aroundMessageId = searchParams.get('messageID');
-  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
+  const { room, messages, error, addMessage, setMessageReactions, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -56,8 +58,10 @@ export const CommunityRoomPage = () => {
     editContent, setEditContent,
     replyTarget, setReplyTarget,
     addPendingMention,
-    handleSend, handleDelete, handleSaveEdit,
-  } = useChatActions(roomId, addMessage);
+    handleSend, handleSendStamp, handleToggleReaction, handleDelete, handleSaveEdit,
+  } = useChatActions(roomId, addMessage, setMessageReactions);
+  const reactionEmojis = useMessageReactionEmojis(!!room);
+  const stampOptions = useMessageStampOptions(!!room);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -275,6 +279,8 @@ export const CommunityRoomPage = () => {
                   onReply={() => setReplyTarget(msg)}
                   onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
+                  reactionEmojis={reactionEmojis}
+                  onToggleReaction={(emoji, reacted) => handleToggleReaction(msg.ID, emoji, reacted)}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
                 />
@@ -301,6 +307,8 @@ export const CommunityRoomPage = () => {
         disabled={sending}
         replyTarget={replyTarget}
         onCancelReply={() => setReplyTarget(null)}
+        stampOptions={stampOptions}
+        onSendStamp={handleSendStamp}
         mentionCandidates={mentionCandidates ?? []}
         onMentionSelect={addPendingMention}
         onMentionQueryChange={setMentionPrefix}

@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { label: 'アナリティクス', path: '/admin/analytics', emoji: '📊' },
   { label: 'ユーザー管理', path: '/admin/users', emoji: '👥' },
   { label: 'コミュニティ管理', path: '/admin/communities', icon: communityIcon, iconSize: 20 },
+  { label: 'スタンプ・リアクション', path: '/admin/chat-stamps', emoji: '😊' },
   { label: '投稿管理', path: '/admin/posts', icon: postIcon, iconSize: 20 },
   { label: '授業管理', path: '/admin/courses', icon: timetableIcon, iconSize: 20 },
   {

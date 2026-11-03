@@ -24,13 +24,21 @@ export const maskNGWordDraft = (error: unknown, current: string): string => {
   return current;
 };
 
-export const showNGWordFeedback = (error: unknown): boolean => {
+export const showNGWordFeedback = (error: unknown, returnFocusTo?: HTMLElement | null): boolean => {
   if (!isNGWordBlocked(error)) return false;
   void AppSwal.fire({
     icon: 'warning',
     title: '投稿できません',
     text: '使えない言葉が含まれています。内容を確認して、修正してください。',
     confirmButtonText: '閉じる',
+    returnFocus: !returnFocusTo,
+    didClose: () => {
+      if (!returnFocusTo?.isConnected) return;
+      returnFocusTo.focus({ preventScroll: true });
+      if (returnFocusTo instanceof HTMLTextAreaElement) {
+        returnFocusTo.setSelectionRange(returnFocusTo.value.length, returnFocusTo.value.length);
+      }
+    },
   });
   return true;
 };

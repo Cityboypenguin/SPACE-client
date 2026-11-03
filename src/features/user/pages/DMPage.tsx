@@ -12,6 +12,8 @@ import { useAuth } from '../context/useAuth';
 import type { Message } from '../api/message';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
+import { useMessageReactionEmojis } from '../hooks/useMessageReactionEmojis';
+import { useMessageStampOptions } from '../hooks/useChatStamps';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../hooks/useScrollToMessage';
@@ -35,6 +37,7 @@ export const DMPage = () => {
     messages,
     error,
     addMessage,
+    setMessageReactions,
     initialLastReadAt,
     partnerLastReadAt,
     hasMoreBefore,
@@ -60,8 +63,10 @@ export const DMPage = () => {
     editingId, setEditingId,
     editContent, setEditContent,
     replyTarget, setReplyTarget,
-    handleSend, handleDelete, handleSaveEdit,
-  } = useChatActions(roomId, addMessage);
+    handleSend, handleSendStamp, handleToggleReaction, handleDelete, handleSaveEdit,
+  } = useChatActions(roomId, addMessage, setMessageReactions);
+  const reactionEmojis = useMessageReactionEmojis(!!room && !isBlocked);
+  const stampOptions = useMessageStampOptions(!!room && !isBlocked);
 
   // 双方向スクロールページング
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -233,6 +238,8 @@ export const DMPage = () => {
                   onReply={isBlocked ? undefined : () => setReplyTarget(msg)}
                   onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
+                  reactionEmojis={reactionEmojis}
+                  onToggleReaction={isBlocked ? undefined : (emoji, reacted) => handleToggleReaction(msg.ID, emoji, reacted)}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
                 />
@@ -269,6 +276,8 @@ export const DMPage = () => {
         isBlocked={isBlocked}
         replyTarget={replyTarget}
         onCancelReply={() => setReplyTarget(null)}
+        stampOptions={stampOptions}
+        onSendStamp={handleSendStamp}
       />
 
       {reportingMessage && (

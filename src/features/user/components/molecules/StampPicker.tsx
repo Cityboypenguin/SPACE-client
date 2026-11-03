@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useClickOutside } from '../../../../hooks/useClickOutside';
+import { StampCatalogNotice } from './StampCatalogNotice';
 import { ReactionGlyph } from '../atoms/ReactionGlyph';
+import { refreshChatStamps } from '../../hooks/useChatStamps';
 import { reactionLabel } from '../../constants/reactionStamps';
 import styles from '../ChatRoom.module.css';
 
@@ -39,7 +41,7 @@ export const StampPicker = ({ stamps, onPick, disabled }: Props) => {
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => { if (!open) void refreshChatStamps(); setOpen((v) => !v); }}
         disabled={disabled}
         aria-expanded={open}
         title="スタンプを送る"
@@ -50,6 +52,7 @@ export const StampPicker = ({ stamps, onPick, disabled }: Props) => {
       </button>
       {open && (
         <div ref={panelRef} className={styles.stampPickerPanel} role="group" aria-label="送るスタンプを選ぶ">
+          {stamps.length === 0 && <StampCatalogNotice />}
           {stamps.map((id) => (
             <button
               key={id}
