@@ -22,6 +22,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSettingsPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { InquiryForm } from '../components/organisms/InquiryForm';
+import { TimetableHiddenNoticeModal } from '../components/organisms/TimetableHiddenNoticeModal';
 import { AppSwal } from '../../../lib/swal';
 
 type View = 'general' | 'personal' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
@@ -213,6 +214,7 @@ const PersonalSettingsForm = ({ initialTheme, initialTimetableVisible, onSave }:
   const [draftTheme, setDraftTheme] = useState<Theme>(initialTheme);
   const [draftTimetableVisible, setDraftTimetableVisible] = useState(initialTimetableVisible);
   const [saving, setSaving] = useState(false);
+  const [showHiddenNotice, setShowHiddenNotice] = useState(false);
   const hasChanges = draftTheme !== initialTheme || draftTimetableVisible !== initialTimetableVisible;
 
   const handleSave = async () => {
@@ -240,10 +242,15 @@ const PersonalSettingsForm = ({ initialTheme, initialTimetableVisible, onSave }:
         <span className={styles.toggleLabel}>プロフィールに時間割を公開する</span>
         <ToggleSwitch
           checked={draftTimetableVisible}
-          onChange={setDraftTimetableVisible}
+          onChange={(checked) => {
+            if (!checked && draftTimetableVisible) setShowHiddenNotice(true);
+            setDraftTimetableVisible(checked);
+          }}
           ariaLabel="プロフィールに時間割を公開する"
         />
       </div>
+
+      {showHiddenNotice && <TimetableHiddenNoticeModal onClose={() => setShowHiddenNotice(false)} />}
 
       <button
         type="button"
