@@ -8,10 +8,28 @@
   width: 100%;
   max-width: 760px;
   max-height: 92vh;
-  overflow-y: auto;
+  max-height: 92dvh;
+  overflow: hidden;
   background: #fff;
   border-radius: 28px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid #f1e3d8;
+  background: #fff;
 }
 
 .header {
@@ -46,8 +64,24 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 1.75rem 1.5rem 1.5rem;
+  padding: 1.75rem 1.5rem 1rem;
   color: #111;
+}
+
+/* 高さの低い画面では、ロゴと余白を詰めて本文をなるべくスクロールなしで見せる。 */
+@media (max-height: 700px) {
+  .header {
+    padding: 1rem 1rem 0.9rem;
+  }
+
+  .logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .content {
+    padding-top: 1.4rem;
+  }
 }
 
 .rules {
@@ -92,9 +126,55 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* スマホ幅では禁止事項が1列になって縦に伸びるので、全体を詰めてスクロールなしで収める。 */
 @media (max-width: 520px) {
+  .header {
+    padding: 0.9rem 1rem 0.8rem;
+  }
+
+  .logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0.35rem;
+  }
+
+  .title {
+    margin-bottom: 0.35rem;
+    font-size: 1.1rem;
+  }
+
+  .lead {
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .content {
+    padding: 1.3rem 1rem 0.75rem;
+  }
+
+  .rules {
+    padding: 1.2rem 0.75rem 0.75rem;
+  }
+
+  .rulesLabel {
+    font-size: 0.85rem;
+    padding: 0.2rem 1.2rem;
+  }
+
   .rulesGrid {
     grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .rule {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+
+  .footer {
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0.9rem;
   }
 }
 
@@ -118,4 +198,11 @@
   font-size: 1.1rem;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
   cursor: pointer;
+}
+
+@media (max-width: 520px) {
+  .okButton {
+    padding: 0.65rem 2rem;
+    font-size: 1rem;
+  }
 }

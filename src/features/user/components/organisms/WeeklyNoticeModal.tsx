@@ -22,24 +22,29 @@ export const WeeklyNoticeModal = ({ onClose }: Props) => {
 
   return (
     <Modal overlayClassName={styles.overlay} className={styles.modal} closeOnOverlayClick={false}>
-      <div className={styles.header}>
-        <img src={appIcon} alt="Senshu-Universe" className={styles.logo} />
-        <h2 className={styles.title}>Senshu-Universeをご利用のみなさまへ</h2>
-        <p className={styles.lead}>
-          誰もが快適に使えるSNSを作るため、以下の禁止事項についてご協力ください。
-        </p>
-      </div>
-      <div className={styles.content}>
-        <div className={styles.rules}>
-          <span className={styles.rulesLabel}>禁止事項</span>
-          <ul className={styles.rulesGrid}>
-            {RULES.map((rule) => (
-              <li key={rule} className={styles.rule}>
-                {rule}
-              </li>
-            ))}
-          </ul>
+      {/* 縦長・低い画面でも「わかりました」が隠れないよう、スクロールするのは本文だけにする。 */}
+      <div className={styles.body}>
+        <div className={styles.header}>
+          <img src={appIcon} alt="Senshu-Universe" className={styles.logo} />
+          <h2 className={styles.title}>Senshu-Universeをご利用のみなさまへ</h2>
+          <p className={styles.lead}>
+            誰もが快適に使えるSNSを作るため、以下の禁止事項についてご協力ください。
+          </p>
         </div>
+        <div className={styles.content}>
+          <div className={styles.rules}>
+            <span className={styles.rulesLabel}>禁止事項</span>
+            <ul className={styles.rulesGrid}>
+              {RULES.map((rule) => (
+                <li key={rule} className={styles.rule}>
+                  {rule}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div className={styles.footer}>
         <label className={styles.check}>
           <input
             type="checkbox"
