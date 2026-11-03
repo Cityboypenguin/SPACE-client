@@ -21,9 +21,10 @@ const isHidden = (userId: string): boolean => {
 };
 
 export const useWeeklyNotice = (userId: string | null) => {
-  const [dismissed, setDismissed] = useState(false);
+  // 閉じたのがどの利用者かを覚える（ログアウトして別の利用者が入ったら、その人にはまた出す）。
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null);
 
-  const open = !!userId && !dismissed && !isHidden(userId);
+  const open = !!userId && dismissedFor !== userId && !isHidden(userId);
 
   const close = useCallback(
     (hideForWeek: boolean) => {
@@ -34,7 +35,7 @@ export const useWeeklyNotice = (userId: string | null) => {
           // 保存できなくても、このセッションでは閉じる。
         }
       }
-      setDismissed(true);
+      setDismissedFor(userId);
     },
     [userId],
   );
