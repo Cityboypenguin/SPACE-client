@@ -22,6 +22,8 @@ setup('authenticate as user', async ({ page, request, baseURL }) => {
       localStorage.setItem(tokenKey, t);
       localStorage.setItem(refreshKey, r);
       localStorage.setItem(idKey, id);
+      // 週1回のお知らせが画面を覆わないよう、「1週間表示しない」を選んだ状態にする。
+      localStorage.setItem(`weeklyNoticeHiddenAt:${id}`, String(Date.now()));
     },
     [USER_TOKEN_KEY, USER_REFRESH_TOKEN_KEY, USER_ID_KEY, token, refreshToken, user.ID],
   );
