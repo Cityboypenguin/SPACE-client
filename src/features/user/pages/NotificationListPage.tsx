@@ -40,7 +40,7 @@ type ViewingActor = { actor: NotificationActor; type: string };
 
 // 過去の通知はDBに旧文言（フォロー表記）のまま保存されているため、
 // 表示時に上書きする（対症療法。DBのmessage列は書き換えない）。
-const FOLLOW_MESSAGE = 'あなたがお気に入りに登録されました';
+const FOLLOW_MESSAGE = 'あなたがお気に入りされました';
 const displayMessage = (type: string, message: string) => type === 'follow' ? FOLLOW_MESSAGE : message;
 
 function HeartIcon() {

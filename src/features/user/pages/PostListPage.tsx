@@ -774,7 +774,7 @@ export const PostListPage = () => {
             )}
             {displayedPosts.length === 0 && (
               <StatusText style={{ padding: '2rem' }}>
-                {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'フォロー中のユーザーの投稿がありません' : '投稿がまだありません'}
+                {isSearching ? '検索結果がありません' : activeTab === 'favorites' ? 'お気に入り登録しているユーザーの投稿がありません' : '投稿がまだありません'}
               </StatusText>
             )}
             <div ref={recommendedSentinelRef} className={styles.sentinel} />
