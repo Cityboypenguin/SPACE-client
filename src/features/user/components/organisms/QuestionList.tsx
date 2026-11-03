@@ -1,3 +1,4 @@
+import { maskNGWordDraft, showNGWordFeedback } from '../../../../lib/ngWordFeedback';
 import { useEffect, useState } from 'react';
 import { useCourseQuestions } from '../../hooks/useCourseQuestions';
 import { useQuestionAnswers } from '../../hooks/useQuestionAnswers';
@@ -57,7 +58,11 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
       setBody('');
       setFiles([]);
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : '質問の送信に失敗しました。');
+      if (showNGWordFeedback(err)) {
+        setBody((current) => maskNGWordDraft(err, current));
+      } else {
+        setSendError(err instanceof Error ? err.message : '質問の送信に失敗しました。');
+      }
     } finally {
       setSending(false);
     }

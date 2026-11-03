@@ -1,3 +1,4 @@
+import { maskNGWordDraft, showNGWordFeedback } from '../../../../lib/ngWordFeedback';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
@@ -60,6 +61,7 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [title, setTitle] = useState('');
+  const [renameTitle, setRenameTitle] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -121,7 +123,11 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
       navigation.open(created.roomID);
       await refreshList();
     } catch (cause) {
-      setError(toUserMessage(cause, 'スレッドを作成できませんでした。'));
+      if (showNGWordFeedback(cause)) {
+        setTitle((current) => maskNGWordDraft(cause, current));
+      } else {
+        setError(toUserMessage(cause, 'スレッドを作成できませんでした。'));
+      }
     } finally { setBusy(false); }
   };
   const change = async (values: { title?: string; closed?: boolean }) => {
@@ -133,7 +139,11 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
       await refreshThread();
       await refreshList();
     } catch (cause) {
-      setError(toUserMessage(cause, 'スレッドを変更できませんでした。'));
+      if (showNGWordFeedback(cause)) {
+        setRenameTitle((current) => maskNGWordDraft(cause, current));
+      } else {
+        setError(toUserMessage(cause, 'スレッドを変更できませんでした。'));
+      }
     } finally { setBusy(false); }
   };
   const validThread = thread?.parentRoomID === parentRoomID ? thread : null;
@@ -149,7 +159,7 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
           <h2 id={titleId} ref={headingRef} tabIndex={-1}>{heading}</h2>
         </div>
         {activeID && <ThreadListButton parentRoomID={parentRoomID} compact />}
-        {validThread?.canManage && writable && <button type="button" className={styles.iconButton} onClick={() => setSettingsOpen(value => !value)} aria-label="スレッド設定" aria-expanded={settingsOpen}>⋯</button>}
+        {validThread?.canManage && writable && <button type="button" className={styles.iconButton} onClick={() => { setRenameTitle(validThread.title); setSettingsOpen(value => !value); }} aria-label="スレッド設定" aria-expanded={settingsOpen}>⋯</button>}
       </header>
       {error && <p className={styles.error} role="alert">{error}</p>}
       {isCreating ? <div className={styles.panelBody}>
@@ -180,7 +190,7 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
         {settingsOpen && validThread.canManage && writable && <div className={styles.settings}>
           <form className={styles.form} onSubmit={event => { event.preventDefault(); void change({ title: String(new FormData(event.currentTarget).get('title')) }); }}>
             <label htmlFor={`${titleId}-rename`}>タイトル</label>
-            <div className={styles.renameRow}><input id={`${titleId}-rename`} name="title" aria-label="新しいタイトル" defaultValue={validThread.title} key={validThread.title} maxLength={100} required disabled={busy} /><button type="submit" className={styles.secondaryButton} disabled={busy}>変更</button></div>
+            <div className={styles.renameRow}><input id={`${titleId}-rename`} name="title" aria-label="新しいタイトル" value={renameTitle} onChange={event => setRenameTitle(event.target.value)} maxLength={100} required disabled={busy} /><button type="submit" className={styles.secondaryButton} disabled={busy}>変更</button></div>
           </form>
           <button className={styles.textButton} type="button" disabled={busy} onClick={() => change({ closed: !validThread.isClosed })}>{validThread.isClosed ? '再開する' : 'クローズする'}</button>
         </div>}

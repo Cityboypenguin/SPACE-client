@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { AppSwal } from '../../../../lib/swal';
 import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
 import clipIcon from '../../../../assets/パーツ_クリップ.svg';
@@ -113,7 +114,7 @@ export const ChatInput = ({
 
   // 送信完了後 (disabled: true → false) にテキストエリアへフォーカスを戻す
   useEffect(() => {
-    if (prevDisabledRef.current === true && disabled === false) {
+    if (prevDisabledRef.current === true && disabled === false && !AppSwal.isVisible()) {
       textareaRef.current?.focus();
     }
     prevDisabledRef.current = disabled;

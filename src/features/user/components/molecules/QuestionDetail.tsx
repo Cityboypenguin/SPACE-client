@@ -1,3 +1,4 @@
+import { maskNGWordDraft, showNGWordFeedback } from '../../../../lib/ngWordFeedback';
 import { useEffect, useRef, useState } from 'react';
 import { ClampedText } from '../../../../components/atoms/ClampedText';
 import deleteIcon from '../../../../assets/パーツ_削除.svg';
@@ -103,7 +104,11 @@ export const QuestionDetail = ({
         answerElementsRef.current.get(created.ID)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '回答の送信に失敗しました。');
+      if (showNGWordFeedback(err)) {
+        setAnswerBody((current) => maskNGWordDraft(err, current));
+      } else {
+        setError(err instanceof Error ? err.message : '回答の送信に失敗しました。');
+      }
     } finally {
       setAnswering(false);
     }

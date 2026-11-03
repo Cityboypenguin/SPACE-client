@@ -190,7 +190,17 @@ const doRefresh = async (isAdmin: boolean): Promise<string | null> => {
   }
 };
 
-type GraphQLError = { message: string; extensions?: { code?: string } };
+type GraphQLError = { message: string; extensions?: { code?: string; maskedTexts?: unknown } };
+
+export class GraphQLRequestError extends Error {
+  readonly errors: GraphQLError[];
+
+  constructor(errors: GraphQLError[]) {
+    super(errors.map((error) => error.message).join(', '));
+    this.name = 'GraphQLRequestError';
+    this.errors = errors;
+  }
+}
 
 // 認証エラー判定は extensions.code（サーバーと共有する安定した契約）を優先する。
 // code が無い古いサーバー／エラー経路のためにメッセージ文字列マッチをフォールバックとして残す。
@@ -273,14 +283,19 @@ export const request = async <T>(
       if (contentType.includes('application/json')) {
         const errorJson = await response.json();
         if (Array.isArray(errorJson?.errors) && errorJson.errors.length > 0) {
-          detail = errorJson.errors.map((e: { message?: string }) => e.message || '').filter(Boolean).join(', ');
+          if (errorJson.errors.some((error: GraphQLError) => error.extensions?.code === 'NG_WORD_BLOCKED')) {
+            throw new GraphQLRequestError(errorJson.errors);
+          }
+          detail = errorJson.errors.map((error: GraphQLError) => error.message || '').filter(Boolean).join(', ');
         } else if (typeof errorJson?.message === 'string') {
           detail = errorJson.message;
         }
       } else {
         detail = (await response.text()).trim();
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      if (err instanceof GraphQLRequestError) throw err;
+    }
     const suffix = detail ? `: ${detail}` : '';
     throw new Error(`Network response was not ok (${response.status} ${response.statusText})${suffix}`);
   }
@@ -289,7 +304,6 @@ export const request = async <T>(
 
   if (json.errors) {
     const errors: GraphQLError[] = json.errors;
-    const message = errors.map((e) => e.message).join(', ');
 
     if (isAuthErrorFromErrors(errors)) {
       if (!_retrying) {
@@ -302,7 +316,7 @@ export const request = async <T>(
       return Promise.reject(new Error('Unauthorized'));
     }
 
-    throw new Error(message);
+    throw new GraphQLRequestError(errors);
   }
 
   return json.data;

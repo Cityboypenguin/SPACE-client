@@ -41,7 +41,7 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
     } else if (query.includes('query HasUnreadChatThreads')) data={hasUnreadChatThreads:hasUnread};
     else if (query.includes('query MessageReactionEmojis')) data={messageReactionEmojis:[]};
     else if (query.includes('query ChatThreadList')) data={chatThreads:created?[{...thread}]:[]};
-    else if (query.includes('query ChatThreadDetail')) data={chatThread:created?{...thread}:null};
+    else if (query.includes('query ChatThreadDetail')) data={chatThread:created?{...thread,...(v.roomID === 'thread-other' ? {roomID:'thread-other',title:'別の話題'} : {})}:null};
     else if (query.includes('query GetRoom')) data={room:{ID:v.id,name:v.id==='parent1'?'コミュニティ':thread.title,type:'community',user:[],isMessagingDisabled:false,lastReadAt:null,lastReadMessageID:null,unreadCount:v.id==='thread1'&&hasUnread?1:0}};
     else if (query.includes('query ListMessages')) data={messages:{items:messages[v.roomID] ?? [],hasMoreBefore:false,hasMoreAfter:false}};
     else if (query.includes('mutation SendMessage')) {
@@ -184,4 +184,19 @@ test('チャットからスレッドを作成し、案内と一覧から開い�
   await expect(main).toBeVisible();
   expect(new URL(page.url()).searchParams.get('messageID')).toBe('keep');
   expect(new URL(page.url()).searchParams.has('thread')).toBe(false);
+  // Switching cards in the parent chat must not make the previous thread the back target.
+  await page.setViewportSize({width:1280, height:900});
+  await announcement.getByRole('button').click();
+  await expect(panel.getByRole('heading', {name:'変更後の相談'})).toBeVisible();
+  await otherCard.click();
+  await expect(panel.getByRole('heading', {name:'別の話題'})).toBeVisible();
+  await expect(panel.getByRole('button', {name:'親チャットに戻る'})).toBeVisible();
+  // Reopening the same card must not add another back destination either.
+  await otherCard.click();
+  await page.reload();
+  await panel.getByRole('button', {name:'親チャットに戻る'}).click();
+  await expect(panel).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.has('thread')).toBe(false);
+  expect(new URL(page.url()).searchParams.get('messageID')).toBe('keep');
+
 });

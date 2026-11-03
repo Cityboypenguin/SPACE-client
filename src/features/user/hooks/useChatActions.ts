@@ -1,3 +1,4 @@
+import { maskNGWordDraft, showNGWordFeedback } from '../../../lib/ngWordFeedback';
 import { mutate } from 'swr';
 import { useState } from 'react';
 import {
@@ -61,7 +62,11 @@ export const useChatActions = (
       addMessage(data.sendMessage);
       void mutate(['chat-thread', roomId]).catch(() => undefined);
     } catch (err) {
-      setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
+      if (showNGWordFeedback(err)) {
+        setContent((current) => maskNGWordDraft(err, current));
+      } else {
+        setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
+      }
     } finally {
       setSending(false);
     }
@@ -129,7 +134,11 @@ export const useChatActions = (
       await updateMessage(roomId, msgId, trimmed, mentionUserIDs);
       setEditingId(null);
     } catch (err) {
-      setSendError(toUserMessage(err, 'メッセージの編集に失敗しました。時間をおいてから再度お試しください。'));
+      if (showNGWordFeedback(err)) {
+        setEditContent((current) => maskNGWordDraft(err, current));
+      } else {
+        setSendError(toUserMessage(err, 'メッセージの編集に失敗しました。時間をおいてから再度お試しください。'));
+      }
     }
   };
 

@@ -1,3 +1,4 @@
+import { maskNGWordDraft, showNGWordFeedback } from '../../../../lib/ngWordFeedback';
 import { useState } from 'react';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import { type Addendum } from '../../api/question';
@@ -41,7 +42,11 @@ export const AddendumSection = ({ addenda, canAdd, onAdd }: Props) => {
       await onAdd(trimmed);
       close();
     } catch (err) {
-      setError(toUserMessage(err, '追記に失敗しました。時間をおいてから再度お試しください。'));
+      if (showNGWordFeedback(err)) {
+        setBody((current) => maskNGWordDraft(err, current));
+      } else {
+        setError(toUserMessage(err, '追記に失敗しました。時間をおいてから再度お試しください。'));
+      }
     } finally {
       setBusy(false);
     }
