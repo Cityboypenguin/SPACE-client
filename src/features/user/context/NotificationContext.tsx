@@ -16,6 +16,7 @@ import { getUnreadNotificationCount, issueNotificationStreamTicket } from '../ap
 
 import { SSE_URL, refreshUserAccessToken } from '../../../lib/graphql';
 import { USER_ID_KEY, USER_TOKEN_KEY } from '../../../lib/authStorage';
+import { isDesktop, notifyDesktop } from '../../../lib/desktop';
 
 type SSENotificationPayload = {
   id: string;
@@ -245,6 +246,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           }
           console.log('[SSE] calling addToast:', payload.message, link);
           addToastRef.current(payload.message, 'info', 4000, link);
+          notifyDesktop({ title: 'Senshu-Universe', body: payload.message, link });
         } catch (err) {
           console.error('[SSE] failed to parse notification:', err, e.data);
         }
@@ -264,7 +266,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       closeES();
       clearReconnectTimer();
       // hidden 中は復帰時（visibilitychange）に即再接続するので、無駄なリトライを走らせない
-      if (document.visibilityState === 'hidden') return;
+      if (document.visibilityState === 'hidden' && !isDesktop()) return;
 
       const backoff = Math.min(1000 * 2 ** retryCount, MAX_BACKOFF);
       retryCount += 1;
@@ -295,6 +297,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           }, 0);
         }
       } else {
+        // デスクトップは閉じても常駐するため、非表示でも通知を受け取り続ける。
+        if (isDesktop()) return;
         // hidden：一定時間そのままならサーバースロット解放のため接続を畳む
         if (hiddenCloseTimer) clearTimeout(hiddenCloseTimer);
         hiddenCloseTimer = setTimeout(() => {

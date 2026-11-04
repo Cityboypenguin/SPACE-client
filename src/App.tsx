@@ -7,6 +7,7 @@ import { MaintenancePage } from './components/pages/MaintenancePage';
 import { NotificationProvider } from './features/user/context/NotificationContext';
 import { userRoutes } from './features/user/routes/UserRoutes';
 import { initSessionTracker, trackPageEnter } from './lib/sessionTracker';
+import { DesktopIntegration } from './components/DesktopIntegration';
 
 const AdminRoutes = lazy(() =>
   import('./features/admin/routes/AdminRoutes').then((m) => ({ default: m.AdminRoutes })),
@@ -30,6 +31,7 @@ function App() {
   return (
     <ToastProvider>
       <NotificationProvider>
+        <DesktopIntegration />
         <SessionTracker />
         <OfflineBanner />
         <ToastContainer />

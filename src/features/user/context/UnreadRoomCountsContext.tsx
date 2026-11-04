@@ -9,11 +9,18 @@ import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useKnownCourseChatEnabled } from '../hooks/useCourseChatEnabled';
 import { UnreadRoomCountsContext } from './unreadRoomCountsContextValue';
+import { updateDesktopUnread } from '../../../lib/desktop';
 
 export const UnreadRoomCountsProvider = ({ children }: { children: ReactNode }) => {
   const [dmUnreadCount, setDmUnreadCount] = useState(0);
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
   const [courseUnreadCounts, setCourseUnreadCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    updateDesktopUnread({ dm: dmUnreadCount });
+  }, [dmUnreadCount]);
+
+  useEffect(() => () => updateDesktopUnread({ dm: 0 }), []);
 
   const applyCourseCounts = useCallback((counts: { roomID: string; unreadCount: number }[]) => {
     setCourseUnreadCounts(Object.fromEntries(counts.map((c) => [c.roomID, c.unreadCount])));
