@@ -245,6 +245,20 @@
   --mention-self-color: var(--color-link-hover);
 }
 
+/* ダークモードではスレッド内のチャット背景と相手側吹き出しが近い色になるため、
+   ダーク時だけ濃淡と境界線を加える。ライトモードは従来の色を維持する。 */
+:global(:root[data-theme='dark']) .bubbleTheirs {
+  background-color: color-mix(in srgb, var(--color-bg-elevated) 78%, var(--color-text) 22%);
+  border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .bubbleTheirs {
+    background-color: color-mix(in srgb, var(--color-bg-elevated) 78%, var(--color-text) 22%);
+    border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+  }
+}
+
 .timestamp {
   font-size: 0.7rem;
   line-height: 1.2;
