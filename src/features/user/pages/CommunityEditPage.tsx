@@ -87,7 +87,7 @@ export const CommunityEditPage = () => {
       let avatarKey: string | undefined;
       if (selectedFile) {
         const { presignedCommunityIconUploadUrl } = await getPresignedCommunityIconUploadUrl(selectedFile.type);
-        await uploadAvatarToStorage(presignedCommunityIconUploadUrl.uploadUrl, selectedFile);
+        await uploadAvatarToStorage(presignedCommunityIconUploadUrl, selectedFile);
         avatarKey = presignedCommunityIconUploadUrl.objectKey;
       } else if (isIconDeleted) {
         avatarKey = 'none';

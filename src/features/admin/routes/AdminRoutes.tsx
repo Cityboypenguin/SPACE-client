@@ -1,8 +1,10 @@
 import { lazy } from 'react';
+import { useChatStamps } from '../../user/hooks/useChatStamps';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { AdminLoginForm } from '../components/organisms/AdminLoginForm';
 import { AdminProtectedRoute } from './AdminProtectedRoute';
 
+const AdminChatStampsPage = lazy(() => import('../pages/AdminChatStampsPage').then(m=>({default:m.AdminChatStampsPage})));
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 const AdminRegisterPage = lazy(() => import('../pages/AdminRegisterPage').then((m) => ({ default: m.AdminRegisterPage })));
 const AdminUserListPage = lazy(() => import('../pages/AdminUserListPage').then((m) => ({ default: m.AdminUserListPage })));
@@ -16,6 +18,8 @@ const AdminCommunityDetailPage = lazy(() => import('../pages/AdminCommunityDetai
 const AdminPostListPage = lazy(() => import('../pages/AdminPostListPage').then((m) => ({ default: m.AdminPostListPage })));
 const AdminPostDetailPage = lazy(() => import('../pages/AdminPostDetailPage').then((m) => ({ default: m.AdminPostDetailPage })));
 const ReportsPage = lazy(() => import('../pages/AdminReportListPage').then((m) => ({ default: m.ReportsPage })));
+const AdminReportDetailPage = lazy(() => import('../pages/AdminReportDetailPage').then((m) => ({ default: m.AdminReportDetailPage })));
+const AdminReportNotificationPage = lazy(() => import('../pages/AdminReportNotificationPage').then((m) => ({ default: m.AdminReportNotificationPage })));
 const AdminInquiryListPage = lazy(() => import('../pages/AdminInquiryListPage').then((m) => ({ default: m.AdminInquiryListPage })));
 const AdminInquiryDetailPage = lazy(() => import('../pages/AdminInquiryDetailPage').then((m) => ({ default: m.AdminInquiryDetailPage })));
 const AdminAnnouncementListPage = lazy(() => import('../pages/AdminAnnouncementListPage').then((m) => ({ default: m.AdminAnnouncementListPage })));
@@ -27,11 +31,18 @@ const AdminTermsDetailPage = lazy(() => import('../pages/AdminTermsDetailPage').
 const AdminMaintenancePage = lazy(() => import('../pages/AdminMaintenancePage').then((m) => ({ default: m.AdminMaintenancePage })));
 const AdminAnalyticsPage = lazy(() => import('../pages/AdminAnalyticsPage').then((m) => ({ default: m.AdminAnalyticsPage })));
 const AdminCourseManagementPage = lazy(() => import('../pages/AdminCourseManagementPage').then((m) => ({ default: m.AdminCourseManagementPage })));
+const AdminNGWordsPage = lazy(() => import('../pages/AdminNGWordsPage').then((m) => ({ default: m.AdminNGWordsPage })));
+const AdminCourseChatImagesPage = lazy(() => import('../pages/AdminCourseChatImagesPage').then((m) => ({ default: m.AdminCourseChatImagesPage })));
+const AdminCourseChatListPage = lazy(() => import('../pages/AdminCourseChatListpage').then((m) => ({ default: m.AdminCourseChatListPage })));
+const AdminThreadDetailPage = lazy(() => import('../pages/AdminThreadDetailPage').then((m) => ({ default: m.AdminThreadDetailPage })));
 const AdminCourseChatDetailPage = lazy(() => import('../pages/AdminCourseChatDetailPage').then((m) => ({ default: m.AdminCourseChatDetailPage })));
+const AdminCourseSyncPage = lazy(() => import('../pages/AdminCourseSyncPage').then((m) => ({ default: m.AdminCourseSyncPage })));
 
 export const AdminRoutes = () => {
+  useChatStamps();
   return (
     <Routes>
+      <Route path="chat-stamps" element={<AdminProtectedRoute><AdminChatStampsPage /></AdminProtectedRoute>} />
       <Route path="login" element={<AdminLoginForm />} />
       <Route path="register" element={<AdminRegisterPage />} />
       <Route
@@ -107,6 +118,14 @@ export const AdminRoutes = () => {
         }
       />
       <Route
+        path="communities/:id/threads/:threadID"
+        element={
+          <AdminProtectedRoute>
+            <AdminThreadDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
         path="posts"
         element={
           <AdminProtectedRoute>
@@ -127,6 +146,22 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <ReportsPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="reports/notification-recipients"
+        element={
+          <AdminProtectedRoute>
+            <AdminReportNotificationPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="reports/:id"
+        element={
+          <AdminProtectedRoute>
+            <AdminReportDetailPage />
           </AdminProtectedRoute>
         }
       />
@@ -219,10 +254,50 @@ export const AdminRoutes = () => {
         }
       />
       <Route
+        path="ng-words"
+        element={
+          <AdminProtectedRoute>
+            <AdminNGWordsPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="course-chat-images"
+        element={
+          <AdminProtectedRoute>
+            <AdminCourseChatImagesPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="course-chats"
+        element={
+          <AdminProtectedRoute>
+            <AdminCourseChatListPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
         path="courses/:id"
         element={
           <AdminProtectedRoute>
             <AdminCourseChatDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="courses/:id/threads/:threadID"
+        element={
+          <AdminProtectedRoute>
+            <AdminThreadDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="course-sync"
+        element={
+          <AdminProtectedRoute>
+            <AdminCourseSyncPage />
           </AdminProtectedRoute>
         }
       />

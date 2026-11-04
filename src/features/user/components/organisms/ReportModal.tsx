@@ -5,10 +5,21 @@ import { toUserMessage } from '../../../../lib/errorMessages';
 import { Modal } from '../../../../components/molecules/Modal';
 import styles from './ReportModal.module.css';
 
+const targetLabels = {
+  POST: '投稿',
+  USER: 'ユーザー',
+  COMMUNITY: 'コミュニティ',
+  MESSAGE: 'メッセージ',
+  QUESTION: '質問',
+  ANSWER: '回答',
+  POLL: '投票',
+  THREAD: 'スレッド',
+};
+
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: 'POST' | 'USER' | 'COMMUNITY';
+  targetType: keyof typeof targetLabels;
   targetID: string;
   postContent?: string;
 }
@@ -21,10 +32,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
 
   if (!isOpen) return null;
 
-  const title =
-    targetType === 'POST' ? '投稿を通報する' :
-    targetType === 'USER' ? 'ユーザーを通報する' :
-    'コミュニティを通報する';
+  const title = `${targetLabels[targetType]}を通報する`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +60,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, targe
 
         {postContent && (
           <div className={styles.postPreview}>
-            <span className={styles.postPreviewLabel}>対象の投稿内容:</span>
+            <span className={styles.postPreviewLabel}>{targetType === 'POST' ? '対象の投稿内容:' : `対象の${targetLabels[targetType]}:`}</span>
             {postContent}
           </div>
         )}

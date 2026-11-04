@@ -1,0 +1,70 @@
+.overlay {
+  background: rgba(15, 23, 42, 0.7);
+  z-index: 9000;
+  padding: 1rem;
+}
+
+.modal {
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  color: var(--color-text);
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
+
+.title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.lead {
+  margin: 0 0 0.5rem;
+}
+
+.list {
+  margin: 0 0 0.75rem;
+  padding-left: 1.4rem;
+}
+
+.closing {
+  margin: 0;
+}
+
+.footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.okButton {
+  width: 100%;
+  padding: 0.75rem;
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}

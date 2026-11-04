@@ -1,6 +1,8 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
+import { type Media } from '../../../lib/media';
+import type { SortOrder } from '../../../generated/graphql';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
@@ -22,6 +24,8 @@ export type CourseImportStatus = {
   processedCount?: number | null;
   totalCount?: number | null;
   progressPercent?: number | null;
+  dryRun: boolean;
+  syncRunID?: string | null;
 };
 
 export type Course = {
@@ -34,6 +38,8 @@ export type Course = {
   year: number;
   semester: string;
   createdAt: string;
+  discontinued: boolean;
+  messageCount?: number;
 };
 
 // registeredCount（その授業を時間割に登録している人数）はサーバー側で都度集計されるため、
@@ -57,6 +63,17 @@ export type CoursePage = {
   total: number;
 };
 
+export type CourseSortField =
+  | 'COURSE_NAME'
+  | 'TEACHER_NAME'
+  | 'YEAR'
+  | 'REGISTERED_COUNT'
+  | 'CREATED_AT'
+  | 'createdAt'
+  | 'registeredCount'
+  | 'messageCount';
+export type CourseSortOrder = SortOrder | 'asc' | 'desc';
+
 const CurrentSemesterDocument = graphql(`
   query AdminCurrentSemester {
     currentSemester {
@@ -65,6 +82,11 @@ const CurrentSemesterDocument = graphql(`
     }
   }
 `);
+
+export const getCurrentSemester = async (): Promise<CurrentSemester> => {
+  const data = await requestDoc(CurrentSemesterDocument, {}, getAdminToken());
+  return data.currentSemester;
+};
 
 const UpdateCurrentSemesterDocument = graphql(`
   mutation AdminUpdateCurrentSemester($year: Int!, $semester: String!) {
@@ -88,13 +110,15 @@ const AdminCourseImportStatusDocument = graphql(`
       processedCount
       totalCount
       progressPercent
+      dryRun
+      syncRunID
     }
   }
 `);
 
 const AdminTriggerCourseImportDocument = graphql(`
-  mutation AdminTriggerCourseImport($year: Int!) {
-    adminTriggerCourseImport(year: $year) {
+  mutation AdminTriggerCourseImport($year: Int!, $dryRun: Boolean) {
+    adminTriggerCourseImport(year: $year, dryRun: $dryRun) {
       state
       year
       imported
@@ -105,13 +129,15 @@ const AdminTriggerCourseImportDocument = graphql(`
       processedCount
       totalCount
       progressPercent
+      dryRun
+      syncRunID
     }
   }
 `);
 
 const AdminListCoursesDocument = graphql(`
-  query AdminListCourses($year: Int, $semester: String, $dayOfWeek: String, $keyword: String, $limit: Int, $offset: Int) {
-    adminListCourses(year: $year, semester: $semester, dayOfWeek: $dayOfWeek, keyword: $keyword, limit: $limit, offset: $offset) {
+  query AdminListCourses($year: Int, $semester: String, $dayOfWeek: String, $keyword: String, $sortBy: String, $sortOrder: SortOrder, $limit: Int, $offset: Int) {
+    adminListCourses(year: $year, semester: $semester, dayOfWeek: $dayOfWeek, keyword: $keyword, sortBy: $sortBy, sortOrder: $sortOrder, limit: $limit, offset: $offset) {
       items {
         ID
         roomID
@@ -122,7 +148,9 @@ const AdminListCoursesDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
         registeredCount
+        messageCount
       }
       total
     }
@@ -141,6 +169,7 @@ const AdminCreateCourseDocument = graphql(`
       year
       semester
       createdAt
+      discontinued
       registeredCount
     }
   }
@@ -185,6 +214,7 @@ const AdminGetCourseDocument = graphql(`
       year
       semester
       createdAt
+      discontinued
     }
   }
 `);
@@ -195,21 +225,31 @@ export const getCourse = async (id: string): Promise<Course | null> => {
 };
 
 export const listCourses = async (
-  filter: { year?: number; semester?: string; dayOfWeek?: string; keyword?: string },
+  filter: {
+    year?: number;
+    semester?: string;
+    dayOfWeek?: string;
+    keyword?: string;
+    sortBy?: CourseSortField;
+    sortOrder?: CourseSortOrder;
+  },
   limit = 20,
   offset = 0,
 ): Promise<CoursePage> => {
+  const sortBy = filter.sortBy === 'CREATED_AT' ? 'createdAt' : filter.sortBy === 'REGISTERED_COUNT' ? 'registeredCount' : filter.sortBy === 'YEAR' ? 'createdAt' : filter.sortBy;
+  const sortOrder = filter.sortOrder === 'asc' ? 'ASC' : filter.sortOrder === 'desc' ? 'DESC' : filter.sortOrder;
   const data = await requestDoc(
     AdminListCoursesDocument,
-    { ...filter, limit, offset },
+    {
+      ...filter,
+      sortBy,
+      sortOrder,
+      limit,
+      offset,
+    },
     getAdminToken(),
   );
   return data.adminListCourses;
-};
-
-export const getCurrentSemester = async (): Promise<CurrentSemester> => {
-  const data = await requestDoc(CurrentSemesterDocument, {}, getAdminToken());
-  return data.currentSemester;
 };
 
 export const updateCurrentSemester = async (year: number, semester: string): Promise<CurrentSemester> => {
@@ -222,9 +262,215 @@ export const getCourseImportStatus = async (): Promise<CourseImportStatus> => {
   return data.adminCourseImportStatus;
 };
 
-export const triggerCourseImport = async (year: number): Promise<CourseImportStatus> => {
-  const data = await requestDoc(AdminTriggerCourseImportDocument, { year }, getAdminToken());
+export const triggerCourseImport = async (year: number, dryRun: boolean): Promise<CourseImportStatus> => {
+  const data = await requestDoc(AdminTriggerCourseImportDocument, { year, dryRun }, getAdminToken());
   return data.adminTriggerCourseImport;
+};
+
+// ■ シラバス同期の結果
+//
+// 取り込みは DB の授業をシラバスの今の内容に合わせる（作成・更新・廃止）。実行ごとの
+// 集計と授業1件ごとの変更、自動で判断しなかった変化（確認待ち）をここで引く。
+
+export type CourseSyncChangeKind = 'CREATED' | 'UPDATED' | 'DISCONTINUED' | 'RESTORED' | 'REVIEW';
+export type CourseSyncReviewKind = 'CODE_REUSED' | 'CODE_REISSUED' | 'SLOT_AMBIGUOUS' | 'SEMESTER_CHANGED';
+export type CourseSyncReviewStatus = 'PENDING' | 'SAME' | 'DIFFERENT' | 'IGNORED' | 'APPLIED';
+export type CourseSyncReviewDecision = 'SAME' | 'DIFFERENT' | 'IGNORED';
+
+export type CourseSnapshot = {
+  courseID?: string | null;
+  sourceRef: string;
+  semester: string;
+  dayOfWeek: string;
+  period: number;
+  courseName: string;
+  teacherName: string;
+};
+
+export type CourseSyncRun = {
+  ID: string;
+  year: number;
+  dryRun: boolean;
+  siteTotal: number;
+  listedRows: number;
+  unidentifiedRows: number;
+  createdCount: number;
+  updatedCount: number;
+  discontinuedCount: number;
+  restoredCount: number;
+  reviewCount: number;
+  unchangedCount: number;
+  unregisteredCount: number;
+  discontinueSkippedReason?: string | null;
+  startedAt: string;
+  finishedAt: string;
+};
+
+export type CourseSyncChange = {
+  ID: string;
+  kind: CourseSyncChangeKind;
+  courseID?: string | null;
+  reviewID?: string | null;
+  courseName: string;
+  teacherName: string;
+  detail: string;
+  before?: CourseSnapshot | null;
+  after?: CourseSnapshot | null;
+  registeredCount: number;
+  // コマが変わり、移った先のコマに別の授業があったため時間割から外した（ドライランでは外す予定の）人数。
+  unregisteredCount: number;
+};
+
+export type CourseSyncReview = {
+  ID: string;
+  year: number;
+  kind: CourseSyncReviewKind;
+  status: CourseSyncReviewStatus;
+  message: string;
+  existing: CourseSnapshot[];
+  proposed: CourseSnapshot[];
+  createdAt: string;
+  resolvedAt?: string | null;
+};
+
+const AdminCourseSyncRunsDocument = graphql(`
+  query AdminCourseSyncRuns($year: Int, $limit: Int, $offset: Int) {
+    adminCourseSyncRuns(year: $year, limit: $limit, offset: $offset) {
+      items {
+        ID
+        year
+        dryRun
+        siteTotal
+        listedRows
+        unidentifiedRows
+        createdCount
+        updatedCount
+        discontinuedCount
+        restoredCount
+        reviewCount
+        unchangedCount
+        unregisteredCount
+        discontinueSkippedReason
+        startedAt
+        finishedAt
+      }
+      total
+    }
+  }
+`);
+
+export const listCourseSyncRuns = async (
+  limit = 20,
+  offset = 0,
+): Promise<{ items: CourseSyncRun[]; total: number }> => {
+  const data = await requestDoc(AdminCourseSyncRunsDocument, { limit, offset }, getAdminToken());
+  return data.adminCourseSyncRuns;
+};
+
+const AdminCourseSyncChangesDocument = graphql(`
+  query AdminCourseSyncChanges($runID: ID!, $kind: CourseSyncChangeKind, $limit: Int, $offset: Int) {
+    adminCourseSyncChanges(runID: $runID, kind: $kind, limit: $limit, offset: $offset) {
+      items {
+        ID
+        kind
+        courseID
+        reviewID
+        courseName
+        teacherName
+        detail
+        before {
+          courseID
+          sourceRef
+          semester
+          dayOfWeek
+          period
+          courseName
+          teacherName
+        }
+        after {
+          courseID
+          sourceRef
+          semester
+          dayOfWeek
+          period
+          courseName
+          teacherName
+        }
+        registeredCount
+        unregisteredCount
+      }
+      total
+    }
+  }
+`);
+
+export const listCourseSyncChanges = async (
+  runID: string,
+  kind: CourseSyncChangeKind | undefined,
+  limit = 50,
+  offset = 0,
+): Promise<{ items: CourseSyncChange[]; total: number }> => {
+  const data = await requestDoc(AdminCourseSyncChangesDocument, { runID, kind, limit, offset }, getAdminToken());
+  return data.adminCourseSyncChanges;
+};
+
+const AdminCourseSyncReviewsDocument = graphql(`
+  query AdminCourseSyncReviews($status: CourseSyncReviewStatus, $limit: Int, $offset: Int) {
+    adminCourseSyncReviews(status: $status, limit: $limit, offset: $offset) {
+      items {
+        ID
+        year
+        kind
+        status
+        message
+        existing {
+          courseID
+          sourceRef
+          semester
+          dayOfWeek
+          period
+          courseName
+          teacherName
+        }
+        proposed {
+          courseID
+          sourceRef
+          semester
+          dayOfWeek
+          period
+          courseName
+          teacherName
+        }
+        createdAt
+        resolvedAt
+      }
+      total
+    }
+  }
+`);
+
+export const listCourseSyncReviews = async (
+  status: CourseSyncReviewStatus | undefined,
+  limit = 20,
+  offset = 0,
+): Promise<{ items: CourseSyncReview[]; total: number }> => {
+  const data = await requestDoc(AdminCourseSyncReviewsDocument, { status, limit, offset }, getAdminToken());
+  return data.adminCourseSyncReviews;
+};
+
+const AdminResolveCourseSyncReviewDocument = graphql(`
+  mutation AdminResolveCourseSyncReview($id: ID!, $decision: CourseSyncReviewDecision!) {
+    adminResolveCourseSyncReview(id: $id, decision: $decision) {
+      ID
+      status
+      resolvedAt
+    }
+  }
+`);
+
+export const resolveCourseSyncReview = async (id: string, decision: CourseSyncReviewDecision) => {
+  const data = await requestDoc(AdminResolveCourseSyncReviewDocument, { id, decision }, getAdminToken());
+  return data.adminResolveCourseSyncReview;
 };
 
 export type ChatUser = {
@@ -248,6 +494,7 @@ export type Question = {
   user: ChatUser;
   body: string;
   isAnswered: boolean;
+  addenda: { ID: string; body: string }[];
   // 一覧では件数しか使わない。回答そのものが要る画面ができたら、その画面だけが
   // answers を選ぶこと（一覧のクエリへ戻さない）。
   answerCount: number;
@@ -288,6 +535,10 @@ const AdminGetCourseQuestionsDocument = graphql(`
         # 回答の本文と投稿者を全部取り、その length を件数にしていた。
         # 質問200件 × 回答200件で、最大4万行が1回の応答に乗っていた。
         answerCount
+        addenda {
+          ID
+          body
+        }
         createdAt
       }
       total
@@ -322,6 +573,87 @@ const AdminDeleteQuestionDocument = graphql(`
 export const adminDeleteQuestion = async (id: string): Promise<boolean> => {
   const data = await requestDoc(AdminDeleteQuestionDocument, { id }, getAdminToken());
   return data.adminDeleteQuestion;
+};
+
+const AdminDeleteQuestionAddendumDocument = graphql(`
+  mutation AdminDeleteQuestionAddendum($id: ID!) {
+    adminDeleteQuestionAddendum(id: $id)
+  }
+`);
+
+const AdminDeleteAnswerAddendumDocument = graphql(`
+  mutation AdminDeleteAnswerAddendum($id: ID!) {
+    adminDeleteAnswerAddendum(id: $id)
+  }
+`);
+
+// 質問を開いたときだけ読む、回答とその追記（一覧のクエリには載せない）。
+const AdminQuestionAnswersDocument = graphql(`
+  query AdminQuestionAnswers($id: ID!, $limit: Int, $offset: Int) {
+    question(id: $id) {
+      ID
+      bestAnswer {
+        ID
+      }
+      answers(limit: $limit, offset: $offset) {
+        items {
+          ID
+          body
+          user {
+            ID
+            name
+            accountID
+          }
+          media {
+            ...MediaFields
+          }
+          addenda {
+            ID
+            body
+          }
+          likeCount
+          createdAt
+          updatedAt
+        }
+        total
+      }
+    }
+  }
+`);
+
+export type AdminAnswerWithAddenda = {
+  ID: string;
+  body: string;
+  user: { ID: string; name: string; accountID: string };
+  media: Media[];
+  addenda: { ID: string; body: string }[];
+  likeCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const adminListQuestionAnswers = async (
+  questionID: string,
+  limit: number,
+  offset: number,
+): Promise<{ items: AdminAnswerWithAddenda[]; total: number; bestAnswerID: string | null }> => {
+  const data = await requestDoc(AdminQuestionAnswersDocument, { id: questionID, limit, offset }, getAdminToken());
+  const question = data.question;
+  return {
+    items: (question?.answers.items ?? []) as AdminAnswerWithAddenda[],
+    total: question?.answers.total ?? 0,
+    bestAnswerID: question?.bestAnswer?.ID ?? null,
+  };
+};
+
+export const adminDeleteQuestionAddendum = async (id: string): Promise<boolean> => {
+  const data = await requestDoc(AdminDeleteQuestionAddendumDocument, { id }, getAdminToken());
+  return data.adminDeleteQuestionAddendum;
+};
+
+export const adminDeleteAnswerAddendum = async (id: string): Promise<boolean> => {
+  const data = await requestDoc(AdminDeleteAnswerAddendumDocument, { id }, getAdminToken());
+  return data.adminDeleteAnswerAddendum;
 };
 
 const AdminGetCoursePollsDocument = graphql(`

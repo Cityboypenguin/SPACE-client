@@ -83,8 +83,8 @@ export const AdminUserTimetableSection = ({ userID }: Props) => {
     try {
       await adminRegisterTimetableEntry(userID, courseID);
       await loadTimetable();
-    } catch {
-      setError('登録に失敗しました');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登録に失敗しました');
     }
   };
 
@@ -129,7 +129,10 @@ export const AdminUserTimetableSection = ({ userID }: Props) => {
                             data-color={entry.color}
                           >
                             <div className={styles.entryInfo}>
-                              <span className={styles.courseName}>{entry.course.courseName}</span>
+                              <span className={styles.courseName}>
+                                {entry.course.discontinued && '【廃止】'}
+                                {entry.course.courseName}
+                              </span>
                               <span className={styles.teacherName}>{entry.course.teacherName}</span>
                             </div>
                             <button
@@ -171,6 +174,7 @@ export const AdminUserTimetableSection = ({ userID }: Props) => {
           {searchResults.map((course) => (
             <div key={course.ID} className={styles.searchResultRow}>
               <span>
+                {course.discontinued && '【廃止】'}
                 {course.courseName}（{course.teacherName} / {course.dayOfWeek}{course.period}限）
               </span>
               <button type="button" className={styles.addButton} onClick={() => handleAdd(course.ID)}>

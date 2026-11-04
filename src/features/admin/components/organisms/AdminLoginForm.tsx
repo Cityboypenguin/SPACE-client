@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginAdmin, ADMIN_TOKEN_KEY, ADMIN_REFRESH_TOKEN_KEY } from '../../api/auth';
+import { toUserMessage } from '../../../../lib/errorMessages';
 import styles from '../../styles/AdminShared.module.css';
 
 export const AdminLoginForm = () => {
@@ -17,8 +18,8 @@ export const AdminLoginForm = () => {
       localStorage.setItem(ADMIN_TOKEN_KEY, data.loginAdministrator.token);
       localStorage.setItem(ADMIN_REFRESH_TOKEN_KEY, data.loginAdministrator.refreshToken);
       navigate('/admin');
-    } catch {
-      setError('メールアドレスまたはパスワードが正しくありません');
+    } catch (err) {
+      setError(toUserMessage(err, 'メールアドレスまたはパスワードが正しくありません'));
     }
   };
 

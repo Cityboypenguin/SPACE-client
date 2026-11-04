@@ -93,6 +93,7 @@ export const TimetablePage = () => {
   }, [entries]);
 
   const baselineCourseIDs = useMemo(() => new Set((entries ?? []).map((e) => e.course.ID)), [entries]);
+  const hasDiscontinued = useMemo(() => (entries ?? []).some((e) => e.course.discontinued), [entries]);
 
   // ---- 編集モード ----
   const [editMode, setEditMode] = useState(false);
@@ -169,7 +170,19 @@ export const TimetablePage = () => {
     setCommitError('');
   };
 
-  const handleRemoveDraftSlot = (key: string) => {
+  const handleRemoveDraftSlot = async (key: string) => {
+    // 廃止された授業（シラバスに掲載されなくなった授業）は検索に出てこないので、
+    // 外すと登録し直せない。
+    const course = draft[key]?.course;
+    if (course?.discontinued) {
+      const result = await AppSwal.fire({
+        text: `「${course.courseName}」はシラバスに掲載されなくなった授業です。外すと再び登録することはできません。外しますか？`,
+        confirmButtonText: '外す',
+        cancelButtonText: 'やめる',
+        showCancelButton: true,
+      });
+      if (!result.isConfirmed) return;
+    }
     setDraft((prev) => {
       const next = { ...prev };
       delete next[key];
@@ -371,12 +384,13 @@ export const TimetablePage = () => {
               type="button"
               className={styles.chipActionButton}
               title="この授業を外す"
-              onClick={() => handleRemoveDraftSlot(key)}
+              onClick={() => { void handleRemoveDraftSlot(key); }}
             >
               ✕
             </button>
           </div>
           {!baselineCourseIDs.has(slot.course.ID) && <span className={styles.newBadge}>NEW</span>}
+          {slot.course.discontinued && <span className={styles.discontinuedBadge}>廃止</span>}
           {slot.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}
           <span className={styles.courseName}>{slot.course.courseName}</span>
           <span className={styles.teacherName}>{slot.course.teacherName}</span>
@@ -402,6 +416,7 @@ export const TimetablePage = () => {
             <UnreadCountBadge count={unreadCount} />
           </span>
         )}
+        {entry.course.discontinued && <span className={styles.discontinuedBadge}>廃止</span>}
         {entry.course.semester === '通年' && <span className={styles.fullYearBadge}>通年</span>}
         <span className={styles.courseName}>{entry.course.courseName}</span>
         <span className={styles.teacherName}>{entry.course.teacherName}</span>
@@ -474,6 +489,12 @@ export const TimetablePage = () => {
           <div className={styles.commitErrorBanner}>
             <p>{commitError}</p>
             <button type="button" onClick={() => { void handleReloadBaseline(); }}>最新の状態を読み込み直す</button>
+          </div>
+        )}
+
+        {!editMode && hasDiscontinued && (
+          <div className={styles.noticeBanner}>
+            <p>「廃止」と表示された授業はシラバスに掲載されなくなった授業です。授業チャットはこれまで通り使えます。</p>
           </div>
         )}
 

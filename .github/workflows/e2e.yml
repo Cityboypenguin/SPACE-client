@@ -1,0 +1,134 @@
+# Playwright の E2E。サーバーは同じ名前のブランチがあればそれ、無ければ Develop を使う。
+name: E2E
+
+on:
+  pull_request:
+  push:
+    branches:
+      - Develop
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: pass
+          MYSQL_DATABASE: space
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppass --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: pass
+      DB_NAME: space
+      DB_TLS: "false"
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_TLS: "false"
+      JWT_SECRET: e2e-only-jwt-secret-e2e-only-jwt-secret
+      JWT_EXPIRATION_MINUTES: 60
+      JWT_REFRESH_EXPIRATION_MINUTES: 1440
+      MESSAGE_ENCRYPTION_KEY: OaI4511ozclMgQhEkD7NBgWeQmgsyjRp2jI2o+LRN3g=
+      ACTIVITY_ARCHIVE_HMAC_KEY: e2e-only-activity-archive-hmac-key
+      OPAQUE_ID_SECRET: e2e-only-opaque-id-secret
+      # このテストはファイルを保存しないので、置き場は起動せず、届かない宛先のままにする。
+      MINIO_ENDPOINT: 127.0.0.1:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: space-storage
+      MINIO_PRIVATE_BUCKET: space-storage-private
+      MESSAGE_MEDIA_CONTAINER: space-message-media
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: 1
+      SMTP_FROM: e2e@example.invalid
+      INIT_ADMIN_NAME: admin
+      INIT_ADMIN_EMAIL: admin@example.invalid
+      INIT_ADMIN_PASSWORD: E2eAdminPass123!
+      # 認証コードのメールを受け取れないので、登録時の確認を外す。
+      DISABLE_USER_VALIDATION: "true"
+      SPACE_API_PROXY_TARGET: http://127.0.0.1:8080
+      SPACE_STORAGE_PROXY_TARGET: http://127.0.0.1:9000
+      PLAYWRIGHT_BASE_URL: http://localhost:5173
+      E2E_USER_EMAIL: e2e-user@example.test
+      E2E_USER_PASSWORD: E2eUserPass123!
+      E2E_USER2_EMAIL: e2e-user2@example.test
+      E2E_USER2_PASSWORD: E2eUserPass123!
+      E2E_ADMIN_EMAIL: admin@example.invalid
+      E2E_ADMIN_PASSWORD: E2eAdminPass123!
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick the server branch
+        id: server
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if git ls-remote --exit-code --heads https://github.com/Cityboypenguin/SPACE-server.git "$BRANCH" >/dev/null; then
+            echo "ref=$BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=Develop" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Cityboypenguin/SPACE-server
+          ref: ${{ steps.server.outputs.ref }}
+          path: server
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Start the server
+        working-directory: server
+        run: |
+          go build -o /tmp/space-server ./cmd/server
+          /tmp/space-server > /tmp/server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:8080/ && break; sleep 2; done
+          curl -sf -o /dev/null http://127.0.0.1:8080/
+
+      - name: Create the test users
+        run: |
+          for name in e2e-user e2e-user2; do
+            curl -sf http://127.0.0.1:8080/query -H 'Content-Type: application/json' -d "$(jq -n --arg n "$name" --arg p "$E2E_USER_PASSWORD" \
+              '{query:"mutation($i:CreateUserInput!){createUser(input:$i){ID}}",variables:{i:{accountID:($n|gsub("-";"")),name:$n,email:($n+"@example.test"),password:$p,otp:"000000"}}}')" | tee /dev/stderr | jq -e '.data.createUser.ID' >/dev/null
+          done
+
+      - run: npm ci
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Start the dev server
+        run: |
+          npm run dev -- --port 5173 --strictPort > /tmp/vite.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:5173/ && break; sleep 1; done
+
+      - run: npx playwright test --workers=2
+
+      - name: Show the server log
+        if: failure()
+        run: tail -100 /tmp/server.log

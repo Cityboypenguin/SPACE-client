@@ -37,6 +37,8 @@ export type Notification = {
   targetID?: string | null;
   targetPost?: NotificationTargetPost | null;
   targetMessage?: NotificationTargetMessage | null;
+  // 追記の通知の遷移先（通知の詳細だけが取得する）。削除済みなら null。
+  targetQuestion?: { ID: string; roomID: string } | null;
   message: string;
   isRead: boolean;
   createdAt: string;
@@ -184,6 +186,10 @@ const NotificationDocument = graphql(`
           ID
           type
         }
+      }
+      targetQuestion {
+        ID
+        roomID
       }
       message
       isRead

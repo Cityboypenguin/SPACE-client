@@ -1,6 +1,7 @@
+import { mutate } from 'swr';
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
-import { storageUrl } from '../../../lib/storage';
+import { putToStorage, type PresignedUpload } from '../../../lib/storage';
 import { getUserToken } from './auth';
 import { MEDIA_FIELDS_RAW, type Media, type MediaInput } from '../../../lib/media';
 import { type Mention, type MentionCandidate } from '../../../lib/mentions';
@@ -21,15 +22,29 @@ export type ReplyTarget = {
   ID: string;
   user: MessageUser;
   content: string;
+  // スタンプだけのメッセージのスタンプのID。通常のメッセージは null。
+  stampID?: string | null;
   media: Media[];
   isMine: boolean;
 };
 
+// 絵文字ごとのリアクションの集計。付けられた順で並び、1つも無ければ空配列。
+export type MessageReaction = {
+  emoji: string;
+  count: number;
+  // 自分がこの絵文字を付けているか。
+  reactedByMe: boolean;
+};
+
 export type Message = {
+  thread?: { roomID: string; parentRoomID: string; title: string; isClosed: boolean; messageCount?: number } | null;
   ID: string;
   roomID: string;
   user: MessageUser;
   content: string;
+  // スタンプだけのメッセージのスタンプのID（"stamp:xxx"）。通常のメッセージは null。
+  // このときの本文は空で、添付・メンションも持たない。
+  stampID?: string | null;
   media: Media[];
   createdAt: string;
   updatedAt: string;
@@ -39,6 +54,7 @@ export type Message = {
   replyTo?: ReplyTarget | null;
   // 本文中のメンション（コミュニティのみ）。表示側は text を本文と突き合わせて着色する。
   mentions: Mention[];
+  reactions: MessageReaction[];
 };
 
 export type Room = {
@@ -47,6 +63,8 @@ export type Room = {
   type: string;
   user: MessageUser[];
   isMessagingDisabled: boolean;
+  // DM の相手が退会している（退会手続き中・削除済み）。入力欄を閉じた理由の出し分けに使う。
+  isPartnerWithdrawn: boolean;
   lastReadAt?: string | null;
   // 既読位置のメッセージID。未読ページの取得（messages(after:)）はこれを起点にする。
   // まだ一度も読んでいない、またはサーバ側で既読位置を時刻でしか持っていない行では null。
@@ -61,6 +79,7 @@ export type Room = {
 export const MESSAGE_FIELDS = `
   ID
   roomID
+  thread { roomID parentRoomID title isClosed messageCount }
   user {
     ID
     name
@@ -68,6 +87,7 @@ export const MESSAGE_FIELDS = `
     avatarUrl
   }
   content
+  stampID
   media {${MEDIA_FIELDS_RAW}}
   createdAt
   updatedAt
@@ -82,6 +102,7 @@ export const MESSAGE_FIELDS = `
       avatarUrl
     }
     content
+    stampID
     media {${MEDIA_FIELDS_RAW}}
     isMine
   }
@@ -93,6 +114,11 @@ export const MESSAGE_FIELDS = `
       avatarUrl
     }
     text
+  }
+  reactions {
+    emoji
+    count
+    reactedByMe
   }
 `;
 
@@ -115,6 +141,7 @@ const GetOrCreateDMRoomDocument = graphql(`
         avatarUrl
       }
       isMessagingDisabled
+      isPartnerWithdrawn
       lastReadAt
       lastReadMessageID
       unreadCount
@@ -125,10 +152,11 @@ const GetOrCreateDMRoomDocument = graphql(`
 `);
 
 const SendMessageDocument = graphql(`
-  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $mentionUserIDs: [ID!], $replyToID: ID) {
-    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID) {
+  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $mentionUserIDs: [ID!], $replyToID: ID, $stampID: String) {
+    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID, stampID: $stampID) {
       ID
       roomID
+      thread { roomID parentRoomID title isClosed messageCount }
       user {
         ID
         name
@@ -136,6 +164,7 @@ const SendMessageDocument = graphql(`
         avatarUrl
       }
       content
+      stampID
       media {
         ...MediaFields
       }
@@ -152,6 +181,7 @@ const SendMessageDocument = graphql(`
           avatarUrl
         }
         content
+        stampID
         media {
           ...MediaFields
         }
@@ -165,6 +195,11 @@ const SendMessageDocument = graphql(`
           avatarUrl
         }
         text
+      }
+      reactions {
+        emoji
+        count
+        reactedByMe
       }
     }
   }
@@ -175,6 +210,7 @@ const UpdateMessageDocument = graphql(`
     updateMessage(roomID: $roomID, id: $id, content: $content, mentionUserIDs: $mentionUserIDs) {
       ID
       roomID
+      thread { roomID parentRoomID title isClosed messageCount }
       user {
         ID
         name
@@ -182,6 +218,7 @@ const UpdateMessageDocument = graphql(`
         avatarUrl
       }
       content
+      stampID
       media {
         ...MediaFields
       }
@@ -198,6 +235,7 @@ const UpdateMessageDocument = graphql(`
           avatarUrl
         }
         content
+        stampID
         media {
           ...MediaFields
         }
@@ -212,7 +250,44 @@ const UpdateMessageDocument = graphql(`
         }
         text
       }
+      reactions {
+        emoji
+        count
+        reactedByMe
+      }
     }
+  }
+`);
+
+const AddMessageReactionDocument = graphql(`
+  mutation AddMessageReaction($roomID: ID!, $messageID: ID!, $emoji: String!) {
+    addMessageReaction(roomID: $roomID, messageID: $messageID, emoji: $emoji) {
+      ID
+      reactions {
+        emoji
+        count
+        reactedByMe
+      }
+    }
+  }
+`);
+
+const RemoveMessageReactionDocument = graphql(`
+  mutation RemoveMessageReaction($roomID: ID!, $messageID: ID!, $emoji: String!) {
+    removeMessageReaction(roomID: $roomID, messageID: $messageID, emoji: $emoji) {
+      ID
+      reactions {
+        emoji
+        count
+        reactedByMe
+      }
+    }
+  }
+`);
+
+const MessageReactionEmojisDocument = graphql(`
+  query MessageReactionEmojis {
+    messageReactionEmojis
   }
 `);
 
@@ -234,6 +309,7 @@ const ListMessagesDocument = graphql(`
       items {
         ID
         roomID
+        thread { roomID parentRoomID title isClosed messageCount }
         user {
           ID
           name
@@ -241,6 +317,7 @@ const ListMessagesDocument = graphql(`
           avatarUrl
         }
         content
+        stampID
         media {
           ...MediaFields
         }
@@ -257,6 +334,7 @@ const ListMessagesDocument = graphql(`
             avatarUrl
           }
           content
+          stampID
           media {
             ...MediaFields
           }
@@ -270,6 +348,11 @@ const ListMessagesDocument = graphql(`
             avatarUrl
           }
           text
+        }
+        reactions {
+          emoji
+          count
+          reactedByMe
         }
       }
       hasMoreBefore
@@ -297,6 +380,7 @@ const GetRoomDocument = graphql(`
         avatarUrl
       }
       isMessagingDisabled
+      isPartnerWithdrawn
       lastReadAt
       lastReadMessageID
       unreadCount
@@ -320,6 +404,7 @@ const MyDMRoomsDocument = graphql(`
           avatarUrl
         }
         isMessagingDisabled
+        isPartnerWithdrawn
         lastReadAt
         lastReadMessageID
         unreadCount
@@ -347,6 +432,26 @@ const PresignedMediaUploadUrlDocument = graphql(`
     presignedMediaUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
+      headers {
+        name
+        value
+      }
+    }
+  }
+`);
+
+// DM の添付は投稿の添付とは別の置き場に入る（匿名読み取りを許していないコンテナー）。
+// 口が分かれているのはそのため。こちらを使わずに上げると、DM の添付が
+// URL を知る誰にでも見える場所へ入る。
+const PresignedMessageMediaUploadUrlDocument = graphql(`
+  query PresignedMessageMediaUploadUrl($contentType: String!) {
+    presignedMessageMediaUploadUrl(contentType: $contentType) {
+      uploadUrl
+      objectKey
+      headers {
+        name
+        value
+      }
     }
   }
 `);
@@ -371,7 +476,10 @@ export const getMentionCandidates = async (
 // 確定している最後」を渡すこと（useRoomMessages.ts のコメント参照）。
 export const markRoomAsRead = async (roomID: string, lastReadMessageID?: string | null) => {
   const token = getUserToken();
-  return await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
+  const result = await requestDoc(MarkRoomAsReadDocument, { roomID, lastReadMessageID }, token);
+  // そのルーム自身を読んでも、配下のスレッドの未読は変わらない。
+  void mutate(key => Array.isArray(key) && key[0] === 'thread-unread' && key[1] !== roomID, undefined, { revalidate: true, populateCache: false, throwOnError: false });
+  return result;
 };
 
 export const getOrCreateDMRoom = async (targetUserID: string) => {
@@ -386,9 +494,11 @@ export const sendMessage = async (
   replyToID?: string | null,
   // メンション先のユーザーID（コミュニティのみ）。サジェストから選んだ相手だけを渡す。
   mentionUserIDs?: string[],
+  // スタンプだけのメッセージを送るときのスタンプのID。このとき content は空、添付・メンションは付けない。
+  stampID?: string | null,
 ) => {
   const token = getUserToken();
-  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, mentionUserIDs, replyToID }, token);
+  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, mentionUserIDs, replyToID, stampID }, token);
 };
 
 export type ListMessagesOptions = {
@@ -415,8 +525,20 @@ export const listMessages = async (roomID: string, limit = 50, options?: ListMes
   return data.messages;
 };
 
-export const getRoom = async (id: string) => {
-  return await requestDoc(GetRoomDocument, { id }, getUserToken());
+// ルームの画面と、そのメッセージの読み込みが同時に同じルームを引くので、実行中の問い合わせは
+// 1つにまとめる。終わったものは残さない（既読位置などが変わるので、次はまた取り直す）。
+const roomRequestsInFlight = new Map<string, ReturnType<typeof fetchRoom>>();
+
+const fetchRoom = (id: string, token: string | undefined) => requestDoc(GetRoomDocument, { id }, token);
+
+export const getRoom = (id: string) => {
+  const token = getUserToken();
+  const key = `${token ?? ''}:${id}`;
+  const inFlight = roomRequestsInFlight.get(key);
+  if (inFlight) return inFlight;
+  const room = fetchRoom(id, token).finally(() => roomRequestsInFlight.delete(key));
+  roomRequestsInFlight.set(key, room);
+  return room;
 };
 
 export const updateMessage = async (
@@ -427,6 +549,23 @@ export const updateMessage = async (
 ) => {
   const token = getUserToken();
   return await requestDoc(UpdateMessageDocument, { roomID, id, content, mentionUserIDs }, token);
+};
+
+// 付ける・外すの結果は messageUpdated の購読でも全員に届く（自分にも届く）。戻り値には
+// 更新後の集計が入っているので、接続が切れていても自分の画面はこちらで更新できる。
+// 冪等なので連打してもエラーにならない。
+export const addMessageReaction = async (roomID: string, messageID: string, emoji: string) => {
+  return await requestDoc(AddMessageReactionDocument, { roomID, messageID, emoji }, getUserToken());
+};
+
+export const removeMessageReaction = async (roomID: string, messageID: string, emoji: string) => {
+  return await requestDoc(RemoveMessageReactionDocument, { roomID, messageID, emoji }, getUserToken());
+};
+
+// サーバーが許しているリアクションの絵文字。画面側で一覧を持たず、サーバーの一覧に従う。
+export const getMessageReactionEmojis = async (): Promise<string[]> => {
+  const data = await requestDoc(MessageReactionEmojisDocument, {}, getUserToken());
+  return data.messageReactionEmojis;
 };
 
 export const deleteMessage = async (roomID: string, id: string) => {
@@ -446,15 +585,52 @@ export const listMyDMRooms = async (limit = 20, offset = 0): Promise<{ items: Ro
   return { items, total: data.myDMRooms.total };
 };
 
+// DM・コミュニティ・授業の未読は同じきっかけで取り直すので、1回の問い合わせにまとめる。
+const MyUnreadRoomCountsDocument = graphql(`
+  query MyUnreadRoomCounts {
+    myUnreadDMCount
+    myUnreadCommunityCount
+    myCourseRoomUnreadCounts {
+      roomID
+      unreadCount
+    }
+  }
+`);
+
 const MyUnreadDMCountDocument = graphql(`
   query MyUnreadDMCount {
     myUnreadDMCount
   }
 `);
 
-export const getUnreadDMCount = async (): Promise<number> => {
-  const data = await requestDoc(MyUnreadDMCountDocument, {}, getUserToken());
-  return data.myUnreadDMCount;
+const MyUnreadCommunityCountDocument = graphql(`
+  query MyUnreadCommunityCount {
+    myUnreadCommunityCount
+  }
+`);
+
+const MyCourseRoomUnreadCountsDocument = graphql(`
+  query MyCourseRoomUnreadCounts {
+    myCourseRoomUnreadCounts {
+      roomID
+      unreadCount
+    }
+  }
+`);
+
+export const getMyUnreadRoomCounts = async () => {
+  return await requestDoc(MyUnreadRoomCountsDocument, {}, getUserToken());
+};
+
+// まとめた問い合わせは1項目の失敗で全部失敗する（どの項目も null にできないため）。
+// 失敗したときだけ別々に取り直し、取れたものは反映できるようにする。
+export const getMyUnreadRoomCountsSeparately = () => {
+  const token = getUserToken();
+  return {
+    dm: requestDoc(MyUnreadDMCountDocument, {}, token).then((d) => d.myUnreadDMCount),
+    community: requestDoc(MyUnreadCommunityCountDocument, {}, token).then((d) => d.myUnreadCommunityCount),
+    course: requestDoc(MyCourseRoomUnreadCountsDocument, {}, token).then((d) => d.myCourseRoomUnreadCounts),
+  };
 };
 
 export const getPresignedMediaUploadUrl = async (contentType: string) => {
@@ -463,11 +639,16 @@ export const getPresignedMediaUploadUrl = async (contentType: string) => {
   return await requestDoc(PresignedMediaUploadUrlDocument, { contentType }, token);
 };
 
-export const uploadFileToStorage = async (uploadUrl: string, file: File): Promise<void> => {
-  const res = await fetch(storageUrl(uploadUrl) ?? uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  });
+export const getPresignedMessageMediaUploadUrl = async (contentType: string) => {
+  const token = getUserToken();
+  if (!token) throw new Error('認証が必要です。');
+  return await requestDoc(PresignedMessageMediaUploadUrlDocument, { contentType }, token);
+};
+
+export const uploadFileToStorage = async (
+  presigned: PresignedUpload,
+  file: File,
+): Promise<void> => {
+  const res = await putToStorage(presigned, file, file.type);
   if (!res.ok) throw new Error('ファイルのアップロードに失敗しました。');
 };

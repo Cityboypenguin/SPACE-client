@@ -245,6 +245,20 @@
   --mention-self-color: var(--color-link-hover);
 }
 
+/* ダークモードではスレッド内のチャット背景と相手側吹き出しが近い色になるため、
+   ダーク時だけ濃淡と境界線を加える。ライトモードは従来の色を維持する。 */
+:global(:root[data-theme='dark']) .bubbleTheirs {
+  background-color: color-mix(in srgb, var(--color-bg-elevated) 78%, var(--color-text) 22%);
+  border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .bubbleTheirs {
+    background-color: color-mix(in srgb, var(--color-bg-elevated) 78%, var(--color-text) 22%);
+    border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+  }
+}
+
 .timestamp {
   font-size: 0.7rem;
   line-height: 1.2;
@@ -269,6 +283,7 @@
 }
 
 .inputField {
+  min-width: 0;
   flex: 1;
   resize: none;
   overflow-y: auto;
@@ -280,6 +295,13 @@
   box-sizing: border-box;
 }
 
+/* 入力欄が狭いスレッドでも、プレースホルダーが2行目へ折り返して切れないように */
+.inputField:placeholder-shown {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .inputField:disabled {
   cursor: default;
 }
@@ -289,6 +311,7 @@
 }
 
 .inputFieldWrap {
+  min-width: 0;
   position: relative;
   flex: 1;
   display: flex;
@@ -344,13 +367,16 @@
 
 /*
  * メッセージの操作メニュー（返信・編集・削除）。共通の DropdownMenu を使い、
- * ここでは「時刻の真上に浮かせる」「ホバー中だけ出す」ぶんだけ上書きする。
- * PC はホバーで出る「···」か右クリック、タッチ端末は吹き出しのタップで開く。
+ * 時刻の真上に、操作とリアクション追加を横並びで置く。
+ * どちらも直接押せる。右クリックや吹き出しのタップからも操作できる。
  *
  * 絶対配置にしているのは、「···」が出ていない間も行の高さを増やさないため
  * （flow に置くと1行メッセージでも時刻＋アイコンぶんの高さになってしまう）。
  */
 .messageMenu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   position: absolute;
   bottom: calc(100% + 2px);
   z-index: 2;
@@ -364,13 +390,10 @@
 /* 相手の発言では時刻列が吹き出しの右にあるので、吹き出し寄り（左）に揃える */
 .messageMenuRight {
   left: 0;
+  flex-direction: row-reverse;
 }
 
-/*
- * 既定では隠しておき、吹き出しにホバーしたときとメニューを開いている間だけ見せる。
- * display ではなく opacity で消すのは、閉じている間もドロップダウンの
- * アンカー位置を保つため（長押し・右クリックはホバー無しで開く）。
- */
+/* 通常は隠し、ホバー・キーボードフォーカス・メニュー操作中に表示する。 */
 .messageMenuTrigger {
   opacity: 0;
   pointer-events: none;
@@ -383,7 +406,9 @@
   color: var(--color-chat-meta);
 }
 
-.messageBubble:hover .messageMenuTrigger {
+.messageBubble:hover .messageMenuTrigger,
+.messageBubble:focus-within .messageMenuTrigger,
+.messageMenuOpen .messageMenuTrigger {
   opacity: 1;
   pointer-events: auto;
 }
@@ -412,14 +437,6 @@
 .messageMenu .messageMenuDropdownEnd {
   left: auto;
   right: 0;
-}
-
-/* タッチ端末はホバーが無いので「···」は出さない（長押しで開く） */
-/* タッチ端末はホバーが無いので「···」は出さない（バブルのタップで開く） */
-@media (pointer: coarse) {
-  .messageMenuTrigger {
-    display: none;
-  }
 }
 
 /*
@@ -914,6 +931,12 @@
 }
 
 /* 返信先が削除済み。ジャンプ先がないので button ではなく div で出す */
+/* 添付が削除されたメッセージ。本文ではないので、斜体と薄い色で区別する。 */
+.filesRemoved {
+  font-style: italic;
+  opacity: 0.75;
+}
+
 .replyQuoteDeleted {
   cursor: default;
 }
@@ -1102,3 +1125,264 @@
 .clipIconDark {
   filter: invert(1);
 }
+
+.threadBranch { position: relative; padding-left: 28px; margin: 12px 0 8px; width: max-content; max-width: min(100%, 520px); box-sizing: border-box; }
+.threadBranch::before { content: ''; position: absolute; left: 12px; top: -12px; width: 16px; height: 32px; border-left: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); border-bottom-left-radius: 10px; }
+.threadCard { display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 8px 14px; border: 1px solid var(--color-border); border-radius: 7px; font: inherit; text-align: left; cursor: pointer; background: var(--color-bubble-theirs); color: var(--color-text); }
+.threadCard:hover { border-color: var(--color-primary); }
+.threadCardTop { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; font-size: .85rem; }
+.threadCardTop strong { overflow-wrap: anywhere; }
+.threadCardTop > span { color: var(--color-primary); font-size: .78rem; }
+.threadCardHint { color: var(--color-chat-meta); font-size: .75rem; }
+
+
+.threadBranchMine { padding-left: 0; }
+.threadBranchMine::before { display: none; }
+
+.createThreadButton { display: inline-flex; align-items: center; justify-content: center; align-self: center; flex: 0 0 36px; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--color-chat-meta); }
+.createThreadButton:hover { background: var(--color-bubble-theirs); }
+.createThreadButton:disabled { opacity: .4; cursor: default; }
+
+/* メッセージへのリアクション（絵文字ごとの集計）。吹き出しの下に並べる。 */
+.reactionBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.reactionBarMine {
+  justify-content: flex-end;
+}
+
+.reactionBarTheirs {
+  justify-content: flex-start;
+}
+
+.reactionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.0625rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: transform 0.12s ease-out, background-color 0.12s;
+}
+
+.reactionChip:disabled {
+  cursor: default;
+}
+
+/* 押せるときだけ、触れると少し浮き、押すとむにっと縮む */
+.reactionChip:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.reactionChip:not(:disabled):active {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reactionChip {
+    transition: none;
+  }
+
+  .reactionChip:not(:disabled):hover,
+  .reactionChip:not(:disabled):active {
+    transform: none;
+  }
+}
+
+/* 文字スタンプ自体が縁取りのある見た目なので、外側のチップの枠と背景は外す
+   （枠が二重になって堅く見えるため）。数はスタンプの横に小さく添える。 */
+.reactionChipStamp {
+  border-color: transparent;
+  background-color: transparent;
+  padding-inline: 0.125rem;
+}
+
+.reactionCount {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-chat-meta);
+}
+
+/* 自分が付けているリアクション */
+.reactionChipActive {
+  border-color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-primary) 15%, var(--color-bg-elevated));
+}
+
+.reactionChipActive .reactionCount {
+  color: var(--color-primary);
+}
+
+.reactionChipStamp.reactionChipActive {
+  border-color: transparent;
+  background-color: color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+/* 指で操作する端末では、チップの見た目はそのままに、当たり判定だけを広げる（隣と
+   重ならないよう間隔も空ける）。 */
+@media (pointer: coarse) {
+  .reactionBar {
+    gap: 0.5rem;
+  }
+
+  .reactionChip {
+    position: relative;
+  }
+
+  .reactionChip::after {
+    content: '';
+    position: absolute;
+    inset: -0.25rem;
+  }
+}
+
+/* メニューの「リアクションを付ける」を押したときに出るスタンプの一覧。 */
+/* 4列ぶんを上限に、チャット領域の幅に応じて列数を減らす。 */
+.reactionPicker {
+  --picker-cell: 4rem;
+  --picker-gap: 0.375rem;
+  --picker-padding: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--picker-cell)), 1fr));
+  gap: var(--picker-gap);
+  box-sizing: border-box;
+  width: min(calc(4 * var(--picker-cell) + 3 * var(--picker-gap) + 2 * var(--picker-padding)), var(--picker-max-width, calc(100dvw - 2rem)));
+  max-width: calc(100dvw - 2rem);
+  max-height: 60dvh;
+  padding: var(--picker-padding);
+  overflow-y: auto;
+}
+
+.reactionPickerButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.125rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 1.375rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reactionPickerButton:hover {
+  background-color: var(--color-bubble-theirs);
+}
+
+/* 自分が既に付けているもの（もう一度押すと外れる） */
+.reactionPickerButtonActive {
+  border-color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-primary) 15%, var(--color-bg-elevated));
+}
+
+@media (pointer: coarse) {
+  .reactionPickerButton {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+/* スタンプだけのメッセージ（吹き出しなし）。返信のときは、引用だけの小さな吹き出しをスタンプの上に出す。 */
+.stampMessage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stampMessageMine {
+  align-items: flex-end;
+}
+
+.stampMessageTheirs {
+  align-items: flex-start;
+}
+
+/* 入力欄の横の、スタンプを送るボタンと一覧 */
+.stampPickerWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.stampPickerButton {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.stampPickerPanel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  width: min(20rem, 85vw);
+  max-height: min(20rem, 50vh);
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg-elevated);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.messageMenu .messageMenuTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  box-sizing: border-box;
+}
+.messageMenu .messageMenuTrigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+.messageContentWrap { min-width: 0; }
+
+/* リアクションは操作ボタンの位置を変えず、本文から少し離して表示する。 */
+.messageReactions {
+  width: 100%;
+  min-width: 0;
+  margin-top: 6px;
+}
+
+.messageAction { display: flex; align-items: center; }
+.reactionAddTrigger { border-radius: 6px; }
+.reactionAddTrigger:hover { background: var(--color-surface); }
+
+
+.reactionPicker > .reactionPickerButton {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: 0.375rem;
+}
+.reactionPicker > .reactionPickerButton > img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.reactionPicker > :not(button) { grid-column: 1 / -1; }
+.messageMenu .reactionMenuDropdown { min-width: 0; }
+.messageMenu .messageMenuDropdown { transform: translateX(var(--picker-shift-x, 0px)); }
+
+.reactionPicker > .reactionPickerButton > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }

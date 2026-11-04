@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>チャット入力の切り分け</title>
+  <style>
+    body { max-width: 760px; margin: 40px auto; padding: 0 20px; font: 16px/1.7 system-ui, sans-serif; }
+    button { padding: 8px 12px; margin: 4px; }
+    textarea { width: 100%; min-height: 100px; font: inherit; }
+    #status { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>チャット入力の切り分け</h1>
+  <p>同じチャット入力欄で「伏せ字の反映」「送信中の無効化」「モーダル表示」を個別に試す画面です。投稿は送信しません。</p>
+  <p>各操作の後、チャット欄をクリックして「かな」に切り替えられるかを確認します。操作ごとに再読み込みすると、影響を分けられます。</p>
+  <div id="controls"></div>
+  <div id="root"></div>
+  <pre id="status" role="status"></pre>
+  <script type="module">
+    import React, { useState, useRef, useEffect } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { ChatInput } from '/src/features/user/components/molecules/ChatInput.tsx';
+    import { ThemeContext } from '/src/context/themeContextValue.ts';
+    import { showNGWordFeedback, maskNGWordDraft } from '/src/lib/ngWordFeedback.ts';
+    import { GraphQLRequestError } from '/src/lib/graphql.ts';
+    import '/src/index.css';
+
+    function Harness() {
+      const [value, setValue] = useState('確認用の文章');
+      const [sending, setSending] = useState(false);
+      const [lastAction, setLastAction] = useState('未操作');
+      const initialTextarea = useRef(null);
+      const button = (label, action) => React.createElement('button', { type: 'button', onClick: action }, label);
+      const blocked = () => new GraphQLRequestError([{
+        message: '使えない言葉が含まれているため、投稿できません。',
+        extensions: { code: 'NG_WORD_BLOCKED', maskedTexts: [{ original: value.trim(), masked: '××××' }] },
+      }]);
+      const disableTemporarily = () => {
+        setSending(true);
+        setTimeout(() => setSending(false), 400);
+      };
+      useEffect(() => {
+        const textarea = document.querySelector('textarea');
+        if (!initialTextarea.current) initialTextarea.current = textarea;
+        document.getElementById('status').textContent = JSON.stringify({
+          lastAction,
+          disabled: textarea?.disabled,
+          readOnly: textarea?.readOnly,
+          sameTextarea: textarea === initialTextarea.current,
+        }, null, 2);
+      }, [lastAction, sending, value]);
+      return React.createElement(ThemeContext.Provider, { value: { theme: 'light', setTheme: () => {} } },
+        React.createElement('div', null,
+          React.createElement('div', null,
+            button('1. 伏せ字だけ反映', () => { setLastAction('伏せ字だけ'); setValue(maskNGWordDraft(blocked(), value)); }),
+            button('2. 送信中の無効化だけ', () => { setLastAction('無効化だけ'); disableTemporarily(); }),
+            button('3. モーダルだけ表示', () => { setLastAction('モーダルだけ'); showNGWordFeedback(blocked()); }),
+          ),
+          React.createElement(ChatInput, {
+            value, onChange: setValue, selectedFiles: [], onFileSelect: () => {}, disabled: sending,
+            onSubmit: event => {
+              event.preventDefault();
+              const error = blocked();
+              setLastAction('通常のNGワード拒否');
+              setSending(true);
+              setTimeout(() => {
+                showNGWordFeedback(error, event.input);
+                setValue(current => maskNGWordDraft(error, current));
+                setSending(false);
+              }, 400);
+            },
+          }),
+        ),
+      );
+    }
+    createRoot(document.getElementById('root')).render(React.createElement(Harness));
+  </script>
+</body>
+</html>

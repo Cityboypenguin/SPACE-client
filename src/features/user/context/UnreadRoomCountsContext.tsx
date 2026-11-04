@@ -4,11 +4,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { getUnreadDMCount } from '../api/message';
-import { getMyCourseRoomUnreadCounts } from '../api/course';
-import { getUnreadCommunityCount } from '../api/community';
+import { getMyUnreadRoomCounts, getMyUnreadRoomCountsSeparately } from '../api/message';
 import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
+import { useKnownCourseChatEnabled } from '../hooks/useCourseChatEnabled';
 import { UnreadRoomCountsContext } from './unreadRoomCountsContextValue';
 
 export const UnreadRoomCountsProvider = ({ children }: { children: ReactNode }) => {
@@ -16,17 +15,30 @@ export const UnreadRoomCountsProvider = ({ children }: { children: ReactNode }) 
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
   const [courseUnreadCounts, setCourseUnreadCounts] = useState<Record<string, number>>({});
 
-  const refresh = useCallback(() => {
-    getUnreadDMCount().then(setDmUnreadCount).catch(() => {});
-    getUnreadCommunityCount().then(setCommunityUnreadCount).catch(() => {});
-    getMyCourseRoomUnreadCounts()
-      .then((counts) => setCourseUnreadCounts(Object.fromEntries(counts.map((c) => [c.roomID, c.unreadCount]))))
-      .catch(() => {});
+  const applyCourseCounts = useCallback((counts: { roomID: string; unreadCount: number }[]) => {
+    setCourseUnreadCounts(Object.fromEntries(counts.map((c) => [c.roomID, c.unreadCount])));
   }, []);
 
+  const refresh = useCallback(() => {
+    getMyUnreadRoomCounts()
+      .then((counts) => {
+        setDmUnreadCount(counts.myUnreadDMCount);
+        setCommunityUnreadCount(counts.myUnreadCommunityCount);
+        applyCourseCounts(counts.myCourseRoomUnreadCounts);
+      })
+      .catch(() => {
+        const { dm, community, course } = getMyUnreadRoomCountsSeparately();
+        dm.then(setDmUnreadCount).catch(() => {});
+        community.then(setCommunityUnreadCount).catch(() => {});
+        course.then(applyCourseCounts).catch(() => {});
+      });
+  }, [applyCourseCounts]);
+
+  // 授業チャットの停止・再開で、授業ごとの未読の印が消えたり戻ったりする。
+  const courseChatEnabled = useKnownCourseChatEnabled();
   useEffect(() => {
     void Promise.resolve().then(refresh);
-  }, [refresh]);
+  }, [refresh, courseChatEnabled]);
 
   // room_changed はペイロード（roomID / messageID / lastMessage）を使わない。
   // ここが欲しいのは種別ごとの合計と授業ルームごとの件数で、どちらもサーバに数えて

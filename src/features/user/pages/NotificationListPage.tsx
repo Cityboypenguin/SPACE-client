@@ -16,7 +16,7 @@ import {
   type NotificationActor,
 } from '../api/notification';
 import { listAnnouncements } from '../api/announcement';
-import { MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
+import { ANSWER_ADDENDUM_TYPE, MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, QUESTION_ADDENDUM_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
 import { stableCacheOptions, staticCacheOptions } from '../cache/swrOptions';
@@ -31,6 +31,7 @@ import reply from '../../../assets/パーツ_コメント.svg';
 import mention from '../../../assets/パーツ_メンション.svg';
 import notification from '../../../assets/パーツ_通知.svg';
 import person from '../../../assets/パーツ_お気に入り.svg';
+import timetable from '../../../assets/パーツ_時間割.svg';
 import { AppSwal } from '../../../lib/swal';
 
 type Tab = 'notifications' | 'announcements';
@@ -67,6 +68,12 @@ function BellIcon() {
   );
 }
 
+function TimetableIcon() {
+  return (
+    <img src={timetable} alt="Timetable" width="20" height="20" className="themed-icon" />
+  );
+}
+
 function PersonIcon() {
   return (
     <img src={person} alt="Follow" width="20" height="20" className="themed-icon" />
@@ -86,10 +93,13 @@ const TYPE_ICON: Record<string, ReactNode> = {
   [MENTION_TYPE]: <MentionIcon />,
   [MESSAGE_MENTION_TYPE]: <MentionIcon />,
   dm: <ChatIcon />,
+  [QUESTION_ADDENDUM_TYPE]: <ChatIcon />,
+  [ANSWER_ADDENDUM_TYPE]: <ChatIcon />,
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
   announcement: <BellIcon />,
   follow: <PersonIcon />,
+  timetable_removed: <TimetableIcon />,
 };
 
 export const NotificationListPage = () => {

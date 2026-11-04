@@ -1,7 +1,8 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
-import { type Media } from '../../../lib/media';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
+import type { AdminCommunitySortField, SortOrder } from '../../../generated/graphql';
+import type { Message as UserMessage } from '../../user/api/message';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
@@ -12,30 +13,35 @@ export type MessageUser = {
   avatarUrl?: string | null;
 };
 
-export type Message = {
+// 管理画面のチャットもユーザー側と同じ吹き出しで表示するので、同じ形で受け取る。
+// isMine・reactedByMe は管理者から見た値なので常に false になる。
+export type Message = UserMessage;
+
+export type CommunityUser = {
   ID: string;
-  roomID: string;
-  user: MessageUser;
-  content: string;
-  media: Media[];
-  createdAt: string;
-  updatedAt: string;
+  name: string;
+  accountID?: string;
 };
 
 export type Community = {
   ID: string;
+  id?: string;
   roomID: string;
   name: string;
   description: string;
   createdAt: string;
   updatedAt: string;
+  memberCount?: number;
+  owner?: CommunityUser | null;
 };
 
-export type CommunityPage = { items: Community[]; total: number };
+export type CommunityPage = {
+  communities: {
+    items: Community[];
+    total: number;
+  };
+};
 
-// Room.user / CommunityMember.user は GraphQL 上は公開型の User なので
-// email を持たない。管理画面で連絡先が要るときは、そのユーザーの
-// getUserByID（UserAccount）を引くこと。
 export type RoomUser = {
   ID: string;
   accountID: string;
@@ -53,18 +59,56 @@ export type Room = {
   user: RoomUser[];
 };
 
-const CommunitiesDocument = graphql(`
-  query Communities($limit: Int, $offset: Int) {
-    communities(limit: $limit, offset: $offset) {
+// 検索・並び替え・ページングはすべてサーバー側で行う。以前は検索のたびに
+// communities(limit: 1000) を全件取り、さらに1件ごとに communityMembers を
+// 引いてオーナーと人数を出していた（1000件なら1000リクエスト）。
+const AdminListCommunitiesDocument = graphql(`
+  query AdminListCommunities(
+    $keyword: String
+    $sortBy: AdminCommunitySortField
+    $sortOrder: SortOrder
+    $limit: Int
+    $offset: Int
+  ) {
+    adminListCommunities(keyword: $keyword, sortBy: $sortBy, sortOrder: $sortOrder, limit: $limit, offset: $offset) {
       items {
+        community {
+          ID
+          roomID
+          name
+          description
+          memberCount
+          createdAt
+          updatedAt
+        }
+        owner {
+          ID
+          name
+          accountID
+        }
+      }
+      total
+    }
+  }
+`);
+
+const AdminGetCommunityDocument = graphql(`
+  query AdminGetCommunity($id: ID!) {
+    adminGetCommunity(id: $id) {
+      community {
         ID
         roomID
         name
         description
+        memberCount
         createdAt
         updatedAt
       }
-      total
+      owner {
+        ID
+        name
+        accountID
+      }
     }
   }
 `);
@@ -104,8 +148,51 @@ const GetCommunityMembersDocument = graphql(`
   }
 `);
 
-export const getCommunities = async (limit = 20, offset = 0) => {
-  return await requestDoc(CommunitiesDocument, { limit, offset }, getAdminToken());
+export type CommunitySortField = AdminCommunitySortField;
+export type { SortOrder };
+
+export type CommunityListParams = {
+  keyword?: string;
+  sortBy?: CommunitySortField;
+  sortOrder?: SortOrder;
+  limit?: number;
+  offset?: number;
+};
+
+type AdminCommunityItem = {
+  community: Omit<Community, 'id' | 'owner'>;
+  owner?: CommunityUser | null;
+};
+
+const toCommunity = ({ community, owner }: AdminCommunityItem): Community => ({
+  ...community,
+  id: community.ID,
+  owner: owner ?? null,
+});
+
+export const getCommunities = async ({
+  keyword,
+  sortBy = 'CREATED_AT',
+  sortOrder = 'DESC',
+  limit = 20,
+  offset = 0,
+}: CommunityListParams = {}): Promise<CommunityPage> => {
+  const data = await requestDoc(
+    AdminListCommunitiesDocument,
+    { keyword: keyword?.trim() || undefined, sortBy, sortOrder, limit, offset },
+    getAdminToken(),
+  );
+  return {
+    communities: {
+      items: data.adminListCommunities.items.map(toCommunity),
+      total: data.adminListCommunities.total,
+    },
+  };
+};
+
+export const getCommunity = async (id: string): Promise<Community | null> => {
+  const data = await requestDoc(AdminGetCommunityDocument, { id }, getAdminToken());
+  return data.adminGetCommunity ? toCommunity(data.adminGetCommunity) : null;
 };
 
 export const updateCommunity = async (
@@ -129,6 +216,7 @@ const ListRoomMessagesDocument = graphql(`
       items {
         ID
         roomID
+        thread { roomID parentRoomID title isClosed messageCount }
         user {
           ID
           name
@@ -136,11 +224,43 @@ const ListRoomMessagesDocument = graphql(`
           avatarUrl
         }
         content
+        stampID
         media {
           ...MediaFields
         }
         createdAt
         updatedAt
+        isMine
+        replyToID
+        replyTo {
+          ID
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          content
+          stampID
+          media {
+            ...MediaFields
+          }
+          isMine
+        }
+        mentions {
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          text
+        }
+        reactions {
+          emoji
+          count
+          reactedByMe
+        }
       }
       hasMoreBefore
     }
@@ -161,23 +281,8 @@ const DeleteMessageDocument = graphql(`
   }
 `);
 
-// adminMessagePageSize は管理画面が一度に読むメッセージ数。
-//
-// 以前は 200 件を一度に取り、ページ送りを持っていなかった。ルームが育つほど
-// 1回の応答が重くなり、しかも 200 件を超えたぶんは管理画面から一切辿れなかった
-// （古いメッセージを見る手段が無かった）。
 export const adminMessagePageSize = 50;
 
-/**
- * ルームのメッセージを新しい側から1ページぶん読む。
- *
- * before には「いま持っている中で一番古いメッセージのID」を渡す。offset ではなく
- * カーソルなのは、messages が元からカーソル方式だから（深いページでも費用が
- * 増えず、読んでいる間に新着が入っても取りこぼし・重複が起きない）。
- *
- * items は常に古い順で返る。hasMoreBefore は「このページより古いメッセージが
- * まだあるか」の実測値。
- */
 export const listRoomMessages = async (
   roomID: string,
   limit = adminMessagePageSize,

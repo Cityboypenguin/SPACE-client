@@ -1,0 +1,144 @@
+/* シラバス同期の結果・確認待ち（AdminCourseSyncPage）と、授業一覧の「廃止」表示。 */
+
+.discontinuedBadge {
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.countGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.countCell {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+}
+
+.countValue {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.countLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.notice {
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--color-warning);
+  border-radius: 8px;
+  background: var(--color-warning-bg);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.kindBadge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.kindBadge[data-kind='CREATED'],
+.kindBadge[data-kind='RESTORED'] {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.kindBadge[data-kind='UPDATED'] {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.kindBadge[data-kind='DISCONTINUED'] {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.kindBadge[data-kind='REVIEW'] {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.unregisteredText {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.runRowSelected {
+  background: var(--color-sidebar-active-bg);
+}
+
+.reviewCard {
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-elevated);
+}
+
+.reviewMessage {
+  margin: 0 0 0.6rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.compareTitle {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.snapshotList {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.decisionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .compare {
+    grid-template-columns: 1fr;
+  }
+}
+
+.courseCell {
+  min-width: 10rem;
+}
+
+.registrantCell {
+  white-space: nowrap;
+}

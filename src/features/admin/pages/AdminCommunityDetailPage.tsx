@@ -1,22 +1,19 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
-  getCommunities,
+  getCommunity,
   getCommunityMembers,
   updateCommunity,
   kickUserFromCommunity,
   promoteToCommunityOwner,
   demoteFromCommunityOwner,
-  listRoomMessages,
-  adminMessagePageSize,
-  adminDeleteMessage,
   type Community,
   type CommunityMember,
-  type Message,
 } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
-import { storageUrl } from '../../../lib/storage';
+import { AdminChatView } from '../components/organisms/AdminChatView';
+import { AdminThreadSection } from '../components/molecules/AdminThreadSection';
 import styles from '../styles/AdminShared.module.css';
 
 const ROLE_OWNER = 'owner';
@@ -30,24 +27,14 @@ export const AdminCommunityDetailPage = () => {
     (location.state as { community?: Community })?.community ?? null,
   );
   const [members, setMembers] = useState<CommunityMember[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState(community?.name ?? '');
+  const [description, setDescription] = useState(community?.description ?? '');
+
   const [error, setError] = useState('');
+  const [chatVersion, setChatVersion] = useState(0);
   const [success, setSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
-  const [messagesError, setMessagesError] = useState('');
-  // メッセージはカーソル方式で古い側へ辿る（messages クエリが before を取るため）。
-  // 総件数は返らないので「まだ古いものがあるか」だけを持つ。
-  const [hasOlderMessages, setHasOlderMessages] = useState(false);
-  // 継ぎ足しの起点。messages そのものを見ると、配列が変わるたびに
-  // loadOlderMessages が作り直される（＝ボタンの再生成が毎回走る）。
-  // 必要なのは「一番古いID」の1つだけなので、それだけを持つ。
-  const [oldestMessageID, setOldestMessageID] = useState<string | null>(null);
-  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
-  // 二重押しの防止は ref で持つ。state を判定に使うと、それが依存に入って
-  // loadOlderMessages が読み込みのたびに作り直される。
-  const loadingOlderRef = useRef(false);
+
   const [memberOffset, setMemberOffset] = useState(0);
   const [memberTotal, setMemberTotal] = useState(0);
   const memberPageSize = 50;
@@ -55,12 +42,11 @@ export const AdminCommunityDetailPage = () => {
   const fetchCommunity = useCallback(async () => {
     if (!id) return;
     try {
-      const data = await getCommunities();
-      const found = data.communities.items.find((c) => c.ID === id);
+      const found = await getCommunity(id);
       if (found) {
         setCommunity(found);
         setName(found.name);
-        setDescription(found.description);
+        setDescription(found.description || '');
       }
     } catch {
       setError('コミュニティ情報の取得に失敗しました');
@@ -78,69 +64,13 @@ export const AdminCommunityDetailPage = () => {
     }
   }, [id, memberOffset]);
 
-  const fetchMessages = useCallback(async (roomID: string) => {
-    try {
-      const data = await listRoomMessages(roomID);
-      setMessages(data.messages.items);
-      setHasOlderMessages(data.messages.hasMoreBefore);
-      setOldestMessageID(data.messages.items[0]?.ID ?? null);
-    } catch {
-      setMessagesError('メッセージ一覧の取得に失敗しました');
-    }
-  }, []);
-
-  // 古い側を1ページぶん継ぎ足す。items は常に古い順で返るので、
-  // いま持っている中で一番古い ID を before に渡し、返ってきたぶんを前へ足す。
-  const roomID = community?.roomID;
-  const loadOlderMessages = useCallback(async () => {
-    if (!roomID || !oldestMessageID || loadingOlderRef.current) return;
-    loadingOlderRef.current = true;
-    setLoadingOlderMessages(true);
-    try {
-      const data = await listRoomMessages(roomID, adminMessagePageSize, oldestMessageID);
-      setMessages(prev => [...data.messages.items, ...prev]);
-      setHasOlderMessages(data.messages.hasMoreBefore);
-      // 何も返らなければ起点は据え置き（これ以上古いものは無い）。
-      setOldestMessageID(data.messages.items[0]?.ID ?? oldestMessageID);
-    } catch {
-      setMessagesError('メッセージ一覧の取得に失敗しました');
-    } finally {
-      loadingOlderRef.current = false;
-      setLoadingOlderMessages(false);
-    }
-  }, [roomID, oldestMessageID]);
-
   useEffect(() => {
     if (!community) void Promise.resolve().then(fetchCommunity);
   }, [community, fetchCommunity]);
 
   useEffect(() => {
-    void Promise.resolve().then(() => {
-      if (!community) return;
-      setName(community.name);
-      setDescription(community.description);
-    });
-  }, [community]);
-
-  useEffect(() => {
     void Promise.resolve().then(fetchMembers);
   }, [fetchMembers]);
-
-  useEffect(() => {
-    if (community?.roomID) {
-      void Promise.resolve().then(() => fetchMessages(community.roomID));
-    }
-  }, [community?.roomID, fetchMessages]);
-
-  const handleDeleteMessage = async (message: Message) => {
-    if (!window.confirm('このメッセージを削除しますか？')) return;
-    try {
-      await adminDeleteMessage(message.roomID, message.ID);
-      setMessages((prev) => prev.filter((m) => m.ID !== message.ID));
-    } catch {
-      setError('メッセージの削除に失敗しました');
-    }
-  };
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +81,12 @@ export const AdminCommunityDetailPage = () => {
       const input: { name?: string; description?: string } = {};
       if (name !== community.name) input.name = name;
       if (description !== community.description) input.description = description;
+
+      if (Object.keys(input).length === 0) {
+        setSuccess('変更はありません');
+        return;
+      }
+
       await updateCommunity(id, input);
       setSuccess('更新しました');
       await fetchCommunity();
@@ -192,171 +128,153 @@ export const AdminCommunityDetailPage = () => {
     }
   };
 
-  if (!community) return <p>読み込み中...</p>;
+  if (!community) return <p className={styles.pageCentered}>{error || '読み込み中...'}</p>;
 
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <button onClick={() => navigate('/admin/communities')}><ChevronLeft /> 一覧に戻る</button>
-        <h1>コミュニティ詳細</h1>
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>コミュニティ詳細</h1>
+        </div>
 
-        {error && <p className={styles.errorText}>{error}</p>}
-        {success && <p className={styles.successText}>{success}</p>}
+        {error && <p className={styles.centerError}>{error}</p>}
+        {success && <p className={styles.centerError} style={{ color: '#10b981' }}>{success}</p>}
+        <button
+            type="button"
+            onClick={() => navigate('/admin/communities')}
+            className={styles.paginationButton}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <ChevronLeft /> 一覧に戻る
+          </button>
+        {/* 情報の編集 → チャット履歴 → スレッド → メンバー一覧を縦に並べ、チャット履歴は横幅いっぱいに使う */}
+        <div style={{ marginBottom: '32px' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '16px' }}>コミュニティ情報の編集</h2>
+          <form onSubmit={handleUpdateSubmit} className={styles.tablePanelPlain} style={{ padding: '20px', boxSizing: 'border-box' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>名前</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={styles.select}
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
 
-        <h2>コミュニティ情報の編集</h2>
-        <form
-          onSubmit={handleUpdateSubmit}
-          className={styles.formColumn}
-        >
-          <div>
-            <label>名前</label><br />
-            <input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label>説明</label><br />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className={styles.fullWidth}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>説明</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className={styles.select}
+                style={{ width: '100%', boxSizing: 'border-box', height: 'auto', padding: '8px 12px', resize: 'vertical' }}
+              />
+            </div>
+
+            <button type="submit" className={styles.primaryButton}>保存</button>
+          </form>
+        </div>
+
+        <div style={{ marginBottom: '32px' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: '0 0 16px' }}>チャット履歴</h2>
+          {community.roomID && (
+            <AdminChatView
+              key={`${community.roomID}:${chatVersion}`}
+              roomID={community.roomID}
+              height="75vh"
+              onOpenThread={(threadID) => navigate(`/admin/communities/${id}/threads/${encodeURIComponent(threadID)}`)}
+            />
+          )}
+        </div>
+
+        {community.roomID && (
+          <div style={{ marginBottom: '32px' }}>
+            <AdminThreadSection
+              parentRoomID={community.roomID}
+              basePath={`/admin/communities/${id}`}
+              // スレッドを消すと親チャットの案内も消えるので、チャット履歴を取り直す
+              onDeleted={() => setChatVersion((v) => v + 1)}
             />
           </div>
-          <button type="submit">保存</button>
-        </form>
-
-        <hr className={styles.divider} />
-
-        <h2>メンバー一覧</h2>
-        {membersError && <p className={styles.errorText}>{membersError}</p>}
-        {members.length > 0 ? (
-          <table>
-            <thead>
-              <tr>
-                <th>ユーザーID</th>
-                <th>名前</th>
-                <th>ロール</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((member) => (
-                <tr key={member.user.ID}>
-                  <td>{member.user.accountID}</td>
-                  <td>
-                    {member.user.name}
-                  </td>
-                  <td>
-                    <span className={`${styles.roleBadge} ${member.role === ROLE_OWNER ? styles.roleBadgeOwner : styles.roleBadgeMember}`}>
-                      {member.role === ROLE_OWNER ? 'オーナー' : 'メンバー'}
-                    </span>
-                  </td>
-                  <td className={styles.roleActions}>
-                    <button
-                      onClick={() => handleToggleRole(member)}
-                      className={member.role === ROLE_OWNER ? styles.ownerAction : styles.memberAction}
-                    >
-                      {member.role === ROLE_OWNER ? '降格' : '昇格'}
-                    </button>
-                    <button
-                      onClick={() => handleKick(member)}
-                      className={styles.dangerButton}
-                    >
-                      キック
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          !membersError && <p>メンバーはいません</p>
-        )}
-        {memberTotal > memberPageSize && (
-          <div className={styles.pagination}>
-            <button disabled={memberOffset === 0} onClick={() => setMemberOffset(Math.max(0, memberOffset - memberPageSize))}>前へ</button>
-            <span>{Math.floor(memberOffset / memberPageSize) + 1} / {Math.ceil(memberTotal / memberPageSize)}</span>
-            <button disabled={memberOffset + memberPageSize >= memberTotal} onClick={() => setMemberOffset(memberOffset + memberPageSize)}>次へ</button>
-          </div>
         )}
 
-        <hr className={styles.divider} />
-
-        <h2>メッセージ一覧</h2>
-        {messagesError && <p className={styles.errorText}>{messagesError}</p>}
-        {/* items は古い順なので、古いぶんを継ぎ足すボタンは表の手前に置く。 */}
-        {hasOlderMessages && (
-          <button
-            type="button"
-            onClick={loadOlderMessages}
-            disabled={loadingOlderMessages}
-            className={styles.paginationButton}
-          >
-            {loadingOlderMessages ? '読み込み中...' : '過去のメッセージを読み込む'}
-          </button>
-        )}
-        {messages.length > 0 ? (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.tableHeader}>投稿者</th>
-                <th className={styles.tableHeader}>内容</th>
-                <th className={styles.tableHeader}>投稿日時</th>
-                <th className={styles.tableHeader}>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {messages.map((message) => (
-                <tr key={message.ID}>
-                  <td className={styles.tableCell}>
-                    {message.user.name}
-                    <span className={styles.accountId}>
-                      @{message.user.accountID}
-                    </span>
-                  </td>
-                  <td className={`${styles.tableCell} ${styles.contentCell}`}>
-                    {message.content && <div>{message.content}</div>}
-                    {message.media && message.media.length > 0 && (
-                      <div className={`${styles.mediaList} ${message.content ? styles.mediaListSpaced : ''}`}>
-                        {message.media.map((m) =>
-                          m.contentType.startsWith('image/') ? (
-                            <a key={m.ID} href={storageUrl(m.url)} target="_blank" rel="noopener noreferrer">
-                              <img
-                                src={storageUrl(m.url)}
-                                alt="添付画像"
-                                className={styles.mediaThumb}
-                              />
-                            </a>
-                          ) : (
-                            <a
-                              key={m.ID}
-                              href={storageUrl(m.url)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={styles.fileLink}
-                            >
-                              {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
-                            </a>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </td>
-                  <td className={`${styles.tableCell} ${styles.nowrap}`}>
-                    {new Date(message.createdAt).toLocaleString('ja-JP')}
-                  </td>
-                  <td className={styles.tableCell}>
-                    <button onClick={() => handleDeleteMessage(message)} className={styles.dangerButton}>
-                      削除
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          !messagesError && <p>メッセージはありません</p>
-        )}
+        {/* メンバー一覧 */}
+        <div>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '16px' }}>メンバー一覧 ({memberTotal})</h2>
+          {membersError && <p className={styles.centerError}>{membersError}</p>}
+          {members.length > 0 ? (
+            <div className={styles.tablePanelPlain}>
+              <table className={styles.table}>
+                <thead>
+                  <tr className={styles.tableHeaderRow}>
+                    <th className={styles.tableCellLarge}>ユーザーID</th>
+                    <th className={styles.tableCellLarge}>名前</th>
+                    <th className={styles.tableCellLarge}>ロール</th>
+                    <th className={styles.tableCellLarge}>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {members.map((member) => (
+                    <tr key={member.user.ID} className={styles.tableRow}>
+                      <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>@{member.user.accountID}</td>
+                      <td className={styles.tableCellLarge}>{member.user.name}</td>
+                      <td className={styles.tableCellLarge}>
+                        <span className={`${styles.roleBadge} ${member.role === ROLE_OWNER ? styles.roleBadgeOwner : styles.roleBadgeMember}`}>
+                          {member.role === ROLE_OWNER ? 'オーナー' : 'メンバー'}
+                        </span>
+                      </td>
+                      <td className={styles.tableCellLarge}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRole(member)}
+                            className={styles.paginationButton}
+                          >
+                            {member.role === ROLE_OWNER ? '降格' : '昇格'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleKick(member)}
+                            className={styles.primaryButton}
+                            style={{ backgroundColor: '#ef4444' }}
+                          >
+                            キック
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            !membersError && <p className={styles.emptyState}>メンバーはいません</p>
+          )}
+          {memberTotal > memberPageSize && (
+            <div className={styles.toolbar} style={{ marginTop: '12px' }}>
+              <button
+                disabled={memberOffset === 0}
+                onClick={() => setMemberOffset(Math.max(0, memberOffset - memberPageSize))}
+                className={styles.paginationButton}
+              >
+                前へ
+              </button>
+              <span className={styles.cellMuted}>
+                {Math.floor(memberOffset / memberPageSize) + 1} / {Math.ceil(memberTotal / memberPageSize)}
+              </span>
+              <button
+                disabled={memberOffset + memberPageSize >= memberTotal}
+                onClick={() => setMemberOffset(memberOffset + memberPageSize)}
+                className={styles.paginationButton}
+              >
+                次へ
+              </button>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

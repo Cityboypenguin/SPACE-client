@@ -4,6 +4,8 @@ import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
+import { useThreadActions } from '../hooks/useThreadActions';
+import { ThreadWorkspace, ThreadListButton } from '../components/organisms/ThreadWorkspace';
 import { ChatInput } from '../components/molecules/ChatInput';
 import { ChatDateSeparator } from '../../../components/atoms/ChatDateSeparator';
 import { ChatUnreadSeparator } from '../../../components/atoms/ChatUnreadSeparator';
@@ -11,12 +13,14 @@ import { findFirstUnreadIndex, isSameMessageGroup } from '../lib/messageGrouping
 import { NewMessagesBadge } from '../components/molecules/NewMessagesBadge';
 import { CommunityAvatar } from '../../../components/atoms/CommunityAvatar';
 import { listMyCommunities, getMyRoleInCommunity, leaveCommunity, type Community } from '../api/community';
-import { getMentionCandidates } from '../api/message';
+import { getMentionCandidates, type Message } from '../api/message';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useAuth } from '../context/useAuth';
 import { useRoomMessages } from '../hooks/useRoomMessages';
 import { useChatActions } from '../hooks/useChatActions';
+import { useMessageReactionEmojis } from '../hooks/useMessageReactionEmojis';
+import { useMessageStampOptions } from '../hooks/useChatStamps';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../hooks/useScrollToMessage';
@@ -36,6 +40,7 @@ let hardReloadPending = (() => {
 export const CommunityRoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const threadActions = useThreadActions();
   const location = useLocation();
   useResetViewportScroll([roomId]);
   const locationState = location.state as { communityID?: string; community?: Community; showDetail?: boolean } | null;
@@ -43,7 +48,7 @@ export const CommunityRoomPage = () => {
   // 返信通知からは ?messageID=... 付きで開かれ、そのメッセージを中心に表示する。
   const [searchParams] = useSearchParams();
   const aroundMessageId = searchParams.get('messageID');
-  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
+  const { room, messages, error, addMessage, setMessageReactions, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -53,8 +58,10 @@ export const CommunityRoomPage = () => {
     editContent, setEditContent,
     replyTarget, setReplyTarget,
     addPendingMention,
-    handleSend, handleDelete, handleSaveEdit,
-  } = useChatActions(roomId, addMessage);
+    handleSend, handleSendStamp, handleToggleReaction, handleDelete, handleSaveEdit,
+  } = useChatActions(roomId, addMessage, setMessageReactions);
+  const reactionEmojis = useMessageReactionEmojis(!!room);
+  const stampOptions = useMessageStampOptions(!!room);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -142,6 +149,7 @@ export const CommunityRoomPage = () => {
   const openDetail = () => setShowDetail(true);
   const closeDetail = () => setShowDetail(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportingMessage, setReportingMessage] = useState<Message | null>(null);
 
   const stateCommunity = locationState?.community ?? null;
   const { data: communities, mutate: mutateCommunities } = useSWR(
@@ -205,6 +213,7 @@ export const CommunityRoomPage = () => {
   const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.user.ID === currentUserID);
 
   return (
+    <ThreadWorkspace parentRoomID={roomId ?? ""} writable={!room?.isMessagingDisabled}>
     <div className={styles.container}>
       <UserSidebar />
 
@@ -229,6 +238,7 @@ export const CommunityRoomPage = () => {
           <CommunityAvatar name={community?.name || room?.name || '?'} src={community?.avatarURL} size={32} />
           <strong className={styles.roomTitle}>{community?.name || room?.name || '...'}</strong>
         </button>
+        <ThreadListButton parentRoomID={roomId ?? ''} />
       </div>
 
       <div className={styles.messageListWrapper}>
@@ -267,7 +277,10 @@ export const CommunityRoomPage = () => {
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
                   onReply={() => setReplyTarget(msg)}
+                  onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
+                  reactionEmojis={reactionEmojis}
+                  onToggleReaction={(emoji, reacted) => handleToggleReaction(msg.ID, emoji, reacted)}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
                 />
@@ -285,6 +298,7 @@ export const CommunityRoomPage = () => {
       </div>
 
       <ChatInput
+        onCreateThread={threadActions.create}
         value={content}
         onChange={setContent}
         onSubmit={handleSend}
@@ -293,6 +307,8 @@ export const CommunityRoomPage = () => {
         disabled={sending}
         replyTarget={replyTarget}
         onCancelReply={() => setReplyTarget(null)}
+        stampOptions={stampOptions}
+        onSendStamp={handleSendStamp}
         mentionCandidates={mentionCandidates ?? []}
         onMentionSelect={addPendingMention}
         onMentionQueryChange={setMentionPrefix}
@@ -316,6 +332,16 @@ export const CommunityRoomPage = () => {
           targetID={community.ID}
         />
       )}
+      {reportingMessage && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportingMessage(null)}
+          targetType="MESSAGE"
+          targetID={reportingMessage.ID}
+          postContent={reportingMessage.content}
+        />
+      )}
     </div>
+    </ThreadWorkspace>
   );
 };

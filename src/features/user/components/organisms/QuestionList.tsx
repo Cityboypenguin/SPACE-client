@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { maskNGWordDraft, showNGWordFeedback } from '../../../../lib/ngWordFeedback';
+import { useEffect, useState } from 'react';
 import { useCourseQuestions } from '../../hooks/useCourseQuestions';
 import { useQuestionAnswers } from '../../hooks/useQuestionAnswers';
 import {
   createQuestion, answerQuestion, selectBestAnswer, cancelBestAnswer,
-  updateQuestionBody, deleteQuestion, updateAnswer, deleteAnswer, likeAnswer, unlikeAnswer,
+  deleteQuestion, deleteAnswer, likeAnswer, unlikeAnswer,
+  addQuestionAddendum, addAnswerAddendum, getQuestion,
 } from '../../api/question';
 import { uploadMediaFiles } from '../../api/media';
 import { CreateQuestionForm } from '../molecules/CreateQuestionForm';
@@ -21,7 +23,7 @@ type Props = {
 export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelectQuestion }: Props) => {
   const {
     questions, loading, error, hasMore, loadingMore, loadMore,
-    addQuestion, updateQuestion, bumpAnswerCount, removeQuestion,
+    addQuestion, updateQuestion, ensureQuestion, bumpAnswerCount, removeQuestion,
   } = useCourseQuestions(roomId);
 
   const answersState = useQuestionAnswers(selectedQuestionID ?? undefined);
@@ -32,6 +34,17 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
   const [sendError, setSendError] = useState('');
 
   const selectedQuestion = questions.find((question) => question.ID === selectedQuestionID) ?? null;
+
+  // 通知から開いた質問が、読み込み済みの一覧（先頭の数十件）に無いときは、その1件だけ取って足す。
+  const hasSelectedQuestion = selectedQuestion !== null;
+  useEffect(() => {
+    if (!selectedQuestionID || loading || hasSelectedQuestion) return;
+    let active = true;
+    getQuestion(selectedQuestionID)
+      .then((q) => { if (active && q && q.roomID === roomId) ensureQuestion(q); })
+      .catch(() => { /* 削除済みなど。一覧のまま表示する */ });
+    return () => { active = false; };
+  }, [selectedQuestionID, loading, hasSelectedQuestion, roomId, ensureQuestion]);
 
   const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -45,7 +58,11 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
       setBody('');
       setFiles([]);
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : '質問の送信に失敗しました。');
+      if (showNGWordFeedback(err)) {
+        setBody((current) => maskNGWordDraft(err, current));
+      } else {
+        setSendError(err instanceof Error ? err.message : '質問の送信に失敗しました。');
+      }
     } finally {
       setSending(false);
     }
@@ -69,19 +86,19 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
     updateQuestion(updated);
   };
 
-  const handleUpdateQuestion = async (questionID: string, body: string, deletedMediaIDs: string[]) => {
-    const updated = await updateQuestionBody(questionID, body, deletedMediaIDs);
+  const handleAddQuestionAddendum = async (questionID: string, body: string) => {
+    const updated = await addQuestionAddendum(questionID, body);
     updateQuestion(updated);
+  };
+
+  const handleAddAnswerAddendum = async (_questionID: string, answerID: string, body: string) => {
+    const updated = await addAnswerAddendum(answerID, body);
+    answersState.updateAnswer(updated);
   };
 
   const handleDeleteQuestion = async (questionID: string) => {
     await deleteQuestion(questionID);
     removeQuestion(questionID);
-  };
-
-  const handleUpdateAnswer = async (_questionID: string, answerID: string, body: string, deletedMediaIDs: string[]) => {
-    const updated = await updateAnswer(answerID, body, deletedMediaIDs);
-    answersState.updateAnswer(updated);
   };
 
   const handleDeleteAnswer = async (questionID: string, answerID: string) => {
@@ -115,9 +132,9 @@ export const QuestionList = ({ roomId, roomWritable, selectedQuestionID, onSelec
           onAnswerSubmit={handleAnswerSubmit}
           onSelectBestAnswer={handleSelectBestAnswer}
           onCancelBestAnswer={handleCancelBestAnswer}
-          onUpdateQuestion={handleUpdateQuestion}
           onDeleteQuestion={handleDeleteQuestion}
-          onUpdateAnswer={handleUpdateAnswer}
+          onAddQuestionAddendum={handleAddQuestionAddendum}
+          onAddAnswerAddendum={handleAddAnswerAddendum}
           onDeleteAnswer={handleDeleteAnswer}
           onLikeAnswer={handleLikeAnswer}
           onUnlikeAnswer={handleUnlikeAnswer}

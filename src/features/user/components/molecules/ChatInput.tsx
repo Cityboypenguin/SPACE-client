@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { AppSwal } from '../../../../lib/swal';
 import styles from '../ChatRoom.module.css';
 import sendIcon from '../../../../assets/パーツ_送信.svg';
 import clipIcon from '../../../../assets/パーツ_クリップ.svg';
@@ -8,6 +9,8 @@ import { type Message } from '../../api/message';
 import { storageUrl } from '../../../../lib/storage';
 import { ReplyArrow } from '../../../../components/atoms/ReplyArrow';
 import { MentionSuggestionList } from './MentionSuggestionList';
+import { StampPicker } from './StampPicker';
+import { reactionLabel } from '../../constants/reactionStamps';
 import { applyMention, getActiveNameMention, type MentionCandidate } from '../../../../lib/mentions';
 
 const ACCEPTED_FILE_TYPES = [
@@ -21,6 +24,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
 // 返信先バーに出す1行プレビュー。本文が無いときは添付の種類で代替する。
 const replyPreviewText = (msg: Message): string => {
+  if (msg.stampID) return `スタンプ（${reactionLabel(msg.stampID)}）`;
   if (msg.content.trim() !== '') return msg.content;
   const imageCount = msg.media.filter((m) => m.contentType.startsWith('image/')).length;
   const fileCount = msg.media.length - imageCount;
@@ -30,9 +34,10 @@ const replyPreviewText = (msg: Message): string => {
 };
 
 type Props = {
+  onCreateThread?: () => void;
   value: string;
   onChange: (val: string) => void;
-  onSubmit: (e: { preventDefault(): void }) => void;
+  onSubmit: (e: { preventDefault(): void; input?: HTMLTextAreaElement | null }) => void;
   onFileSelect: (files: File[]) => void;
   selectedFiles: File[];
   disabled?: boolean;
@@ -48,15 +53,20 @@ type Props = {
   onMentionSelect?: (candidate: MentionCandidate) => void;
   // 入力中の表示名 prefix。null はメンション入力中でないことを表す。
   onMentionQueryChange?: (query: string | null) => void;
+  // スタンプだけのメッセージを送れるルームだけが渡す。stampOptions は送れるスタンプのID。
+  stampOptions?: string[];
+  onSendStamp?: (stampID: string) => void;
 };
 
 export const ChatInput = ({
-  value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
+  onCreateThread, value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
   replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryChange,
+  stampOptions = [], onSendStamp,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
+  const composingRef = useRef(false);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const { theme } = useTheme();
@@ -103,10 +113,14 @@ export const ChatInput = ({
     }
   }, [value]);
 
-  // 送信完了後 (disabled: true → false) にテキストエリアへフォーカスを戻す
+  // Sending only locks submission, not the editable field. The NG-word modal
+  // owns focus restoration; do not update an unrelated global popup here.
   useEffect(() => {
-    if (prevDisabledRef.current === true && disabled === false) {
-      textareaRef.current?.focus();
+    if (prevDisabledRef.current === true && disabled === false && !AppSwal.isVisible()) {
+      const textarea = textareaRef.current;
+      if (textarea && !textarea.disabled && document.activeElement !== textarea) {
+        textarea.focus({ preventScroll: true });
+      }
     }
     prevDisabledRef.current = disabled;
   }, [disabled]);
@@ -205,7 +219,7 @@ export const ChatInput = ({
   const handleFormSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (!canSubmit) return;
-    onSubmit(e);
+    onSubmit({ preventDefault: () => e.preventDefault(), input: textareaRef.current });
   };
 
   return (
@@ -302,9 +316,10 @@ export const ChatInput = ({
       <form onSubmit={handleFormSubmit} className={styles.inputForm}>
         <button
           type="button"
+          aria-label="ファイルを添付"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
-          title={isBlocked ? 'ブロック中のため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
+          title={isBlocked ? 'このルームには送信できないため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
           className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
         >
           <img
@@ -313,6 +328,22 @@ export const ChatInput = ({
             className={`${styles.clipIcon} ${theme === 'dark' ? styles.clipIconDark : ''}`}
           />
         </button>
+        {onCreateThread && <button
+          type="button"
+          className={styles.createThreadButton}
+          onClick={onCreateThread}
+          disabled={disabled || isBlocked}
+          aria-label="スレッドを作成"
+          title="スレッドを作成"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+            <path d="M4 4h10m2 8v4H9l-5 4V4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M19 3v6m-3-3h6M8 8h4M8 12h4" strokeLinecap="round" />
+          </svg>
+        </button>}
+        {onSendStamp && stampOptions.length > 0 && (
+          <StampPicker stamps={stampOptions} onPick={onSendStamp} disabled={disabled || isBlocked} />
+        )}
         <input
           ref={fileInputRef}
           type="file"
@@ -347,10 +378,16 @@ export const ChatInput = ({
             onKeyUp={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
             onClick={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
             onPaste={handlePaste}
+            onCompositionStart={() => { composingRef.current = true; }}
+            onCompositionEnd={() => { composingRef.current = false; }}
+            onBlur={() => { composingRef.current = false; }}
             onKeyDown={(e) => {
+              // Safari may report isComposing=false for the Enter that commits
+              // Japanese input. Never use that keystroke to send or pick a mention.
+              if (composingRef.current || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
               // 候補が出ているあいだは、送信・改行より先にサジェスト操作を優先する。
               // IME変換中の Enter 等は確定操作なので横取りしない。
-              if (showMentionSuggestions && !e.nativeEvent.isComposing) {
+              if (showMentionSuggestions) {
                 if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                   e.preventDefault();
                   setSuggestActiveIndex((prev) => {
@@ -379,9 +416,9 @@ export const ChatInput = ({
               // 通常通りEnterで送信できるようにする。
               const isTouch = window.matchMedia('(pointer: coarse)').matches;
               if (isTouch) return;
-              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (canSubmit) onSubmit({ preventDefault: () => { } });
+                if (canSubmit) onSubmit({ preventDefault: () => { }, input: textareaRef.current });
               }
             }}
             placeholder={
@@ -391,7 +428,8 @@ export const ChatInput = ({
                 ? 'メッセージを入力...'
                 : 'メッセージを入力... (Shift+Enterで改行)'
             }
-            disabled={disabled || isBlocked}
+            disabled={isBlocked}
+            aria-busy={disabled || undefined}
             className={styles.inputField}
           />
           {isNearOrOverLimit && (

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   listAnswers,
-  type Answer, type AnswerLikeUpdate, type AnswerBodyUpdate,
-  ANSWER_FIELDS,
+  type Answer, type AnswerLikeUpdate, type AnswerBodyUpdate, type AnswerAddendaUpdate,
+  ANSWER_FIELDS, ADDENDUM_FIELDS_RAW,
 } from '../api/question';
 import { subscribeToGraphQL } from '../../../lib/graphqlWs';
 import { toUserMessage } from '../../../lib/errorMessages';
@@ -24,6 +24,7 @@ const ANSWER_UPDATED_SUBSCRIPTION = `
       ID
       body
       media {${MEDIA_FIELDS_RAW}}
+      addenda {${ADDENDUM_FIELDS_RAW}}
       likeCount
       likedByMe
     }
@@ -39,7 +40,7 @@ const ANSWER_DELETED_SUBSCRIPTION = `
 `;
 
 type AnswerAddedData = { answerAdded: Answer };
-type AnswerUpdatedData = { answerUpdated: AnswerLikeUpdate & AnswerBodyUpdate };
+type AnswerUpdatedData = { answerUpdated: AnswerLikeUpdate & AnswerBodyUpdate & AnswerAddendaUpdate };
 type AnswerDeletedData = { answerDeleted: Pick<Answer, 'ID'> };
 
 const PAGE_SIZE = 20;
@@ -162,7 +163,7 @@ export const useQuestionAnswers = (questionID: string | undefined) => {
     });
   }, []);
 
-  const updateAnswer = useCallback((answer: AnswerLikeUpdate | AnswerBodyUpdate) => {
+  const updateAnswer = useCallback((answer: AnswerLikeUpdate | AnswerBodyUpdate | AnswerAddendaUpdate) => {
     setState((prev) => ({
       ...prev,
       answers: prev.answers.map((a) => (a.ID === answer.ID ? { ...a, ...answer } : a)),

@@ -24,7 +24,7 @@ test.describe('ユーザーログイン', () => {
     await page.getByPlaceholder('パスワード').fill(env.user.password);
     await page.getByRole('button', { name: 'ログイン' }).click();
     await expect(page).toHaveURL(/\/home$/);
-    await expect(page.getByText('ホーム')).toBeVisible();
+    await expect(page.getByRole('navigation').getByRole('button', { name: 'ホーム' })).toBeVisible();
   });
 
   test('新規登録ボタンで登録画面へ遷移する', async ({ page }) => {

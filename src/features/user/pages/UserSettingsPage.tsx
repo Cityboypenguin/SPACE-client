@@ -22,6 +22,7 @@ import { toUserMessage } from '../../../lib/errorMessages';
 import styles from './UserSettingsPage.module.css';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { InquiryForm } from '../components/organisms/InquiryForm';
+import { TimetableHiddenNoticeModal } from '../components/organisms/TimetableHiddenNoticeModal';
 import { AppSwal } from '../../../lib/swal';
 
 type View = 'general' | 'personal' | 'password' | 'blocks' | 'terms' | 'inquiry' | null;
@@ -213,6 +214,7 @@ const PersonalSettingsForm = ({ initialTheme, initialTimetableVisible, onSave }:
   const [draftTheme, setDraftTheme] = useState<Theme>(initialTheme);
   const [draftTimetableVisible, setDraftTimetableVisible] = useState(initialTimetableVisible);
   const [saving, setSaving] = useState(false);
+  const [showHiddenNotice, setShowHiddenNotice] = useState(false);
   const hasChanges = draftTheme !== initialTheme || draftTimetableVisible !== initialTimetableVisible;
 
   const handleSave = async () => {
@@ -240,10 +242,15 @@ const PersonalSettingsForm = ({ initialTheme, initialTimetableVisible, onSave }:
         <span className={styles.toggleLabel}>プロフィールに時間割を公開する</span>
         <ToggleSwitch
           checked={draftTimetableVisible}
-          onChange={setDraftTimetableVisible}
+          onChange={(checked) => {
+            if (!checked && draftTimetableVisible) setShowHiddenNotice(true);
+            setDraftTimetableVisible(checked);
+          }}
           ariaLabel="プロフィールに時間割を公開する"
         />
       </div>
+
+      {showHiddenNotice && <TimetableHiddenNoticeModal onClose={() => setShowHiddenNotice(false)} />}
 
       <button
         type="button"
@@ -353,7 +360,7 @@ const GeneralView = ({
       await logout();
       navigate('/login');
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'アカウントの削除に失敗しました');
+      setDeleteError(toUserMessage(err, 'アカウントの削除に失敗しました'));
       setDeleting(false);
     }
   };
@@ -399,7 +406,10 @@ const GeneralView = ({
               アカウントを削除しますか？
             </p>
             <p className={styles.modalBody}>
-              この操作は取り消せません。投稿・メッセージなどすべてのデータが削除されます。
+              15日以内にもう一度ログインすると、削除を取り消せます。
+              15日を過ぎると、プロフィール・タイムラインの投稿・添付ファイルなどが完全に削除されます。
+              チャット・質問・回答・投票は「削除されたアカウント」の投稿として残ります。
+              あなたが唯一のオーナーのコミュニティは、ほかのメンバーにオーナーを引き継ぎます。
             </p>
             {deleteError && <p className={styles.errorMsg} style={{ marginBottom: '1rem' }}>{deleteError}</p>}
             <div className={styles.modalActions}>

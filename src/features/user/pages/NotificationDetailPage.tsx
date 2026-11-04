@@ -10,7 +10,7 @@ import {
   deleteNotifications,
 } from '../api/notification';
 import { storageUrl } from '../../../lib/storage';
-import { MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
+import { ANSWER_ADDENDUM_TYPE, MENTION_TYPE, MESSAGE_MENTION_TYPE, MESSAGE_REPLY_TYPE, QUESTION_ADDENDUM_TYPE, courseQuestionBoxLink, isAddendumNotification, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
 import { stableCacheOptions } from '../cache/swrOptions';
 import styles from './NotificationDetailPage.module.css';
@@ -22,23 +22,29 @@ const TYPE_LABEL: Record<string, string> = {
   [MESSAGE_REPLY_TYPE]: 'チャットの返信',
   [MENTION_TYPE]: 'メンション',
   [MESSAGE_MENTION_TYPE]: 'チャットのメンション',
+  [QUESTION_ADDENDUM_TYPE]: '質問への追記',
+  [ANSWER_ADDENDUM_TYPE]: '回答への追記',
   dm: 'DM',
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
   announcement: 'お知らせ',
   follow: 'フォロー',
+  timetable_removed: '時間割の変更',
 };
 
 const ACTION_LABEL: Record<string, string> = {
   dm: 'DMへいく',
   [MESSAGE_REPLY_TYPE]: 'メッセージへいく',
   [MESSAGE_MENTION_TYPE]: 'メッセージへいく',
+  [QUESTION_ADDENDUM_TYPE]: '質問箱へいく',
+  [ANSWER_ADDENDUM_TYPE]: '質問箱へいく',
   [MENTION_TYPE]: '投稿へいく',
   favorite: '投稿へいく',
   reply: '投稿へいく',
   community_kick: 'コミュニティへいく',
   community_role: 'コミュニティへいく',
   announcement: 'お知らせへいく',
+  timetable_removed: '時間割へいく',
 };
 
 const TARGET_PATH: Record<string, (id: string) => string> = {
@@ -46,6 +52,9 @@ const TARGET_PATH: Record<string, (id: string) => string> = {
   room: (id) => `/community/chat/${id}`,
   community: () => `/community`,
   announcement: (id) => `/announcements/${id}`,
+  // シラバス同期で時間割から外した授業（timetable_removed）。授業そのものより、
+  // 何が残ったかを確かめられる時間割へ案内する。
+  course: () => '/timetable',
 };
 
 const DM_TYPES = new Set(['dm']);
@@ -112,6 +121,10 @@ export const NotificationDetailPage = () => {
       return;
     }
     if (!notification?.targetType || !notification?.targetID) return;
+    if (isAddendumNotification(notification.type)) {
+      if (notification.targetQuestion) navigate(courseQuestionBoxLink(notification.targetQuestion.roomID, notification.targetQuestion.ID));
+      return;
+    }
     if (DM_TYPES.has(notification.type) && notification.targetType === 'room') {
       navigate(`/dm/${notification.targetID}`);
       return;
@@ -192,7 +205,9 @@ export const NotificationDetailPage = () => {
               </div>
             )}
 
-            {(replyLink || (notification.targetType && notification.targetID && TARGET_PATH[notification.targetType])) && (
+            {(replyLink
+              || (isAddendumNotification(notification.type) && notification.targetQuestion)
+              || (notification.targetType && notification.targetID && TARGET_PATH[notification.targetType])) && (
               <button className={styles.actionBtn} onClick={handleTargetLink}>
                 {ACTION_LABEL[notification.type] ?? '詳細へいく'}
               </button>

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../../api/auth';
 import { useAuth } from '../../context/useAuth';
 import { toUserMessage } from '../../../../lib/errorMessages';
+import { AppSwal } from '../../../../lib/swal';
 import logo from '../../../../assets/Senshu-Universe_logo.svg';
 import styles from './UserLoginForm.module.css';
 
@@ -25,6 +26,11 @@ export const UserLoginForm = () => {
     try {
       const data = await loginUser(email, password);
       login(data.loginUser.token, data.loginUser.refreshToken, data.loginUser.user.ID);
+      // 退会手続き中（猶予の15日間）にログインすると、サーバーが退会を取り消す。
+      // 黙って戻すと「退会したはずなのに」と戸惑うので、そのことを知らせる。
+      if (data.loginUser.accountRestored) {
+        void AppSwal.fire({ text: '退会手続きを取り消しました。これまでどおりご利用いただけます。', confirmButtonText: 'OK' });
+      }
       navigate('/home');
     } catch (err) {
       setError(toUserMessage(err, 'メールアドレスまたはパスワードが正しくありません'));

@@ -51,20 +51,25 @@
   background: var(--color-surface);
 }
 
+/* 投稿者・未回答バッジ・時刻の1行。名前が長いときは名前の側を省略する */
 .cardTopLine {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
   min-height: 22px;
 }
 
 .cardTime {
   margin-left: auto;
+  flex-shrink: 0;
   font-size: 0.72rem;
   color: var(--color-text);
 }
 
 .unansweredBadge {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   border-radius: 12px;
   background: #ffc34d;
@@ -175,6 +180,14 @@
   font-size: 0.8rem;
 }
 
+/* 自分の質問では右上にメニューが重なるので、名前がその下に潜らないよう右を空ける */
+.detailAuthor {
+  display: flex;
+  min-width: 0;
+  margin-bottom: 0.45rem;
+  padding-right: 2rem;
+}
+
 .detailQuestionBlock {
   position: relative;
   padding: 0.8rem 1.5rem 0.65rem;
@@ -232,12 +245,6 @@
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--color-text);
-}
-
-.editQuestionForm {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 
 .editActions {
@@ -377,6 +384,14 @@
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
   padding: 1.35rem 1.25rem 0.55rem;
+}
+
+/* 回答の右上にもメニューが重なるので、同じく右を空ける */
+.answerAuthor {
+  display: flex;
+  min-width: 0;
+  margin-bottom: 0.4rem;
+  padding-right: 2rem;
 }
 
 .answerItemBest {
@@ -663,4 +678,72 @@
   .detailQuestionBlock {
     padding-inline: 1.25rem;
   }
+}
+
+/* 質問・回答への追記。元の本文とは別の枠で、足された順に並べる。 */
+.addendumSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.addendumItem {
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 6px 6px 0;
+  background: var(--color-bg-elevated);
+}
+
+.addendumLabel {
+  display: inline-block;
+  margin-bottom: 0.15rem;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.addendumBody {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.addendumTime {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.addendumOpenButton {
+  align-self: flex-start;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.addendumOpenButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.addendumForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 本文も添付も無くなった質問・回答（添付が削除されたとき） */
+.filesRemoved {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-style: italic;
 }

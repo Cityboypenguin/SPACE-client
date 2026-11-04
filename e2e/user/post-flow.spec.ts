@@ -33,6 +33,8 @@ test.describe('投稿の作成・表示・いいね・返信・編集・削除',
 
       await page.getByPlaceholder('新規投稿').fill(postContent);
       await page.getByRole('button', { name: '投稿', exact: true }).click();
+      // 入力欄に残っている間は、下書きと投稿のどちらか区別できない。
+      await expect(page.getByPlaceholder('新規投稿')).toHaveValue('');
       await expect(page.getByText(postContent)).toBeVisible();
     });
 
@@ -74,6 +76,7 @@ test.describe('投稿の作成・表示・いいね・返信・編集・削除',
     await test.step('返信すると返信一覧に表示され、返信件数が増える', async () => {
       await page.getByPlaceholder('返信する...').fill(replyContent);
       await page.getByRole('button', { name: '返信する' }).click();
+      await expect(page.getByPlaceholder('返信する...')).toHaveValue('');
       await expect(page.getByText(replyContent)).toBeVisible();
       await expect(page.getByText('1 件の返信')).toBeVisible();
     });
@@ -101,6 +104,7 @@ test.describe('投稿の作成・表示・いいね・返信・編集・削除',
 
       await page.getByPlaceholder('投稿を編集...').fill(editedPostContent);
       await page.getByRole('button', { name: '保存する' }).click();
+      await expect(page.getByPlaceholder('投稿を編集...')).toHaveCount(0);
       await expect(page.getByText(editedPostContent)).toBeVisible();
     });
 

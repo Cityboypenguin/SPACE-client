@@ -1,27 +1,35 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import useSWR from 'swr';
+import { getMentionCandidates } from '../../api/message';
 import { ChatMessageBubble } from '../molecules/ChatMessageBubble';
+import { useThreadActions } from '../../hooks/useThreadActions';
 import { ChatInput } from '../molecules/ChatInput';
+import { ReportModal } from './ReportModal';
 import { ChatDateSeparator } from '../../../../components/atoms/ChatDateSeparator';
 import { ChatUnreadSeparator } from '../../../../components/atoms/ChatUnreadSeparator';
 import { NewMessagesBadge } from '../molecules/NewMessagesBadge';
+import type { Message } from '../../api/message';
 import { useRoomMessages } from '../../hooks/useRoomMessages';
 import { useChatActions } from '../../hooks/useChatActions';
+import { useMessageReactionEmojis } from '../../hooks/useMessageReactionEmojis';
+import { useMessageStampOptions } from '../../hooks/useChatStamps';
 import { useChatScroll } from '../../hooks/useChatScroll';
 import { useScrollRestoreOnPrepend } from '../../hooks/useScrollRestoreOnPrepend';
 import { useScrollToMessage } from '../../hooks/useScrollToMessage';
-import { isAnonymousUser } from '../../lib/anonymous';
 import { findFirstUnreadIndex, isSameMessageGroup } from '../../lib/messageGrouping';
 import styles from '../ChatRoom.module.css';
 
 type Props = {
   roomId: string;
   roomWritable: boolean;
+  allowThreadCreation?: boolean;
   // 返信通知から開いたときのジャンプ先メッセージID
   aroundMessageId?: string | null;
 };
 
-export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) => {
-  const { messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
+export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThreadCreation = false }: Props) => {
+  const threadActions = useThreadActions();
+  const { room, messages, error, addMessage, initialLastReadAt, hasMoreBefore, hasMoreAfter, loadingOlder, loadingNewer, loadOlderMessages, loadNewerMessages, setMessageReactions, pendingScrollId, jumpToMessage, clearPendingScroll } = useRoomMessages(roomId, { aroundMessageId });
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
@@ -30,8 +38,16 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
     editingId, setEditingId,
     editContent, setEditContent,
     replyTarget, setReplyTarget,
-    handleSend, handleDelete, handleSaveEdit,
-  } = useChatActions(roomId, addMessage);
+    addPendingMention,
+    handleSend, handleSendStamp, handleDelete, handleSaveEdit, handleToggleReaction,
+  } = useChatActions(roomId, addMessage, setMessageReactions);
+  // 書き込めるルームだけ、リアクションを付け外しできる（閲覧のみのルームは集計の表示だけ）。
+  const reactionEmojis = useMessageReactionEmojis(roomWritable);
+  const stampOptions = useMessageStampOptions(roomWritable);
+
+  const [mentionPrefix, setMentionPrefix] = useState<string | null>(null);
+  const {data: mentionCandidates} = useSWR(room?.type==='community' && mentionPrefix!==null ? ['mention-candidates',roomId,mentionPrefix] : null, () => getMentionCandidates(roomId,mentionPrefix ?? ''));
+  const [reportingMessage, setReportingMessage] = useState<Message | null>(null);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -56,7 +72,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
 
   // ルームを開いた時点の既読位置。開いている間に既読が進んでも区切り線は動かさない(DM・コミュニティと同じ)。
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
-  // 授業チャットは匿名表示のため、自分の投稿かどうかは user.ID ではなく isMine で判定する。
+  // 自分の投稿かどうかはサーバが付ける isMine で判定する。
   const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.isMine);
 
   const loadOlderWithScrollRestore = async () => {
@@ -117,17 +133,20 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
                   msg={msg}
                   isMine={msg.isMine}
                   canDelete={msg.isMine}
-                  editable={roomWritable}
+                  // 授業チャットは編集できない（スレッドは親のルームと同じ type を持つ）。
+                  editable={roomWritable && room?.type !== 'course'}
                   isEditing={editingId === msg.ID}
                   editContent={editContent}
-                  isAnonymousAuthor={isAnonymousUser(msg.user)}
                   onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
                   onSaveEdit={() => handleSaveEdit(msg.ID)}
                   onCancelEdit={() => setEditingId(null)}
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
                   onReply={roomWritable ? () => setReplyTarget(msg) : undefined}
+                  onReport={() => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
+                  reactionEmojis={reactionEmojis}
+                  onToggleReaction={roomWritable ? (emoji, reacted) => handleToggleReaction(msg.ID, emoji, reacted) : undefined}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
                 />
@@ -146,14 +165,30 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId }: Props) 
 
       {roomWritable && (
         <ChatInput
+          onCreateThread={allowThreadCreation ? threadActions.create : undefined}
           value={content}
           onChange={setContent}
           onSubmit={handleSend}
           onFileSelect={setSelectedFiles}
           selectedFiles={selectedFiles}
           disabled={sending}
+          mentionCandidates={mentionCandidates ?? []}
+          onMentionSelect={room?.type==='community' ? addPendingMention : undefined}
+          onMentionQueryChange={setMentionPrefix}
           replyTarget={replyTarget}
           onCancelReply={() => setReplyTarget(null)}
+          stampOptions={stampOptions}
+          onSendStamp={handleSendStamp}
+        />
+      )}
+
+      {reportingMessage && (
+        <ReportModal
+          isOpen
+          onClose={() => setReportingMessage(null)}
+          targetType="MESSAGE"
+          targetID={reportingMessage.ID}
+          postContent={reportingMessage.content}
         />
       )}
     </>

@@ -1,3 +1,4 @@
+import { maskNGWordDraft, showNGWordFeedback } from '../../../../lib/ngWordFeedback';
 import { useState } from 'react';
 import styles from '../PollBox.module.css';
 
@@ -61,7 +62,12 @@ export const CreatePollForm = ({ onCreate }: Props) => {
       reset();
       setOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '投票の作成に失敗しました。');
+      if (showNGWordFeedback(err)) {
+        setQuestion((current) => maskNGWordDraft(err, current));
+        setOptions((current) => current.map((option) => maskNGWordDraft(err, option)));
+      } else {
+        setError(err instanceof Error ? err.message : '投票の作成に失敗しました。');
+      }
     } finally {
       setSubmitting(false);
     }

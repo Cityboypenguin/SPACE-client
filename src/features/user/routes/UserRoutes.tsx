@@ -1,3 +1,5 @@
+// ルートの一覧とその lazy の定義だけのファイル。編集したら全体を読み直せばよいので Fast Refresh は要らない。
+/* eslint-disable react-refresh/only-export-components */
 import { lazy } from 'react';
 import { Route } from 'react-router-dom';
 import { NotFoundPage } from '../../../components/pages/NotFoundPage';

@@ -13,6 +13,9 @@ export type Course = {
   year: number;
   semester: string;
   createdAt: string;
+  // シラバスから消えて廃止扱いになった授業。時間割の取得・保存でだけ選んでいる
+  // （検索には廃止済みの授業が出てこないので選ばない）。
+  discontinued?: boolean;
 };
 
 export type TimetableEntry = {
@@ -81,8 +84,15 @@ const MyTimetableDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
       }
     }
+  }
+`);
+
+const CourseChatStatusDocument = graphql(`
+  query CourseChatStatus {
+    courseChatEnabled
   }
 `);
 
@@ -117,16 +127,8 @@ const SetTimetableEntryColorDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
       }
-    }
-  }
-`);
-
-const MyCourseRoomUnreadCountsDocument = graphql(`
-  query MyCourseRoomUnreadCounts {
-    myCourseRoomUnreadCounts {
-      roomID
-      unreadCount
     }
   }
 `);
@@ -147,6 +149,7 @@ const SetMyTimetableDocument = graphql(`
         year
         semester
         createdAt
+        discontinued
       }
     }
   }
@@ -209,7 +212,7 @@ export const getUserTimetable = async (
     );
   } catch (error) {
     if (isPrivateTimetableError(error)) {
-      throw new Error('timetable is private');
+      throw new Error('timetable is private', { cause: error });
     }
     throw error;
   }
@@ -268,6 +271,12 @@ export const getCurrentSemester = async (): Promise<CurrentSemester> => {
   return data.currentSemester;
 };
 
+// 授業チャットが一括停止されていないか。
+export const getCourseChatEnabled = async (): Promise<boolean> => {
+  const data = await requestDoc(CourseChatStatusDocument, {}, getUserToken());
+  return data.courseChatEnabled;
+};
+
 export const getCourseYears = async (): Promise<number[]> => {
   const data = await requestDoc(CourseYearsDocument, {}, getUserToken());
   return data.courseYears;
@@ -292,13 +301,3 @@ export const setMyTimetable = async (
   return data.setMyTimetable;
 };
 
-export type CourseRoomUnread = {
-  roomID: string;
-  unreadCount: number;
-};
-
-// 現在の学期の時間割に入っている授業チャットごとの未読件数。
-export const getMyCourseRoomUnreadCounts = async (): Promise<CourseRoomUnread[]> => {
-  const data = await requestDoc(MyCourseRoomUnreadCountsDocument, {}, getUserToken());
-  return data.myCourseRoomUnreadCounts;
-};

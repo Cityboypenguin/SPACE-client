@@ -190,7 +190,17 @@ const doRefresh = async (isAdmin: boolean): Promise<string | null> => {
   }
 };
 
-type GraphQLError = { message: string; extensions?: { code?: string } };
+type GraphQLError = { message: string; extensions?: { code?: string; maskedTexts?: unknown } };
+
+export class GraphQLRequestError extends Error {
+  readonly errors: GraphQLError[];
+
+  constructor(errors: GraphQLError[]) {
+    super(errors.map((error) => error.message).join(', '));
+    this.name = 'GraphQLRequestError';
+    this.errors = errors;
+  }
+}
 
 // 認証エラー判定は extensions.code（サーバーと共有する安定した契約）を優先する。
 // code が無い古いサーバー／エラー経路のためにメッセージ文字列マッチをフォールバックとして残す。
@@ -211,11 +221,27 @@ const isAuthErrorMessage = (message: string): boolean =>
   message.includes('token is expired') ||
   message.includes('unauthorized');
 
+// 速度制限(429)の待ちの設定。人が集まる時間帯に制限へ当たっても、画面をエラーにせず少し待って
+// やり直す。ばらつきを足すのは、同時に当たった人が同時にやり直して再び当たらないようにするため。
+const RATE_LIMIT_MAX_RETRIES = 3;
+const RATE_LIMIT_BASE_DELAY_MS = 500;
+
+// 429 はサーバーが処理を始める前に断った応答なので、更新系のリクエストでも二重には実行されない。
+const fetchWithRateLimitRetry = async (send: () => Promise<Response>): Promise<Response> => {
+  for (let attempt = 0; ; attempt++) {
+    const response = await send();
+    if (response.status !== 429 || attempt >= RATE_LIMIT_MAX_RETRIES) return response;
+    const delay = RATE_LIMIT_BASE_DELAY_MS * 2 ** attempt + Math.random() * RATE_LIMIT_BASE_DELAY_MS;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+};
+
 export const request = async <T>(
   query: string,
   variables?: Record<string, unknown>,
   token?: string,
   _retrying = false,
+  options?: { keepalive?: boolean },
 ): Promise<T> => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -226,11 +252,12 @@ export const request = async <T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(API_URL, {
+  const response = await fetchWithRateLimitRetry(() => fetch(API_URL, {
     method: 'POST',
     headers,
     body: JSON.stringify({ query, variables }),
-  });
+    keepalive: options?.keepalive,
+  }));
 
   if (response.status === 503) {
     localStorage.setItem('space_maintenance', 'true');
@@ -256,14 +283,19 @@ export const request = async <T>(
       if (contentType.includes('application/json')) {
         const errorJson = await response.json();
         if (Array.isArray(errorJson?.errors) && errorJson.errors.length > 0) {
-          detail = errorJson.errors.map((e: { message?: string }) => e.message || '').filter(Boolean).join(', ');
+          if (errorJson.errors.some((error: GraphQLError) => error.extensions?.code === 'NG_WORD_BLOCKED')) {
+            throw new GraphQLRequestError(errorJson.errors);
+          }
+          detail = errorJson.errors.map((error: GraphQLError) => error.message || '').filter(Boolean).join(', ');
         } else if (typeof errorJson?.message === 'string') {
           detail = errorJson.message;
         }
       } else {
         detail = (await response.text()).trim();
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      if (err instanceof GraphQLRequestError) throw err;
+    }
     const suffix = detail ? `: ${detail}` : '';
     throw new Error(`Network response was not ok (${response.status} ${response.statusText})${suffix}`);
   }
@@ -272,7 +304,6 @@ export const request = async <T>(
 
   if (json.errors) {
     const errors: GraphQLError[] = json.errors;
-    const message = errors.map((e) => e.message).join(', ');
 
     if (isAuthErrorFromErrors(errors)) {
       if (!_retrying) {
@@ -285,7 +316,7 @@ export const request = async <T>(
       return Promise.reject(new Error('Unauthorized'));
     }
 
-    throw new Error(message);
+    throw new GraphQLRequestError(errors);
   }
 
   return json.data;

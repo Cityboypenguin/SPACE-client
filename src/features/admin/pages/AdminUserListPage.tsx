@@ -13,105 +13,111 @@ export const AdminUserListPage = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize('users');
   const [query, setQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  // 検索ボタンで確定したキーワード。入力中の query で毎回検索し直さないよう分けて持つ。
+  const [searchKeyword, setSearchKeyword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const loadPage = useCallback((p: number, size = pageSize) => {
+  // 一覧も検索結果も、サーバーから1ページ分だけを取る。
+  const loadPage = useCallback((p: number) => {
     setError('');
-    getUsers(size, p * size)
+    const request = searchKeyword
+      ? searchUsers(searchKeyword, pageSize, p * pageSize).then((data) => data.adminSearchUsers)
+      : getUsers(pageSize, p * pageSize).then((data) => data.users);
+    request
       .then((data) => {
-        setUsers(data.users.items);
-        setTotal(data.users.total);
+        setUsers(data.items);
+        setTotal(data.total);
         setPage(p);
       })
-      .catch(() => setError('ユーザー一覧の取得に失敗しました'));
-  }, [pageSize]);
+      .catch(() => setError(searchKeyword ? '検索に失敗しました' : 'ユーザー一覧の取得に失敗しました'));
+  }, [searchKeyword, pageSize]);
 
   useEffect(() => {
-    if (!isSearching) void Promise.resolve().then(() => loadPage(0));
-  }, [isSearching, loadPage]);
+    void Promise.resolve().then(() => loadPage(0));
+  }, [loadPage]);
 
-  const handleSearch = async (e: { preventDefault(): void }) => {
+  const handleSearch = (e: { preventDefault(): void }) => {
     e.preventDefault();
-    setError('');
-    if (!query.trim()) {
-      setIsSearching(false);
-      loadPage(0);
-      return;
-    }
-    try {
-      const data = await searchUsers(query);
-      setUsers(data.adminSearchUsers.items);
-      setTotal(data.adminSearchUsers.total);
-      setIsSearching(true);
-    } catch {
-      setError('検索に失敗しました');
-    }
+    setSearchKeyword(query.trim());
   };
 
   const handleClear = () => {
     setQuery('');
-    setError('');
-    setIsSearching(false);
-    loadPage(0);
+    setSearchKeyword('');
   };
 
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <h1>ユーザー一覧</h1>
-        <form onSubmit={handleSearch} className={styles.searchForm}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="名前で検索"
-            className={styles.input}
-          />
-          <button type="submit" className={styles.primaryButton}>検索</button>
-          {query && (
-            <button type="button" onClick={handleClear} className={styles.paginationButton}>
-              クリア
-            </button>
-          )}
-        </form>
-        {error && <p className={styles.errorText}>{error}</p>}
-        <div className={styles.listMetaRow}>
-          <p className={styles.countText}>全 {total} 件</p>
-          <AdminPageSizeSelect value={pageSize} onChange={setPageSize} muted />
+      <main className={styles.pageCentered}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>ユーザー管理</h1>
         </div>
-        <table className={styles.compactTable}>
-          <thead>
-            <tr>
-              <th>ユーザーID</th>
-              <th>名前</th>
-              <th>メールアドレス</th>
-              <th>ロール</th>
-              <th>ステータス</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr
-                key={user.ID}
-                onClick={() => navigate(`/admin/users/${user.ID}`)}
-                className={styles.clickableRow}
-              >
-                <td>{user.accountID}</td>
-                <td>{user.name}</td>
-                <td>{user.email}</td>
-                <td>{user.role}</td>
-                <td>{user.status}</td>
+
+        <div className={styles.toolbar}>
+          <form onSubmit={handleSearch} className={styles.toolbarGroup}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ID・名前・メールアドレスで検索"
+              className={styles.select}
+              style={{ width: '280px' }}
+            />
+            <button type="submit" className={styles.primaryButton}>検索</button>
+            {query && (
+              <button type="button" onClick={handleClear} className={styles.paginationButton}>
+                クリア
+              </button>
+            )}
+          </form>
+
+          <div className={styles.toolbarGroup}>
+            <p className={styles.cellMuted} style={{ margin: 0 }}>全 {total} 件</p>
+            <AdminPageSizeSelect value={pageSize} onChange={setPageSize} muted />
+          </div>
+        </div>
+
+        {error && <p className={styles.centerError}>{error}</p>}
+
+        <div className={styles.tablePanelPlain}>
+          <table className={styles.table}>
+            <thead>
+              <tr className={styles.tableHeaderRow}>
+                <th className={styles.tableCellLarge}>ユーザーID</th>
+                <th className={styles.tableCellLarge}>名前</th>
+                <th className={styles.tableCellLarge}>メールアドレス</th>
+                <th className={styles.tableCellLarge}>登録日時</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {users.length === 0 && !error && <p>該当するユーザーが見つかりませんでした</p>}
-        {!isSearching && totalPages > 1 && (
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr
+                  key={user.ID}
+                  onClick={() => navigate(`/admin/users/${user.ID}`)}
+                  className={styles.tableRow}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>@{user.accountID || user.ID}</td>
+                  <td className={styles.tableCellLarge} style={{ fontWeight: 600 }}>{user.name}</td>
+                  <td className={styles.tableCellLarge}>{user.email || '-'}</td>
+                  <td className={`${styles.tableCellLarge} ${styles.cellMuted}`}>
+                    {new Date(user.createdAt).toLocaleString('ja-JP')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {users.length === 0 && !error && (
+          <p className={styles.emptyState}>該当するユーザーが見つかりませんでした</p>
+        )}
+
+        {totalPages > 1 && (
           <AdminPagination
             page={page}
             totalPages={totalPages}

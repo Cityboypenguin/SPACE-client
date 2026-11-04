@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { refreshChatStamps } from './useChatStamps';
+import { maskNGWordDraft, showNGWordFeedback } from '../../../lib/ngWordFeedback';
+import { mutate } from 'swr';
+import { useCallback, useState, type SetStateAction } from 'react';
 import {
   sendMessage,
   updateMessage,
   deleteMessage,
+  addMessageReaction,
+  removeMessageReaction,
   type Message,
+  type MessageReaction,
 } from '../api/message';
-import { uploadMediaFiles } from '../api/media';
+import { uploadMessageMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { AppSwal } from '../../../lib/swal';
 import { containsMentionText, type Mention, type MentionCandidate } from '../../../lib/mentions';
@@ -13,8 +19,14 @@ import { containsMentionText, type Mention, type MentionCandidate } from '../../
 export const useChatActions = (
   roomId: string | undefined,
   addMessage: (msg: Message) => void,
+  // リアクションを付け外しした結果で表示を更新する（授業内チャットだけが渡す）。
+  setMessageReactions?: (messageID: string, reactions: MessageReaction[]) => void,
 ) => {
-  const [content, setContent] = useState('');
+  const [draft, setDraft] = useState<{ content: string; mentions: MentionCandidate[] }>({ content: '', mentions: [] });
+  const { content, mentions: pendingMentions } = draft;
+  const setContent = useCallback((value: SetStateAction<string>) => {
+    setDraft((current) => ({ ...current, content: typeof value === 'function' ? value(current.content) : value }));
+  }, []);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
@@ -24,15 +36,13 @@ export const useChatActions = (
   const [replyTarget, setReplyTarget] = useState<Message | null>(null);
   // サジェストから選んだメンション先。コミュニティの "@表示名" は本文からは
   // 終端を決められないため、選択した相手をここに控えて送信時に渡す。
-  const [pendingMentions, setPendingMentions] = useState<MentionCandidate[]>([]);
-
   const addPendingMention = (candidate: MentionCandidate) => {
-    setPendingMentions((prev) => (
-      prev.some((m) => m.ID === candidate.ID) ? prev : [...prev, candidate]
-    ));
+    setDraft((current) => current.mentions.some((mention) => mention.ID === candidate.ID)
+      ? current
+      : { ...current, mentions: [...current.mentions, candidate] });
   };
 
-  const handleSend = async (e: { preventDefault(): void }) => {
+  const handleSend = async (e: { preventDefault(): void; input?: HTMLTextAreaElement | null }) => {
     e.preventDefault();
     // 送信中に再度呼ばれた場合（Enter連打やダブルクリック等）は二重送信を防ぐため即returnする。
     if (sending) return;
@@ -41,20 +51,44 @@ export const useChatActions = (
     setSending(true);
     setSendError('');
     try {
-      const mediaInputs = await uploadMediaFiles(selectedFiles);
+      const mediaInputs = await uploadMessageMediaFiles(selectedFiles);
       const trimmed = content.trim();
       // 選択後に本文を書き換えて "@表示名" が消えた相手は送らない（サーバーでも同じ検証をする）。
       const mentionUserIDs = pendingMentions
         .filter((m) => containsMentionText(trimmed, m.name))
         .map((m) => m.ID);
       const data = await sendMessage(roomId, trimmed, mediaInputs, replyTarget?.ID ?? null, mentionUserIDs);
-      setContent('');
+      // The input stays editable while sending. Clear only the submitted draft.
+      setDraft((current) => current.content === content ? { content: '', mentions: [] } : current);
       setSelectedFiles([]);
+      setReplyTarget((current) => current?.ID === replyTarget?.ID ? null : current);
+      addMessage(data.sendMessage);
+      void mutate(['chat-thread', roomId]).catch(() => undefined);
+    } catch (err) {
+      if (showNGWordFeedback(err, e.input)) {
+        setContent((current) => maskNGWordDraft(err, current));
+      } else {
+        setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // スタンプだけを1件のメッセージとして送る。本文・添付・メンションは付けない。
+  // 返信先を選んでいるときは、そのメッセージへの返信になる。
+  const handleSendStamp = async (stampID: string) => {
+    if (sending) return;
+    if (!roomId) return;
+    setSending(true);
+    setSendError('');
+    try {
+      const data = await sendMessage(roomId, '', undefined, replyTarget?.ID ?? null, undefined, stampID);
       setReplyTarget(null);
-      setPendingMentions([]);
       addMessage(data.sendMessage);
     } catch (err) {
-      setSendError(toUserMessage(err, 'メッセージの送信に失敗しました。時間をおいてから再度お試しください。'));
+      setSendError(toUserMessage(err, 'スタンプの送信に失敗しました。時間をおいてから再度お試しください。'));
+      void refreshChatStamps();
     } finally {
       setSending(false);
     }
@@ -71,8 +105,25 @@ export const useChatActions = (
     if (!result.isConfirmed) return;
     try {
       await deleteMessage(roomId, msgId);
+      void mutate(['chat-thread', roomId]).catch(() => undefined);
     } catch (err) {
       setSendError(toUserMessage(err, 'メッセージの削除に失敗しました。時間をおいてから再度お試しください。'));
+    }
+  };
+
+  // リアクションを付ける（reacted=false のとき）／外す（reacted=true のとき）。
+  // 結果は messageUpdated の購読でも届くが、接続が切れていても自分の操作が画面に
+  // 出るよう、戻り値の最新の集計でも表示を更新する。
+  const handleToggleReaction = async (msgId: string, emoji: string, reacted: boolean) => {
+    if (!roomId) return;
+    try {
+      const updated = reacted
+        ? (await removeMessageReaction(roomId, msgId, emoji)).removeMessageReaction
+        : (await addMessageReaction(roomId, msgId, emoji)).addMessageReaction;
+      setMessageReactions?.(updated.ID, updated.reactions);
+    } catch (err) {
+      setSendError(toUserMessage(err, 'リアクションに失敗しました。時間をおいてから再度お試しください。'));
+      void refreshChatStamps();
     }
   };
 
@@ -88,7 +139,11 @@ export const useChatActions = (
       await updateMessage(roomId, msgId, trimmed, mentionUserIDs);
       setEditingId(null);
     } catch (err) {
-      setSendError(toUserMessage(err, 'メッセージの編集に失敗しました。時間をおいてから再度お試しください。'));
+      if (showNGWordFeedback(err)) {
+        setEditContent((current) => maskNGWordDraft(err, current));
+      } else {
+        setSendError(toUserMessage(err, 'メッセージの編集に失敗しました。時間をおいてから再度お試しください。'));
+      }
     }
   };
 
@@ -107,7 +162,9 @@ export const useChatActions = (
     setReplyTarget,
     addPendingMention,
     handleSend,
+    handleSendStamp,
     handleDelete,
     handleSaveEdit,
+    handleToggleReaction,
   };
 };

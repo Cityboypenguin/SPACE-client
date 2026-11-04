@@ -1,0 +1,162 @@
+.intro {
+  margin-bottom: 16px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.count {
+  margin-left: auto;
+}
+
+.roomFilter {
+  margin-bottom: 12px;
+}
+
+.clearFilter {
+  margin-left: 8px;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.imageCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+}
+
+.imageLink {
+  display: block;
+}
+
+.image {
+  width: 100%;
+  height: 160px;
+  border-radius: 6px;
+  background: var(--color-bg-elevated);
+  object-fit: cover;
+}
+
+.imageMeta {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.roomLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ngPage {
+  max-width: 900px;
+}
+
+.addCard {
+  margin-bottom: 24px;
+  padding: 16px;
+}
+
+.addForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.autoWidth {
+  width: auto;
+}
+
+.wordsSection {
+  margin-bottom: 32px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.statsTitle {
+  font-size: 0.95rem;
+}
+
+.addendumRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.addendumBody {
+  flex: 1;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.addendumAction {
+  margin-top: 4px;
+}
+
+.addendumAnswer {
+  margin-top: 8px;
+}
+
+.wrapAnywhere {
+  overflow-wrap: anywhere;
+}
+
+/* 回答1件。質問の本文と区別できるよう、左に線を引いて字下げする */
+.answerItem {
+  padding-left: 10px;
+  border-left: 3px solid #e2e8f0;
+}
+
+/* 回答の投稿者・日時・いいね数。共通の .subText は折り返さないので使わない
+   （名前が長いと表の幅を押し広げ、状態・操作の列が画面の外へ出る） */
+.answerMeta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  overflow-wrap: anywhere;
+}
+
+.bestAnswerBadge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.answerMedia {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.answerImage {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}

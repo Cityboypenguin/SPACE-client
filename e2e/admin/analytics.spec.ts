@@ -25,7 +25,7 @@ test('全セクションが表示される', async ({ page }) => {
 
 test('主要な集計カードが存在する', async ({ page }) => {
   await expect(page.getByText('ユーザー数（累計）')).toBeVisible();
-  await expect(page.getByText('DAU（本日）')).toBeVisible();
+  await expect(page.getByText('本日のアクティブユーザー')).toBeVisible();
   await expect(page.getByText('MAU（今月）')).toBeVisible();
   await expect(page.getByText('DAU/MAU比率（スティッキネス）')).toBeVisible();
   await expect(page.getByText('平均セッション時間')).toBeVisible();

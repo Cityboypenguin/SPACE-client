@@ -3,6 +3,8 @@ import { type Poll } from '../../api/poll';
 import { BarChartIcon } from '../../../../components/atoms/BarChartIcon';
 import { CheckIcon } from '../../../../components/atoms/CheckIcon';
 import { AppSwal } from '../../../../lib/swal';
+import { AuthorLabel } from './AuthorLabel';
+import { ReportModal } from '../organisms/ReportModal';
 import styles from '../PollBox.module.css';
 
 type Props = {
@@ -25,6 +27,7 @@ const formatDeadline = (deadline: string) => {
 };
 
 export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onDelete }: Props) => {
+  const [reporting, setReporting] = useState(false);
   const [selected, setSelected] = useState<string[]>(() => votedOptionIDs(poll));
   const [voting, setVoting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -61,9 +64,10 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
 
   const isExpired = poll.deadline != null && new Date(poll.deadline).getTime() <= now;
   // 自分が投票済みなら、期限前でもその場で結果を表示する(未投票の他ユーザーには
-  // 引き続き選択肢だけを見せてブラインドを保つ)。
+  // 引き続き選択肢だけを見せてブラインドを保つ)。作成者には期限前でも見せる。
+  // サーバーも同じ決まりで、伏せる相手には票数を 0 で返す。
   const hasVoted = poll.options.some((o) => o.votedByMe);
-  const showResults = poll.deadline == null || isExpired || hasVoted;
+  const showResults = poll.deadline == null || isExpired || hasVoted || poll.isMine;
   const canVote = roomWritable && !isExpired;
   const isTeacherPoll = poll.user.role === 'teacher';
 
@@ -109,6 +113,9 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
 
   return (
     <div className={`${styles.card} ${isTeacherPoll ? styles.cardTeacher : ''}`}>
+      <div className={styles.author}>
+        <AuthorLabel user={poll.user} />
+      </div>
       <div className={styles.cardHeader}>
         <div className={styles.questionRow}>
           <span className={styles.questionIcon}><BarChartIcon size={16} /></span>
@@ -125,6 +132,11 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
           {poll.isMine && (
             <button type="button" className={styles.deleteLink} disabled={deleting} onClick={handleDelete}>
               削除する
+            </button>
+          )}
+          {!poll.isMine && (
+            <button type="button" className={styles.deleteLink} onClick={() => setReporting(true)}>
+              通報する
             </button>
           )}
         </div>
@@ -176,6 +188,16 @@ export const PollCard = ({ poll, roomWritable, subscribePollUpdates, onVote, onD
       <p className={styles.respondedCount}>{poll.voterCount}人が回答済み</p>
 
       {error && <p className={styles.cardError}>{error}</p>}
+
+      {reporting && (
+        <ReportModal
+          isOpen
+          onClose={() => setReporting(false)}
+          targetType="POLL"
+          targetID={poll.ID}
+          postContent={poll.question}
+        />
+      )}
     </div>
   );
 };

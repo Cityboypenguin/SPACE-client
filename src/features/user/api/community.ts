@@ -162,6 +162,10 @@ const PresignedCommunityIconUploadUrlDocument = graphql(`
     presignedCommunityIconUploadUrl(contentType: $contentType) {
       uploadUrl
       objectKey
+      headers {
+        name
+        value
+      }
     }
   }
 `);
@@ -257,17 +261,6 @@ export const updateCommunityMembers = async (
 export const getRandomCommunities = async (limit: number): Promise<Community[]> => {
   const data = await requestDoc(RandomCommunitiesDocument, { limit }, getUserToken());
   return data.randomCommunities;
-};
-
-const MyUnreadCommunityCountDocument = graphql(`
-  query MyUnreadCommunityCount {
-    myUnreadCommunityCount
-  }
-`);
-
-export const getUnreadCommunityCount = async (): Promise<number> => {
-  const data = await requestDoc(MyUnreadCommunityCountDocument, {}, getUserToken());
-  return data.myUnreadCommunityCount;
 };
 
 export const getPresignedCommunityIconUploadUrl = async (contentType: string) => {

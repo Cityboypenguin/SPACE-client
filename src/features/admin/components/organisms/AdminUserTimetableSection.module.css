@@ -71,7 +71,7 @@
   padding: 0.3rem 0.4rem;
   border-radius: 6px;
   background: var(--entry-bg, var(--color-bg-elevated));
-  color: #fff;
+  color: var(--color-bg-elevated);
 }
 
 .entry[data-color='RED_VIVID'] {

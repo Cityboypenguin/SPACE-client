@@ -40,13 +40,16 @@ export const AdminMaintenancePage = () => {
   return (
     <div>
       <AdminHeader />
-      <main className={styles.page}>
-        <h1>メンテナンス管理</h1>
+      <main className={styles.pageCentered} style={{ maxWidth: '800px' }}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.titleLarge}>メンテナンス管理</h1>
+        </div>
 
         {loading ? (
-          <p>読み込み中...</p>
+          <p className={styles.cellMuted} style={{ padding: '20px 0' }}>読み込み中...</p>
         ) : (
-          <div className={styles.maintenanceCard}>
+          <>
+            <div className={styles.maintenanceCard}>
             <p className={styles.statusParagraph}>
               現在の状態：
               <strong className={maintenanceEnabled ? styles.errorText : styles.successText}>
@@ -70,7 +73,9 @@ export const AdminMaintenancePage = () => {
                 メンテナンス中はユーザーのログイン・操作がすべてブロックされます。
               </p>
             )}
-          </div>
+            </div>
+
+          </>
         )}
       </main>
 

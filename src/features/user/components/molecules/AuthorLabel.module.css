@@ -1,0 +1,21 @@
+.row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+/* 名前が長いときはアイコンではなく名前の側を縮めて省略する */
+.row > :first-child {
+  flex-shrink: 0;
+}
+
+.name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
