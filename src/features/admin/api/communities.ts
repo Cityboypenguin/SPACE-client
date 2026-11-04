@@ -1,8 +1,8 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
-import { type Media } from '../../../lib/media';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
 import type { AdminCommunitySortField, SortOrder } from '../../../generated/graphql';
+import type { Message as UserMessage } from '../../user/api/message';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
 
@@ -13,17 +13,9 @@ export type MessageUser = {
   avatarUrl?: string | null;
 };
 
-export type Message = {
-  ID: string;
-  roomID: string;
-  user: MessageUser;
-  content: string;
-  // スタンプだけのメッセージのスタンプのID。このとき content は空。
-  stampID?: string | null;
-  media: Media[];
-  createdAt: string;
-  updatedAt: string;
-};
+// 管理画面のチャットもユーザー側と同じ吹き出しで表示するので、同じ形で受け取る。
+// isMine・reactedByMe は管理者から見た値なので常に false になる。
+export type Message = UserMessage;
 
 export type CommunityUser = {
   ID: string;
@@ -224,6 +216,7 @@ const ListRoomMessagesDocument = graphql(`
       items {
         ID
         roomID
+        thread { roomID parentRoomID title isClosed messageCount }
         user {
           ID
           name
@@ -237,6 +230,37 @@ const ListRoomMessagesDocument = graphql(`
         }
         createdAt
         updatedAt
+        isMine
+        replyToID
+        replyTo {
+          ID
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          content
+          stampID
+          media {
+            ...MediaFields
+          }
+          isMine
+        }
+        mentions {
+          user {
+            ID
+            name
+            accountID
+            avatarUrl
+          }
+          text
+        }
+        reactions {
+          emoji
+          count
+          reactedByMe
+        }
       }
       hasMoreBefore
     }

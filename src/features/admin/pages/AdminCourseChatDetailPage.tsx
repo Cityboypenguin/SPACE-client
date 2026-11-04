@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
-import { listRoomMessages, adminDeleteMessage, adminMessagePageSize, type Message } from '../api/communities';
 import {
   getCourse,
   getCourseQuestions,
@@ -13,11 +12,11 @@ import {
   type Question,
   type Poll,
 } from '../api/courses';
-import { reactionLabel } from '../../user/constants/reactionStamps';
 import { AdminAddendumList } from '../components/molecules/AdminAddendumList';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 import { AdminThreadSection } from '../components/molecules/AdminThreadSection';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { AdminChatView } from '../components/organisms/AdminChatView';
 import styles from '../styles/AdminShared.module.css';
 
 export const AdminCourseChatDetailPage = () => {
@@ -28,11 +27,6 @@ export const AdminCourseChatDetailPage = () => {
   const [course, setCourse] = useState<Course | null>(
     (location.state as { course?: Course })?.course ?? null,
   );
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [hasOlderMessages, setHasOlderMessages] = useState(false);
-  const [oldestMessageID, setOldestMessageID] = useState<string | null>(null);
-  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
-  const loadingOlderRef = useRef(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [questionPage, setQuestionPage] = useState(0);
@@ -42,7 +36,6 @@ export const AdminCourseChatDetailPage = () => {
   const [pollPage, setPollPage] = useState(0);
   const [pollTotal, setPollTotal] = useState(0);
   const [error, setError] = useState('');
-  const [messagesError, setMessagesError] = useState('');
   const [questionsError, setQuestionsError] = useState('');
   const [pollsError, setPollsError] = useState('');
 
@@ -56,35 +49,6 @@ export const AdminCourseChatDetailPage = () => {
       setError('授業情報の取得に失敗しました');
     }
   }, [id]);
-
-  const fetchMessages = useCallback(async (roomID: string) => {
-    try {
-      const data = await listRoomMessages(roomID);
-      setMessages(data.messages.items);
-      setHasOlderMessages(data.messages.hasMoreBefore);
-      setOldestMessageID(data.messages.items[0]?.ID ?? null);
-    } catch {
-      setMessagesError('メッセージ一覧の取得に失敗しました');
-    }
-  }, []);
-
-  const roomID = course?.roomID;
-  const loadOlderMessages = useCallback(async () => {
-    if (!roomID || !oldestMessageID || loadingOlderRef.current) return;
-    loadingOlderRef.current = true;
-    setLoadingOlderMessages(true);
-    try {
-      const data = await listRoomMessages(roomID, adminMessagePageSize, oldestMessageID);
-      setMessages(prev => [...data.messages.items, ...prev]);
-      setHasOlderMessages(data.messages.hasMoreBefore);
-      setOldestMessageID(data.messages.items[0]?.ID ?? oldestMessageID);
-    } catch {
-      setMessagesError('メッセージ一覧の取得に失敗しました');
-    } finally {
-      loadingOlderRef.current = false;
-      setLoadingOlderMessages(false);
-    }
-  }, [roomID, oldestMessageID]);
 
   const fetchQuestions = useCallback(async (roomID: string, page: number) => {
     try {
@@ -112,12 +76,6 @@ export const AdminCourseChatDetailPage = () => {
 
   useEffect(() => {
     if (course?.roomID) {
-      void Promise.resolve().then(() => fetchMessages(course.roomID));
-    }
-  }, [course?.roomID, fetchMessages]);
-
-  useEffect(() => {
-    if (course?.roomID) {
       void Promise.resolve().then(() => fetchQuestions(course.roomID, questionPage));
     }
   }, [course?.roomID, questionPage, fetchQuestions]);
@@ -127,16 +85,6 @@ export const AdminCourseChatDetailPage = () => {
       void Promise.resolve().then(() => fetchPolls(course.roomID, pollPage));
     }
   }, [course?.roomID, pollPage, fetchPolls]);
-
-  const handleDeleteMessage = async (message: Message) => {
-    if (!window.confirm('このメッセージを削除しますか？')) return;
-    try {
-      await adminDeleteMessage(message.roomID, message.ID);
-      setMessages((prev) => prev.filter((m) => m.ID !== message.ID));
-    } catch {
-      setError('メッセージの削除に失敗しました');
-    }
-  };
 
   const handleDeleteQuestion = async (question: Question) => {
     if (!window.confirm('この質問を削除しますか？（回答もすべて削除されます）')) return;
@@ -322,65 +270,15 @@ export const AdminCourseChatDetailPage = () => {
 
           </div>
 
-          {/* 【右カラム】チャット履歴（メッセージ一覧） */}
+          {/* 【右カラム】チャット履歴（ユーザー側のチャット画面と同じ見た目）とスレッド */}
           <div className={`${styles.rightColumn} ${styles.courseChatColumn}`}>
             <div className={styles.card}>
-              <div className={styles.cardHeaderWithAction}>
-                <h2 className={styles.cardTitle}>チャット履歴</h2>
-                {hasOlderMessages && (
-                  <button
-                    type="button"
-                    onClick={loadOlderMessages}
-                    disabled={loadingOlderMessages}
-                    className={styles.secondaryButton}
-                  >
-                    {loadingOlderMessages ? '読み込み中...' : '過去ログ読込'}
-                  </button>
-                )}
-              </div>
-
-              {messagesError && <p className={styles.errorText}>{messagesError}</p>}
-              {messages.length > 0 ? (
-                <div className={styles.courseChatTableWrapper}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr className={styles.courseChatTableHeader}>
-                        <th>投稿者</th>
-                        <th>内容</th>
-                        <th>日時</th>
-                        <th>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {messages.map((message) => (
-                        <tr key={message.ID}>
-                          <td>
-                            <div className={styles.userName}>{message.user.name}</div>
-                            <span className={styles.subText}>@{message.user.accountID}</span>
-                          </td>
-                          <td className={styles.cellWrap}>
-                            {message.stampID ? `スタンプ（${reactionLabel(message.stampID)}）` : message.content}
-                          </td>
-                          <td className={styles.dateCell}>
-                            {new Date(message.createdAt).toLocaleString('ja-JP')}
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteMessage(message)}
-                              className={styles.dangerButton}
-                            >
-                              削除
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                !messagesError && <p className={styles.emptyText}>メッセージはありません</p>
-              )}
+              <h2 className={styles.cardTitle}>チャット履歴</h2>
+              <AdminChatView
+                key={course.roomID}
+                roomID={course.roomID}
+                onOpenThread={(threadID) => navigate(`/admin/courses/${id}/threads/${encodeURIComponent(threadID)}`)}
+              />
             </div>
 
             <AdminThreadSection parentRoomID={course.roomID} basePath={`/admin/courses/${id}`} />

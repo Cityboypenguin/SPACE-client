@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import {
@@ -8,16 +8,12 @@ import {
   kickUserFromCommunity,
   promoteToCommunityOwner,
   demoteFromCommunityOwner,
-  listRoomMessages,
-  adminMessagePageSize,
-  adminDeleteMessage,
   type Community,
   type CommunityMember,
-  type Message,
 } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { AdminChatView } from '../components/organisms/AdminChatView';
 import { AdminThreadSection } from '../components/molecules/AdminThreadSection';
-import { storageUrl } from '../../../lib/storage';
 import styles from '../styles/AdminShared.module.css';
 
 const ROLE_OWNER = 'owner';
@@ -31,19 +27,13 @@ export const AdminCommunityDetailPage = () => {
     (location.state as { community?: Community })?.community ?? null,
   );
   const [members, setMembers] = useState<CommunityMember[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [name, setName] = useState(community?.name ?? '');
   const [description, setDescription] = useState(community?.description ?? '');
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [membersError, setMembersError] = useState('');
-  const [messagesError, setMessagesError] = useState('');
 
-  const [hasOlderMessages, setHasOlderMessages] = useState(false);
-  const [oldestMessageID, setOldestMessageID] = useState<string | null>(null);
-  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
-  const loadingOlderRef = useRef(false);
   const [memberOffset, setMemberOffset] = useState(0);
   const [memberTotal, setMemberTotal] = useState(0);
   const memberPageSize = 50;
@@ -73,35 +63,6 @@ export const AdminCommunityDetailPage = () => {
     }
   }, [id, memberOffset]);
 
-  const fetchMessages = useCallback(async (roomID: string) => {
-    try {
-      const data = await listRoomMessages(roomID);
-      setMessages(data.messages.items);
-      setHasOlderMessages(data.messages.hasMoreBefore);
-      setOldestMessageID(data.messages.items[0]?.ID ?? null);
-    } catch {
-      setMessagesError('メッセージ一覧の取得に失敗しました');
-    }
-  }, []);
-
-  const roomID = community?.roomID;
-  const loadOlderMessages = useCallback(async () => {
-    if (!roomID || !oldestMessageID || loadingOlderRef.current) return;
-    loadingOlderRef.current = true;
-    setLoadingOlderMessages(true);
-    try {
-      const data = await listRoomMessages(roomID, adminMessagePageSize, oldestMessageID);
-      setMessages((prev) => [...data.messages.items, ...prev]);
-      setHasOlderMessages(data.messages.hasMoreBefore);
-      setOldestMessageID(data.messages.items[0]?.ID ?? oldestMessageID);
-    } catch {
-      setMessagesError('メッセージ一覧の取得に失敗しました');
-    } finally {
-      loadingOlderRef.current = false;
-      setLoadingOlderMessages(false);
-    }
-  }, [roomID, oldestMessageID]);
-
   useEffect(() => {
     if (!community) void Promise.resolve().then(fetchCommunity);
   }, [community, fetchCommunity]);
@@ -109,12 +70,6 @@ export const AdminCommunityDetailPage = () => {
   useEffect(() => {
     void Promise.resolve().then(fetchMembers);
   }, [fetchMembers]);
-
-  useEffect(() => {
-    if (community?.roomID) {
-      void Promise.resolve().then(() => fetchMessages(community.roomID));
-    }
-  }, [community?.roomID, fetchMessages]);
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,16 +91,6 @@ export const AdminCommunityDetailPage = () => {
       await fetchCommunity();
     } catch {
       setError('更新に失敗しました');
-    }
-  };
-
-  const handleDeleteMessage = async (message: Message) => {
-    if (!window.confirm('このメッセージを削除しますか？')) return;
-    try {
-      await adminDeleteMessage(message.roomID, message.ID);
-      setMessages((prev) => prev.filter((m) => m.ID !== message.ID));
-    } catch {
-      setError('メッセージの削除に失敗しました');
     }
   };
 
@@ -312,90 +257,16 @@ export const AdminCommunityDetailPage = () => {
             </div>
           </div>
 
-          {/* 右カラム：チャット履歴（縦スクロール表示） */}
+          {/* 右カラム：チャット履歴（ユーザー側のチャット画面と同じ見た目）とスレッド */}
           <div>
-            <div className={styles.toolbar} style={{ marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0 }}>チャット履歴</h2>
-              {hasOlderMessages && (
-                <button
-                  type="button"
-                  onClick={loadOlderMessages}
-                  disabled={loadingOlderMessages}
-                  className={styles.paginationButton}
-                >
-                  {loadingOlderMessages ? '読み込み中...' : '過去のメッセージ'}
-                </button>
-              )}
-            </div>
-
-            {messagesError && <p className={styles.centerError}>{messagesError}</p>}
-            {messages.length > 0 ? (
-              <div className={styles.tablePanelPlain} style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr className={styles.tableHeaderRow} style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#f8fafc' }}>
-                      <th className={styles.tableCellLarge}>投稿者</th>
-                      <th className={styles.tableCellLarge}>内容</th>
-                      <th className={styles.tableCellLarge}>日時</th>
-                      <th className={styles.tableCellLarge}>操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {messages.map((message) => (
-                      <tr key={message.ID} className={styles.tableRow}>
-                        <td className={styles.tableCellLarge} style={{ minWidth: '120px' }}>
-                          <div style={{ fontWeight: 600 }}>{message.user.name}</div>
-                          <div className={styles.cellMuted} style={{ fontSize: '0.8rem' }}>@{message.user.accountID}</div>
-                        </td>
-                        <td className={styles.tableCellLarge}>
-                          {message.content && <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>}
-                          {message.media && message.media.length > 0 && (
-                            <div className={`${styles.mediaList} ${message.content ? styles.mediaListSpaced : ''}`} style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                              {message.media.map((m) =>
-                                m.contentType.startsWith('image/') ? (
-                                  <a key={m.ID} href={storageUrl(m.url)} target="_blank" rel="noopener noreferrer">
-                                    <img
-                                      src={storageUrl(m.url)}
-                                      alt="添付画像"
-                                      className={styles.mediaThumb}
-                                      style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e2e8f0' }}
-                                    />
-                                  </a>
-                                ) : (
-                                  <a
-                                    key={m.ID}
-                                    href={storageUrl(m.url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={styles.fileLink}
-                                  >
-                                    {m.contentType.split('/')[1]?.toUpperCase() ?? 'FILE'}
-                                  </a>
-                                )
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className={`${styles.tableCellLarge} ${styles.cellMuted}`} style={{ minWidth: '130px', fontSize: '0.8rem' }}>
-                          {new Date(message.createdAt).toLocaleString('ja-JP')}
-                        </td>
-                        <td className={styles.tableCellLarge}>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteMessage(message)}
-                            className={styles.primaryButton}
-                            style={{ backgroundColor: '#ef4444' }}
-                          >
-                            削除
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              !messagesError && <p className={styles.emptyState}>メッセージはありません</p>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: '0 0 16px' }}>チャット履歴</h2>
+            {community.roomID && (
+              <AdminChatView
+                key={community.roomID}
+                roomID={community.roomID}
+                height="calc(100vh - 200px)"
+                onOpenThread={(threadID) => navigate(`/admin/communities/${id}/threads/${encodeURIComponent(threadID)}`)}
+              />
             )}
 
             {community.roomID && (
