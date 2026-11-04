@@ -7,6 +7,7 @@ import { useUnreadSubscription } from '../../hooks/useUnreadSubscription';
 import { subscribeToGraphQL } from '../../../../lib/graphqlWs';
 import { useThreadActions } from '../../hooks/useThreadActions';
 import { CourseChatTab } from './CourseChatTab';
+import { ReportModal } from './ReportModal';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import styles from './ThreadWorkspace.module.css';
 
@@ -66,6 +67,7 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
   const [busy, setBusy] = useState(false);
   const [offset, setOffset] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   // 一覧も詳細も、スレッドの作成・変更・新着の知らせ（chatThreadChanged）を受けて取り直す。
   // 定期の取得は、知らせが届かなかったとき（削除など知らせの無い変更を含む）の保険。
   const { data: threads, error: listError, mutate: refreshList } = useSWR(
@@ -159,6 +161,10 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
           <h2 id={titleId} ref={headingRef} tabIndex={-1}>{heading}</h2>
         </div>
         {activeID && <ThreadListButton parentRoomID={parentRoomID} compact />}
+        {/* スレッドそのものの通報。作成者・オーナー（canManage）は自分で変更・クローズできるので出さない */}
+        {validThread && !validThread.canManage && <button type="button" className={styles.iconButton} onClick={() => setReportOpen(true)} aria-label="スレッドを通報" title="スレッドを通報">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>}
         {validThread?.canManage && writable && <button type="button" className={styles.iconButton} onClick={() => { setRenameTitle(validThread.title); setSettingsOpen(value => !value); }} aria-label="スレッド設定" aria-expanded={settingsOpen}>⋯</button>}
       </header>
       {error && <p className={styles.error} role="alert">{error}</p>}
@@ -197,5 +203,6 @@ function ThreadPanel({ parentRoomID, writable }: Omit<Props, 'children'>) {
         {!validThread.canWrite && <p className={styles.notice}>{validThread.isClosed ? 'このスレッドはクローズされています。' : '現在このスレッドは閲覧のみ可能です。'}</p>}
         <div className={styles.chat}><CourseChatTab key={activeID} roomId={activeID!} roomWritable={validThread.canWrite && writable} /></div>
       </>}
+    {reportOpen && validThread && <ReportModal isOpen onClose={() => setReportOpen(false)} targetType="THREAD" targetID={validThread.roomID} postContent={validThread.title} />}
   </section>;
 }

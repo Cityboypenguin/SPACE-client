@@ -7,6 +7,7 @@ export const targetTypeJa: Record<string, string> = {
   QUESTION: '質問',
   ANSWER: '回答',
   POLL: '投票',
+  THREAD: 'スレッド',
 };
 
 export const statusJa: Record<string, string> = {

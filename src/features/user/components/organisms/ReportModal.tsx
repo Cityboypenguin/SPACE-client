@@ -13,6 +13,7 @@ const targetLabels = {
   QUESTION: '質問',
   ANSWER: '回答',
   POLL: '投票',
+  THREAD: 'スレッド',
 };
 
 interface ReportModalProps {

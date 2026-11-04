@@ -14,7 +14,7 @@ import styles from '../styles/AdminShared.module.css';
 import { AdminPageSizeSelect } from '../components/molecules/AdminPageSizeSelect';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 
-type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY' | 'MESSAGE' | 'QUESTION' | 'ANSWER' | 'POLL';
+type TargetTypeFilter = 'ALL' | 'POST' | 'USER' | 'COMMUNITY' | 'MESSAGE' | 'QUESTION' | 'ANSWER' | 'POLL' | 'THREAD';
 
 // 一覧に出す本文の抜粋。全文と添付は詳細ページで見る。
 const getContentPreview = (report: Report) => {
@@ -172,7 +172,7 @@ export const ReportsPage: React.FC = () => {
 
         {/* 対象タイプ切り替えタブ */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-          {(['ALL', 'POST', 'USER', 'COMMUNITY', 'MESSAGE', 'QUESTION', 'ANSWER', 'POLL'] as TargetTypeFilter[]).map((tab) => {
+          {(['ALL', 'POST', 'USER', 'COMMUNITY', 'MESSAGE', 'QUESTION', 'ANSWER', 'POLL', 'THREAD'] as TargetTypeFilter[]).map((tab) => {
             const isActive = activeTab === tab;
             const labelMap: Record<TargetTypeFilter, string> = {
               ALL: 'すべての通報',
@@ -183,6 +183,7 @@ export const ReportsPage: React.FC = () => {
               QUESTION: '質問',
               ANSWER: '回答',
               POLL: '投票',
+              THREAD: 'スレッド',
             };
             return (
               <button

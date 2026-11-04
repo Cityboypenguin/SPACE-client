@@ -124,7 +124,7 @@ export const AdminReportDetailPage: React.FC = () => {
             {report.reportedContent && (
               <div className={styles.detailSection}>
                 <p className={styles.detailSectionLabel}>通報時点の内容</p>
-                <ReportedContentView content={report.reportedContent} />
+                <ReportedContentView content={report.reportedContent} isThread={report.targetType === 'THREAD'} />
               </div>
             )}
 

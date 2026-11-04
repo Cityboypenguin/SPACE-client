@@ -22,6 +22,8 @@ export type Report = {
 export type ReportedContent = {
   roomType: string;
   roomName: string;
+  // スレッドの中の内容（またはスレッドの通報）のときのスレッドの題名。roomName は親の授業・コミュニティ。
+  threadTitle: string | null;
   authorID: string | null;
   authorName: string;
   authorAccountID: string | null;
@@ -54,6 +56,7 @@ const SearchReportsDocument = graphql(`
         reportedContent {
           roomType
           roomName
+          threadTitle
           authorID
           authorName
           authorAccountID
@@ -95,6 +98,7 @@ const GetReportDocument = graphql(`
       reportedContent {
         roomType
         roomName
+        threadTitle
         authorID
         authorName
         authorAccountID

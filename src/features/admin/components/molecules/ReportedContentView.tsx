@@ -12,14 +12,16 @@ const roomTypeJa: Record<string, string> = {
 };
 
 // 通報を受けた時点の内容。元の投稿が編集・削除されていてもこの内容のまま。
-export const ReportedContentView = ({ content }: { content: ReportedContent }) => (
+// isThread はスレッドそのものの通報（content はスレッドの題名、投稿者は作成者）。
+export const ReportedContentView = ({ content, isThread = false }: { content: ReportedContent; isThread?: boolean }) => (
   <div>
     <div className={styles.cellMuted}>
       {roomTypeJa[content.roomType] ?? content.roomType}
       {content.roomType !== 'dm' && content.roomName && `「${content.roomName}」`}
+      {content.threadTitle !== null && `のスレッド「${content.threadTitle}」`}
     </div>
     <div className={styles.cellMuted}>
-      投稿者:{' '}
+      {isThread ? '作成者' : '投稿者'}:{' '}
       {/* 退会済みの投稿者は利用者ページが無いのでリンクにしない */}
       {content.authorID && content.authorAccountID ? (
         <Link to={`/admin/users/${content.authorID}`} className={viewStyles.link}>
@@ -31,7 +33,7 @@ export const ReportedContentView = ({ content }: { content: ReportedContent }) =
       {content.authorAccountID && ` (@${content.authorAccountID})`}
     </div>
     <div className={styles.cellMuted}>
-      投稿日時: {new Date(content.createdAt).toLocaleString('ja-JP')}
+      {isThread ? '作成日時' : '投稿日時'}: {new Date(content.createdAt).toLocaleString('ja-JP')}
       {content.updatedAt !== content.createdAt && `（編集: ${new Date(content.updatedAt).toLocaleString('ja-JP')}）`}
     </div>
     {content.parentBody && (
