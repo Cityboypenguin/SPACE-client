@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listChatThreads, adminThreadPageSize, type AdminThread } from '../../api/threads';
+import { listChatThreads, deleteChatThread, adminThreadPageSize, type AdminThread } from '../../api/threads';
 import threadStyles from '../../../user/components/organisms/ThreadWorkspace.module.css';
 import styles from '../../styles/AdminShared.module.css';
 
@@ -9,6 +9,8 @@ type Props = {
   parentRoomID: string;
   // 親の詳細ページのパス。スレッドは `${basePath}/threads/:threadID` で開く。
   basePath: string;
+  // スレッドを消したあとに呼ぶ。親チャットの案内も消えるので、呼び出し側でチャット履歴を取り直す。
+  onDeleted?: () => void;
 };
 
 const formatDateTime = (value: string) =>
@@ -16,11 +18,12 @@ const formatDateTime = (value: string) =>
 
 // 授業・コミュニティのスレッド一覧。ユーザー側のスレッド一覧と同じ見た目で出す。
 // スレッドは親とは別のルームなので、親のチャット履歴には中身が出ない。
-export const AdminThreadSection = ({ parentRoomID, basePath }: Props) => {
+export const AdminThreadSection = ({ parentRoomID, basePath, onDeleted }: Props) => {
   const navigate = useNavigate();
   const [threads, setThreads] = useState<AdminThread[] | null>(null);
   const [offset, setOffset] = useState(0);
   const [threadsError, setThreadsError] = useState('');
+  const [deletingID, setDeletingID] = useState<string | null>(null);
 
   const fetchThreads = useCallback(async () => {
     try {
@@ -34,6 +37,20 @@ export const AdminThreadSection = ({ parentRoomID, basePath }: Props) => {
   useEffect(() => {
     void Promise.resolve().then(fetchThreads);
   }, [fetchThreads]);
+
+  const handleDelete = async (thread: AdminThread) => {
+    if (!window.confirm(`スレッド「${thread.title}」を削除しますか？\n中のメッセージ（${thread.messageCount}件）もすべて削除され、元に戻せません。`)) return;
+    setDeletingID(thread.roomID);
+    try {
+      await deleteChatThread(thread.roomID);
+      await fetchThreads();
+      onDeleted?.();
+    } catch {
+      setThreadsError('スレッドの削除に失敗しました');
+    } finally {
+      setDeletingID(null);
+    }
+  };
 
   return (
     <div className={styles.card}>
@@ -51,7 +68,7 @@ export const AdminThreadSection = ({ parentRoomID, basePath }: Props) => {
           )}
           <ul className={threadStyles.list}>
             {threads.map((thread) => (
-              <li key={thread.roomID}>
+              <li key={thread.roomID} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button
                   type="button"
                   className={threadStyles.listItem}
@@ -67,6 +84,15 @@ export const AdminThreadSection = ({ parentRoomID, basePath }: Props) => {
                     {' · 作成 '}{formatDateTime(thread.createdAt)}
                     {thread.lastMessageAt && ` · 最終投稿 ${formatDateTime(thread.lastMessageAt)}`}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.dangerButton}
+                  onClick={() => void handleDelete(thread)}
+                  disabled={deletingID === thread.roomID}
+                  style={{ flexShrink: 0 }}
+                >
+                  {deletingID === thread.roomID ? '削除中…' : '削除'}
                 </button>
               </li>
             ))}

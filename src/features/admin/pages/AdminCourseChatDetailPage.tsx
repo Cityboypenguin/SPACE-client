@@ -36,6 +36,7 @@ export const AdminCourseChatDetailPage = () => {
   const [pollPage, setPollPage] = useState(0);
   const [pollTotal, setPollTotal] = useState(0);
   const [error, setError] = useState('');
+  const [chatVersion, setChatVersion] = useState(0);
   const [questionsError, setQuestionsError] = useState('');
   const [pollsError, setPollsError] = useState('');
 
@@ -128,37 +129,51 @@ export const AdminCourseChatDetailPage = () => {
             <ChevronLeft /> 一覧に戻る
           </button>
 
-        {/* 2カラムレイアウトコンテナ */}
-        <div className={`${styles.twoColumnLayout} ${styles.courseChatLayout}`}>
-          
-          {/* 【左カラム】授業情報 / 質問箱 / 投票 */}
-          <div className={styles.leftColumn}>
-            
-            {/* 1. 授業基本情報 */}
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>授業情報</h2>
-              <table className={styles.infoTable}>
-                <tbody>
-                  <tr>
-                    <th>授業名</th>
-                    <td>{course.courseName}</td>
-                  </tr>
-                  <tr>
-                    <th>担当教員</th>
-                    <td>{course.teacherName}</td>
-                  </tr>
-                  <tr>
-                    <th>曜日・時限</th>
-                    <td>{course.dayOfWeek}曜{course.period}限</td>
-                  </tr>
-                  <tr>
-                    <th>年度・学期</th>
-                    <td>{course.year}年度 {course.semester}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        {/* 授業情報 → チャット履歴 → スレッドを縦に並べ、チャット履歴は横幅いっぱいに使う */}
+        <div className={styles.card}>
+          <h2 className={styles.cardTitle}>授業情報</h2>
+          <table className={styles.infoTable}>
+            <tbody>
+              <tr>
+                <th>授業名</th>
+                <td>{course.courseName}</td>
+              </tr>
+              <tr>
+                <th>担当教員</th>
+                <td>{course.teacherName}</td>
+              </tr>
+              <tr>
+                <th>曜日・時限</th>
+                <td>{course.dayOfWeek}曜{course.period}限</td>
+              </tr>
+              <tr>
+                <th>年度・学期</th>
+                <td>{course.year}年度 {course.semester}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
+        <div className={styles.card}>
+          <h2 className={styles.cardTitle}>チャット履歴</h2>
+          <AdminChatView
+            key={`${course.roomID}:${chatVersion}`}
+            roomID={course.roomID}
+            height="75vh"
+            onOpenThread={(threadID) => navigate(`/admin/courses/${id}/threads/${encodeURIComponent(threadID)}`)}
+          />
+        </div>
+
+        <AdminThreadSection
+          parentRoomID={course.roomID}
+          basePath={`/admin/courses/${id}`}
+          // スレッドを消すと親チャットの案内も消えるので、チャット履歴を取り直す
+          onDeleted={() => setChatVersion((v) => v + 1)}
+        />
+
+        {/* 質問箱と投票は横に並べる */}
+        <div className={`${styles.twoColumnLayout} ${styles.courseChatLayout}`}>
+          <div className={styles.leftColumn}>
             {/* 2. 質問箱一覧 */}
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>質問箱一覧</h2>
@@ -218,7 +233,8 @@ export const AdminCourseChatDetailPage = () => {
                 !questionsError && <p className={styles.emptyText}>質問はありません</p>
               )}
             </div>
-
+          </div>
+          <div className={styles.leftColumn}>
             {/* 3. 投票一覧 */}
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>投票一覧</h2>
@@ -267,23 +283,7 @@ export const AdminCourseChatDetailPage = () => {
                 !pollsError && <p className={styles.emptyText}>投票はありません</p>
               )}
             </div>
-
           </div>
-
-          {/* 【右カラム】チャット履歴（ユーザー側のチャット画面と同じ見た目）とスレッド */}
-          <div className={`${styles.rightColumn} ${styles.courseChatColumn}`}>
-            <div className={styles.card}>
-              <h2 className={styles.cardTitle}>チャット履歴</h2>
-              <AdminChatView
-                key={course.roomID}
-                roomID={course.roomID}
-                onOpenThread={(threadID) => navigate(`/admin/courses/${id}/threads/${encodeURIComponent(threadID)}`)}
-              />
-            </div>
-
-            <AdminThreadSection parentRoomID={course.roomID} basePath={`/admin/courses/${id}`} />
-          </div>
-
         </div>
       </main>
     </div>

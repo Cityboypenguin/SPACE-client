@@ -55,3 +55,14 @@ export const getChatThread = async (roomID: string): Promise<AdminThread | null>
   const data = await requestDoc(GetChatThreadDocument, { roomID }, getAdminToken());
   return data.chatThread ?? null;
 };
+
+const DeleteChatThreadDocument = graphql(`
+  mutation AdminDeleteChatThread($roomID: ID!) {
+    deleteChatThread(roomID: $roomID)
+  }
+`);
+
+// スレッドと中のメッセージをすべて消す。親チャットの「スレッドを作成しました」の案内も消える。
+export const deleteChatThread = async (roomID: string) => {
+  await requestDoc(DeleteChatThreadDocument, { roomID }, getAdminToken());
+};
