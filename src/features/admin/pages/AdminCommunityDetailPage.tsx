@@ -16,6 +16,7 @@ import {
   type Message,
 } from '../api/communities';
 import { AdminHeader } from '../components/organisms/AdminHeader';
+import { AdminThreadSection } from '../components/molecules/AdminThreadSection';
 import { storageUrl } from '../../../lib/storage';
 import styles from '../styles/AdminShared.module.css';
 
@@ -395,6 +396,12 @@ export const AdminCommunityDetailPage = () => {
               </div>
             ) : (
               !messagesError && <p className={styles.emptyState}>メッセージはありません</p>
+            )}
+
+            {community.roomID && (
+              <div style={{ marginTop: '24px' }}>
+                <AdminThreadSection parentRoomID={community.roomID} />
+              </div>
             )}
           </div>
 

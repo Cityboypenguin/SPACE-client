@@ -16,6 +16,7 @@ import {
 import { reactionLabel } from '../../user/constants/reactionStamps';
 import { AdminAddendumList } from '../components/molecules/AdminAddendumList';
 import { AdminPagination } from '../components/molecules/AdminPagination';
+import { AdminThreadSection } from '../components/molecules/AdminThreadSection';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import styles from '../styles/AdminShared.module.css';
 
@@ -381,6 +382,8 @@ export const AdminCourseChatDetailPage = () => {
                 !messagesError && <p className={styles.emptyText}>メッセージはありません</p>
               )}
             </div>
+
+            <AdminThreadSection parentRoomID={course.roomID} />
           </div>
 
         </div>
