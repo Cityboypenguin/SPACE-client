@@ -203,6 +203,11 @@ export const AdminCourseChatDetailPage = () => {
                                 addenda={question.addenda}
                                 answerCount={question.answerCount}
                                 onQuestionAddendaChange={(addenda) => setQuestions((prev) => prev.map((q) => (q.ID === question.ID ? { ...q, addenda } : q)))}
+                                onAnswerDeleted={(wasBest) => setQuestions((prev) => prev.map((q) => (q.ID === question.ID ? {
+                                  ...q,
+                                  answerCount: Math.max(0, q.answerCount - 1),
+                                  isAnswered: wasBest ? false : q.isAnswered,
+                                } : q)))}
                                 onError={setQuestionsError}
                               />
                             </td>

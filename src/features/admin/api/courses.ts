@@ -575,6 +575,17 @@ export const adminDeleteQuestion = async (id: string): Promise<boolean> => {
   return data.adminDeleteQuestion;
 };
 
+const AdminDeleteAnswerDocument = graphql(`
+  mutation AdminDeleteAnswer($id: ID!) {
+    adminDeleteAnswer(id: $id)
+  }
+`);
+
+export const adminDeleteAnswer = async (id: string): Promise<boolean> => {
+  const data = await requestDoc(AdminDeleteAnswerDocument, { id }, getAdminToken());
+  return data.adminDeleteAnswer;
+};
+
 const AdminDeleteQuestionAddendumDocument = graphql(`
   mutation AdminDeleteQuestionAddendum($id: ID!) {
     adminDeleteQuestionAddendum(id: $id)
