@@ -37,3 +37,21 @@ export const listChatThreads = async (parentRoomID: string, offset = 0): Promise
   );
   return data.chatThreads;
 };
+
+const GetChatThreadDocument = graphql(`
+  query AdminGetChatThread($roomID: ID!) {
+    chatThread(roomID: $roomID) {
+      roomID
+      title
+      isClosed
+      createdAt
+      messageCount
+      lastMessageAt
+    }
+  }
+`);
+
+export const getChatThread = async (roomID: string): Promise<AdminThread | null> => {
+  const data = await requestDoc(GetChatThreadDocument, { roomID }, getAdminToken());
+  return data.chatThread ?? null;
+};

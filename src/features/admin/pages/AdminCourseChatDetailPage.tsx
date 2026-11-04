@@ -383,7 +383,7 @@ export const AdminCourseChatDetailPage = () => {
               )}
             </div>
 
-            <AdminThreadSection parentRoomID={course.roomID} />
+            <AdminThreadSection parentRoomID={course.roomID} basePath={`/admin/courses/${id}`} />
           </div>
 
         </div>

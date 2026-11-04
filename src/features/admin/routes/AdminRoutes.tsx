@@ -34,6 +34,7 @@ const AdminCourseManagementPage = lazy(() => import('../pages/AdminCourseManagem
 const AdminNGWordsPage = lazy(() => import('../pages/AdminNGWordsPage').then((m) => ({ default: m.AdminNGWordsPage })));
 const AdminCourseChatImagesPage = lazy(() => import('../pages/AdminCourseChatImagesPage').then((m) => ({ default: m.AdminCourseChatImagesPage })));
 const AdminCourseChatListPage = lazy(() => import('../pages/AdminCourseChatListpage').then((m) => ({ default: m.AdminCourseChatListPage })));
+const AdminThreadDetailPage = lazy(() => import('../pages/AdminThreadDetailPage').then((m) => ({ default: m.AdminThreadDetailPage })));
 const AdminCourseChatDetailPage = lazy(() => import('../pages/AdminCourseChatDetailPage').then((m) => ({ default: m.AdminCourseChatDetailPage })));
 const AdminCourseSyncPage = lazy(() => import('../pages/AdminCourseSyncPage').then((m) => ({ default: m.AdminCourseSyncPage })));
 
@@ -113,6 +114,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminCommunityDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="communities/:id/threads/:threadID"
+        element={
+          <AdminProtectedRoute>
+            <AdminThreadDetailPage />
           </AdminProtectedRoute>
         }
       />
@@ -273,6 +282,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminCourseChatDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="courses/:id/threads/:threadID"
+        element={
+          <AdminProtectedRoute>
+            <AdminThreadDetailPage />
           </AdminProtectedRoute>
         }
       />

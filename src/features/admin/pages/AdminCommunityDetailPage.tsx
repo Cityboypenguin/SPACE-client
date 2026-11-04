@@ -400,7 +400,7 @@ export const AdminCommunityDetailPage = () => {
 
             {community.roomID && (
               <div style={{ marginTop: '24px' }}>
-                <AdminThreadSection parentRoomID={community.roomID} />
+                <AdminThreadSection parentRoomID={community.roomID} basePath={`/admin/communities/${id}`} />
               </div>
             )}
           </div>
