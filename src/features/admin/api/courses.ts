@@ -1,6 +1,7 @@
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { ADMIN_TOKEN_KEY } from '../../../lib/authStorage';
+import { type Media } from '../../../lib/media';
 import type { SortOrder } from '../../../generated/graphql';
 
 const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? undefined;
@@ -591,6 +592,9 @@ const AdminQuestionAnswersDocument = graphql(`
   query AdminQuestionAnswers($id: ID!, $limit: Int, $offset: Int) {
     question(id: $id) {
       ID
+      bestAnswer {
+        ID
+      }
       answers(limit: $limit, offset: $offset) {
         items {
           ID
@@ -600,10 +604,16 @@ const AdminQuestionAnswersDocument = graphql(`
             name
             accountID
           }
+          media {
+            ...MediaFields
+          }
           addenda {
             ID
             body
           }
+          likeCount
+          createdAt
+          updatedAt
         }
         total
       }
@@ -615,16 +625,25 @@ export type AdminAnswerWithAddenda = {
   ID: string;
   body: string;
   user: { ID: string; name: string; accountID: string };
+  media: Media[];
   addenda: { ID: string; body: string }[];
+  likeCount: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export const adminListQuestionAnswers = async (
   questionID: string,
   limit: number,
   offset: number,
-): Promise<{ items: AdminAnswerWithAddenda[]; total: number }> => {
+): Promise<{ items: AdminAnswerWithAddenda[]; total: number; bestAnswerID: string | null }> => {
   const data = await requestDoc(AdminQuestionAnswersDocument, { id: questionID, limit, offset }, getAdminToken());
-  return data.question?.answers ?? { items: [], total: 0 };
+  const question = data.question;
+  return {
+    items: (question?.answers.items ?? []) as AdminAnswerWithAddenda[],
+    total: question?.answers.total ?? 0,
+    bestAnswerID: question?.bestAnswer?.ID ?? null,
+  };
 };
 
 export const adminDeleteQuestionAddendum = async (id: string): Promise<boolean> => {

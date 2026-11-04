@@ -12,7 +12,7 @@ import {
   type Question,
   type Poll,
 } from '../api/courses';
-import { AdminAddendumList } from '../components/molecules/AdminAddendumList';
+import { AdminQuestionAnswers } from '../components/molecules/AdminQuestionAnswers';
 import { AdminPagination } from '../components/molecules/AdminPagination';
 import { AdminThreadSection } from '../components/molecules/AdminThreadSection';
 import { AdminHeader } from '../components/organisms/AdminHeader';
@@ -171,9 +171,8 @@ export const AdminCourseChatDetailPage = () => {
           onDeleted={() => setChatVersion((v) => v + 1)}
         />
 
-        {/* 質問箱と投票は横に並べる */}
-        <div className={`${styles.twoColumnLayout} ${styles.courseChatLayout}`}>
-          <div className={styles.leftColumn}>
+        {/* 質問箱は回答まで開くので、投票と横に並べず横幅いっぱいに使う */}
+        <div className={styles.rightColumn}>
             {/* 2. 質問箱一覧 */}
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>質問箱一覧</h2>
@@ -199,7 +198,7 @@ export const AdminCourseChatDetailPage = () => {
                             </td>
                             <td className={styles.cellWrap}>
                               {question.body}
-                              <AdminAddendumList
+                              <AdminQuestionAnswers
                                 questionID={question.ID}
                                 addenda={question.addenda}
                                 answerCount={question.answerCount}
@@ -233,8 +232,7 @@ export const AdminCourseChatDetailPage = () => {
                 !questionsError && <p className={styles.emptyText}>質問はありません</p>
               )}
             </div>
-          </div>
-          <div className={styles.leftColumn}>
+
             {/* 3. 投票一覧 */}
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>投票一覧</h2>
@@ -283,7 +281,6 @@ export const AdminCourseChatDetailPage = () => {
                 !pollsError && <p className={styles.emptyText}>投票はありません</p>
               )}
             </div>
-          </div>
         </div>
       </main>
     </div>
