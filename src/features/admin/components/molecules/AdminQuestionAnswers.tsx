@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  adminDeleteAnswer,
   adminDeleteAnswerAddendum,
   adminDeleteQuestionAddendum,
   adminListQuestionAnswers,
@@ -31,9 +32,15 @@ const AnswerItem = ({
   answer,
   isBest,
   onDeleteAddendum,
+  onDelete,
+  deleting,
+  disabled,
 }: {
   answer: AdminAnswerWithAddenda;
   isBest: boolean;
+  onDelete: () => void;
+  deleting: boolean;
+  disabled: boolean;
   onDeleteAddendum: (addendum: Addendum) => void;
 }) => (
   <div className={`${courseStyles.addendumAnswer} ${courseStyles.answerItem}`}>
@@ -44,6 +51,9 @@ const AnswerItem = ({
       {answer.updatedAt !== answer.createdAt && `（編集: ${formatDateTime(answer.updatedAt)}）`}
       {' · '}いいね {answer.likeCount}
     </div>
+    <button type="button" className={styles.dangerButton} disabled={disabled} onClick={onDelete}>
+      {deleting ? '削除中...' : '回答を削除'}
+    </button>
     {answer.body && <div className={courseStyles.addendumBody}>{answer.body}</div>}
     {answer.media.length > 0 && (
       <div className={courseStyles.answerMedia}>
@@ -69,17 +79,19 @@ type Props = {
   addenda: Addendum[];
   answerCount: number;
   onQuestionAddendaChange: (addenda: Addendum[]) => void;
+  onAnswerDeleted: (wasBest: boolean) => void;
   onError: (message: string) => void;
 };
 
 // 授業内チャット管理の質問の行に出す、質問への追記と、回答（とその追記）。
 // 回答は押したときだけ読む（質問の一覧で回答まで読むと行数が膨らむため）。
-export const AdminQuestionAnswers = ({ questionID, addenda, answerCount, onQuestionAddendaChange, onError }: Props) => {
+export const AdminQuestionAnswers = ({ questionID, addenda, answerCount, onQuestionAddendaChange, onAnswerDeleted, onError }: Props) => {
   const [answers, setAnswers] = useState<AdminAnswerWithAddenda[] | null>(null);
   const [total, setTotal] = useState(0);
   const [bestAnswerID, setBestAnswerID] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deletingID, setDeletingID] = useState<string | null>(null);
 
   const loadAnswers = async (offset: number) => {
     setLoading(true);
@@ -93,6 +105,24 @@ export const AdminQuestionAnswers = ({ questionID, addenda, answerCount, onQuest
       onError('回答の取得に失敗しました');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const deleteAnswer = async (answer: AdminAnswerWithAddenda) => {
+    if (deletingID !== null || loading) return;
+    if (!window.confirm('この回答を削除しますか？（回答への追記も削除されます。ベストアンサーの場合は質問が未解決に戻ります）')) return;
+    setDeletingID(answer.ID);
+    try {
+      await adminDeleteAnswer(answer.ID);
+      const wasBest = answer.ID === bestAnswerID;
+      setAnswers((prev) => (prev ?? []).filter((a) => a.ID !== answer.ID));
+      setTotal((prev) => Math.max(0, prev - 1));
+      if (wasBest) setBestAnswerID(null);
+      onAnswerDeleted(wasBest);
+    } catch {
+      onError('回答の削除に失敗しました');
+    } finally {
+      setDeletingID(null);
     }
   };
 
@@ -129,7 +159,7 @@ export const AdminQuestionAnswers = ({ questionID, addenda, answerCount, onQuest
         <button
           type="button"
           className={`${styles.paginationButton} ${courseStyles.addendumAction}`}
-          disabled={loading}
+          disabled={loading || deletingID !== null}
           // 一度読んだ回答は閉じても持っておき、開き直すときは読み直さない
           onClick={() => (answers === null ? void loadAnswers(0) : setOpen((v) => !v))}
         >
@@ -143,11 +173,14 @@ export const AdminQuestionAnswers = ({ questionID, addenda, answerCount, onQuest
               key={answer.ID}
               answer={answer}
               isBest={answer.ID === bestAnswerID}
+              deleting={deletingID === answer.ID}
+              disabled={loading || deletingID !== null}
+              onDelete={() => void deleteAnswer(answer)}
               onDeleteAddendum={(addendum) => void deleteFromAnswer(answer.ID, addendum)}
             />
           ))}
           {answers.length < total && (
-            <button type="button" className={`${styles.paginationButton} ${courseStyles.addendumAction}`} disabled={loading} onClick={() => void loadAnswers(answers.length)}>
+            <button type="button" className={`${styles.paginationButton} ${courseStyles.addendumAction}`} disabled={loading || deletingID !== null} onClick={() => void loadAnswers(answers.length)}>
               {loading ? '読み込み中...' : 'さらに回答を読み込む'}
             </button>
           )}

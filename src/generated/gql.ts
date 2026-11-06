@@ -56,6 +56,7 @@ type Documents = {
     "\n  mutation AdminResolveCourseSyncReview($id: ID!, $decision: CourseSyncReviewDecision!) {\n    adminResolveCourseSyncReview(id: $id, decision: $decision) {\n      ID\n      status\n      resolvedAt\n    }\n  }\n": typeof types.AdminResolveCourseSyncReviewDocument,
     "\n  query AdminGetCourseQuestions($roomID: ID!, $limit: Int, $offset: Int) {\n    questions(roomID: $roomID, limit: $limit, offset: $offset) {\n      items {\n        ID\n        roomID\n        user {\n          ID\n          name\n          accountID\n          avatarUrl\n        }\n        body\n        isAnswered\n        # 一覧に出しているのは回答の件数だけ。以前は answers(limit: 200) で\n        # 回答の本文と投稿者を全部取り、その length を件数にしていた。\n        # 質問200件 × 回答200件で、最大4万行が1回の応答に乗っていた。\n        answerCount\n        addenda {\n          ID\n          body\n        }\n        createdAt\n      }\n      total\n    }\n  }\n": typeof types.AdminGetCourseQuestionsDocument,
     "\n  mutation AdminDeleteQuestion($id: ID!) {\n    adminDeleteQuestion(id: $id)\n  }\n": typeof types.AdminDeleteQuestionDocument,
+    "\n  mutation AdminDeleteAnswer($id: ID!) {\n    adminDeleteAnswer(id: $id)\n  }\n": typeof types.AdminDeleteAnswerDocument,
     "\n  mutation AdminDeleteQuestionAddendum($id: ID!) {\n    adminDeleteQuestionAddendum(id: $id)\n  }\n": typeof types.AdminDeleteQuestionAddendumDocument,
     "\n  mutation AdminDeleteAnswerAddendum($id: ID!) {\n    adminDeleteAnswerAddendum(id: $id)\n  }\n": typeof types.AdminDeleteAnswerAddendumDocument,
     "\n  query AdminQuestionAnswers($id: ID!, $limit: Int, $offset: Int) {\n    question(id: $id) {\n      ID\n      bestAnswer {\n        ID\n      }\n      answers(limit: $limit, offset: $offset) {\n        items {\n          ID\n          body\n          user {\n            ID\n            name\n            accountID\n          }\n          media {\n            ...MediaFields\n          }\n          addenda {\n            ID\n            body\n          }\n          likeCount\n          createdAt\n          updatedAt\n        }\n        total\n      }\n    }\n  }\n": typeof types.AdminQuestionAnswersDocument,
@@ -272,6 +273,7 @@ const documents: Documents = {
     "\n  mutation AdminResolveCourseSyncReview($id: ID!, $decision: CourseSyncReviewDecision!) {\n    adminResolveCourseSyncReview(id: $id, decision: $decision) {\n      ID\n      status\n      resolvedAt\n    }\n  }\n": types.AdminResolveCourseSyncReviewDocument,
     "\n  query AdminGetCourseQuestions($roomID: ID!, $limit: Int, $offset: Int) {\n    questions(roomID: $roomID, limit: $limit, offset: $offset) {\n      items {\n        ID\n        roomID\n        user {\n          ID\n          name\n          accountID\n          avatarUrl\n        }\n        body\n        isAnswered\n        # 一覧に出しているのは回答の件数だけ。以前は answers(limit: 200) で\n        # 回答の本文と投稿者を全部取り、その length を件数にしていた。\n        # 質問200件 × 回答200件で、最大4万行が1回の応答に乗っていた。\n        answerCount\n        addenda {\n          ID\n          body\n        }\n        createdAt\n      }\n      total\n    }\n  }\n": types.AdminGetCourseQuestionsDocument,
     "\n  mutation AdminDeleteQuestion($id: ID!) {\n    adminDeleteQuestion(id: $id)\n  }\n": types.AdminDeleteQuestionDocument,
+    "\n  mutation AdminDeleteAnswer($id: ID!) {\n    adminDeleteAnswer(id: $id)\n  }\n": types.AdminDeleteAnswerDocument,
     "\n  mutation AdminDeleteQuestionAddendum($id: ID!) {\n    adminDeleteQuestionAddendum(id: $id)\n  }\n": types.AdminDeleteQuestionAddendumDocument,
     "\n  mutation AdminDeleteAnswerAddendum($id: ID!) {\n    adminDeleteAnswerAddendum(id: $id)\n  }\n": types.AdminDeleteAnswerAddendumDocument,
     "\n  query AdminQuestionAnswers($id: ID!, $limit: Int, $offset: Int) {\n    question(id: $id) {\n      ID\n      bestAnswer {\n        ID\n      }\n      answers(limit: $limit, offset: $offset) {\n        items {\n          ID\n          body\n          user {\n            ID\n            name\n            accountID\n          }\n          media {\n            ...MediaFields\n          }\n          addenda {\n            ID\n            body\n          }\n          likeCount\n          createdAt\n          updatedAt\n        }\n        total\n      }\n    }\n  }\n": types.AdminQuestionAnswersDocument,
@@ -628,6 +630,10 @@ export function graphql(source: "\n  query AdminGetCourseQuestions($roomID: ID!,
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AdminDeleteQuestion($id: ID!) {\n    adminDeleteQuestion(id: $id)\n  }\n"): (typeof documents)["\n  mutation AdminDeleteQuestion($id: ID!) {\n    adminDeleteQuestion(id: $id)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminDeleteAnswer($id: ID!) {\n    adminDeleteAnswer(id: $id)\n  }\n"): (typeof documents)["\n  mutation AdminDeleteAnswer($id: ID!) {\n    adminDeleteAnswer(id: $id)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
