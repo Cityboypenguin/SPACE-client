@@ -1,8 +1,4 @@
 # Azure Static Web Apps へフロントエンドを配信する。
-#
-# 既存の deploy.yml（S3 + CloudFront）はそのまま残してある。現行サイトは
-# そちらで動き続けるので、Azure 側が整うまで両方へ配信される。Azure へ
-# 切り替え終わったら deploy.yml を削除すること。
 name: Deploy to Azure Static Web Apps
 
 on:
