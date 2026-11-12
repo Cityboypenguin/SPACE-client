@@ -83,7 +83,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
         setRemovedIds((prev) => new Set(prev).add(targetId));
       }
     } catch {
-      addToast(isRemoved ? 'お気に入りの登録に失敗しました' : 'お気に入りの解除に失敗しました', 'error');
+      addToast(isRemoved ? 'フォローに失敗しました' : 'フォローの解除に失敗しました', 'error');
     } finally {
       setActionLoadingIds((prev) => { const s = new Set(prev); s.delete(targetId); return s; });
     }
@@ -94,13 +94,13 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
       <UserSidebar />
       <main className={styles.main}>
         <button onClick={() => navigate('/mypage')}><ChevronLeft /> マイページに戻る</button>
-        <h1>{isFollowersMode ? 'フォロワー' : 'お気に入りリスト'}</h1>
+        <h1>{isFollowersMode ? 'フォロワー' : 'フォローリスト'}</h1>
 
         {initialLoading ? (
           <p>読み込み中...</p>
         ) : users.length === 0 ? (
           <p className={styles.emptyText}>
-            {isFollowersMode ? 'フォロワーはいません。' : 'お気に入り登録しているユーザーはいません。'}
+            {isFollowersMode ? 'フォロワーはいません。' : 'フォローしているユーザーはいません。'}
           </p>
         ) : (
           <>
@@ -111,7 +111,7 @@ export const FavoriteUsersPage = ({ mode = 'favorites' }: Props) => {
                   <UserListItem
                     key={user.ID}
                     user={user}
-                    actionLabel={isFollowersMode ? '見る' : isRemoved ? 'お気に入り登録' : '解除'}
+                    actionLabel={isFollowersMode ? '見る' : isRemoved ? 'フォロー' : 'フォロー解除'}
                     actionVariant="default"
                     onAction={isFollowersMode ? () => navigate(`/users/${user.ID}`) : () => handleToggle(user.ID, isRemoved)}
                     disabled={actionLoadingIds.has(user.ID)}

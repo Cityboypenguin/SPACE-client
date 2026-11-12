@@ -215,7 +215,7 @@ export const AdminUserDetailPage = () => {
                 {/* お気に入りカード */}
                 <div className={styles.relationshipCard} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
                   <h3 className={styles.relationshipCardTitle}>
-                    お気に入り ({favorites.length})
+                    フォロー中 ({favorites.length})
                   </h3>
                   {favorites.length === 0 ? (
                     <p className={styles.mutedSmall}>登録なし</p>

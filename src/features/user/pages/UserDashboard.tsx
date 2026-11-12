@@ -308,7 +308,7 @@ export const UserDashboard = () => {
   const profileActions = (
     <div className={styles.actionButtons}>
       <ProfilePillButton to="/mypage/profile-edit" icon={editIcon} label="プロフィール編集" themedIcon compact />
-      <ProfilePillButton to="/mypage/favorites" icon={favoriteIcon} label="お気に入りリスト" themedIcon compact />
+      <ProfilePillButton to="/mypage/favorites" icon={favoriteIcon} label="フォローリスト" themedIcon compact />
       <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} compact />
       {/* <ProfilePillButton to="/mypage/followers" icon={followerIcon} label="フォロワー" themedIcon /> */}
     </div>

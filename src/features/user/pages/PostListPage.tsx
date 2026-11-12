@@ -718,7 +718,7 @@ export const PostListPage = () => {
             tabs={[
               { key: 'recommended', label: 'おすすめ' },
               { key: 'newest', label: '新しい順' },
-              { key: 'favorites', label: 'お気に入り' },
+              { key: 'favorites', label: 'フォロー中' },
             ]}
             activeTab={activeTab}
             onChange={setActiveTab}
