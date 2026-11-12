@@ -40,7 +40,7 @@ export const IconSearchBar = ({
       />
       {value && onClear && (
         <button type="button" className={styles.clearButton} onClick={onClear} aria-label="クリア">
-          x
+          ×
         </button>
       )}
     </div>

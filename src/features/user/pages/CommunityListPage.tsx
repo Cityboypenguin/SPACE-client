@@ -113,6 +113,7 @@ export const CommunityListPage = () => {
         <IconSearchBar
           value={query}
           onChange={setQuery}
+          onClear={() => setQuery('')}
           placeholder="Search"
         />
 

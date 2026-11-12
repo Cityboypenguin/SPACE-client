@@ -143,6 +143,7 @@ export const DMListPage = () => {
         <IconSearchBar
           value={query}
           onChange={setQuery}
+          onClear={() => setQuery('')}
           placeholder="Search"
         />
 

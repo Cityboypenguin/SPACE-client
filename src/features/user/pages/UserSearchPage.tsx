@@ -15,8 +15,8 @@ import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { storageUrl } from '../../../lib/storage';
-import searchIconSvg from '../../../assets/パーツ_検索.svg';
 import { StatusText } from '../../../components/atoms/StatusText';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import styles from './UserSearchPage.module.css';
 import { withLikeToggled } from '../../../lib/postUtils';
 
@@ -329,23 +329,15 @@ export const UserSearchPage = () => {
           </div>
         </div>
 
-        <form className={styles.searchForm} onSubmit={e => { e.preventDefault(); void handleSearch(); }}>
-          <div className={styles.searchBar}>
-            <img src={searchIconSvg} alt="" className={`${styles.searchIcon} themed-icon`} />
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder="Search"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
-            {query && (
-              <button type="button" className={styles.clearButton} onClick={handleClear}>
-                ×
-              </button>
-            )}
-          </div>
-        </form>
+        <div className={styles.searchForm}>
+          <IconSearchBar
+            value={query}
+            onChange={setQuery}
+            onSubmit={e => { e.preventDefault(); void handleSearch(); }}
+            onClear={handleClear}
+            placeholder="Search"
+          />
+        </div>
 
         {showRecent && <p className={styles.sectionLabel}>最近</p>}
 
