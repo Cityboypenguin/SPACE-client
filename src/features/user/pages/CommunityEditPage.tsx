@@ -145,6 +145,7 @@ export const CommunityEditPage = () => {
               onChange={handleFileChange}
               style={{ display: 'none' }}
             />
+            <label className={styles.descLabel}>コミュニティ画像</label>
             <div className={styles.iconCol}>
               <div
                 className={styles.iconClickable}
@@ -158,12 +159,12 @@ export const CommunityEditPage = () => {
                 </button>
               )}
             </div>
-
+            <label className={styles.descLabel}>コミュニティ名</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="コミュニティ名"
+              placeholder="コミュニティ名を入力してください"
               maxLength={100}
               required
               className={styles.nameInput}
