@@ -33,8 +33,8 @@ const validateAccountID = (value: string): string => {
 };
 
 const validateName = (value: string): string => {
-  if (!value) return '名前を入力してください';
-  if ([...value].length > MAX_NAME_LENGTH) return `名前は${MAX_NAME_LENGTH}文字以内で入力してください`;
+  if (!value) return 'ユーザー名を入力してください';
+  if ([...value].length > MAX_NAME_LENGTH) return `ユーザー名は${MAX_NAME_LENGTH}文字以内で入力してください`;
   return '';
 };
 
@@ -236,7 +236,7 @@ export const UserProfileEditPage = () => {
             />
             {accountIDError && <p className={styles.inlineErrorMsg}>{accountIDError}</p>}
 
-            <label className={styles.fieldLabel} htmlFor="name">名前</label>
+            <label className={styles.fieldLabel} htmlFor="name">ユーザー名</label>
             <input
               id="name"
               type="text"
@@ -247,7 +247,7 @@ export const UserProfileEditPage = () => {
                 setName(e.target.value);
                 setNameError(validateName(e.target.value.trim()));
               }}
-              placeholder="名前を入力してください"
+              placeholder="ユーザー名を入力してください"
             />
             {nameError && <p className={styles.inlineErrorMsg}>{nameError}</p>}
           </section>
