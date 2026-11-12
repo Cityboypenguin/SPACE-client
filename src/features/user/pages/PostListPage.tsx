@@ -701,7 +701,7 @@ export const PostListPage = () => {
           submitting={posting}
           error={postError}
           placeholder="新規投稿"
-          submitLabel="投稿"
+          submitLabel="投稿する"
           rows={1}
           userId={userId}
           avatarUrl={profile?.avatarUrl}
