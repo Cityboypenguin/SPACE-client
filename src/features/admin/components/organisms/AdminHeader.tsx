@@ -41,7 +41,7 @@ export const AdminHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
   // 未対応件数のステート（問い合わせ・通報）
@@ -82,6 +82,7 @@ export const AdminHeader = () => {
     } else {
       document.body.setAttribute('data-admin-sidebar', 'collapsed');
     }
+    return () => document.body.removeAttribute('data-admin-sidebar');
   }, [expanded]);
 
   const handleNavigate = (path: string) => {
@@ -117,14 +118,31 @@ export const AdminHeader = () => {
 
   return (
     <>
-      <header className={`${styles.header} ${expanded ? styles.expanded : ''}`}>
+      <header
+        className={`${styles.header} ${expanded ? styles.expanded : ''}`}
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={(event) => {
+          if (!event.currentTarget.contains(document.activeElement)) {
+            setExpanded(false);
+          }
+        }}
+        onFocusCapture={() => setExpanded(true)}
+        onBlurCapture={(event) => {
+          if (
+            !event.currentTarget.contains(event.relatedTarget as Node | null) &&
+            !event.currentTarget.matches(':hover')
+          ) {
+            setExpanded(false);
+          }
+        }}
+      >
         {/* ハンバーガーボタン ＋ タイトル */}
         <div className={styles.topHeader}>
           <button
             type="button"
             className={styles.hamburgerBtn}
-            onClick={() => setExpanded((prev) => !prev)}
-            aria-label="メニュー開閉"
+            onClick={() => setExpanded(true)}
+            aria-label="メニューを開く"
           >
             <span className={styles.hamburgerIcon}>
               <span />

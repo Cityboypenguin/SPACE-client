@@ -1,8 +1,7 @@
 .page,
 .pageCentered {
-  margin-left: 220px;
+  margin-left: 56px;
   padding: 24px 32px;
-  transition: margin-left 0.2s ease;
   min-height: 100vh;
   box-sizing: border-box;
   background-color: #ffffff;
@@ -2121,15 +2120,6 @@
 :global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .backButton:hover,
 :global(:root[data-theme='dark']) :global(body[data-admin-sidebar]) .secondaryButton:hover {
   background-color: var(--color-surface) !important;
-}
-
-:global(body[data-admin-sidebar='collapsed']) .pageCentered,
-:global(body[data-admin-sidebar='collapsed']) .page {
-  margin-left: 56px;
-}
-
-:global(body[data-admin-sidebar='expanded']) .pageCentered {
-  margin-left: 220px;
 }
 
 .relationshipCard {
