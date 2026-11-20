@@ -55,3 +55,19 @@ export const uploadStampImage = async (file: File) => {
   if (!res.ok) throw new Error('画像のアップロードに失敗しました');
   return data.adminStampUploadUrl.objectKey;
 };
+
+export type CommunityJoinStampSettings = { welcomeIDs: string[]; greetingIDs: string[] };
+
+export const getCommunityJoinStampSettings = async () =>
+  (await request<{ adminCommunityJoinStampSettings: CommunityJoinStampSettings }>(
+    'query { adminCommunityJoinStampSettings { welcomeIDs greetingIDs } }', {}, token(),
+  )).adminCommunityJoinStampSettings;
+
+export const saveCommunityJoinStampSettings = async (settings: CommunityJoinStampSettings) =>
+  request<{ adminSaveCommunityJoinStampSettings: boolean }>(
+    `mutation SaveCommunityJoinStampSettings($welcomeIDs: [String!]!, $greetingIDs: [String!]!) {
+      adminSaveCommunityJoinStampSettings(welcomeIDs: $welcomeIDs, greetingIDs: $greetingIDs)
+    }`,
+    settings,
+    token(),
+  );

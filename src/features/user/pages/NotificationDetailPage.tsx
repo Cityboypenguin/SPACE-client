@@ -1,6 +1,8 @@
+import { COMMUNITY_INVITATION_TYPE } from '../lib/communityInvitationLinks';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
+import { CommunityInvitationDetails } from '../components/molecules/CommunityInvitationDetails';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useNotification } from '../context/useNotification';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -25,6 +27,8 @@ const TYPE_LABEL: Record<string, string> = {
   [QUESTION_ADDENDUM_TYPE]: '質問への追記',
   [ANSWER_ADDENDUM_TYPE]: '回答への追記',
   dm: 'DM',
+  [COMMUNITY_INVITATION_TYPE]: 'コミュニティへの招待',
+  community_invitation_accepted: '招待からの参加',
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
   announcement: 'お知らせ',
@@ -42,6 +46,7 @@ const ACTION_LABEL: Record<string, string> = {
   favorite: '投稿へいく',
   reply: '投稿へいく',
   community_kick: 'コミュニティへいく',
+  community_invitation_accepted: 'コミュニティへいく',
   community_role: 'コミュニティへいく',
   announcement: 'お知らせへいく',
   timetable_removed: '時間割へいく',
@@ -114,6 +119,8 @@ export const NotificationDetailPage = () => {
         notification.targetMessage?.ID,
       )
     : null;
+
+  const isInvitation = notification?.type === COMMUNITY_INVITATION_TYPE;
 
   const handleTargetLink = () => {
     if (replyLink) {
@@ -190,6 +197,15 @@ export const NotificationDetailPage = () => {
             )}
 
             <p className={styles.message}>{notification.message}</p>
+
+            {isInvitation && (
+              <CommunityInvitationDetails
+                key={notification.ID}
+                input={notification.targetID ? { id: notification.targetID } : null}
+                returnTo="/notifications"
+                showSender={!notification.actor}
+              />
+            )}
 
             {notification.targetPost && !notification.targetPost.deletedAt && (
               <div className={styles.targetPostPreview}>

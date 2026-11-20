@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { loginUser } from '../../api/auth';
 import { useAuth } from '../../context/useAuth';
 import { toUserMessage } from '../../../../lib/errorMessages';
 import { AppSwal } from '../../../../lib/swal';
 import logo from '../../../../assets/Senshu-Universe_logo.svg';
+import { invitationLoginReturn } from '../../lib/communityInvitationLinks';
 import styles from './UserLoginForm.module.css';
 
 export const UserLoginForm = () => {
@@ -12,13 +13,15 @@ export const UserLoginForm = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const destination = invitationLoginReturn(state?.returnTo) ?? '/home';
   const { token, login } = useAuth();
 
   useEffect(() => {
     if (token) {
-      navigate('/home', { replace: true });
+      navigate(destination, { replace: true });
     }
-  }, [token, navigate]);
+  }, [token, navigate, destination]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +34,7 @@ export const UserLoginForm = () => {
       if (data.loginUser.accountRestored) {
         void AppSwal.fire({ text: '退会手続きを取り消しました。これまでどおりご利用いただけます。', confirmButtonText: 'OK' });
       }
-      navigate('/home');
+      navigate(destination, { replace: true });
     } catch (err) {
       setError(toUserMessage(err, 'メールアドレスまたはパスワードが正しくありません'));
     }

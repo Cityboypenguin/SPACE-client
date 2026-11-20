@@ -124,3 +124,32 @@
 .form input {
   box-sizing: border-box;
 }
+
+.joinStamps {
+  margin-top: 2rem;
+}
+
+.joinStamps fieldset {
+  margin: 0 0 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: .5rem;
+}
+
+.joinStampOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  margin-bottom: .75rem;
+}
+
+.joinStampOptions label {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.joinStampOptions img {
+  width: 56px;
+  height: 42px;
+  object-fit: contain;
+}

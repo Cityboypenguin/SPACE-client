@@ -1,3 +1,4 @@
+import useSWR from 'swr';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -10,6 +11,10 @@ import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { sortUnreadFirst } from '../lib/unreadSort';
+import { useAuth } from '../context/useAuth';
+import { useNotification } from '../context/useNotification';
+import { receivedInvitations } from '../api/communityInvitations';
+import { RECEIVED_INVITATIONS, receivedInvitationCountKey } from '../lib/communityInvitationLinks';
 import styles from './CommunityListPage.module.css';
 
 const LIMIT = 20;
@@ -17,6 +22,15 @@ const LIMIT = 20;
 export const CommunityListPage = () => {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const { userId } = useAuth();
+  const { lastSseAt } = useNotification();
+  const { data: inviteCount, mutate: revalidateInvites } = useSWR(
+    userId ? receivedInvitationCountKey(userId) : null,
+    async () => (await receivedInvitations(0)).total,
+  );
+  useEffect(() => {
+    if (lastSseAt) void revalidateInvites();
+  }, [lastSseAt, revalidateInvites]);
 
   const [communities, setCommunities] = useState<Community[]>([]);
   const [total, setTotal] = useState(0);
@@ -105,6 +119,13 @@ export const CommunityListPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topActions}>
+          <button
+            className={`${styles.btnSecondary} ${styles.invitationButton}`}
+            aria-label={inviteCount ? `届いた招待 ${inviteCount}件` : undefined}
+            onClick={() => navigate(RECEIVED_INVITATIONS)}
+          >
+            <span>届いた招待</span><UnreadCountBadge count={inviteCount ?? 0} />
+          </button>
           <button className={styles.btnSecondary} onClick={() => navigate('/community/browse')}>
             コミュニティを探す
           </button>

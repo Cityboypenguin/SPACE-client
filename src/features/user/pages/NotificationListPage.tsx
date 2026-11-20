@@ -1,3 +1,4 @@
+import { COMMUNITY_INVITATION_TYPE } from '../lib/communityInvitationLinks';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -95,6 +96,8 @@ const TYPE_ICON: Record<string, ReactNode> = {
   dm: <ChatIcon />,
   [QUESTION_ADDENDUM_TYPE]: <ChatIcon />,
   [ANSWER_ADDENDUM_TYPE]: <ChatIcon />,
+  [COMMUNITY_INVITATION_TYPE]: <GroupIcon />,
+  community_invitation_accepted: <GroupIcon />,
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
   announcement: <BellIcon />,

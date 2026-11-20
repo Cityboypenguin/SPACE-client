@@ -4,6 +4,7 @@ import { logoutUser } from '../api/auth';
 import { getMyProfile } from '../api/profile';
 import { registerUnauthorizedHandler, registerTokenRefreshedHandler, registerMaintenanceHandler } from '../../../lib/graphql';
 import { AuthContext } from './authContextValue';
+import { invitationLoginReturn } from '../lib/communityInvitationLinks';
 import {
   ADMIN_REFRESH_TOKEN_KEY,
   ADMIN_TOKEN_KEY,
@@ -90,7 +91,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.removeItem(ADMIN_REFRESH_TOKEN_KEY);
         navigate('/admin/login');
       } else {
-        navigate('/login');
+        const { pathname, hash } = window.location;
+        if (pathname === '/login') return;
+        const returnTo = invitationLoginReturn(pathname + hash);
+        navigate('/login', returnTo ? { state: { returnTo }, replace: true } : undefined);
       }
     });
   }, [clearAuth, navigate]);

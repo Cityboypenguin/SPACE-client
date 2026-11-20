@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { mutate as globalMutate } from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
+import { CommunityWelcomeSuggestions } from '../components/molecules/CommunityWelcomeSuggestions';
+import { getCommunityGreeting, sendCommunityGreeting } from '../api/communityInvitations';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { useThreadActions } from '../hooks/useThreadActions';
 import { ThreadWorkspace, ThreadListButton } from '../components/organisms/ThreadWorkspace';
@@ -61,10 +63,61 @@ export const CommunityRoomPage = () => {
     addPendingMention,
     handleSend, handleSendStamp, handleToggleReaction, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage, setMessageReactions);
+  const { data: greeting, mutate: refreshGreeting } = useSWR(
+    roomId && room && currentUserID ? ['community-greeting', currentUserID, roomId] : null,
+    () => getCommunityGreeting(roomId!),
+  );
+  const latestJoinNotice = messages.reduce<string | undefined>(
+    (latest, message) => message.isCommunityWelcome ? message.ID : latest,
+    undefined,
+  );
+  useEffect(() => {
+    if (roomId && latestJoinNotice) void refreshGreeting();
+  }, [roomId, latestJoinNotice, refreshGreeting]);
+  const sendGreeting = async (welcomeMessageID: string, stampID: string) => {
+    if (!roomId) return;
+    try {
+      const message = await sendCommunityGreeting(roomId, welcomeMessageID, stampID);
+      addMessage({ ...message, media: [], mentions: [], reactions: [] });
+      void refreshGreeting((current) => current?.welcomeMessageID === welcomeMessageID ? null : current);
+    } catch (err) {
+      void refreshGreeting();
+      throw new Error(toUserMessage(err, '歓迎スタンプを送れませんでした。'), { cause: err });
+    }
+  };
   const reactionEmojis = useMessageReactionEmojis(!!room);
   const stampOptions = useMessageStampOptions(!!room);
 
   const messageListRef = useRef<HTMLDivElement>(null);
+  const messageListWrapperRef = useRef<HTMLDivElement>(null);
+  const welcomeOverlayRef = useRef<HTMLDivElement>(null);
+  const hasWelcomePanel = !!greeting;
+
+  useLayoutEffect(() => {
+    const wrapper = messageListWrapperRef.current;
+    const list = messageListRef.current;
+    const overlay = welcomeOverlayRef.current;
+    if (!wrapper || !list) return;
+
+    const updateClearance = () => {
+      const height = overlay
+        ? Math.ceil(wrapper.getBoundingClientRect().bottom - overlay.getBoundingClientRect().top)
+        : 0;
+      const property = '--chat-welcome-panel-space';
+      if (wrapper.style.getPropertyValue(property) === `${height}px`) return;
+
+      // 末尾を表示していた場合だけ、新しい余白のぶん末尾まで追従する。
+      const wasAtBottom = list.scrollHeight - list.clientHeight - list.scrollTop <= 2;
+      wrapper.style.setProperty(property, `${height}px`);
+      if (wasAtBottom) list.scrollTop = list.scrollHeight;
+    };
+
+    updateClearance();
+    if (!overlay) return;
+    const observer = new ResizeObserver(updateClearance);
+    observer.observe(overlay);
+    return () => observer.disconnect();
+  }, [hasWelcomePanel]);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
@@ -169,6 +222,20 @@ export const CommunityRoomPage = () => {
 
   const communityID = community?.ID ?? null;
 
+  // 誰かが参加すると参加案内のメッセージが流れてくるので、それを合図にメンバー一覧と
+  // 人数のキャッシュを捨てる（開いている詳細パネルはその場で取り直す）。
+  // 開いた直後に読み込んだ既存の案内では捨てない。
+  const seenJoinNoticeRef = useRef<{ roomId?: string; id?: string }>({});
+  useEffect(() => {
+    if (!roomId) return;
+    const seen = seenJoinNoticeRef.current;
+    seenJoinNoticeRef.current = { roomId, id: latestJoinNotice };
+    if (seen.roomId !== roomId || !latestJoinNotice || seen.id === latestJoinNotice || !communityID) return;
+    void invalidateCommunityMembers(communityID);
+    // 一覧画面の人数も古くなるので、共有キャッシュごと取り直す。
+    void globalMutate('my-communities');
+  }, [communityID, roomId, latestJoinNotice]);
+
   const { data: role } = useSWR(
     communityID ? ['community-role', communityID] : null,
     ([, cid]: [string, string]) => getMyRoleInCommunity(cid),
@@ -242,7 +309,7 @@ export const CommunityRoomPage = () => {
         <ThreadListButton parentRoomID={roomId ?? ''} />
       </div>
 
-      <div className={styles.messageListWrapper}>
+      <div className={styles.messageListWrapper} ref={messageListWrapperRef}>
         <div className={styles.messageList} ref={messageListRef}>
           <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
@@ -266,25 +333,32 @@ export const CommunityRoomPage = () => {
                   prevCreatedAt={prevMsg?.createdAt}
                 />
                 {isFirstUnread && <ChatUnreadSeparator ref={firstUnreadRef} />}
-                <ChatMessageBubble
-                  msg={msg}
-                  isMine={isMine}
-                  canDelete={isMine || isOwner}
-                  isEditing={editingId === msg.ID}
-                  editContent={editContent}
-                  onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
-                  onSaveEdit={() => handleSaveEdit(msg.ID, msg.mentions)}
-                  onCancelEdit={() => setEditingId(null)}
-                  onEditContentChange={setEditContent}
-                  onDelete={() => handleDelete(msg.ID)}
-                  onReply={() => setReplyTarget(msg)}
-                  onReport={() => setReportingMessage(msg)}
-                  onJumpToMessage={jumpToMessage}
-                  reactionEmojis={reactionEmojis}
-                  onToggleReaction={(emoji, reacted) => handleToggleReaction(msg.ID, emoji, reacted)}
-                  isGroupStart={isGroupStart}
-                  isGroupEnd={isGroupEnd}
-                />
+                {msg.isCommunityWelcome && (
+                  <div className={pageStyles.joinNotice} data-message-id={msg.stampID ? undefined : msg.ID}>
+                    <span>{msg.user.name}さんが参加しました</span>
+                  </div>
+                )}
+                {(!msg.isCommunityWelcome || msg.stampID) && (
+                  <ChatMessageBubble
+                    msg={msg.isCommunityWelcome ? { ...msg, content: '' } : msg}
+                    isMine={isMine}
+                    canDelete={!msg.isCommunityWelcome && (isMine || isOwner)}
+                    isEditing={editingId === msg.ID}
+                    editContent={editContent}
+                    onStartEdit={() => { setEditingId(msg.ID); setEditContent(msg.content); }}
+                    onSaveEdit={() => handleSaveEdit(msg.ID, msg.mentions)}
+                    onCancelEdit={() => setEditingId(null)}
+                    onEditContentChange={setEditContent}
+                    onDelete={() => handleDelete(msg.ID)}
+                    onReply={msg.isCommunityWelcome ? undefined : () => setReplyTarget(msg)}
+                    onReport={msg.isCommunityWelcome ? undefined : () => setReportingMessage(msg)}
+                    onJumpToMessage={jumpToMessage}
+                    reactionEmojis={reactionEmojis}
+                    onToggleReaction={(emoji, reacted) => handleToggleReaction(msg.ID, emoji, reacted)}
+                    isGroupStart={isGroupStart}
+                    isGroupEnd={isGroupEnd}
+                  />
+                )}
               </Fragment>
             );
           })}
@@ -292,10 +366,20 @@ export const CommunityRoomPage = () => {
           {loadingNewer && (
             <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
+          <div className={pageStyles.welcomeClearance} aria-hidden="true" />
           <div ref={bottomRef} />
         </div>
 
         <NewMessagesBadge count={newMessageCount} isAtBottom={isAtBottom} onClick={scrollToLatest} />
+        {greeting && (
+          <div className={pageStyles.welcomeOverlay} ref={welcomeOverlayRef}>
+            <CommunityWelcomeSuggestions
+              key={greeting.welcomeMessageID}
+              greeting={greeting}
+              onSend={(stampID) => sendGreeting(greeting.welcomeMessageID, stampID)}
+            />
+          </div>
+        )}
       </div>
 
       <ChatInput

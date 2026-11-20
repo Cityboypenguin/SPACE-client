@@ -36,6 +36,15 @@ const CommunityListPage = lazy(() =>
 const CommunityBoardListPage = lazy(() =>
   import('../pages/CommunityBoardListPage').then((m) => ({ default: m.CommunityBoardListPage })),
 );
+const CommunityInvitationsPage = lazy(() =>
+  import('../pages/CommunityInvitationsPage').then((m) => ({ default: m.CommunityInvitationsPage })),
+);
+const CommunityInvitationPage = lazy(() =>
+  import('../pages/CommunityInvitationsPage').then((m) => ({ default: m.CommunityInvitationPage })),
+);
+const CommunityInviteSendPage = lazy(() =>
+  import('../pages/CommunityInviteSendPage').then((m) => ({ default: m.CommunityInviteSendPage })),
+);
 const CommunityCreatePage = lazy(() =>
   import('../pages/CommunityCreatePage').then((m) => ({ default: m.CommunityCreatePage })),
 );
@@ -109,6 +118,10 @@ export const userRoutes = (
       <Route path="/dm/:roomId" element={<DMPage />} />
       <Route path="/community" element={<CommunityListPage />} />
       <Route path="/community/browse" element={<CommunityBoardListPage />} />
+      <Route path="/community/invitations" element={<CommunityInvitationsPage />} />
+      <Route path="/community/invitations/link" element={<CommunityInvitationPage shared />} />
+      <Route path="/community/invitations/:id" element={<CommunityInvitationPage />} />
+      <Route path="/community/invite/:communityID/:roomID" element={<CommunityInviteSendPage />} />
       <Route path="/community/create" element={<CommunityCreatePage />} />
       <Route path="/community/chat/:roomId" element={<CommunityRoomPage />} />
       <Route path="/community/edit/:communityID" element={<CommunityEditPage />} />
