@@ -1,7 +1,8 @@
-import { COMMUNITY_INVITATION_TYPE, notificationInvitationPath } from '../lib/communityInvitationLinks';
+import { COMMUNITY_INVITATION_TYPE } from '../lib/communityInvitationLinks';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
+import { CommunityInvitationDetails } from '../components/molecules/CommunityInvitationDetails';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { useNotification } from '../context/useNotification';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
@@ -43,7 +44,6 @@ const ACTION_LABEL: Record<string, string> = {
   [MENTION_TYPE]: '投稿へいく',
   favorite: '投稿へいく',
   reply: '投稿へいく',
-  [COMMUNITY_INVITATION_TYPE]: '招待を確認する',
   community_kick: 'コミュニティへいく',
   community_role: 'コミュニティへいく',
   announcement: 'お知らせへいく',
@@ -53,7 +53,6 @@ const ACTION_LABEL: Record<string, string> = {
 const TARGET_PATH: Record<string, (id: string) => string> = {
   post: (id) => `/posts/${id}`,
   room: (id) => `/community/chat/${id}`,
-  communityInvitation: notificationInvitationPath,
   community: () => `/community`,
   announcement: (id) => `/announcements/${id}`,
   // シラバス同期で時間割から外した授業（timetable_removed）。授業そのものより、
@@ -119,6 +118,8 @@ export const NotificationDetailPage = () => {
       )
     : null;
 
+  const isInvitation = notification?.type === COMMUNITY_INVITATION_TYPE;
+
   const handleTargetLink = () => {
     if (replyLink) {
       navigate(replyLink);
@@ -142,8 +143,14 @@ export const NotificationDetailPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <button type="button" onClick={() => navigate(-1)}>
+          <button
+            type="button"
+            className={styles.backBtn}
+            aria-label={isInvitation ? '通知に戻る' : '戻る'}
+            onClick={() => isInvitation ? navigate('/notifications') : navigate(-1)}
+          >
             <ChevronLeft />
+            {isInvitation && '通知に戻る'}
           </button>
           {notification && (
             <button className={styles.deleteBtn} onClick={handleDelete} disabled={deleting}>
@@ -194,6 +201,15 @@ export const NotificationDetailPage = () => {
             )}
 
             <p className={styles.message}>{notification.message}</p>
+
+            {isInvitation && (
+              <CommunityInvitationDetails
+                key={notification.ID}
+                input={notification.targetID ? { id: notification.targetID } : null}
+                returnTo="/notifications"
+                showSender={!notification.actor}
+              />
+            )}
 
             {notification.targetPost && !notification.targetPost.deletedAt && (
               <div className={styles.targetPostPreview}>

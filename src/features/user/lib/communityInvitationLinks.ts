@@ -1,7 +1,6 @@
 export const COMMUNITY_INVITATION_TYPE = 'community_invitation';
 export const RECEIVED_INVITATIONS = '/community/invitations';
 export const individualInvitationPath = (id: string) => `${RECEIVED_INVITATIONS}/${encodeURIComponent(id)}`;
-export const notificationInvitationPath = (id: string) => `${individualInvitationPath(id)}?from=notifications`;
 export const sharedInvitationPath = (token: string) => `${RECEIVED_INVITATIONS}/link#${token}`;
 
 export const invitationLoginReturn = (path: unknown) =>

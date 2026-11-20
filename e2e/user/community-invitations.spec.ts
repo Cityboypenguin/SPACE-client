@@ -3,7 +3,7 @@ import { loginAsSecondUser } from '../support/secondUser';
 import { env } from '../support/env';
 import { dismissTermsConsentModalIfPresent } from '../support/terms';
 
-test('検索で招待した相手が受信一覧から参加し、参加案内が1回だけ表示される', async ({
+test('検索で招待した相手が通知詳細から参加し、参加案内が1回だけ表示される', async ({
   page, browser, request, baseURL,
 }) => {
   const name = `招待E2E ${Date.now()}`;
@@ -36,7 +36,10 @@ test('検索で招待した相手が受信一覧から参加し、参加案内�
 
     await recipient.goto(new URL('/notifications', baseURL ?? env.baseURL).href);
     await recipient.locator('main').getByText(`${name}に招待されました`, { exact: true }).click();
-    await recipient.getByRole('link', { name: '通知に戻る', exact: true }).click();
+    await expect(recipient).toHaveURL(/\/notifications\/[^/]+$/);
+    await expect(recipient.getByRole('button', { name: '削除', exact: true })).toBeVisible();
+    await expect(recipient.getByRole('button', { name: '参加する', exact: true })).toBeVisible();
+    await recipient.getByRole('button', { name: '通知に戻る', exact: true }).click();
     await expect(recipient).toHaveURL(/\/notifications$/);
 
     await recipient.setViewportSize({ width: 375, height: 812 });
@@ -50,6 +53,10 @@ test('検索で招待した相手が受信一覧から参加し、参加案内�
     expect(label && badge && badge.x >= label.x + label.width).toBe(true);
     await inviteButton.click();
     await recipient.locator('main').getByRole('link', { name: new RegExp(name) }).click();
+    await expect(recipient.getByRole('link', { name: '届いた招待に戻る', exact: true })).toBeVisible();
+
+    await recipient.goto(new URL('/notifications', baseURL ?? env.baseURL).href);
+    await recipient.locator('main').getByText(`${name}に招待されました`, { exact: true }).click();
     await recipient.getByRole('button', { name: '参加する', exact: true }).click();
     await expect(recipient).toHaveURL(/\/community\/chat\//);
     const welcome = recipient.getByText(/さんが参加しました$/);

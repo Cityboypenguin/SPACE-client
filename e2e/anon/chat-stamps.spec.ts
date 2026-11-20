@@ -373,11 +373,11 @@ for (const chat of [
     await expect.poll(columns).toBe(4);
     await page.setViewportSize({ width: 320, height: 720 });
     await expect.poll(columns).toBeLessThanOrEqual(3);
-    const pickerBounds = await picker.boundingBox();
-    expect(pickerBounds!.x).toBeGreaterThanOrEqual(0);
-    expect(pickerBounds!.x + pickerBounds!.width).toBeLessThanOrEqual(320);
-    expect(pickerBounds!.y).toBeGreaterThanOrEqual(0);
-    expect(pickerBounds!.y + pickerBounds!.height).toBeLessThanOrEqual(720);
+    await expect.poll(async () => {
+      const bounds = await picker.boundingBox();
+      return !!bounds && bounds.x >= 0 && bounds.x + bounds.width <= 320
+        && bounds.y >= 0 && bounds.y + bounds.height <= 720;
+    }).toBe(true);
     await page.keyboard.press('Escape');
     await page.setViewportSize({ width: 1280, height: 720 });
     await stampButton.click();
@@ -386,5 +386,67 @@ for (const chat of [
       .click();
     await expect.poll(() => sentStamp).toBe(stamps[0].id);
     await expect(page.locator('[data-message-id="sent-stamp"]')).toBeVisible();
+  });
+}
+
+for (const width of [1360, 375]) {
+  test(`歓迎パネルが後から開いても最新スタンプが切れない (${width}px)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 720 });
+    await page.addInitScript(() => {
+      localStorage.setItem('space_user_token', 'welcome-layout-test');
+      localStorage.setItem('space_user_id', 'u1');
+      localStorage.setItem('weeklyNoticeHiddenAt:u1', String(Date.now()));
+    });
+
+    let showWelcome!: () => void;
+    const panelReady = new Promise<void>((resolve) => { showWelcome = resolve; });
+    const other = { ID: 'u2', name: '新しいメンバー', accountID: 'member', avatarUrl: null };
+    const now = '2026-11-03T10:00:00+09:00';
+    const message = {
+      roomID: 'welcome-room', user: other, content: '', media: [], mentions: [],
+      reactions: [], createdAt: now, updatedAt: now, isMine: false, stampID: stamps[0].id,
+    };
+    const items = [
+      ...Array.from({ length: 8 }, (_, i) => ({ ...message, ID: `older-${i}` })),
+      { ...message, ID: 'notice', stampID: null, isCommunityWelcome: true },
+      { ...message, ID: 'latest-stamp' },
+    ];
+
+    await page.routeWebSocket('**/query', (socket) =>
+      socket.onMessage((raw) => {
+        if (JSON.parse(String(raw)).type === 'connection_init')
+          socket.send(JSON.stringify({ type: 'connection_ack' }));
+      }),
+    );
+    await page.route('**/query', async (route) => {
+      const { query } = route.request().postDataJSON();
+      let data: unknown = {};
+      if (query.includes('query GetRoom')) {
+        data = { room: { ID: 'welcome-room', name: 'コミュニティ', type: 'community', user: [], unreadCount: 0 } };
+      } else if (query.includes('query ListMessages')) {
+        data = { messages: { items, hasMoreBefore: false, hasMoreAfter: false } };
+      } else if (query.includes('CommunityGreetingOptions')) {
+        await panelReady;
+        data = { communityGreeting: { welcomeMessageID: 'notice', joinedUserName: other.name, stamps: stamps.slice(0, 2) } };
+      } else if (query.includes('chatStamps')) {
+        data = { chatStamps: stamps };
+      }
+      await route.fulfill({ json: { data } });
+    });
+
+    await page.goto('/community/chat/welcome-room');
+    const latest = page.locator('[data-message-id="latest-stamp"]');
+    const stampImage = latest.locator('img').last();
+    await expect(stampImage).toBeInViewport({ ratio: 1 });
+    const listHeight = await latest.evaluate((row) => row.parentElement!.clientHeight);
+
+    showWelcome();
+    const panel = page.getByRole('group', { name: '新しいメンバーさんを歓迎しましょう！' });
+    await expect(panel).toBeVisible();
+    await expect(stampImage).toBeInViewport({ ratio: 1 });
+    expect(await latest.evaluate((row) => row.parentElement!.clientHeight)).toBe(listHeight);
+    const [stampBox, panelBox] = await Promise.all([stampImage.boundingBox(), panel.boundingBox()]);
+    expect(stampBox && panelBox && stampBox.y + stampBox.height <= panelBox.y).toBe(true);
+    expect(panelBox!.width).toBeLessThan(width);
   });
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -89,6 +89,35 @@ export const CommunityRoomPage = () => {
   const stampOptions = useMessageStampOptions(!!room);
 
   const messageListRef = useRef<HTMLDivElement>(null);
+  const messageListWrapperRef = useRef<HTMLDivElement>(null);
+  const welcomeOverlayRef = useRef<HTMLDivElement>(null);
+  const hasWelcomePanel = !!greeting;
+
+  useLayoutEffect(() => {
+    const wrapper = messageListWrapperRef.current;
+    const list = messageListRef.current;
+    const overlay = welcomeOverlayRef.current;
+    if (!wrapper || !list) return;
+
+    const updateClearance = () => {
+      const height = overlay
+        ? Math.ceil(wrapper.getBoundingClientRect().bottom - overlay.getBoundingClientRect().top)
+        : 0;
+      const property = '--chat-welcome-panel-space';
+      if (wrapper.style.getPropertyValue(property) === `${height}px`) return;
+
+      // 末尾を表示していた場合だけ、新しい余白のぶん末尾まで追従する。
+      const wasAtBottom = list.scrollHeight - list.clientHeight - list.scrollTop <= 2;
+      wrapper.style.setProperty(property, `${height}px`);
+      if (wasAtBottom) list.scrollTop = list.scrollHeight;
+    };
+
+    updateClearance();
+    if (!overlay) return;
+    const observer = new ResizeObserver(updateClearance);
+    observer.observe(overlay);
+    return () => observer.disconnect();
+  }, [hasWelcomePanel]);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
@@ -266,7 +295,7 @@ export const CommunityRoomPage = () => {
         <ThreadListButton parentRoomID={roomId ?? ''} />
       </div>
 
-      <div className={styles.messageListWrapper}>
+      <div className={styles.messageListWrapper} ref={messageListWrapperRef}>
         <div className={styles.messageList} ref={messageListRef}>
           <div ref={topSentinelRef} className={styles.scrollSentinel} />
           {loadingOlder && (
@@ -323,19 +352,21 @@ export const CommunityRoomPage = () => {
           {loadingNewer && (
             <p className={pageStyles.loadingText}>読み込み中...</p>
           )}
+          <div className={pageStyles.welcomeClearance} aria-hidden="true" />
           <div ref={bottomRef} />
         </div>
 
         <NewMessagesBadge count={newMessageCount} isAtBottom={isAtBottom} onClick={scrollToLatest} />
+        {greeting && (
+          <div className={pageStyles.welcomeOverlay} ref={welcomeOverlayRef}>
+            <CommunityWelcomeSuggestions
+              key={greeting.welcomeMessageID}
+              greeting={greeting}
+              onSend={(stampID) => sendGreeting(greeting.welcomeMessageID, stampID)}
+            />
+          </div>
+        )}
       </div>
-
-      {greeting && (
-        <CommunityWelcomeSuggestions
-          key={greeting.welcomeMessageID}
-          greeting={greeting}
-          onSend={(stampID) => sendGreeting(greeting.welcomeMessageID, stampID)}
-        />
-      )}
 
       <ChatInput
         onCreateThread={threadActions.create}

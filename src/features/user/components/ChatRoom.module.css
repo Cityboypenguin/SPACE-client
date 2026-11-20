@@ -581,7 +581,7 @@
 
 .scrollToLatest {
   position: absolute;
-  bottom: 12px;
+  bottom: calc(12px + var(--chat-welcome-panel-space, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;

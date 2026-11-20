@@ -25,12 +25,24 @@
   overflow-wrap: anywhere;
 }
 
+.welcomeOverlay {
+  position: absolute;
+  inset-inline-end: .75rem;
+  inset-block-end: .375rem;
+  z-index: 2;
+  width: max-content;
+  max-width: min(25rem, calc(100% - 1.5rem));
+  max-height: 55%;
+  overflow-y: auto;
+  border-radius: .75rem;
+}
+
+.welcomeClearance {
+  flex: 0 0 var(--chat-welcome-panel-space, 0px);
+}
+
 .welcomePanel {
-  align-self: flex-end;
-  flex: 0 0 auto;
   box-sizing: border-box;
-  max-width: calc(100% - 1.5rem);
-  margin: .375rem .75rem;
   padding: .5rem .75rem;
   border: 1px solid var(--color-border);
   border-radius: .75rem;
