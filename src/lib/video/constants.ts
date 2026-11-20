@@ -32,3 +32,7 @@ export const THUMBNAIL_MAX_BYTES = 500 * 1024;
 // 選べる形式。拡張子や MIME だけでは決めず、中身は圧縮の前に読んで確かめる。
 // iPhone の録画（.mov）や Android の .mp4、PC の .webm を受け付ける。
 export const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'];
+
+// isVideoFile は写真の追加ボタンなどで選ばれたファイルが動画か。type が空の端末があるので拡張子でも見る。
+export const isVideoFile = (file: File): boolean =>
+  file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm)$/i.test(file.name);

@@ -12,7 +12,7 @@ import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
 import styles from './PostComposer.module.css';
 import { type Media } from '../../../../lib/media';
 import { type Video } from '../../../../lib/video/fields';
-import { ACCEPTED_VIDEO_TYPES } from '../../../../lib/video/constants';
+import { ACCEPTED_VIDEO_TYPES, isVideoFile } from '../../../../lib/video/constants';
 import type { VideoDraftController } from '../../hooks/useVideoDraft';
 import { VideoDraftPanel } from '../molecules/VideoDraftPanel';
 
@@ -135,7 +135,9 @@ export const PostComposer = ({
   enableMentionSuggestions = true,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
+  // 写真の追加ボタンから動画も選べる（動画を付けられる入力欄のとき）。
+  const canAttach = !!onFileSelect || !!videoDraft;
+  const acceptTypes = [...(onFileSelect ? ACCEPTED_IMAGE_TYPES : []), ...(videoDraft ? ACCEPTED_VIDEO_TYPES : [])].join(',');
   const existingVideoVisible = !!existingVideo && !existingVideoRemoved;
   // 動画が付いている（圧縮中を含む）あいだは画像を足せない。
   const hasVideo = (videoDraft?.hasVideo ?? false) || existingVideoVisible;
@@ -254,7 +256,31 @@ export const PostComposer = ({
     previewUrlCacheRef.current.clear();
   }, []);
 
+  // addFiles は写真の追加ボタン・ドラッグ＆ドロップ・貼り付けの共通の入口。動画が混ざっていれば
+  // 動画として扱う（動画は1本だけで、画像とは一緒に付けられない）。
   const addFiles = (incoming: File[]) => {
+    const videos = incoming.filter(isVideoFile);
+    if (videos.length > 0) {
+      if (!videoDraft) {
+        addToast('ここには動画を付けられません。', 'error');
+        return;
+      }
+      if (incoming.length > 1) {
+        addToast('動画は1本だけ、画像とは別に選んでください。', 'error');
+        return;
+      }
+      if (hasVideo) {
+        addToast('動画は1本までです。', 'error');
+        return;
+      }
+      if (totalMediaCount > 0) {
+        addToast('動画と画像は同時に付けられません。', 'error');
+        return;
+      }
+      videoDraft.select(videos[0]);
+      return;
+    }
+    if (!onFileSelect) return;
     if (hasVideo) {
       addToast('動画と画像は同時に付けられません。', 'error');
       return;
@@ -288,7 +314,7 @@ export const PostComposer = ({
   // ▼ 新規追加: ドラッグ＆ドロップイベントのハンドラー
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    if (!submitting && onFileSelect && totalMediaCount < MAX_IMAGES) {
+    if (!submitting && canAttach && totalMediaCount < MAX_IMAGES) {
       setIsDragging(true);
     }
   };
@@ -302,7 +328,7 @@ export const PostComposer = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (submitting || !onFileSelect) return;
+    if (submitting || !canAttach) return;
 
     const incoming = Array.from(e.dataTransfer.files);
     if (!incoming.length) return;
@@ -333,18 +359,6 @@ export const PostComposer = ({
   const overLimit = maxLength !== undefined && value.length > maxLength;
   // 圧縮中・アップロード中は送らせない（同じ投稿を二重に送らないため）。
   const canSubmit = !submitting && hasAnyContent && !overLimit && !(videoDraft?.busy ?? false);
-
-  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    // 同じファイルを選び直せるよう、値は毎回空にする。
-    e.target.value = '';
-    if (!file || !videoDraft) return;
-    if (totalMediaCount > 0) {
-      addToast('動画と画像は同時に付けられません。', 'error');
-      return;
-    }
-    videoDraft.select(file);
-  };
 
   return (
     <div
@@ -504,12 +518,12 @@ export const PostComposer = ({
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={`${styles.footer} ${large ? styles.footerLarge : styles.footerSmall}`}>
-          {onFileSelect && (
+          {canAttach && (
             <input
               ref={fileInputRef}
               type="file"
               multiple /* ← ▼ 追加: ファイル選択ダイアログで複数選択を許可 */
-              accept={ACCEPTED_IMAGE_TYPES.join(',')}
+              accept={acceptTypes}
               onChange={handleFileChange}
               className={styles.hiddenInput}
             />
@@ -524,35 +538,17 @@ export const PostComposer = ({
               {cancelLabel}
             </button>
           )}
-          {videoDraft && (
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept={ACCEPTED_VIDEO_TYPES.join(',')}
-              onChange={handleVideoChange}
-              className={styles.hiddenInput}
-            />
-          )}
-          {videoDraft && totalMediaCount === 0 && !hasVideo && (
-            <button
-              type="button"
-              className={styles.videoButton}
-              onClick={() => videoInputRef.current?.click()}
-              disabled={submitting}
-              title="動画を追加（60秒まで）"
-            >
-              動画
-            </button>
-          )}
-          {onFileSelect && totalMediaCount === 0 && !hasVideo && (
+          {canAttach && totalMediaCount === 0 && !hasVideo && (
             <button
               type="button"
               className={styles.cameraButton}
               onClick={() => fileInputRef.current?.click()}
               disabled={submitting}
-              title={`写真を追加 (最大${MAX_IMAGES}枚)`}
+              title={videoDraft
+                ? `写真（最大${MAX_IMAGES}枚）または動画（1本・60秒まで）を追加`
+                : `写真を追加 (最大${MAX_IMAGES}枚)`}
             >
-              <img src={cameraIcon} alt="写真を追加" className={`${styles.cameraIcon} themed-icon`} />
+              <img src={cameraIcon} alt={videoDraft ? '写真・動画を追加' : '写真を追加'} className={`${styles.cameraIcon} themed-icon`} />
             </button>
           )}
           <button

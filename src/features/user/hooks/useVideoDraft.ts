@@ -14,13 +14,17 @@ import { uploadCompressedVideo } from '../api/video';
 
 // 投稿・メッセージの入力欄に付ける動画1本ぶんの状態。
 //
-//   idle → compressing → ready → uploading → (送信が成功したら clear で idle)
-//                      ↘ error
+//   idle → checking → compressing → ready → uploading → (送信が成功したら clear で idle)
+//              ↘ error      ↘ error
+//
+// checking は圧縮の前の確認（長さ・解像度・形式・この端末で扱えるか）。ここで通らない動画は
+// 圧縮せずに理由を出す。compressing には圧縮した後の確認（verifying）も含む。
 //
 // 圧縮は選んだ直後に始める（送信ボタンを押す前にプレビューできるように）。
 // アップロードは送信のときに行う（送らずにやめた動画を置き場へ上げないため）。
 export type VideoDraftState =
   | { status: 'idle' }
+  | { status: 'checking' }
   | { status: 'compressing'; phase: CompressPhase; progress: number; attempt: number }
   | { status: 'ready'; result: CompressResult; previewUrl: string; thumbnailUrl: string }
   | { status: 'uploading'; result: CompressResult; previewUrl: string; thumbnailUrl: string; progress: number }
@@ -36,7 +40,7 @@ export type VideoDraftController = {
   // upload は圧縮済みの動画を上げ、送信に渡すキーを返す。ready でなければ null。
   upload: () => Promise<VideoInput | null>;
   hasVideo: boolean;
-  // busy は圧縮中・アップロード中（送信させない）。
+  // busy は確認中・圧縮中・アップロード中（送信させない）。
   busy: boolean;
 };
 
@@ -82,9 +86,11 @@ export const useVideoDraft = (): VideoDraftController => {
       setState({ status: 'error', message: 'このブラウザーでは動画を投稿できません。' });
       return;
     }
-    setState({ status: 'compressing', phase: 'analyzing', progress: 0, attempt: 1 });
+    setState({ status: 'checking' });
     const job = compressVideo(file, (p) => {
       setState((prev) => (prev.status === 'compressing' ? { status: 'compressing', ...p } : prev));
+    }, () => {
+      setState((prev) => (prev.status === 'checking' ? { status: 'compressing', phase: 'compressing', progress: 0, attempt: 1 } : prev));
     });
     jobRef.current = job;
     job.promise
@@ -143,6 +149,6 @@ export const useVideoDraft = (): VideoDraftController => {
     clear,
     upload,
     hasVideo: state.status !== 'idle' && state.status !== 'error',
-    busy: state.status === 'compressing' || state.status === 'uploading',
+    busy: state.status === 'checking' || state.status === 'compressing' || state.status === 'uploading',
   };
 };

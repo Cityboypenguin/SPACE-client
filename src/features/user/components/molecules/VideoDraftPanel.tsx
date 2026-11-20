@@ -3,8 +3,8 @@ import { useRetentionDays } from '../../hooks/useRetentionDays';
 import styles from './VideoDraftPanel.module.css';
 
 const PHASE_LABEL = {
-  analyzing: '動画を確認しています',
   compressing: '動画を圧縮しています',
+  verifying: '圧縮した動画を確認しています',
   thumbnail: 'サムネイルを作っています',
 } as const;
 
@@ -27,6 +27,19 @@ export const VideoDraftPanel = ({ draft }: Props) => {
       <div className={styles.panel} role="alert">
         <p className={styles.error}>{state.message}</p>
         <button type="button" className={styles.textButton} onClick={draft.clear}>閉じる</button>
+      </div>
+    );
+  }
+
+  if (state.status === 'checking') {
+    return (
+      <div className={styles.panel} aria-live="polite">
+        <div className={styles.progressRow}>
+          <span>投稿できる動画か確認しています…</span>
+          <button type="button" className={styles.textButton} onClick={draft.cancel}>キャンセル</button>
+        </div>
+        <progress className={styles.progress} max={1} />
+        <p className={styles.hint}>長さ（60秒まで）・解像度・形式を確かめてから圧縮します。</p>
       </div>
     );
   }

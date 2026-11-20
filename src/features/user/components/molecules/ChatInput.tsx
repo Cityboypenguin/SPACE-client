@@ -1,4 +1,4 @@
-import { ACCEPTED_VIDEO_TYPES } from '../../../../lib/video/constants';
+import { ACCEPTED_VIDEO_TYPES, isVideoFile } from '../../../../lib/video/constants';
 import type { VideoDraftController } from '../../hooks/useVideoDraft';
 import { VideoDraftPanel } from './VideoDraftPanel';
 import { useRef, useEffect, useState } from 'react';
@@ -69,7 +69,6 @@ export const ChatInput = ({
   stampOptions = [], onSendStamp, videoDraft,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
   const hasVideo = videoDraft?.hasVideo ?? false;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
@@ -147,8 +146,35 @@ export const ChatInput = ({
     };
   }, [selectedFiles]);
 
+  // addFiles は添付ボタン・ドラッグ＆ドロップ・貼り付けの共通の入口。動画が混ざっていれば
+  // 動画として扱う（動画は1本だけで、画像とは一緒に送らない）。
   const addFiles = (incoming: File[]) => {
-    if (hasVideo) return; // 動画と画像は同時に送らない
+    const videos = incoming.filter(isVideoFile);
+    if (videos.length > 0) {
+      if (!videoDraft) {
+        alert('ここには動画を送れません。');
+        return;
+      }
+      if (incoming.length > 1) {
+        alert('動画は1本だけ、画像とは別に選んでください。');
+        return;
+      }
+      if (hasVideo) {
+        alert('動画は1本までです。');
+        return;
+      }
+      if (selectedFiles.length > 0) {
+        alert('画像と動画は同時に送れません。');
+        return;
+      }
+      videoDraft.select(videos[0]);
+      textareaRef.current?.focus();
+      return;
+    }
+    if (hasVideo) {
+      alert('画像と動画は同時に送れません。');
+      return;
+    }
     const invalid = incoming.find((f) => !ACCEPTED_FILE_TYPES.includes(f.type));
     if (invalid) {
       alert('JPEG・PNG・GIF・WebP・SVG のみ送信できます。');
@@ -171,13 +197,6 @@ export const ChatInput = ({
     if (!incoming.length) return;
     addFiles(incoming);
     e.target.value = '';
-  };
-
-  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !videoDraft) return;
-    videoDraft.select(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -332,33 +351,16 @@ export const ChatInput = ({
       )}
       {videoDraft && <VideoDraftPanel draft={videoDraft} />}
       <form onSubmit={handleFormSubmit} className={styles.inputForm}>
-        {videoDraft && (
-          <>
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept={ACCEPTED_VIDEO_TYPES.join(',')}
-              onChange={handleVideoChange}
-              className={styles.hiddenInput}
-            />
-            <button
-              type="button"
-              aria-label="動画を添付"
-              title={selectedFiles.length > 0 ? '画像と動画は同時に送れません' : '動画を添付（60秒まで）'}
-              onClick={() => videoInputRef.current?.click()}
-              disabled={disabled || isBlocked || hasVideo || selectedFiles.length > 0}
-              className={styles.videoButton}
-            >
-              動画
-            </button>
-          </>
-        )}
         <button
           type="button"
           aria-label="ファイルを添付"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES || hasVideo}
-          title={isBlocked ? 'このルームには送信できないため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
+          title={isBlocked
+            ? 'このルームには送信できないため添付できません'
+            : videoDraft
+              ? `画像（${selectedFiles.length}/${MAX_FILES}）または動画（1本・60秒まで）を添付`
+              : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
           className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
         >
           <img
@@ -387,7 +389,7 @@ export const ChatInput = ({
           ref={fileInputRef}
           type="file"
           multiple
-          accept={ACCEPTED_FILE_TYPES.join(',')}
+          accept={[...ACCEPTED_FILE_TYPES, ...(videoDraft ? ACCEPTED_VIDEO_TYPES : [])].join(',')}
           onChange={handleFileChange}
           className={styles.hiddenInput}
         />
