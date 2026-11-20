@@ -21,7 +21,7 @@ const routes: { path: string; heading: string }[] = [
 for (const { path, heading } of routes) {
   test(`${path} が表示される`, async ({ page }) => {
     await page.goto(path);
-    await expect(page.getByText(heading).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: heading, level: 1, exact: true })).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}$`));
   });
 }

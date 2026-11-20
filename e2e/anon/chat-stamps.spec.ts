@@ -171,7 +171,7 @@ test('admin creates a draft, publishes, stops and changes usage independently', 
     animations: 'disabled',
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'メニュー開閉' }).click();
+  await page.getByRole('button', { name: 'メニューを開く', exact: true }).click();
   await expect
     .poll(async () =>
       page.evaluate(
