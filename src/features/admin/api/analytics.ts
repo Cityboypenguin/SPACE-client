@@ -21,6 +21,10 @@ export type AnalyticsSummary = {
   totalLikes: number;
   totalCommunities: number;
   totalMessages: number;
+  // メッセージの種類別（スレッドの中の発言は親の種類に入る）。合計は totalMessages。
+  dmMessages: number;
+  communityMessages: number;
+  courseMessages: number;
   totalReports: number;
   totalBlocks: number;
   totalInquiries: number;
@@ -32,6 +36,9 @@ export type AnalyticsSummary = {
   postsToday: number;
   commentsToday: number;
   messagesToday: number;
+  dmMessagesToday: number;
+  communityMessagesToday: number;
+  courseMessagesToday: number;
   avgLikesPerPost: number;
   avgCommentsPerPost: number;
   postsTextOnly: number;
@@ -83,9 +90,9 @@ const AdminGetAnalyticsDocument = graphql(`
     adminGetAnalytics {
       totalUsers newUsersToday newUsersThisWeek newUsersThisMonth frozenUsersCount
       totalPosts totalComments totalDeletedPosts totalLikes totalCommunities
-      totalMessages totalReports totalBlocks totalInquiries
+      totalMessages dmMessages communityMessages courseMessages totalReports totalBlocks totalInquiries
       currentActiveUsers dau wau mau dauMauRatio
-      postsToday commentsToday messagesToday
+      postsToday commentsToday messagesToday dmMessagesToday communityMessagesToday courseMessagesToday
       avgLikesPerPost avgCommentsPerPost
       postsTextOnly postsWithImage postsWithVideo
       uniqueDMSenders
@@ -124,6 +131,9 @@ export type TimeSeriesPoint = {
   posts: number;
   comments: number;
   messages: number;
+  dmMessages: number;
+  communityMessages: number;
+  courseMessages: number;
   newUsers: number;
   likes: number;
   activeUsers: number;
@@ -132,7 +142,7 @@ export type TimeSeriesPoint = {
 const AdminGetTimeSeriesDocument = graphql(`
   query AdminGetTimeSeries($granularity: TimeSeriesGranularity!, $from: String!, $to: String!) {
     adminGetTimeSeries(granularity: $granularity, from: $from, to: $to) {
-      points { label posts comments messages newUsers likes activeUsers }
+      points { label posts comments messages dmMessages communityMessages courseMessages newUsers likes activeUsers }
     }
   }
 `);

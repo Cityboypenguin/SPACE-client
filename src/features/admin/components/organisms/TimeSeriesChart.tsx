@@ -11,7 +11,10 @@ import styles from './TimeSeriesChart.module.css';
 const METRICS = [
   { key: 'posts',       label: '投稿',             color: '#3b82f6' },
   { key: 'comments',    label: 'コメント',         color: '#10b981' },
-  { key: 'messages',    label: 'DM',               color: '#8b5cf6' },
+  { key: 'messages',          label: 'メッセージ（合計）', color: '#8b5cf6' },
+  { key: 'dmMessages',        label: 'DM',               color: '#a855f7' },
+  { key: 'communityMessages', label: 'コミュニティ',     color: '#ec4899' },
+  { key: 'courseMessages',    label: '授業チャット',     color: '#84cc16' },
   { key: 'newUsers',    label: '新規登録',         color: '#f59e0b' },
   { key: 'likes',       label: 'いいね',           color: '#ef4444' },
   { key: 'activeUsers', label: 'アクティブユーザー（直近3日）', color: '#06b6d4' },
@@ -68,7 +71,9 @@ export const TimeSeriesChart = ({ currentActiveUsers }: { currentActiveUsers: nu
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [visible, setVisible] = useState<Record<MetricKey, boolean>>({
-    posts: true, comments: true, messages: true, newUsers: true, likes: true, activeUsers: true,
+    // メッセージは種類別の3本を出し、合計は必要なときだけ出す。
+    posts: true, comments: true, messages: false, dmMessages: true, communityMessages: true, courseMessages: true,
+    newUsers: true, likes: true, activeUsers: true,
   });
 
   const load = useCallback(() => {
@@ -97,8 +102,8 @@ export const TimeSeriesChart = ({ currentActiveUsers }: { currentActiveUsers: nu
     setVisible(v => ({ ...v, [key]: !v[key] }));
 
   const exportCsv = () => {
-    const header = ['日時', '投稿', 'コメント', 'DM', '新規登録', 'いいね', 'アクティブユーザー（直近3日）'];
-    const rows = data.map(d => [d.label, d.posts, d.comments, d.messages, d.newUsers, d.likes, d.activeUsers]);
+    const header = ['日時', '投稿', 'コメント', 'メッセージ（合計）', 'DM', 'コミュニティ', '授業チャット', '新規登録', 'いいね', 'アクティブユーザー（直近3日）'];
+    const rows = data.map(d => [d.label, d.posts, d.comments, d.messages, d.dmMessages, d.communityMessages, d.courseMessages, d.newUsers, d.likes, d.activeUsers]);
     downloadCsv(`timeseries_${from}_${to}.csv`, [header, ...rows]);
   };
 

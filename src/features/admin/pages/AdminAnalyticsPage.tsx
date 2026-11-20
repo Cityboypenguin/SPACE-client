@@ -46,7 +46,10 @@ function exportSummaryCsv(data: AnalyticsSummary) {
     ['コメント数', data.totalComments],
     ['いいね数', data.totalLikes],
     ['コミュニティ数', data.totalCommunities],
-    ['DM送信数', data.totalMessages],
+    ['メッセージ数（合計）', data.totalMessages],
+    ['DM数', data.dmMessages],
+    ['コミュニティのメッセージ数', data.communityMessages],
+    ['授業チャットのメッセージ数', data.courseMessages],
     ['DM送信ユーザー数', data.uniqueDMSenders],
     ['通報数', data.totalReports],
     ['未対応通報数', data.pendingReports],
@@ -55,7 +58,10 @@ function exportSummaryCsv(data: AnalyticsSummary) {
     ['問い合わせ数', data.totalInquiries],
     ['本日の投稿数', data.postsToday],
     ['本日のコメント数', data.commentsToday],
-    ['本日のDM数', data.messagesToday],
+    ['本日のメッセージ数（合計）', data.messagesToday],
+    ['本日のDM数', data.dmMessagesToday],
+    ['本日のコミュニティのメッセージ数', data.communityMessagesToday],
+    ['本日の授業チャットのメッセージ数', data.courseMessagesToday],
     ['投稿あたり平均いいね', data.avgLikesPerPost],
     ['投稿あたり平均コメント', data.avgCommentsPerPost],
     ['テキストのみの投稿数', data.postsTextOnly],
@@ -151,7 +157,10 @@ export const AdminAnalyticsPage = () => {
             <Stat label="コメント数" value={fmtInt(data.totalComments)} />
             <Stat label="いいね数" value={fmtInt(data.totalLikes)} />
             <Stat label="コミュニティ数" value={fmtInt(data.totalCommunities)} />
-            <Stat label="DM送信数" value={fmtInt(data.totalMessages)} sub={`送信ユーザー: ${fmtInt(data.uniqueDMSenders)}`} />
+            <Stat label="メッセージ数（合計）" value={fmtInt(data.totalMessages)} />
+            <Stat label="DM数" value={fmtInt(data.dmMessages)} sub={`送信ユーザー: ${fmtInt(data.uniqueDMSenders)}`} />
+            <Stat label="コミュニティのメッセージ数" value={fmtInt(data.communityMessages)} sub="スレッド内を含む" />
+            <Stat label="授業チャットのメッセージ数" value={fmtInt(data.courseMessages)} sub="スレッド内を含む" />
             <Stat label="通報数" value={fmtInt(data.totalReports)} sub={`未対応: ${fmtInt(data.pendingReports)}`} />
             <Stat label="ブロック数" value={fmtInt(data.totalBlocks)} />
             <Stat label="問い合わせ数" value={fmtInt(data.totalInquiries)} />
@@ -217,7 +226,10 @@ export const AdminAnalyticsPage = () => {
           <div className={styles.analyticsGrid}>
             <Stat label="本日の投稿数" value={fmtInt(data.postsToday)} />
             <Stat label="本日のコメント数" value={fmtInt(data.commentsToday)} />
-            <Stat label="本日のDM数" value={fmtInt(data.messagesToday)} />
+            <Stat label="本日のメッセージ数（合計）" value={fmtInt(data.messagesToday)} />
+            <Stat label="本日のDM数" value={fmtInt(data.dmMessagesToday)} />
+            <Stat label="本日のコミュニティのメッセージ数" value={fmtInt(data.communityMessagesToday)} />
+            <Stat label="本日の授業チャットのメッセージ数" value={fmtInt(data.courseMessagesToday)} />
             <Stat label="投稿あたり平均いいね" value={fmt(data.avgLikesPerPost)} />
             <Stat label="投稿あたり平均コメント" value={fmt(data.avgCommentsPerPost)} />
             <Stat label="テキストのみの投稿" value={fmtInt(data.postsTextOnly)} />
