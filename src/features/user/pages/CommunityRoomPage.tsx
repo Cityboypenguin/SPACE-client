@@ -202,6 +202,11 @@ export const CommunityRoomPage = () => {
 
   const openDetail = () => setShowDetail(true);
   const closeDetail = () => setShowDetail(false);
+  // メンバーでなくなる（退出・追放）ときは、開いていた詳細モーダルの記録を消す。
+  // 残すと、入り直したときにモーダルが開いた状態から始まってしまう。
+  const forgetDetail = () => {
+    if (detailStorageKey) sessionStorage.removeItem(detailStorageKey);
+  };
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportingMessage, setReportingMessage] = useState<Message | null>(null);
 
@@ -265,6 +270,7 @@ export const CommunityRoomPage = () => {
       // 退出でメンバーが減るので、メンバー一覧のキャッシュを捨てる。
       if (communityID) await invalidateCommunityMembers(communityID);
       void mutateCommunities();
+      forgetDetail();
       navigate('/community', { replace: true });
     } catch (err) {
       setLeaveError(toUserMessage(err, '退出に失敗しました。'));
@@ -273,9 +279,10 @@ export const CommunityRoomPage = () => {
 
   useEffect(() => {
     if (error && error.includes('not a member of this room')) {
+      if (detailStorageKey) sessionStorage.removeItem(detailStorageKey);
       navigate('/community', { replace: true });
     }
-  }, [error, navigate]);
+  }, [error, navigate, detailStorageKey]);
 
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
   const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.user.ID === currentUserID);
