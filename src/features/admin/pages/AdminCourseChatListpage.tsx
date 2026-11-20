@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import { useNavigate } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { CourseChatAdminTabs } from '../components/molecules/CourseChatAdminTabs';
@@ -22,85 +23,22 @@ import { getCourseChatEnabled, toggleCourseChat } from '../api/maintenance';
 type SortField = 'registeredCount' | 'messageCount' | 'createdAt';
 type SortOrder = 'desc' | 'asc';
 
-const COURSE_LIST_CACHE_TTL = 5 * 60 * 1000;
-const COURSE_LIST_CACHE_LIMIT = 30;
-
-type CourseListQuery = {
-  page: number;
-  pageSize: number;
-  keyword: string;
-  sortField: SortField;
-  sortOrder: SortOrder;
-  year: string;
-  semester: string;
-  dayOfWeek: string;
-};
-
-type CourseListResult = { items: CourseWithRegisteredCount[]; total: number };
-
-const courseListCache = new Map<string, { result: CourseListResult; cachedAt: number }>();
-let courseYearsCache: { years: number[]; cachedAt: number } | null = null;
-
-const getCourseListCache = (query: CourseListQuery): CourseListResult | null => {
-  const key = JSON.stringify(query);
-  const cached = courseListCache.get(key);
-  if (!cached) return null;
-  if (Date.now() - cached.cachedAt > COURSE_LIST_CACHE_TTL) {
-    courseListCache.delete(key);
-    return null;
-  }
-  return cached.result;
-};
-
-const setCourseListCache = (query: CourseListQuery, result: CourseListResult) => {
-  const key = JSON.stringify(query);
-  if (!courseListCache.has(key) && courseListCache.size >= COURSE_LIST_CACHE_LIMIT) {
-    const oldestKey = courseListCache.keys().next().value;
-    if (oldestKey) courseListCache.delete(oldestKey);
-  }
-  courseListCache.set(key, { result, cachedAt: Date.now() });
-};
-
 export const AdminCourseChatListPage: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  const [pageSize, setPageSize] = usePersistedPageSize('courseChats');
-  const [initialCache] = useState(() => getCourseListCache({
-    page: 0,
-    pageSize,
-    keyword: '',
-    sortField: 'registeredCount',
-    sortOrder: 'desc',
-    year: '',
-    semester: '',
-    dayOfWeek: '',
-  }));
-  const [chats, setChats] = useState<CourseWithRegisteredCount[]>(initialCache?.items ?? []);
-  const [total, setTotal] = useState(initialCache?.total ?? 0);
   const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(!initialCache);
+  const [pageSize, setPageSizeState] = usePersistedPageSize('courseChats');
   const [error, setError] = useState('');
 
-  const [years, setYears] = useState<number[]>(() => (
-    courseYearsCache && Date.now() - courseYearsCache.cachedAt <= COURSE_LIST_CACHE_TTL
-      ? courseYearsCache.years
-      : []
-  ));
   const [filterYear, setFilterYear] = useState('');
   const [filterSemester, setFilterSemester] = useState('');
   const [filterDayOfWeek, setFilterDayOfWeek] = useState('');
-  useEffect(() => {
-    if (courseYearsCache && Date.now() - courseYearsCache.cachedAt <= COURSE_LIST_CACHE_TTL) {
-      return;
-    }
-    listCourseYears()
-      .then((items) => {
-        courseYearsCache = { years: items, cachedAt: Date.now() };
-        setYears(items);
-      })
-      .catch(() => setError('年度の取得に失敗しました'));
-  }, []);
+  // 年度の一覧はほぼ変わらないので、画面を開き直しても取り直さない。
+  const { data: years = [], error: yearsError } = useSWR('admin-course-years', listCourseYears, {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+  });
 
   // 検索・ソート用ステート
   const [filterKeyword, setFilterKeyword] = useState('');
@@ -114,72 +52,42 @@ export const AdminCourseChatListPage: React.FC = () => {
   const [courseChatToggling, setCourseChatToggling] = useState(false);
   const [showCourseChatConfirm, setShowCourseChatConfirm] = useState(false);
 
-  const totalPages = Math.ceil(total / pageSize);
-
-  const loadPage = useCallback(
-    (
-      p: number,
-      size = pageSize,
-      keyword = appliedKeyword,
-      sortBy = sortField,
-      order = sortOrder,
-      useCache = false,
-    ) => {
-      const query: CourseListQuery = {
-        page: p,
-        pageSize: size,
-        keyword: keyword.trim(),
-        sortField: sortBy,
+  // 一覧は SWR に任せる。前回開いたときの一覧（同じ条件）をすぐ出しつつ、裏で必ず取り直すので、
+  // 画面を行き来しても待たされず、登録者数・メッセージ数が古いまま残ることもない。
+  // ページ・件数・並び・絞り込みはすべてキーに入っているので、変えればその条件で取り直す。
+  const listKey = [
+    'admin-course-chats', page, pageSize, appliedKeyword.trim(), sortField, sortOrder,
+    filterYear, filterSemester, filterDayOfWeek,
+  ] as const;
+  const { data: listData, error: listError, isLoading, mutate: refreshList } = useSWR(
+    listKey,
+    ([, p, size, keyword, sortBy, order, year, semester, dayOfWeek]) => listCourses(
+      {
+        keyword: keyword || undefined,
+        year: year ? Number(year) : undefined,
+        semester: semester || undefined,
+        dayOfWeek: dayOfWeek || undefined,
+        sortBy,
         sortOrder: order,
-        year: filterYear,
-        semester: filterSemester,
-        dayOfWeek: filterDayOfWeek,
-      };
-      if (useCache) {
-        const cached = getCourseListCache(query);
-        if (cached) {
-          setChats(cached.items);
-          setTotal(cached.total);
-          setPage(p);
-          setError('');
-          setLoading(false);
-          return;
-        }
-      }
-      setLoading(true);
-      setError('');
-
-      listCourses(
-        {
-          keyword: keyword.trim() || undefined,
-          year: filterYear ? Number(filterYear) : undefined,
-          semester: filterSemester || undefined,
-          dayOfWeek: filterDayOfWeek || undefined,
-          sortBy,
-          sortOrder: order,
-        },
-        size,
-        p * size
-      )
-        .then((data) => {
-          setCourseListCache(query, data);
-          setChats(data.items);
-          setTotal(data.total);
-          setPage(p);
-        })
-        .catch((err) => {
-          setError(
-            err instanceof Error ? err.message : 'チャット一覧の取得に失敗しました'
-          );
-        })
-        .finally(() => setLoading(false));
-    },
-    [pageSize, appliedKeyword, sortField, sortOrder, filterYear, filterSemester, filterDayOfWeek]
+      },
+      size,
+      p * size,
+    ),
+    { keepPreviousData: true },
   );
+  const chats: CourseWithRegisteredCount[] = listData?.items ?? [];
+  const total = listData?.total ?? 0;
+  const loading = isLoading && !listData;
+  const totalPages = Math.ceil(total / pageSize);
+  const listErrorMessage = listError
+    ? (listError instanceof Error ? listError.message : 'チャット一覧の取得に失敗しました')
+    : '';
+  const shownError = error || listErrorMessage || (yearsError ? '年度の取得に失敗しました' : '');
 
-  useEffect(() => {
-    void Promise.resolve().then(() => loadPage(0, pageSize, appliedKeyword, sortField, sortOrder, true));
-  }, [loadPage, pageSize, appliedKeyword, sortField, sortOrder]);
+  const setPageSize = (size: number) => {
+    setPageSizeState(size);
+    setPage(0);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
@@ -210,7 +118,7 @@ export const AdminCourseChatListPage: React.FC = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setAppliedKeyword(filterKeyword);
-    loadPage(0, pageSize, filterKeyword, sortField, sortOrder);
+    setPage(0);
   };
 
   // ソート順変更ハンドラー
@@ -219,7 +127,7 @@ export const AdminCourseChatListPage: React.FC = () => {
     const newOrder = sortField === newField && sortOrder === 'desc' ? 'asc' : 'desc';
     setSortField(newField);
     setSortOrder(newOrder);
-    loadPage(0, pageSize, appliedKeyword, newField, newOrder);
+    setPage(0);
   };
 
   // 削除処理ハンドラー
@@ -239,7 +147,7 @@ export const AdminCourseChatListPage: React.FC = () => {
     try {
       await deleteCourse(chat.ID);
       addToast('チャットを削除しました', 'success');
-      loadPage(page);
+      void refreshList();
     } catch (err) {
       addToast(
         err instanceof Error ? err.message : 'チャットの削除に失敗しました',
@@ -260,15 +168,15 @@ export const AdminCourseChatListPage: React.FC = () => {
         <CourseChatAdminTabs />
 
         <div className={styles.filterForm}>
-          <select aria-label="年度" value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className={styles.select}>
+          <select aria-label="年度" value={filterYear} onChange={(e) => { setFilterYear(e.target.value); setPage(0); }} className={styles.select}>
             <option value="">年度（すべて）</option>
             {years.map((year) => <option key={year} value={year}>{year}年度</option>)}
           </select>
-          <select aria-label="学期" value={filterSemester} onChange={(e) => setFilterSemester(e.target.value)} className={styles.select}>
+          <select aria-label="学期" value={filterSemester} onChange={(e) => { setFilterSemester(e.target.value); setPage(0); }} className={styles.select}>
             <option value="">学期（すべて）</option>
             {['前期', '後期', '通年'].map((term) => <option key={term} value={term}>{term}</option>)}
           </select>
-          <select aria-label="曜日" value={filterDayOfWeek} onChange={(e) => setFilterDayOfWeek(e.target.value)} className={styles.select}>
+          <select aria-label="曜日" value={filterDayOfWeek} onChange={(e) => { setFilterDayOfWeek(e.target.value); setPage(0); }} className={styles.select}>
             <option value="">曜日（すべて）</option>
             {TIMETABLE_DAYS.map((day) => <option key={day} value={day}>{day}曜</option>)}
           </select>
@@ -311,7 +219,7 @@ export const AdminCourseChatListPage: React.FC = () => {
                 const [field, order] = e.target.value.split('-') as [SortField, SortOrder];
                 setSortField(field);
                 setSortOrder(order);
-                loadPage(0, pageSize, appliedKeyword, field, order);
+                setPage(0);
               }}
               className={styles.formInput}
               style={{ width: 'auto' }}
@@ -329,11 +237,11 @@ export const AdminCourseChatListPage: React.FC = () => {
           </div>
         </div>
 
-        {error && <p className={styles.centerError}>{error}</p>}
+        {shownError && <p className={styles.centerError}>{shownError}</p>}
 
         {loading ? (
           <p className={styles.emptyState}>読み込み中...</p>
-        ) : chats.length === 0 && !error ? (
+        ) : chats.length === 0 && !shownError ? (
           <p className={styles.emptyState}>該当するチャットはありません</p>
         ) : (
           <div className={styles.tablePanelPlain}>
@@ -408,8 +316,8 @@ export const AdminCourseChatListPage: React.FC = () => {
           <AdminPagination
             page={page}
             totalPages={totalPages}
-            onPrev={() => loadPage(page - 1)}
-            onNext={() => loadPage(page + 1)}
+            onPrev={() => setPage(page - 1)}
+            onNext={() => setPage(page + 1)}
           />
         )}
       </main>
