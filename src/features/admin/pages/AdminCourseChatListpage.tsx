@@ -22,23 +22,84 @@ import { getCourseChatEnabled, toggleCourseChat } from '../api/maintenance';
 type SortField = 'registeredCount' | 'messageCount' | 'createdAt';
 type SortOrder = 'desc' | 'asc';
 
+const COURSE_LIST_CACHE_TTL = 5 * 60 * 1000;
+const COURSE_LIST_CACHE_LIMIT = 30;
+
+type CourseListQuery = {
+  page: number;
+  pageSize: number;
+  keyword: string;
+  sortField: SortField;
+  sortOrder: SortOrder;
+  year: string;
+  semester: string;
+  dayOfWeek: string;
+};
+
+type CourseListResult = { items: CourseWithRegisteredCount[]; total: number };
+
+const courseListCache = new Map<string, { result: CourseListResult; cachedAt: number }>();
+let courseYearsCache: { years: number[]; cachedAt: number } | null = null;
+
+const getCourseListCache = (query: CourseListQuery): CourseListResult | null => {
+  const key = JSON.stringify(query);
+  const cached = courseListCache.get(key);
+  if (!cached) return null;
+  if (Date.now() - cached.cachedAt > COURSE_LIST_CACHE_TTL) {
+    courseListCache.delete(key);
+    return null;
+  }
+  return cached.result;
+};
+
+const setCourseListCache = (query: CourseListQuery, result: CourseListResult) => {
+  const key = JSON.stringify(query);
+  if (!courseListCache.has(key) && courseListCache.size >= COURSE_LIST_CACHE_LIMIT) {
+    const oldestKey = courseListCache.keys().next().value;
+    if (oldestKey) courseListCache.delete(oldestKey);
+  }
+  courseListCache.set(key, { result, cachedAt: Date.now() });
+};
+
 export const AdminCourseChatListPage: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  const [chats, setChats] = useState<CourseWithRegisteredCount[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize('courseChats');
-  const [loading, setLoading] = useState(false);
+  const [initialCache] = useState(() => getCourseListCache({
+    page: 0,
+    pageSize,
+    keyword: '',
+    sortField: 'registeredCount',
+    sortOrder: 'desc',
+    year: '',
+    semester: '',
+    dayOfWeek: '',
+  }));
+  const [chats, setChats] = useState<CourseWithRegisteredCount[]>(initialCache?.items ?? []);
+  const [total, setTotal] = useState(initialCache?.total ?? 0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState('');
 
-  const [years, setYears] = useState<number[]>([]);
+  const [years, setYears] = useState<number[]>(() => (
+    courseYearsCache && Date.now() - courseYearsCache.cachedAt <= COURSE_LIST_CACHE_TTL
+      ? courseYearsCache.years
+      : []
+  ));
   const [filterYear, setFilterYear] = useState('');
   const [filterSemester, setFilterSemester] = useState('');
   const [filterDayOfWeek, setFilterDayOfWeek] = useState('');
   useEffect(() => {
-    listCourseYears().then(setYears).catch(() => setError('年度の取得に失敗しました'));
+    if (courseYearsCache && Date.now() - courseYearsCache.cachedAt <= COURSE_LIST_CACHE_TTL) {
+      return;
+    }
+    listCourseYears()
+      .then((items) => {
+        courseYearsCache = { years: items, cachedAt: Date.now() };
+        setYears(items);
+      })
+      .catch(() => setError('年度の取得に失敗しました'));
   }, []);
 
   // 検索・ソート用ステート
@@ -61,8 +122,30 @@ export const AdminCourseChatListPage: React.FC = () => {
       size = pageSize,
       keyword = appliedKeyword,
       sortBy = sortField,
-      order = sortOrder
+      order = sortOrder,
+      useCache = false,
     ) => {
+      const query: CourseListQuery = {
+        page: p,
+        pageSize: size,
+        keyword: keyword.trim(),
+        sortField: sortBy,
+        sortOrder: order,
+        year: filterYear,
+        semester: filterSemester,
+        dayOfWeek: filterDayOfWeek,
+      };
+      if (useCache) {
+        const cached = getCourseListCache(query);
+        if (cached) {
+          setChats(cached.items);
+          setTotal(cached.total);
+          setPage(p);
+          setError('');
+          setLoading(false);
+          return;
+        }
+      }
       setLoading(true);
       setError('');
 
@@ -79,6 +162,7 @@ export const AdminCourseChatListPage: React.FC = () => {
         p * size
       )
         .then((data) => {
+          setCourseListCache(query, data);
           setChats(data.items);
           setTotal(data.total);
           setPage(p);
@@ -94,8 +178,8 @@ export const AdminCourseChatListPage: React.FC = () => {
   );
 
   useEffect(() => {
-    void Promise.resolve().then(() => loadPage(0));
-  }, [loadPage]);
+    void Promise.resolve().then(() => loadPage(0, pageSize, appliedKeyword, sortField, sortOrder, true));
+  }, [loadPage, pageSize, appliedKeyword, sortField, sortOrder]);
 
   useEffect(() => {
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
