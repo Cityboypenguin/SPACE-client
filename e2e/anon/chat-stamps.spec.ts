@@ -441,7 +441,7 @@ for (const width of [1360, 375]) {
     const listHeight = await latest.evaluate((row) => row.parentElement!.clientHeight);
 
     showWelcome();
-    const panel = page.getByRole('group', { name: '新しいメンバーさんを歓迎しましょう！' });
+    const panel = page.getByRole('group', { name: '新しいメンバーさんが参加しました！スタンプで歓迎しましょう' });
     await expect(panel).toBeVisible();
     await expect(stampImage).toBeInViewport({ ratio: 1 });
     expect(await latest.evaluate((row) => row.parentElement!.clientHeight)).toBe(listHeight);

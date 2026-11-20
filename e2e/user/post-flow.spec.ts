@@ -32,7 +32,7 @@ test.describe('投稿の作成・表示・いいね・返信・編集・削除',
       await dismissTermsConsentModalIfPresent(page);
 
       await page.getByPlaceholder('新規投稿').fill(postContent);
-      await page.getByRole('button', { name: '投稿', exact: true }).click();
+      await page.getByRole('button', { name: '投稿する', exact: true }).click();
       // 入力欄に残っている間は、下書きと投稿のどちらか区別できない。
       await expect(page.getByPlaceholder('新規投稿')).toHaveValue('');
       await expect(page.getByText(postContent)).toBeVisible();
