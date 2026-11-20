@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AdminCommunityJoinStamps } from '../components/organisms/AdminCommunityJoinStamps';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import {
   listChatStamps,
@@ -370,6 +371,7 @@ export const AdminChatStampsPage = () => {
             )}
           </section>
         </div>
+        {loaded && <AdminCommunityJoinStamps stamps={items} errorMessage={stampErrorMessage} />}
       </main>
     </div>
   );

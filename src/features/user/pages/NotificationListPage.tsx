@@ -1,3 +1,4 @@
+import { COMMUNITY_INVITATION_TYPE, individualInvitationPath } from '../lib/communityInvitationLinks';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -95,6 +96,7 @@ const TYPE_ICON: Record<string, ReactNode> = {
   dm: <ChatIcon />,
   [QUESTION_ADDENDUM_TYPE]: <ChatIcon />,
   [ANSWER_ADDENDUM_TYPE]: <ChatIcon />,
+  [COMMUNITY_INVITATION_TYPE]: <GroupIcon />,
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
   announcement: <BellIcon />,
@@ -259,7 +261,10 @@ export const NotificationListPage = () => {
       );
       decrementUnread();
     }
-    navigate(replyLink ?? `/notifications/${group.latestID}`);
+    const invitationLink = group.type === COMMUNITY_INVITATION_TYPE && group.targetID
+      ? individualInvitationPath(group.targetID)
+      : null;
+    navigate(invitationLink ?? replyLink ?? `/notifications/${group.latestID}`);
   };
 
   const handleMarkActorAllRead = async () => {

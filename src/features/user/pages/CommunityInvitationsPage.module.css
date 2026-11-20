@@ -1,0 +1,85 @@
+.page {
+  max-width: 720px;
+  margin-inline: auto;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+.list {
+  display: grid;
+  gap: .75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.list a,
+.card {
+  display: grid;
+  gap: .5rem;
+  padding: 1rem;
+  border: 1px solid currentColor;
+  border-radius: .75rem;
+}
+
+.card :is(h2, p) {
+  margin: 0;
+}
+
+.description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.page section + section {
+  margin-top: 1.5rem;
+}
+
+.page button,
+.page input {
+  border: 1px solid var(--color-border);
+  border-radius: .45rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  padding: .5rem .75rem;
+}
+
+.page button:enabled {
+  cursor: pointer;
+}
+
+.list a,
+.card {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.inviteRow,
+.linkBox {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.inviteRow {
+  justify-content: space-between;
+}
+
+.linkBox {
+  margin-top: .75rem;
+}
+
+.linkBox input {
+  min-width: 12rem;
+  flex: 1;
+}
+
+.linkBox p {
+  width: 100%;
+  margin: 0;
+}

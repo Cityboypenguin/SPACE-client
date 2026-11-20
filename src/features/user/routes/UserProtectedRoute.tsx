@@ -1,19 +1,22 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/useNotification';
 import { TermsConsentModal } from '../components/organisms/TermsConsentModal';
 import { WeeklyNoticeModal } from '../components/organisms/WeeklyNoticeModal';
 import { useWeeklyNotice } from '../hooks/useWeeklyNotice';
 import { UnreadRoomCountsProvider } from '../context/UnreadRoomCountsContext';
+import { invitationLoginReturn } from '../lib/communityInvitationLinks';
 import styles from './UserProtectedRoute.module.css';
 
 export const UserProtectedRoute = () => {
+  const location = useLocation();
   const { token, userId } = useAuth();
   const weeklyNotice = useWeeklyNotice(userId);
   const { pendingTerms, consentChecking, clearPendingTerms } = useNotification();
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    const returnTo = invitationLoginReturn(location.pathname + location.hash);
+    return <Navigate to="/login" state={returnTo ? { returnTo } : undefined} replace />;
   }
 
   if (consentChecking) {

@@ -3,6 +3,8 @@ import { useParams, useNavigate, useLocation, useSearchParams } from 'react-rout
 import useSWR from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
+import { CommunityGreetingButton } from '../components/molecules/CommunityGreetingButton';
+import { getCommunityGreeting, sendCommunityGreeting } from '../api/communityInvitations';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { useThreadActions } from '../hooks/useThreadActions';
 import { ThreadWorkspace, ThreadListButton } from '../components/organisms/ThreadWorkspace';
@@ -61,6 +63,21 @@ export const CommunityRoomPage = () => {
     addPendingMention,
     handleSend, handleSendStamp, handleToggleReaction, handleDelete, handleSaveEdit,
   } = useChatActions(roomId, addMessage, setMessageReactions);
+  const { data: greeting, mutate: refreshGreeting } = useSWR(
+    roomId && room && currentUserID ? ['community-greeting', currentUserID, roomId] : null,
+    () => getCommunityGreeting(roomId!),
+  );
+  const sendGreeting = async (welcomeMessageID: string, stampID: string) => {
+    if (!roomId) return;
+    try {
+      const message = await sendCommunityGreeting(roomId, welcomeMessageID, stampID);
+      addMessage({ ...message, media: [], mentions: [], reactions: [] });
+      void refreshGreeting(null, { revalidate: false });
+    } catch (err) {
+      void refreshGreeting();
+      throw new Error(toUserMessage(err, '挨拶を送れませんでした。'), { cause: err });
+    }
+  };
   const reactionEmojis = useMessageReactionEmojis(!!room);
   const stampOptions = useMessageStampOptions(!!room);
 
@@ -251,7 +268,7 @@ export const CommunityRoomPage = () => {
           {(error || sendError) && <p className={pageStyles.errorText}>{error || sendError}</p>}
 
           {messages.map((msg, index) => {
-            const isMine = msg.user.ID === currentUserID;
+            const isMine = !msg.isCommunityWelcome && msg.user.ID === currentUserID;
             const prevMsg = index > 0 ? messages[index - 1] : null;
             const nextMsg = index + 1 < messages.length ? messages[index + 1] : null;
             const isFirstUnread = index === firstUnreadIndex;
@@ -277,14 +294,17 @@ export const CommunityRoomPage = () => {
                   onCancelEdit={() => setEditingId(null)}
                   onEditContentChange={setEditContent}
                   onDelete={() => handleDelete(msg.ID)}
-                  onReply={() => setReplyTarget(msg)}
-                  onReport={() => setReportingMessage(msg)}
+                  onReply={msg.isCommunityWelcome ? undefined : () => setReplyTarget(msg)}
+                  onReport={msg.isCommunityWelcome ? undefined : () => setReportingMessage(msg)}
                   onJumpToMessage={jumpToMessage}
                   reactionEmojis={reactionEmojis}
                   onToggleReaction={(emoji, reacted) => handleToggleReaction(msg.ID, emoji, reacted)}
                   isGroupStart={isGroupStart}
                   isGroupEnd={isGroupEnd}
                 />
+                {msg.isCommunityWelcome && greeting?.welcomeMessageID === msg.ID && (
+                  <CommunityGreetingButton greeting={greeting} onSend={(stampID) => sendGreeting(msg.ID, stampID)} />
+                )}
               </Fragment>
             );
           })}

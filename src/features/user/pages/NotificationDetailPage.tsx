@@ -1,3 +1,4 @@
+import { COMMUNITY_INVITATION_TYPE, individualInvitationPath } from '../lib/communityInvitationLinks';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -25,6 +26,7 @@ const TYPE_LABEL: Record<string, string> = {
   [QUESTION_ADDENDUM_TYPE]: '質問への追記',
   [ANSWER_ADDENDUM_TYPE]: '回答への追記',
   dm: 'DM',
+  [COMMUNITY_INVITATION_TYPE]: 'コミュニティへの招待',
   community_kick: 'コミュニティからの退出',
   community_role: 'コミュニティ権限変更',
   announcement: 'お知らせ',
@@ -41,6 +43,7 @@ const ACTION_LABEL: Record<string, string> = {
   [MENTION_TYPE]: '投稿へいく',
   favorite: '投稿へいく',
   reply: '投稿へいく',
+  [COMMUNITY_INVITATION_TYPE]: '招待を確認する',
   community_kick: 'コミュニティへいく',
   community_role: 'コミュニティへいく',
   announcement: 'お知らせへいく',
@@ -50,6 +53,7 @@ const ACTION_LABEL: Record<string, string> = {
 const TARGET_PATH: Record<string, (id: string) => string> = {
   post: (id) => `/posts/${id}`,
   room: (id) => `/community/chat/${id}`,
+  communityInvitation: individualInvitationPath,
   community: () => `/community`,
   announcement: (id) => `/announcements/${id}`,
   // シラバス同期で時間割から外した授業（timetable_removed）。授業そのものより、

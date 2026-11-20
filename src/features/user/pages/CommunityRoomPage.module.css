@@ -8,3 +8,34 @@
 .errorText {
   color: var(--color-danger);
 }
+
+.greeting {
+  display: grid;
+  justify-items: start;
+  gap: .45rem;
+  margin: .25rem 0 .75rem 2.5rem;
+}
+
+.greeting button {
+  border: 1px solid var(--color-border);
+  border-radius: .5rem;
+  padding: .4rem .75rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.greeting button:enabled {
+  cursor: pointer;
+}
+
+.greetingOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.greetingOptions img {
+  width: 52px;
+  height: 42px;
+  object-fit: contain;
+}

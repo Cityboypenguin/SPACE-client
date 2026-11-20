@@ -15,7 +15,7 @@ export const isSameMessageGroup = (
   a: Message | null | undefined,
   b: Message | null | undefined,
 ): boolean => {
-  if (!a || !b || a.thread || b.thread) return false;
+  if (!a || !b || a.thread || b.thread || a.isCommunityWelcome || b.isCommunityWelcome) return false;
   if (a.user.ID !== b.user.ID) return false;
   return minuteKey(a.createdAt) === minuteKey(b.createdAt);
 };

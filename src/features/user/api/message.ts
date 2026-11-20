@@ -38,6 +38,7 @@ export type MessageReaction = {
 };
 
 export type Message = {
+  isCommunityWelcome?: boolean;
   thread?: { roomID: string; parentRoomID: string; title: string; isClosed: boolean; messageCount?: number } | null;
   ID: string;
   roomID: string;
@@ -83,6 +84,7 @@ export const MESSAGE_FIELDS = `
   ID
   roomID
   thread { roomID parentRoomID title isClosed messageCount }
+  isCommunityWelcome
   user {
     ID
     name
@@ -320,6 +322,7 @@ const ListMessagesDocument = graphql(`
         ID
         roomID
         thread { roomID parentRoomID title isClosed messageCount }
+        isCommunityWelcome
         user {
           ID
           name

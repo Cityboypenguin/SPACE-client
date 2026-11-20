@@ -141,6 +141,13 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
         <div className={styles.membersPane}>
           <div className={styles.membersPaneHeader}>
             <span className={styles.membersPaneTitle}>メンバー一覧</span>
+            <button
+              type="button"
+              className={styles.editBtn}
+              onClick={() => navigate(`/community/invite/${community.ID}/${community.roomID}`)}
+            >
+              招待する
+            </button>
             {isOwner && (
               <button
                 className={styles.editBtn}
