@@ -92,3 +92,36 @@ export const isPassthroughEligible = (s: PassthroughInfo): boolean =>
   s.fps <= VIDEO_MAX_FPS + 0.5 &&
   s.durationSec <= VIDEO_MAX_DURATION_SEC + DURATION_EPSILON_SEC &&
   s.sizeBytes <= VIDEO_MAX_BYTES;
+
+// 圧縮した後の確認で使う幅。サーバー（internal/upload/mp4.go）と同じ値にする。
+// 長さは音声の先頭の無音ぶん 0.1 秒、fps は丸めの誤差ぶん 0.05 だけ許す。
+const OUTPUT_DURATION_TOLERANCE_SEC = 0.1;
+const OUTPUT_FPS_TOLERANCE = 0.05;
+
+export type OutputFacts = {
+  sizeBytes: number;
+  durationSec: number;
+  width: number;
+  height: number;
+  fps: number;
+  videoCodec: string | null;
+  audioCodec: string | null;
+};
+
+// checkOutput は圧縮した後の動画が投稿の条件を満たすかを確かめる。サーバーも同じ条件で
+// 検査するので、ここで落とせば「アップロードしてから断られる」を防げる。
+export const checkOutput = (o: OutputFacts): SourceCheck => {
+  if (o.videoCodec !== 'avc') return { ok: false, message: '圧縮した動画が H.264 になっていません。' };
+  if (o.audioCodec !== null && o.audioCodec !== 'aac') return { ok: false, message: '圧縮した動画の音声が AAC になっていません。' };
+  if (o.sizeBytes > VIDEO_MAX_BYTES) return { ok: false, message: '動画を25MB以内に圧縮できませんでした。もっと短い動画を選んでください。' };
+  if (!Number.isFinite(o.durationSec) || o.durationSec > VIDEO_MAX_DURATION_SEC + OUTPUT_DURATION_TOLERANCE_SEC) {
+    return { ok: false, message: `圧縮した動画が${VIDEO_MAX_DURATION_SEC}秒を超えています。` };
+  }
+  if (Math.max(o.width, o.height) > VIDEO_MAX_LONG_SIDE || Math.min(o.width, o.height) > VIDEO_MAX_SHORT_SIDE) {
+    return { ok: false, message: '圧縮した動画の解像度が 720p を超えています。' };
+  }
+  if (Number.isFinite(o.fps) && o.fps > VIDEO_MAX_FPS + OUTPUT_FPS_TOLERANCE) {
+    return { ok: false, message: '圧縮した動画が 30fps を超えています。' };
+  }
+  return { ok: true };
+};

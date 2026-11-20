@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
+  checkOutput,
   checkSource,
   initialVideoBitrate,
   isPassthroughEligible,
@@ -19,9 +20,10 @@ import { VIDEO_MAX_BYTES, VIDEO_MIN_BITRATE, VIDEO_TARGET_BITRATE } from '../../
 
 const fixtureDir = resolve(dirname(fileURLToPath(import.meta.url)), '../fixtures/video');
 
+// events は Worker から届いた順の出来事（'checked' と、進み具合の段階）。
 type Outcome =
-  | { ok: true; size: number; width: number; height: number; durationSec: number; hasAudio: boolean; thumbnailType: string; thumbnailSize: number; videoType: string; attempts: number; passthrough: boolean; head: number[] }
-  | { ok: false; message: string };
+  | { ok: true; size: number; width: number; height: number; durationSec: number; hasAudio: boolean; thumbnailType: string; thumbnailSize: number; videoType: string; attempts: number; passthrough: boolean; head: number[]; events: string[] }
+  | { ok: false; message: string; events: string[] };
 
 const compress = async (page: Page, name: string, type: string): Promise<Outcome> => {
   const bytes = readFileSync(resolve(fixtureDir, name)).toString('base64');
@@ -31,10 +33,15 @@ const compress = async (page: Page, name: string, type: string): Promise<Outcome
     const bin = Uint8Array.from(atob(bytes), (c) => c.charCodeAt(0));
     const file = new File([bin], name, { type });
     const api = (window as unknown as { __video: typeof import('../../src/lib/video/compressVideo') }).__video;
+    const events: string[] = [];
     const pre = api.precheckVideoFile(file);
-    if (pre) return { ok: false as const, message: pre };
+    if (pre) return { ok: false as const, message: pre, events };
     try {
-      const r = await api.compressVideo(file, () => {}).promise;
+      const r = await api.compressVideo(
+        file,
+        (p) => { if (events[events.length - 1] !== p.phase) events.push(p.phase); },
+        () => events.push('checked'),
+      ).promise;
       const head = Array.from(new Uint8Array(await r.video.slice(0, 64).arrayBuffer()));
       return {
         ok: true as const,
@@ -49,9 +56,10 @@ const compress = async (page: Page, name: string, type: string): Promise<Outcome
         attempts: r.attempts,
         passthrough: r.passthrough,
         head,
+        events,
       };
     } catch (e) {
-      return { ok: false as const, message: e instanceof Error ? e.message : String(e) };
+      return { ok: false as const, message: e instanceof Error ? e.message : String(e), events };
     }
   }, { bytes, name, type });
 };
@@ -119,6 +127,19 @@ test.describe('圧縮の計画（純粋な関数）', () => {
     expect(isPassthroughEligible({ ...base, width: 1920, height: 1080 })).toBe(false);
     expect(isPassthroughEligible({ ...base, fps: 60 })).toBe(false);
   });
+
+  test('圧縮した後の確認はサーバーと同じ条件で判定する', () => {
+    const ok = { sizeBytes: VIDEO_MAX_BYTES, durationSec: 60.1, width: 1280, height: 720, fps: 30, videoCodec: 'avc', audioCodec: 'aac' };
+    expect(checkOutput(ok).ok).toBe(true);
+    expect(checkOutput({ ...ok, width: 720, height: 1280 }).ok).toBe(true);
+    expect(checkOutput({ ...ok, audioCodec: null }).ok).toBe(true);
+    expect(checkOutput({ ...ok, sizeBytes: VIDEO_MAX_BYTES + 1 }).ok).toBe(false);
+    expect(checkOutput({ ...ok, durationSec: 60.2 }).ok).toBe(false);
+    expect(checkOutput({ ...ok, width: 1920, height: 1080 }).ok).toBe(false);
+    expect(checkOutput({ ...ok, fps: 60 }).ok).toBe(false);
+    expect(checkOutput({ ...ok, videoCodec: 'hevc' }).ok).toBe(false);
+    expect(checkOutput({ ...ok, audioCodec: 'opus' }).ok).toBe(false);
+  });
 });
 
 test.describe('ブラウザーでの圧縮', () => {
@@ -135,6 +156,8 @@ test.describe('ブラウザーでの圧縮', () => {
     expect(r.thumbnailType).toBe('image/jpeg');
     expect(r.thumbnailSize).toBeGreaterThan(0);
     expect(boxTypesAtHead(r.head).slice(0, 2)).toEqual(['ftyp', 'moov']);
+    // 確認 → 圧縮 → 圧縮した後の確認 → サムネイル の順に進む。
+    expect(r.events).toEqual(['checked', 'compressing', 'verifying', 'thumbnail']);
   });
 
   test('1080p 縦向き 60fps は 720×1280 になる', async ({ page }) => {
@@ -174,6 +197,8 @@ test.describe('ブラウザーでの圧縮', () => {
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.message).toContain('60秒以内');
+    // 長さは圧縮を始める前に確かめる（圧縮の進み具合は1回も届かない）。
+    expect(r.events).toEqual([]);
   });
 
   test('4K を超える解像度は断る', async ({ page }) => {
@@ -181,11 +206,13 @@ test.describe('ブラウザーでの圧縮', () => {
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.message).toContain('4K');
+    expect(r.events).toEqual([]);
   });
 
   test('壊れたファイル・対応していない形式は理由を出して断る', async ({ page }) => {
     const broken = await compress(page, 'broken.mp4', 'video/mp4');
     expect(broken.ok).toBe(false);
+    expect(broken.events).toEqual([]);
     const wrongType = await compress(page, 'broken.mp4', 'application/pdf');
     expect(wrongType.ok).toBe(false);
     if (!wrongType.ok) expect(wrongType.message).toContain('対応していません');

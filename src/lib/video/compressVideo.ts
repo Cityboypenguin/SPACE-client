@@ -18,7 +18,7 @@ export class CompressCanceledError extends Error {
 }
 
 // precheckVideoFile は Worker を起こす前に分かる理由で断る（形式・大きさ）。
-// 中身（長さ・解像度・コーデック）は Worker が読んで確かめる。
+// 中身（長さ・解像度・コーデック）は Worker が圧縮を始める前に読んで確かめる。
 export const precheckVideoFile = (file: File): string | null => {
   // 端末によっては type が空になる（拡張子で判定できない）。その場合は中身の検査に任せる。
   if (file.type && !ACCEPTED_VIDEO_TYPES.includes(file.type)) {
@@ -35,8 +35,13 @@ export const precheckVideoFile = (file: File): string | null => {
 // WebCodecs が無くても、規格内の MP4 ならそのまま送れるので、ここは Worker の有無だけ見る。
 export const isVideoCompressionSupported = (): boolean => typeof Worker !== 'undefined';
 
-// compressVideo は Worker で圧縮を始める。
-export const compressVideo = (file: File, onProgress: (p: CompressProgress) => void): CompressJob => {
+// compressVideo は Worker で「確認 → 圧縮」を始める。確認が通ると onChecked が呼ばれ、
+// その後の進み具合が onProgress に届く。確認で断られたら promise が理由つきで失敗する。
+export const compressVideo = (
+  file: File,
+  onProgress: (p: CompressProgress) => void,
+  onChecked?: () => void,
+): CompressJob => {
   const worker = new Worker(new URL('./compress.worker.ts', import.meta.url), { type: 'module' });
   let settle: { resolve: (r: CompressResult) => void; reject: (e: unknown) => void } | null = null;
   let finished = false;
@@ -51,7 +56,9 @@ export const compressVideo = (file: File, onProgress: (p: CompressProgress) => v
     settle = { resolve, reject };
     worker.onmessage = (e: MessageEvent<CompressResponse>) => {
       const msg = e.data;
-      if (msg.type === 'progress') {
+      if (msg.type === 'checked') {
+        onChecked?.();
+      } else if (msg.type === 'progress') {
         onProgress({ phase: msg.phase, progress: msg.progress, attempt: msg.attempt });
       } else if (msg.type === 'done') {
         finish();

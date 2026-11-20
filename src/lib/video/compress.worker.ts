@@ -31,6 +31,7 @@ import {
 } from './constants';
 import type { CompressPhase, CompressRequest, CompressResponse, CompressResult } from './messages';
 import {
+  checkOutput,
   checkSource,
   initialVideoBitrate,
   isPassthroughEligible,
@@ -64,8 +65,12 @@ ctx.onmessage = (e) => {
     });
 };
 
+// compress は「確認 → 圧縮 → 圧縮した後の確認 → サムネイル」の順に進める。
+//
+// 確認では、ファイルの先頭の情報（コンテナーの表）だけを読み、デコードはしない。
+// 長さ・解像度・映像の有無・音声を変換できるか・この端末で圧縮できるか（できなければ
+// そのまま送れる規格内の動画か）をここで全部確かめ、通らなければ圧縮を始めずに理由を返す。
 async function compress(file: File): Promise<CompressResult> {
-  progress('analyzing', 0);
   const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
   try {
     if (!(await input.canRead())) {
@@ -86,7 +91,6 @@ async function compress(file: File): Promise<CompressResult> {
     const mimeType = await input.getMimeType();
     const videoCodec = await video.getCodec();
     const audioCodec = audio ? await audio.getCodec() : null;
-    progress('analyzing', 1);
 
     const size = targetSize(width, height);
     const frameRate = targetFrameRate(sourceFps);
@@ -109,13 +113,17 @@ async function compress(file: File): Promise<CompressResult> {
     const canDecode = await video.canDecode();
     const canAVC = canDecode && await canEncodeVideo('avc', { width: size.width, height: size.height, bitrate: initialVideoBitrate(durationSec, hasAudio) });
 
-    if (!canAVC) {
-      // 端末で圧縮できない。元が規格内なら、moov を先頭へ移すだけ（デコードしない）で送る。
-      if (!isPassthroughEligible({ mimeType, videoCodec, audioCodec, width, height, fps: sourceFps, durationSec, sizeBytes: file.size })) {
-        throw new UserFacingError('この端末では動画を圧縮できません。720p・30fps・25MB 以内の MP4（H.264/AAC）を選ぶか、別の端末でお試しください。');
-      }
+    const passthrough = !canAVC;
+    if (passthrough && !isPassthroughEligible({ mimeType, videoCodec, audioCodec, width, height, fps: sourceFps, durationSec, sizeBytes: file.size })) {
+      throw new UserFacingError('この端末では動画を圧縮できません。720p・30fps・25MB 以内の MP4（H.264/AAC）を選ぶか、別の端末でお試しください。');
+    }
+    // ここまでで投稿できる動画だと分かった。ここから圧縮する。
+    post({ type: 'checked' });
+
+    if (passthrough) {
+      // 端末で圧縮できない。元が規格内なので、moov を先頭へ移すだけ（デコードしない）で送る。
       const out = await runConversion(input, { codec: 'avc' }, audioOptions ? { codec: 'aac' } : undefined, 1);
-      if (out.byteLength > VIDEO_MAX_BYTES) throw new UserFacingError('動画のサイズが25MBを超えています。');
+      await verifyOutput(out);
       return finish(out, width, height, durationSec, hasAudio, true, 1);
     }
 
@@ -134,6 +142,7 @@ async function compress(file: File): Promise<CompressResult> {
         allowRotationMetadata: false,
       }, audioOptions, attempt);
       if (out.byteLength <= VIDEO_MAX_BYTES) {
+        await verifyOutput(out);
         return finish(out, size.width, size.height, durationSec, hasAudio, false, attempt);
       }
       const next = nextVideoBitrate(bitrate, out.byteLength);
@@ -174,6 +183,32 @@ async function runConversion(
   await conversion.execute();
   if (!target.buffer) throw new Error('conversion produced no output');
   return target.buffer;
+}
+
+// verifyOutput は圧縮した動画を読み直し、投稿の条件（形式・長さ・解像度・fps・容量）を
+// 満たすかを確かめる。サーバーも同じ検査をするので、通らないものはアップロードしない。
+async function verifyOutput(buffer: ArrayBuffer): Promise<void> {
+  progress('verifying', 0);
+  const input = new Input({ source: new BlobSource(new Blob([buffer], { type: 'video/mp4' })), formats: ALL_FORMATS });
+  try {
+    const video = await input.getPrimaryVideoTrack();
+    if (!video) throw new UserFacingError('圧縮した動画に映像がありません。');
+    const audio = await input.getPrimaryAudioTrack();
+    const stats = await video.computePacketStats();
+    const check = checkOutput({
+      sizeBytes: buffer.byteLength,
+      durationSec: await input.computeDuration(),
+      width: await video.getDisplayWidth(),
+      height: await video.getDisplayHeight(),
+      fps: stats.averagePacketRate,
+      videoCodec: await video.getCodec(),
+      audioCodec: audio ? await audio.getCodec() : null,
+    });
+    if (!check.ok) throw new UserFacingError(check.message);
+    progress('verifying', 1);
+  } finally {
+    input.dispose();
+  }
 }
 
 async function finish(
