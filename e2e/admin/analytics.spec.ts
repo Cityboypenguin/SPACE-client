@@ -47,7 +47,7 @@ test.describe('時系列グラフ', () => {
     for (const preset of ['今日', '昨日', '過去7日', '過去30日', '過去90日']) {
       await expect(page.getByRole('button', { name: preset })).toBeVisible();
     }
-    for (const metric of ['投稿', 'コメント', 'DM', '新規登録', 'いいね']) {
+    for (const metric of ['投稿', 'コメント', 'メッセージ（合計）', 'DM', 'コミュニティ', '授業チャット', '新規登録', 'いいね']) {
       await expect(page.getByRole('button', { name: metric, exact: true })).toBeVisible();
     }
   });
@@ -79,7 +79,7 @@ test.describe('時系列グラフ', () => {
   });
 
   test('メトリクスのトグルボタンが動作する', async ({ page }) => {
-    for (const metric of ['投稿', 'コメント', 'DM', '新規登録', 'いいね']) {
+    for (const metric of ['投稿', 'コメント', 'メッセージ（合計）', 'DM', 'コミュニティ', '授業チャット', '新規登録', 'いいね']) {
       const btn = page.getByRole('button', { name: metric, exact: true });
       // オフにする
       await btn.click();
