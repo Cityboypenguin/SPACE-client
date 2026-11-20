@@ -29,8 +29,9 @@ test('検索で招待した相手が通知詳細から参加し、参加案内�
       const result = await response.json();
       return result.data.me.accountID as string;
     });
-    await page.getByRole('searchbox', { name: '名前またはアカウントID' }).fill(recipientAccountID);
-    await page.getByRole('button', { name: '検索', exact: true }).click();
+    const searchBox = page.getByRole('textbox', { name: '名前またはアカウントID' });
+    await searchBox.fill(recipientAccountID);
+    await searchBox.press('Enter');
     await page.getByRole('checkbox', { name: new RegExp(`@${recipientAccountID}`) }).check();
     await page.getByRole('textbox', { name: /一言メッセージ/ }).fill('一緒に話しましょう');
     await page.getByRole('button', { name: '1人を招待する', exact: true }).click();
@@ -38,6 +39,10 @@ test('検索で招待した相手が通知詳細から参加し、参加案内�
     // 招待済みの人は、検索結果でもう選べない。
     await expect(page.getByRole('checkbox', { name: new RegExp(`@${recipientAccountID}`) })).toBeDisabled();
     await expect(page.getByText('招待中', { exact: true })).toBeVisible();
+    // 空のまま Enter を押すと検索結果が消える。
+    await searchBox.fill('');
+    await searchBox.press('Enter');
+    await expect(page.getByRole('checkbox', { name: new RegExp(`@${recipientAccountID}`) })).toHaveCount(0);
 
     await recipient.goto(new URL('/notifications', baseURL ?? env.baseURL).href);
     await recipient.locator('main').getByText(`${name}に招待されました`, { exact: true }).click();

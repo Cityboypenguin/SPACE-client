@@ -11,6 +11,8 @@ type Props = {
   onBlur?: () => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onClear?: () => void;
+  /** 読み上げ用の名前。省略時は placeholder が名前になる。 */
+  ariaLabel?: string;
 };
 
 export const IconSearchBar = ({
@@ -23,6 +25,7 @@ export const IconSearchBar = ({
   onBlur,
   onKeyDown,
   onClear,
+  ariaLabel,
 }: Props) => {
   const inner = (
     <div className={styles.searchWrap}>
@@ -31,6 +34,7 @@ export const IconSearchBar = ({
         className={styles.searchInput}
         type="text"
         placeholder={placeholder}
+        aria-label={ariaLabel}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
