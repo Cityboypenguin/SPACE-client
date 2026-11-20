@@ -1,10 +1,16 @@
 /* 招待まわり（届いた招待一覧・招待の詳細・メンバー招待）で共有するスタイル。 */
 
-.page {
+/* 色は招待ページの外（通知詳細に埋め込んだ招待カードなど）でも使うので、
+   使う側の要素それぞれに定義する。 */
+.page,
+.card,
+.inviteItem {
   --invite-accent: #f97316;
   --invite-accent-hover: #ea580c;
   --invite-accent-soft: color-mix(in srgb, #f97316 12%, transparent);
+}
 
+.page {
   max-width: 640px;
   margin-inline: auto;
   padding: clamp(1rem, 4vw, 2rem) clamp(1rem, 4vw, 1.5rem) 3rem;
@@ -449,11 +455,6 @@
   margin: 0;
   color: var(--color-text-muted);
   font-size: .825rem;
-}
-
-.searchForm {
-  display: flex;
-  gap: .5rem;
 }
 
 .textInput {
@@ -923,4 +924,13 @@
   width: 62%;
   height: 62%;
   object-fit: contain;
+}
+
+/* 通知詳細の中に埋め込むとき。外側のカードと枠・余白が二重にならないようにする。 */
+.cardEmbedded {
+  padding: 1.25rem 0 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
 }
