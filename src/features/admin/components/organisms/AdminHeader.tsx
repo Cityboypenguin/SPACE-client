@@ -123,7 +123,10 @@ export const AdminHeader = () => {
         className={`${styles.header} ${expanded ? styles.expanded : ''}`}
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={(event) => {
-          if (!event.currentTarget.contains(document.activeElement)) {
+          // キーボードで中を移動しているときだけ開いたままにする。クリックしたボタンに
+          // フォーカスが残っているだけなら閉じる（開いたままだと本文の左側を覆ってしまう）。
+          const focused = document.activeElement;
+          if (!(event.currentTarget.contains(focused) && focused?.matches(':focus-visible'))) {
             setExpanded(false);
           }
         }}

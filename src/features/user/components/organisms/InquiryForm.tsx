@@ -47,7 +47,8 @@ export const InquiryForm = ({ onSubmitted, onComplete }: Props) => {
     setError('');
     setLoading(true);
     try {
-      await createInquiry(name, email, category, subject, content);
+      // 件名は「その他」のときだけ入力欄を出す。別の種類に切り替えた後に、隠れた入力が送られないようにする。
+      await createInquiry(name, email, category, category === 'OTHER' ? subject : '', content);
       setSubmitted(true);
       onSubmitted?.();
     } catch {
