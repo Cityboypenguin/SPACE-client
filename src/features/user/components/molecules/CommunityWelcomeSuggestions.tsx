@@ -7,9 +7,13 @@ type Stamp = { id: string; label: string; imageUrl?: string | null };
 // チャット欄の下に出す、ワンクリックでスタンプを送るパネル。
 // 既存メンバーが新しい人を歓迎するときと、参加した本人があいさつするときの両方で使う。
 export const CommunityWelcomeSuggestions = ({
-  heading, stamps, onSend, onSkip,
+  icon, heading, hint, stamps, onSend, onSkip,
 }: {
+  /** 見出しの前に出す絵文字。 */
+  icon: string;
   heading: string;
+  /** 見出しの下に添える一言。 */
+  hint: string;
   stamps: Stamp[];
   onSend: (stampID: string) => Promise<void>;
   /** 渡すと「あとで」ボタンを出す。 */
@@ -32,9 +36,13 @@ export const CommunityWelcomeSuggestions = ({
   };
 
   return (
-    <div className={styles.welcomePanel} role="group" aria-label={heading}>
+    <div className={styles.welcomePanel} role="group" aria-label={`${heading}${hint}`}>
       <div className={styles.welcomeHeader}>
-        <p className={styles.welcomeHeading}>{heading}</p>
+        <span className={styles.welcomeIcon} aria-hidden="true">{icon}</span>
+        <div className={styles.welcomeText}>
+          <p className={styles.welcomeHeading}>{heading}</p>
+          <p className={styles.welcomeHint}>{hint}</p>
+        </div>
         {onSkip && (
           <button type="button" className={styles.welcomeSkip} disabled={sending} onClick={() => void run(onSkip)}>
             あとで

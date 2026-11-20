@@ -13,7 +13,6 @@ import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { StatusText } from '../../../components/atoms/StatusText';
-import { sortUnreadFirst } from '../lib/unreadSort';
 import styles from './DMListPage.module.css';
 import { AppSwal } from '../../../lib/swal';
 
@@ -93,10 +92,16 @@ export const DMListPage = () => {
     // プレビューだけは即座に反映する（サーバが本文から作った文言がイベントに載って
     // いるので、取り直しを待つ必要が無い）。既読による更新（hasNewMessage: false）は
     // 本文が変わったわけではないので触らない。
-    if (hasNewMessage && lastMessage !== undefined) {
-      setDmRooms((prev) =>
-        prev.map((room) => (room.ID === roomID ? { ...room, lastMessage } : room)),
-      );
+    // 新しいメッセージが来た DM は、すぐ一番上へ移す（LINE のトーク一覧と同じ）。
+    // 既読による更新では動かさないので、読んでも位置は下がらない。並びの正はサーバー
+    // （最後にメッセージが来た順）で、直後の取り直しでもこの並びのまま揃う。
+    if (hasNewMessage) {
+      setDmRooms((prev) => {
+        const index = prev.findIndex((room) => room.ID === roomID);
+        if (index < 0) return prev;
+        const moved = lastMessage !== undefined ? { ...prev[index], lastMessage } : prev[index];
+        return [moved, ...prev.slice(0, index), ...prev.slice(index + 1)];
+      });
     }
     // 未読数はイベントに載らないので取り直す。賑やかなルームだとイベントが連続する
     // ため、短時間のぶんはまとめて1回にする。
@@ -134,7 +139,8 @@ export const DMListPage = () => {
       partner.accountID.toLowerCase().includes(q)
     );
   });
-  const visibleRooms = sortUnreadFirst(filteredRooms);
+  // 並びはサーバーの順（最後にメッセージが来た順）。未読でも並べ替えない。
+  const visibleRooms = filteredRooms;
 
   return (
     <div>

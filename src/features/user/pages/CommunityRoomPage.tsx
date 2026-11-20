@@ -406,7 +406,9 @@ export const CommunityRoomPage = () => {
           <div className={pageStyles.welcomeOverlay} ref={welcomeOverlayRef}>
             <CommunityWelcomeSuggestions
               key="join"
-              heading={`${community?.name || room?.name || 'コミュニティ'}へようこそ！スタンプであいさつしましょう`}
+              icon="👋"
+              heading={`${community?.name || room?.name || 'コミュニティ'}へようこそ！`}
+              hint="スタンプであいさつしましょう"
               stamps={joinGreeting}
               onSend={sendJoinGreeting}
               onSkip={skipJoinGreeting}
@@ -416,7 +418,9 @@ export const CommunityRoomPage = () => {
           <div className={pageStyles.welcomeOverlay} ref={welcomeOverlayRef}>
             <CommunityWelcomeSuggestions
               key={greeting.welcomeMessageID}
-              heading={`${greeting.joinedUserName}さんを歓迎しましょう！`}
+              icon="🎉"
+              heading={`${greeting.joinedUserName}さんが参加しました！`}
+              hint="スタンプで歓迎しましょう"
               stamps={greeting.stamps}
               onSend={(stampID) => sendGreeting(greeting.welcomeMessageID, stampID)}
             />
