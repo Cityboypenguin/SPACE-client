@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import { useNotification } from '../../context/useNotification';
 import { useUnreadRoomCounts } from '../../context/useUnreadRoomCounts';
+import { useReceivedInvitationCount } from '../../hooks/useReceivedInvitationCount';
 import { useProfile } from '../../hooks/useProfile';
 import { Avatar } from '../../../../components/atoms/Avatar';
 import { UnreadCountBadge } from '../../../../components/atoms/UnreadCountBadge';
@@ -37,6 +38,8 @@ export const UserSidebar = () => {
   const { userId } = useAuth();
   const { unreadCount } = useNotification();
   const { dmUnreadCount, communityUnreadCount, courseUnreadCounts } = useUnreadRoomCounts();
+  // コミュニティのバッジは、未読のメッセージと届いている招待の合計。
+  const { count: invitationCount } = useReceivedInvitationCount();
   // 授業は件数ではなく「未読があるか」だけを赤丸で示す(件数は時間割のコマ側に出す)。
   const courseUnreadTotal = Object.values(courseUnreadCounts).reduce((sum, n) => sum + n, 0);
   const { profile } = useProfile(userId);
@@ -101,7 +104,7 @@ export const UserSidebar = () => {
           const badgeCount =
             label === '通知' ? unreadCount :
             label === 'DM' ? dmUnreadCount :
-            label === 'コミュニティ' ? communityUnreadCount :
+            label === 'コミュニティ' ? communityUnreadCount + invitationCount :
             label === '授業' ? courseUnreadTotal : 0;
           return (
             <button
