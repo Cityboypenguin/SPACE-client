@@ -16,10 +16,12 @@ const statusText: Record<string, string> = {
   accepted: 'この招待は対応済みです。',
 };
 
-export const CommunityInvitationDetails = ({ input, returnTo, showSender = true }: {
+export const CommunityInvitationDetails = ({ input, returnTo, showSender = true, embedded = false }: {
   input: InvitationReference | null;
   returnTo: string;
   showSender?: boolean;
+  /** 通知詳細など、別のカードの中に置くとき。枠を外して上の区切り線だけにする。 */
+  embedded?: boolean;
 }) => {
   const navigate = useNavigate();
   const { userId } = useAuth();
@@ -57,12 +59,15 @@ export const CommunityInvitationDetails = ({ input, returnTo, showSender = true 
       setBusy(false);
     }
   };
+  // 前後の空行・空白は表示しない（改行を保って出すので、そのままだと余白に見える）。
+  const message = data?.message?.trim();
+  const description = data?.communityDescription.trim();
   return (
     <>
       {isLoading && <div className={styles.skeleton} style={{ height: '18rem' }} aria-busy="true" aria-label="読み込み中" />}
       {(error || !input) && <p className={styles.alert} role="alert">この招待は利用できません。</p>}
       {data && (
-        <section className={styles.card}>
+        <section className={`${styles.card} ${embedded ? styles.cardEmbedded : ''}`}>
           <CommunityAvatar name={data.communityName} src={data.communityAvatarURL} size={88} />
           <h2>{data.communityName}</h2>
           <div className={styles.cardMeta}>
@@ -70,13 +75,13 @@ export const CommunityInvitationDetails = ({ input, returnTo, showSender = true 
             {data.status === 'pending' && !data.isMember && <InvitationExpiry expiresAt={data.expiresAt} />}
           </div>
           {showSender && data.senderName && <p className={styles.invitedBy}>{data.senderName}さんからの招待</p>}
-          {data.message && (
+          {message && (
             <figure className={styles.messageQuote}>
-              <blockquote>{data.message}</blockquote>
-              {data.senderName && <figcaption>— {data.senderName}さん</figcaption>}
+              <blockquote>{message}</blockquote>
+              {showSender && data.senderName && <figcaption>— {data.senderName}さん</figcaption>}
             </figure>
           )}
-          {data.communityDescription && <p className={styles.description}>{data.communityDescription}</p>}
+          {description && <p className={styles.description}>{description}</p>}
           {data.isMember && <p className={styles.statusMessage}>すでにこのコミュニティに参加しています。</p>}
           {data.status !== 'pending' && !data.isMember && <p className={styles.statusMessage}>{statusText[data.status]}</p>}
           <div className={styles.actions}>

@@ -153,6 +153,9 @@ type Documents = {
     "\n  mutation RevokeCommunityInvitation($id: ID!) { revokeCommunityInvitation(id: $id) }\n": typeof types.RevokeCommunityInvitationDocument,
     "\n  query CommunityGreetingOptions($roomID: ID!) {\n    communityGreeting(roomID: $roomID) {\n      welcomeMessageID\n      joinedUserName\n      stamps { id label imageUrl }\n    }\n  }\n": typeof types.CommunityGreetingOptionsDocument,
     "\n  mutation SendCommunityGreeting($roomID: ID!, $welcomeMessageID: ID!, $stampID: String!) {\n    sendCommunityGreeting(roomID: $roomID, welcomeMessageID: $welcomeMessageID, stampID: $stampID) {\n      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome\n      user { ID name accountID avatarUrl }\n    }\n  }\n": typeof types.SendCommunityGreetingDocument,
+    "\n  query CommunityJoinGreeting($roomID: ID!) {\n    communityJoinGreeting(roomID: $roomID) { id label imageUrl }\n  }\n": typeof types.CommunityJoinGreetingDocument,
+    "\n  mutation SendCommunityJoinGreeting($roomID: ID!, $stampID: String!) {\n    sendCommunityJoinGreeting(roomID: $roomID, stampID: $stampID) {\n      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome\n      user { ID name accountID avatarUrl }\n    }\n  }\n": typeof types.SendCommunityJoinGreetingDocument,
+    "\n  mutation SkipCommunityJoinGreeting($roomID: ID!) { skipCommunityJoinGreeting(roomID: $roomID) }\n": typeof types.SkipCommunityJoinGreetingDocument,
     "\n  query SearchCourses($dayOfWeek: String!, $period: Int!, $keyword: String, $limit: Int, $offset: Int) {\n    searchCourses(dayOfWeek: $dayOfWeek, period: $period, keyword: $keyword, limit: $limit, offset: $offset) {\n      items {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n      total\n    }\n  }\n": typeof types.SearchCoursesDocument,
     "\n  query MyTimetable($year: Int, $semester: String) {\n    myTimetable(year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n        discontinued\n      }\n    }\n  }\n": typeof types.MyTimetableDocument,
     "\n  query CourseChatStatus {\n    courseChatEnabled\n  }\n": typeof types.CourseChatStatusDocument,
@@ -395,6 +398,9 @@ const documents: Documents = {
     "\n  mutation RevokeCommunityInvitation($id: ID!) { revokeCommunityInvitation(id: $id) }\n": types.RevokeCommunityInvitationDocument,
     "\n  query CommunityGreetingOptions($roomID: ID!) {\n    communityGreeting(roomID: $roomID) {\n      welcomeMessageID\n      joinedUserName\n      stamps { id label imageUrl }\n    }\n  }\n": types.CommunityGreetingOptionsDocument,
     "\n  mutation SendCommunityGreeting($roomID: ID!, $welcomeMessageID: ID!, $stampID: String!) {\n    sendCommunityGreeting(roomID: $roomID, welcomeMessageID: $welcomeMessageID, stampID: $stampID) {\n      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome\n      user { ID name accountID avatarUrl }\n    }\n  }\n": types.SendCommunityGreetingDocument,
+    "\n  query CommunityJoinGreeting($roomID: ID!) {\n    communityJoinGreeting(roomID: $roomID) { id label imageUrl }\n  }\n": types.CommunityJoinGreetingDocument,
+    "\n  mutation SendCommunityJoinGreeting($roomID: ID!, $stampID: String!) {\n    sendCommunityJoinGreeting(roomID: $roomID, stampID: $stampID) {\n      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome\n      user { ID name accountID avatarUrl }\n    }\n  }\n": types.SendCommunityJoinGreetingDocument,
+    "\n  mutation SkipCommunityJoinGreeting($roomID: ID!) { skipCommunityJoinGreeting(roomID: $roomID) }\n": types.SkipCommunityJoinGreetingDocument,
     "\n  query SearchCourses($dayOfWeek: String!, $period: Int!, $keyword: String, $limit: Int, $offset: Int) {\n    searchCourses(dayOfWeek: $dayOfWeek, period: $period, keyword: $keyword, limit: $limit, offset: $offset) {\n      items {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n      }\n      total\n    }\n  }\n": types.SearchCoursesDocument,
     "\n  query MyTimetable($year: Int, $semester: String) {\n    myTimetable(year: $year, semester: $semester) {\n      ID\n      color\n      createdAt\n      course {\n        ID\n        roomID\n        dayOfWeek\n        period\n        teacherName\n        courseName\n        year\n        semester\n        createdAt\n        discontinued\n      }\n    }\n  }\n": types.MyTimetableDocument,
     "\n  query CourseChatStatus {\n    courseChatEnabled\n  }\n": types.CourseChatStatusDocument,
@@ -1068,6 +1074,18 @@ export function graphql(source: "\n  query CommunityGreetingOptions($roomID: ID!
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation SendCommunityGreeting($roomID: ID!, $welcomeMessageID: ID!, $stampID: String!) {\n    sendCommunityGreeting(roomID: $roomID, welcomeMessageID: $welcomeMessageID, stampID: $stampID) {\n      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome\n      user { ID name accountID avatarUrl }\n    }\n  }\n"): (typeof documents)["\n  mutation SendCommunityGreeting($roomID: ID!, $welcomeMessageID: ID!, $stampID: String!) {\n    sendCommunityGreeting(roomID: $roomID, welcomeMessageID: $welcomeMessageID, stampID: $stampID) {\n      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome\n      user { ID name accountID avatarUrl }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query CommunityJoinGreeting($roomID: ID!) {\n    communityJoinGreeting(roomID: $roomID) { id label imageUrl }\n  }\n"): (typeof documents)["\n  query CommunityJoinGreeting($roomID: ID!) {\n    communityJoinGreeting(roomID: $roomID) { id label imageUrl }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SendCommunityJoinGreeting($roomID: ID!, $stampID: String!) {\n    sendCommunityJoinGreeting(roomID: $roomID, stampID: $stampID) {\n      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome\n      user { ID name accountID avatarUrl }\n    }\n  }\n"): (typeof documents)["\n  mutation SendCommunityJoinGreeting($roomID: ID!, $stampID: String!) {\n    sendCommunityJoinGreeting(roomID: $roomID, stampID: $stampID) {\n      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome\n      user { ID name accountID avatarUrl }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SkipCommunityJoinGreeting($roomID: ID!) { skipCommunityJoinGreeting(roomID: $roomID) }\n"): (typeof documents)["\n  mutation SkipCommunityJoinGreeting($roomID: ID!) { skipCommunityJoinGreeting(roomID: $roomID) }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

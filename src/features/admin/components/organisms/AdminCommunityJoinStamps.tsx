@@ -9,7 +9,7 @@ import styles from '../../styles/AdminChatStamps.module.css';
 
 const groups = [
   { key: 'welcomeIDs', label: '歓迎スタンプ', description: '既存メンバーが、新しく参加した人を歓迎するときに選ぶ候補です。' },
-  { key: 'greetingIDs', label: 'よろしくスタンプ', description: '新しく参加した人の名前で、候補からランダムに1つを自動送信します。' },
+  { key: 'greetingIDs', label: 'よろしくスタンプ', description: '新しく参加した人が、あいさつとしてワンクリックで送る候補です。' },
 ] as const;
 
 export const AdminCommunityJoinStamps = ({

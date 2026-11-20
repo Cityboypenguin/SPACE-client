@@ -6,6 +6,7 @@ import { Avatar } from '../../../components/atoms/Avatar';
 import { AvatarFrame } from '../../../components/atoms/AvatarFrame';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { InvitationExpiry } from '../components/molecules/InvitationExpiry';
+import { IconSearchBar } from '../components/molecules/IconSearchBar';
 import { useAuth } from '../context/useAuth';
 import {
   createInvitationLink, inviteCandidates, inviteCommunityUsers, revokeInvitation, sentInvitations,
@@ -82,7 +83,7 @@ export const CommunityInviteSendPage = () => {
 
   // 検索結果の「招待中・参加済み」はサーバーが判定する。SWR に載せておけば、
   // 招待の状態が変わったとき（refreshInvitationCaches）に一緒に取り直される。
-  const { data: candidates, error: searchError, isValidating: searching } = useSWR(
+  const { data: candidates, error: searchError } = useSWR(
     communityID && keyword ? ['community-invite-candidates', communityID, keyword] : null,
     () => inviteCandidates(communityID!, keyword),
     { revalidateOnFocus: true, keepPreviousData: true },
@@ -109,9 +110,15 @@ export const CommunityInviteSendPage = () => {
     }
   };
 
+  // 空のまま Enter を押したら、検索結果を消す。
   const search = (e: FormEvent) => {
     e.preventDefault();
     setKeyword(query.trim());
+  };
+
+  const clearSearch = () => {
+    setQuery('');
+    setKeyword('');
   };
 
   const toggle = (user: CandidateUser) => {
@@ -226,16 +233,19 @@ export const CommunityInviteSendPage = () => {
             <h2>ユーザーを選んで招待</h2>
             <p>一度に{maxSelection}人まで選べます。招待された人には通知が届きます。</p>
           </div>
-          <form onSubmit={search} className={styles.searchForm} role="search">
-            <input type="search" className={styles.textInput} aria-label="名前またはアカウントID" placeholder="名前またはアカウントID"
-              value={query} onChange={(e) => setQuery(e.target.value)} />
-            <button type="submit" className={styles.secondaryButton} disabled={!query.trim() || (searching && query.trim() === keyword)}>検索</button>
-          </form>
-          {searchError && <p className={styles.muted} role="alert">ユーザーを検索できませんでした。</p>}
+          <IconSearchBar
+            value={query}
+            onChange={setQuery}
+            onSubmit={search}
+            onClear={clearSearch}
+            placeholder="名前またはアカウントID"
+            ariaLabel="名前またはアカウントID"
+          />
+          {!!keyword && searchError && <p className={styles.muted} role="alert">ユーザーを検索できませんでした。</p>}
           {candidates && keyword && candidates.items.filter((c) => c.user.ID !== userId).length === 0 && (
             <p className={styles.muted}>該当するユーザーが見つかりませんでした。</p>
           )}
-          {!!candidates?.items.length && (
+          {!!keyword && !!candidates?.items.length && (
             <ul className={styles.rows}>
               {candidates.items.filter((candidate) => candidate.user.ID !== userId).map(({ user, status }) => {
                 const available = status === 'available';

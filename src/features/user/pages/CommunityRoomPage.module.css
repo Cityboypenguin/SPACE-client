@@ -49,8 +49,32 @@
   background: var(--color-surface);
 }
 
+.welcomeHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .4rem;
+}
+
+.welcomeSkip {
+  flex-shrink: 0;
+  padding: .1rem .5rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: .8rem;
+  cursor: pointer;
+}
+
+.welcomeSkip:hover:enabled {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
 .welcomeHeading {
-  margin: 0 0 .4rem;
+  margin: 0;
   color: var(--color-text);
   font-weight: 600;
   overflow-wrap: anywhere;

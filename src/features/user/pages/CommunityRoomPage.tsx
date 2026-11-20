@@ -4,7 +4,9 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
 import { CommunityWelcomeSuggestions } from '../components/molecules/CommunityWelcomeSuggestions';
-import { getCommunityGreeting, sendCommunityGreeting } from '../api/communityInvitations';
+import {
+  getCommunityGreeting, getCommunityJoinGreeting, sendCommunityGreeting, sendCommunityJoinGreeting, skipCommunityJoinGreeting,
+} from '../api/communityInvitations';
 import { ChatMessageBubble } from '../components/molecules/ChatMessageBubble';
 import { useThreadActions } from '../hooks/useThreadActions';
 import { ThreadWorkspace, ThreadListButton } from '../components/organisms/ThreadWorkspace';
@@ -85,13 +87,35 @@ export const CommunityRoomPage = () => {
       throw new Error(toUserMessage(err, '歓迎スタンプを送れませんでした。'), { cause: err });
     }
   };
+  // 参加した本人の「よろしくスタンプ」。送る・あとでを選ぶまで出す。
+  const { data: joinGreeting, mutate: refreshJoinGreeting } = useSWR(
+    roomId && room && currentUserID ? ['community-join-greeting', currentUserID, roomId] : null,
+    () => getCommunityJoinGreeting(roomId!),
+  );
+  const sendJoinGreeting = async (stampID: string) => {
+    if (!roomId) return;
+    try {
+      const message = await sendCommunityJoinGreeting(roomId, stampID);
+      addMessage({ ...message, media: [], mentions: [], reactions: [] });
+      void refreshJoinGreeting([], { revalidate: false });
+    } catch (err) {
+      void refreshJoinGreeting();
+      throw new Error(toUserMessage(err, 'あいさつのスタンプを送れませんでした。'), { cause: err });
+    }
+  };
+  const skipJoinGreeting = async () => {
+    if (!roomId) return;
+    await skipCommunityJoinGreeting(roomId);
+    void refreshJoinGreeting([], { revalidate: false });
+  };
   const reactionEmojis = useMessageReactionEmojis(!!room);
   const stampOptions = useMessageStampOptions(!!room);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const messageListWrapperRef = useRef<HTMLDivElement>(null);
   const welcomeOverlayRef = useRef<HTMLDivElement>(null);
-  const hasWelcomePanel = !!greeting;
+  const showJoinGreeting = !!joinGreeting?.length;
+  const hasWelcomePanel = showJoinGreeting || !!greeting;
 
   useLayoutEffect(() => {
     const wrapper = messageListWrapperRef.current;
@@ -202,6 +226,11 @@ export const CommunityRoomPage = () => {
 
   const openDetail = () => setShowDetail(true);
   const closeDetail = () => setShowDetail(false);
+  // メンバーでなくなる（退出・追放）ときは、開いていた詳細モーダルの記録を消す。
+  // 残すと、入り直したときにモーダルが開いた状態から始まってしまう。
+  const forgetDetail = () => {
+    if (detailStorageKey) sessionStorage.removeItem(detailStorageKey);
+  };
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportingMessage, setReportingMessage] = useState<Message | null>(null);
 
@@ -265,6 +294,7 @@ export const CommunityRoomPage = () => {
       // 退出でメンバーが減るので、メンバー一覧のキャッシュを捨てる。
       if (communityID) await invalidateCommunityMembers(communityID);
       void mutateCommunities();
+      forgetDetail();
       navigate('/community', { replace: true });
     } catch (err) {
       setLeaveError(toUserMessage(err, '退出に失敗しました。'));
@@ -273,9 +303,10 @@ export const CommunityRoomPage = () => {
 
   useEffect(() => {
     if (error && error.includes('not a member of this room')) {
+      if (detailStorageKey) sessionStorage.removeItem(detailStorageKey);
       navigate('/community', { replace: true });
     }
-  }, [error, navigate]);
+  }, [error, navigate, detailStorageKey]);
 
   const initialLastReadAtMs = initialLastReadAt ? new Date(initialLastReadAt).getTime() : null;
   const firstUnreadIndex = findFirstUnreadIndex(messages, initialLastReadAtMs, (m) => m.user.ID === currentUserID);
@@ -371,11 +402,22 @@ export const CommunityRoomPage = () => {
         </div>
 
         <NewMessagesBadge count={newMessageCount} isAtBottom={isAtBottom} onClick={scrollToLatest} />
-        {greeting && (
+        {showJoinGreeting ? (
+          <div className={pageStyles.welcomeOverlay} ref={welcomeOverlayRef}>
+            <CommunityWelcomeSuggestions
+              key="join"
+              heading={`${community?.name || room?.name || 'コミュニティ'}へようこそ！スタンプであいさつしましょう`}
+              stamps={joinGreeting}
+              onSend={sendJoinGreeting}
+              onSkip={skipJoinGreeting}
+            />
+          </div>
+        ) : greeting && (
           <div className={pageStyles.welcomeOverlay} ref={welcomeOverlayRef}>
             <CommunityWelcomeSuggestions
               key={greeting.welcomeMessageID}
-              greeting={greeting}
+              heading={`${greeting.joinedUserName}さんを歓迎しましょう！`}
+              stamps={greeting.stamps}
               onSend={(stampID) => sendGreeting(greeting.welcomeMessageID, stampID)}
             />
           </div>

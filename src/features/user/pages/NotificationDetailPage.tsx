@@ -204,6 +204,7 @@ export const NotificationDetailPage = () => {
                 input={notification.targetID ? { id: notification.targetID } : null}
                 returnTo="/notifications"
                 showSender={!notification.actor}
+                embedded
               />
             )}
 

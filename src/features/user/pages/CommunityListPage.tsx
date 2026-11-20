@@ -1,4 +1,3 @@
-import useSWR from 'swr';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSidebar } from '../components/organisms/UserSidebar';
@@ -10,11 +9,9 @@ import { useUnreadSubscription } from '../hooks/useUnreadSubscription';
 import { useDebouncedRefresh } from '../hooks/useDebouncedRefresh';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { IconSearchBar } from '../components/molecules/IconSearchBar';
-import { sortUnreadFirst } from '../lib/unreadSort';
-import { useAuth } from '../context/useAuth';
 import { useNotification } from '../context/useNotification';
-import { receivedInvitations } from '../api/communityInvitations';
-import { RECEIVED_INVITATIONS, receivedInvitationCountKey } from '../lib/communityInvitationLinks';
+import { RECEIVED_INVITATIONS } from '../lib/communityInvitationLinks';
+import { useReceivedInvitationCount } from '../hooks/useReceivedInvitationCount';
 import styles from './CommunityListPage.module.css';
 
 const LIMIT = 20;
@@ -22,12 +19,8 @@ const LIMIT = 20;
 export const CommunityListPage = () => {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
-  const { userId } = useAuth();
   const { lastSseAt } = useNotification();
-  const { data: inviteCount, mutate: revalidateInvites } = useSWR(
-    userId ? receivedInvitationCountKey(userId) : null,
-    async () => (await receivedInvitations(0)).total,
-  );
+  const { count: inviteCount, refresh: revalidateInvites } = useReceivedInvitationCount();
   useEffect(() => {
     if (lastSseAt) void revalidateInvites();
   }, [lastSseAt, revalidateInvites]);
@@ -100,8 +93,16 @@ export const CommunityListPage = () => {
     // プレビューだけは即座に反映する（サーバが本文から作った文言がイベントに載って
     // いるので、取り直しを待つ必要が無い）。既読による更新（hasNewMessage: false）は
     // 本文が変わったわけではないので触らない。
-    if (hasNewMessage && lastMessage !== undefined) {
-      setCommunities(prev => prev.map(c => (c.roomID === roomID ? { ...c, lastMessage } : c)));
+    // 新しいメッセージが来たコミュニティは、すぐ一番上へ移す（LINE のトーク一覧と同じ）。
+    // 既読による更新では動かさないので、読んでも位置は下がらない。並びの正はサーバー
+    // （最後に動きがあった順）で、直後の取り直しでもこの並びのまま揃う。
+    if (hasNewMessage) {
+      setCommunities(prev => {
+        const index = prev.findIndex(c => c.roomID === roomID);
+        if (index < 0) return prev;
+        const moved = lastMessage !== undefined ? { ...prev[index], lastMessage } : prev[index];
+        return [moved, ...prev.slice(0, index), ...prev.slice(index + 1)];
+      });
     }
     // 未読数はイベントに載らないので取り直す。賑やかなルームだとイベントが連続する
     // ため、短時間のぶんはまとめて1回にする。
@@ -112,7 +113,8 @@ export const CommunityListPage = () => {
     if (!query) return true;
     return c.name.toLowerCase().includes(query.toLowerCase());
   });
-  const visibleCommunities = sortUnreadFirst(filteredCommunities);
+  // 並びはサーバーの順（最後に動きがあった順）。未読でも並べ替えない。
+  const visibleCommunities = filteredCommunities;
 
   return (
     <div>
@@ -124,7 +126,7 @@ export const CommunityListPage = () => {
             aria-label={inviteCount ? `届いた招待 ${inviteCount}件` : undefined}
             onClick={() => navigate(RECEIVED_INVITATIONS)}
           >
-            <span>届いた招待</span><UnreadCountBadge count={inviteCount ?? 0} />
+            <span>届いた招待</span><UnreadCountBadge count={inviteCount} />
           </button>
           <button className={styles.btnSecondary} onClick={() => navigate('/community/browse')}>
             コミュニティを探す
