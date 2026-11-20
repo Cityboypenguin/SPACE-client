@@ -39,7 +39,9 @@ test('検索で招待した相手が通知詳細から参加し、参加案内�
     await expect(recipient).toHaveURL(/\/notifications\/[^/]+$/);
     await expect(recipient.getByRole('button', { name: '削除', exact: true })).toBeVisible();
     await expect(recipient.getByRole('button', { name: '参加する', exact: true })).toBeVisible();
-    await recipient.getByRole('button', { name: '通知に戻る', exact: true }).click();
+    const back = recipient.locator('main').getByRole('button').first();
+    await expect(back).toHaveText('');
+    await back.click();
     await expect(recipient).toHaveURL(/\/notifications$/);
 
     await recipient.setViewportSize({ width: 375, height: 812 });

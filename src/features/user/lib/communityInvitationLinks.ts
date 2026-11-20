@@ -4,7 +4,7 @@ export const individualInvitationPath = (id: string) => `${RECEIVED_INVITATIONS}
 export const sharedInvitationPath = (token: string) => `${RECEIVED_INVITATIONS}/link#${token}`;
 
 export const invitationLoginReturn = (path: unknown) =>
-  typeof path === 'string' && /^\/community\/invitations\/(?:link#[A-Za-z0-9_-]{43}|[A-Za-z0-9_-]+(?:\?from=notifications)?)$/.test(path)
+  typeof path === 'string' && /^\/community\/invitations\/(?:link#[A-Za-z0-9_-]{43}|[A-Za-z0-9_-]+)$/.test(path)
     ? path
     : null;
 

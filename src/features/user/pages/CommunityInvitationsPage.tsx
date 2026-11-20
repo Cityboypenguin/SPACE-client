@@ -45,9 +45,7 @@ export const CommunityInvitationsPage = () => {
 
 export const CommunityInvitationPage = ({ shared = false }: { shared?: boolean }) => {
   const { id } = useParams<{ id: string }>();
-  const { hash, search } = useLocation();
-  const fromNotification = new URLSearchParams(search).get('from') === 'notifications';
-  const returnTo = fromNotification ? '/notifications' : RECEIVED_INVITATIONS;
+  const { hash } = useLocation();
   const rawToken = hash.slice(1);
   const input: InvitationReference | null = shared
     ? (/^[A-Za-z0-9_-]{43}$/.test(rawToken) ? { token: rawToken } : null)
@@ -57,11 +55,9 @@ export const CommunityInvitationPage = ({ shared = false }: { shared?: boolean }
     <div>
       <UserSidebar />
       <main className={styles.page}>
-        <Link className={styles.backLink} to={returnTo}>
-          {fromNotification ? '通知に戻る' : '届いた招待に戻る'}
-        </Link>
+        <Link className={styles.backLink} to={RECEIVED_INVITATIONS}>届いた招待に戻る</Link>
         <h1>コミュニティへの招待</h1>
-        <CommunityInvitationDetails key={shared ? rawToken : id} input={input} returnTo={returnTo} />
+        <CommunityInvitationDetails key={shared ? rawToken : id} input={input} returnTo={RECEIVED_INVITATIONS} />
       </main>
     </div>
   );

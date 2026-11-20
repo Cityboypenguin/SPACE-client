@@ -143,14 +143,8 @@ export const NotificationDetailPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <button
-            type="button"
-            className={styles.backBtn}
-            aria-label={isInvitation ? '通知に戻る' : '戻る'}
-            onClick={() => isInvitation ? navigate('/notifications') : navigate(-1)}
-          >
+          <button type="button" onClick={() => navigate(-1)}>
             <ChevronLeft />
-            {isInvitation && '通知に戻る'}
           </button>
           {notification && (
             <button className={styles.deleteBtn} onClick={handleDelete} disabled={deleting}>
