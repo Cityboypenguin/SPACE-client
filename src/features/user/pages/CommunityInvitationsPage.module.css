@@ -917,3 +917,10 @@
   .settingsGrid { grid-template-columns: 1fr; }
   .composerFooter .primaryButton { width: 100%; }
 }
+
+/* DM と同じお手紙アイコン。丸の中に収まる大きさにそろえる。 */
+.mailIcon {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+}

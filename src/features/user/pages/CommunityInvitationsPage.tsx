@@ -11,6 +11,7 @@ import { acceptInvitation, declineInvitation, receivedInvitations, type Invitati
 import { individualInvitationPath, RECEIVED_INVITATIONS, receivedInvitationCountKey } from '../lib/communityInvitationLinks';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { AppSwal } from '../../../lib/swal';
+import mailIcon from '../../../assets/パーツ_メール.svg';
 import styles from './CommunityInvitationsPage.module.css';
 
 const pageSize = 20;
@@ -86,7 +87,9 @@ export const CommunityInvitationsPage = () => {
         {actionError && <p className={styles.alert} role="alert">{actionError}</p>}
         {data?.total === 0 && (
           <div className={styles.empty}>
-            <span className={styles.emptyIcon} aria-hidden="true">✉️</span>
+            <span className={styles.emptyIcon} aria-hidden="true">
+              <img src={mailIcon} alt="" className={`${styles.mailIcon} themed-icon`} />
+            </span>
             <p className={styles.emptyTitle}>参加できる招待はありません。</p>
             <p className={styles.muted}>招待が届くと、ここと通知に表示されます。</p>
             <Link className={styles.secondaryButton} to="/community">コミュニティを探す</Link>

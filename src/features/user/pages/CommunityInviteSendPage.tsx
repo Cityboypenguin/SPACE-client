@@ -15,6 +15,7 @@ import { refreshInvitationCaches, sharedInvitationPath } from '../lib/communityI
 import { toUserMessage } from '../../../lib/errorMessages';
 import { storageUrl } from '../../../lib/storage';
 import { AppSwal } from '../../../lib/swal';
+import mailIcon from '../../../assets/パーツ_メール.svg';
 import styles from './CommunityInvitationsPage.module.css';
 
 const pageSize = 20;
@@ -361,7 +362,9 @@ export const CommunityInviteSendPage = () => {
                 const state = historyStatus[invite.status] ?? historyStatus.expired;
                 return (
                   <li key={invite.id} className={styles.row}>
-                    <span className={styles.rowIcon} aria-hidden="true">{invite.isLink ? '🔗' : '✉️'}</span>
+                    <span className={styles.rowIcon} aria-hidden="true">
+                      {invite.isLink ? '🔗' : <img src={mailIcon} alt="" className={`${styles.mailIcon} themed-icon`} />}
+                    </span>
                     <span className={styles.rowBody}>
                       <span className={styles.rowTitle}>
                         {label}
