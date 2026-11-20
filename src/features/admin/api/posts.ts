@@ -1,3 +1,4 @@
+import { type Video } from '../../../lib/video/fields';
 import { requestDoc } from '../../../lib/graphql';
 import { graphql } from '../../../generated';
 import { type Media as SharedMedia } from '../../../lib/media';
@@ -33,6 +34,7 @@ export type Post = {
   parent?: Post | null;
   replies?: Post[];
   media: Media[];
+  video?: Video | null;
 };
 
 export const AdminPostFieldsFragment = graphql(`
@@ -54,6 +56,9 @@ export const AdminPostFieldsFragment = graphql(`
     media {
       ...MediaFields
       createdAt
+    }
+    video {
+      ...VideoFields
     }
   }
 `);

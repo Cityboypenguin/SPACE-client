@@ -10,11 +10,14 @@ import { formatTime } from '../../../../lib/formatTime';
 import styles from './ReplyModal.module.css';
 import { renderTextWithLinks } from '../../../../lib/renderTextWithLinks';
 import { useMentionNavigation } from '../../hooks/useMentionNavigation';
+import { useVideoDraft } from '../../hooks/useVideoDraft';
+import { toUserMessage } from '../../../../lib/errorMessages';
+import type { VideoInput } from '../../../../lib/video/fields';
 
 type Props = {
   post: Post;
   onClose: () => void;
-  onSubmit: (content: string, files: File[]) => Promise<void>;
+  onSubmit: (content: string, files: File[], video?: VideoInput) => Promise<void>;
   userId?: string | null;
   avatarUrl?: string | null;
   userName?: string;
@@ -26,6 +29,7 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const video = useVideoDraft();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -34,14 +38,16 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
   }, [onClose]);
 
   const handleSubmit = async () => {
-    if ((!content.trim() && files.length === 0) || submitting) return;
+    if ((!content.trim() && files.length === 0 && video.state.status !== 'ready') || submitting || video.busy) return;
     setSubmitting(true);
     setError('');
     try {
-      await onSubmit(content, files);
+      const videoInput = (await video.upload()) ?? undefined;
+      await onSubmit(content, files, videoInput);
+      video.clear();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '返信の送信に失敗しました');
+      setError(toUserMessage(err, err instanceof Error ? err.message : '返信の送信に失敗しました'));
       setSubmitting(false);
     }
   };
@@ -107,6 +113,7 @@ export const ReplyModal = ({ post, onClose, onSubmit, userId, avatarUrl, userNam
             userName={userName}
             selectedFiles={files}
             onFileSelect={setFiles}
+            videoDraft={video}
             maxLength={500}
             isEmbedded
           />

@@ -307,3 +307,43 @@
 .hiddenInput {
   display: none;
 }
+
+/* 動画の追加ボタン。写真のボタンと並べる。 */
+.videoButton {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.videoButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.existingVideo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.existingVideoRemove {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-danger);
+  cursor: pointer;
+}

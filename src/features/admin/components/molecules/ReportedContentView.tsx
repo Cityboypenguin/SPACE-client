@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import type { ReportedContent } from '../../api/report';
+import { requestReportedVideoPlayback, type ReportedContent, type ReportedVideo } from '../../api/report';
+import { VideoPlayer } from '../../../../components/molecules/VideoPlayer';
 import { storageUrl } from '../../../../lib/storage';
 import { reactionLabel } from '../../../user/constants/reactionStamps';
 import styles from '../../styles/AdminShared.module.css';
@@ -11,9 +12,36 @@ const roomTypeJa: Record<string, string> = {
   course: '授業内チャット',
 };
 
+// 通報の写しの動画。ファイルは写し取っておらず、通報への対応が終わると消える。
+// 再生は通報のIDで取る（投稿者が退会して元の動画の行が無くても再生できる）。
+const ReportedVideoView = ({ video, reportID }: { video: ReportedVideo; reportID: string }) => {
+  if (!video.available) {
+    return <div className={styles.cellMuted}>動画（ファイルは削除済み）</div>;
+  }
+  return (
+    <VideoPlayer
+      video={{
+        ID: video.ID,
+        status: 'AVAILABLE',
+        thumbnailUrl: video.thumbnailURL,
+        durationMs: video.durationMs,
+        width: video.width,
+        height: video.height,
+        sizeBytes: video.sizeBytes,
+        hasAudio: video.hasAudio,
+        expiresAt: '',
+        retentionDays: 0,
+      }}
+      requestPlayback={() => requestReportedVideoPlayback(reportID)}
+      adminView
+    />
+  );
+};
+
 // 通報を受けた時点の内容。元の投稿が編集・削除されていてもこの内容のまま。
 // isThread はスレッドそのものの通報（content はスレッドの題名、投稿者は作成者）。
-export const ReportedContentView = ({ content, isThread = false }: { content: ReportedContent; isThread?: boolean }) => (
+// reportID は動画の再生に使う（動画が無ければ要らない）。
+export const ReportedContentView = ({ content, isThread = false, reportID }: { content: ReportedContent; isThread?: boolean; reportID?: string }) => (
   <div>
     <div className={styles.cellMuted}>
       {roomTypeJa[content.roomType] ?? content.roomType}
@@ -62,6 +90,12 @@ export const ReportedContentView = ({ content, isThread = false }: { content: Re
           <li key={i} className={viewStyles.text}>{option}</li>
         ))}
       </ul>
+    )}
+    {content.video && reportID && (
+      <div className={`${viewStyles.block} ${viewStyles.video}`}>
+        <ReportedVideoView video={content.video} reportID={reportID} />
+        <div className={styles.cellMuted}>通報への対応が終わると、この動画は保存期間などの通常の決まりで削除されます（投稿者が退会済みなら次の自動削除〈毎日4時〉で削除）。</div>
+      </div>
     )}
     {content.media.map((m) => (
       <div key={m.ID} className={viewStyles.block}>

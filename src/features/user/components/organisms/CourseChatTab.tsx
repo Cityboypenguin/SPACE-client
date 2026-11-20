@@ -33,6 +33,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThre
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
+    videoDraft,
     sending,
     sendError,
     editingId, setEditingId,
@@ -170,6 +171,7 @@ export const CourseChatTab = ({ roomId, roomWritable, aroundMessageId, allowThre
           onChange={setContent}
           onSubmit={handleSend}
           onFileSelect={setSelectedFiles}
+        videoDraft={videoDraft}
           selectedFiles={selectedFiles}
           disabled={sending}
           mentionCandidates={mentionCandidates ?? []}

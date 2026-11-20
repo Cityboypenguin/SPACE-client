@@ -15,6 +15,7 @@ import { uploadMessageMediaFiles } from '../api/media';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { AppSwal } from '../../../lib/swal';
 import { containsMentionText, type Mention, type MentionCandidate } from '../../../lib/mentions';
+import { useVideoDraft } from './useVideoDraft';
 
 export const useChatActions = (
   roomId: string | undefined,
@@ -28,6 +29,8 @@ export const useChatActions = (
     setDraft((current) => ({ ...current, content: typeof value === 'function' ? value(current.content) : value }));
   }, []);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  // 動画は1件のメッセージに1本まで。画像・スタンプとは同時に送らない。
+  const videoDraft = useVideoDraft();
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -45,22 +48,24 @@ export const useChatActions = (
   const handleSend = async (e: { preventDefault(): void; input?: HTMLTextAreaElement | null }) => {
     e.preventDefault();
     // 送信中に再度呼ばれた場合（Enter連打やダブルクリック等）は二重送信を防ぐため即returnする。
-    if (sending) return;
-    if (!content.trim() && selectedFiles.length === 0) return;
+    if (sending || videoDraft.busy) return;
+    if (!content.trim() && selectedFiles.length === 0 && videoDraft.state.status !== 'ready') return;
     if (!roomId) return;
     setSending(true);
     setSendError('');
     try {
       const mediaInputs = await uploadMessageMediaFiles(selectedFiles);
+      const videoInput = await videoDraft.upload();
       const trimmed = content.trim();
       // 選択後に本文を書き換えて "@表示名" が消えた相手は送らない（サーバーでも同じ検証をする）。
       const mentionUserIDs = pendingMentions
         .filter((m) => containsMentionText(trimmed, m.name))
         .map((m) => m.ID);
-      const data = await sendMessage(roomId, trimmed, mediaInputs, replyTarget?.ID ?? null, mentionUserIDs);
+      const data = await sendMessage(roomId, trimmed, mediaInputs, replyTarget?.ID ?? null, mentionUserIDs, null, videoInput);
       // The input stays editable while sending. Clear only the submitted draft.
       setDraft((current) => current.content === content ? { content: '', mentions: [] } : current);
       setSelectedFiles([]);
+      videoDraft.clear();
       setReplyTarget((current) => current?.ID === replyTarget?.ID ? null : current);
       addMessage(data.sendMessage);
       void mutate(['chat-thread', roomId]).catch(() => undefined);
@@ -152,6 +157,7 @@ export const useChatActions = (
     setContent,
     selectedFiles,
     setSelectedFiles,
+    videoDraft,
     sending,
     sendError,
     editingId,

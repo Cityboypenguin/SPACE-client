@@ -6,6 +6,7 @@ import { MediaList } from '../../../user/components/molecules/ChatMessageMedia';
 import { ReplyQuote } from '../../../user/components/molecules/ChatReplyQuote';
 import { ReactionBar } from '../../../user/components/molecules/ChatReactionBar';
 import { FILES_REMOVED_TEXT } from '../../../user/constants/filesRemoved';
+import { AdminVideo } from './AdminVideo';
 import { renderChatText } from '../../../../lib/renderTextWithLinks';
 import chatStyles from '../../../user/components/ChatRoom.module.css';
 import styles from './AdminChatMessage.module.css';
@@ -36,7 +37,8 @@ export const AdminChatMessage = ({ msg, onDelete, deleting = false, onOpenThread
   const isStamp = !isThread && !!msg.stampID;
   const hasText = (msg.thread?.title ?? msg.content).trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
-  const filesRemoved = !isStamp && !hasText && !hasMedia;
+  const hasVideo = !!msg.video;
+  const filesRemoved = !isStamp && !hasText && !hasMedia && !hasVideo;
   const isReply = !isThread && !!msg.replyToID;
   const isEdited = !isThread && new Date(msg.updatedAt).getTime() !== new Date(msg.createdAt).getTime();
   const isWithdrawn = msg.user.accountID === DELETED_ACCOUNT_ID;
@@ -104,6 +106,11 @@ export const AdminChatMessage = ({ msg, onDelete, deleting = false, onOpenThread
                 )
               )}
               {hasMedia && <MediaList mediaItems={msg.media} isMine={false} />}
+              {msg.video && (
+                <div className={chatStyles.videoWrap}>
+                  <AdminVideo video={msg.video} />
+                </div>
+              )}
             </div>
           </div>
 

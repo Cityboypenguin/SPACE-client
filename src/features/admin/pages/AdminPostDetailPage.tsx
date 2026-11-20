@@ -9,6 +9,7 @@ import { getPostByID, getPostReplies, adminDeletePost, type Post, type Media } f
 import { useToast } from '../../../context/useToast';
 import { ChevronLeft } from '../../../components/atoms/ChevronLeft';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
+import { AdminVideo } from '../components/molecules/AdminVideo';
 import styles from '../styles/AdminShared.module.css';
 
 const PostMediaDetail = ({ media }: { media: Media[] }) => <PostMediaGrid media={media} large />;
@@ -166,6 +167,11 @@ export const AdminPostDetailPage = () => {
               {post.media && post.media.length > 0 && (
                 <div style={{ marginBottom: '16px' }}>
                   <PostMediaDetail media={post.media} />
+                </div>
+              )}
+              {post.video && (
+                <div style={{ marginBottom: '16px' }}>
+                  <AdminVideo video={post.video} />
                 </div>
               )}
 

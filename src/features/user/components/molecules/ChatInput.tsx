@@ -1,3 +1,6 @@
+import { ACCEPTED_VIDEO_TYPES } from '../../../../lib/video/constants';
+import type { VideoDraftController } from '../../hooks/useVideoDraft';
+import { VideoDraftPanel } from './VideoDraftPanel';
 import { useRef, useEffect, useState } from 'react';
 import { AppSwal } from '../../../../lib/swal';
 import styles from '../ChatRoom.module.css';
@@ -56,14 +59,18 @@ type Props = {
   // スタンプだけのメッセージを送れるルームだけが渡す。stampOptions は送れるスタンプのID。
   stampOptions?: string[];
   onSendStamp?: (stampID: string) => void;
+  // 動画（1本まで）。渡したルームだけ動画を送れる。画像とは同時に送れない。
+  videoDraft?: VideoDraftController;
 };
 
 export const ChatInput = ({
   onCreateThread, value, onChange, onSubmit, onFileSelect, selectedFiles, disabled, isBlocked,
   replyTarget, onCancelReply, mentionCandidates = [], onMentionSelect, onMentionQueryChange,
-  stampOptions = [], onSendStamp,
+  stampOptions = [], onSendStamp, videoDraft,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const hasVideo = videoDraft?.hasVideo ?? false;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevDisabledRef = useRef(disabled);
   const composingRef = useRef(false);
@@ -141,6 +148,7 @@ export const ChatInput = ({
   }, [selectedFiles]);
 
   const addFiles = (incoming: File[]) => {
+    if (hasVideo) return; // 動画と画像は同時に送らない
     const invalid = incoming.find((f) => !ACCEPTED_FILE_TYPES.includes(f.type));
     if (invalid) {
       alert('JPEG・PNG・GIF・WebP・SVG のみ送信できます。');
@@ -163,6 +171,13 @@ export const ChatInput = ({
     if (!incoming.length) return;
     addFiles(incoming);
     e.target.value = '';
+  };
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !videoDraft) return;
+    videoDraft.select(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -210,7 +225,9 @@ export const ChatInput = ({
   const isOverLimit = messageLength > MAX_MESSAGE_LENGTH;
   // 上限の90%を超えたあたりから残り文字数を意識してもらうためカウンタを表示する。
   const isNearOrOverLimit = messageLength > MAX_MESSAGE_LENGTH * 0.9;
-  const canSubmit = !disabled && !isBlocked && !isOverLimit && (value.trim() !== '' || selectedFiles.length > 0);
+  // 動画の圧縮中・アップロード中は送らせない（二重送信と、動画抜きで送ってしまうのを防ぐ）。
+  const canSubmit = !disabled && !isBlocked && !isOverLimit && !(videoDraft?.busy ?? false)
+    && (value.trim() !== '' || selectedFiles.length > 0 || videoDraft?.state.status === 'ready');
 
   // フォームのnative submit（例: テスト・支援技術等からの直接submit）でも、送信中
   // （disabled）や文字数超過時に親のonSubmitが呼ばれないよう、ここでもcanSubmitを見る。
@@ -313,12 +330,34 @@ export const ChatInput = ({
           )}
         </div>
       )}
+      {videoDraft && <VideoDraftPanel draft={videoDraft} />}
       <form onSubmit={handleFormSubmit} className={styles.inputForm}>
+        {videoDraft && (
+          <>
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept={ACCEPTED_VIDEO_TYPES.join(',')}
+              onChange={handleVideoChange}
+              className={styles.hiddenInput}
+            />
+            <button
+              type="button"
+              aria-label="動画を添付"
+              title={selectedFiles.length > 0 ? '画像と動画は同時に送れません' : '動画を添付（60秒まで）'}
+              onClick={() => videoInputRef.current?.click()}
+              disabled={disabled || isBlocked || hasVideo || selectedFiles.length > 0}
+              className={styles.videoButton}
+            >
+              動画
+            </button>
+          </>
+        )}
         <button
           type="button"
           aria-label="ファイルを添付"
           onClick={() => fileInputRef.current?.click()}
-          disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES}
+          disabled={disabled || isBlocked || selectedFiles.length >= MAX_FILES || hasVideo}
           title={isBlocked ? 'このルームには送信できないため添付できません' : `ファイルを添付 (${selectedFiles.length}/${MAX_FILES})`}
           className={`${styles.attachButton} ${(disabled || isBlocked || selectedFiles.length >= MAX_FILES) ? styles.attachBtnDisabled : styles.attachBtnEnabled}`}
         >

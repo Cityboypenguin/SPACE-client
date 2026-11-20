@@ -25,6 +25,8 @@ import {
   type Post,
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
+import type { VideoInput } from '../../../lib/video/fields';
+import { useVideoDraft } from '../hooks/useVideoDraft';
 import { extractHashtags } from '../../../lib/hashtags';
 import { createBlocker } from '../api/block';
 import { useAuth } from '../context/useAuth';
@@ -229,6 +231,9 @@ export const PostListPage = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [modalContent, setModalContent] = useState('');
   const [modalFiles, setModalFiles] = useState<File[]>([]);
+  // 動画は入力欄ごとに1本。圧縮中のものを別の入力欄と共有しない。
+  const mainVideo = useVideoDraft();
+  const modalVideo = useVideoDraft();
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
 
@@ -388,14 +393,16 @@ export const PostListPage = () => {
   };
 
   const handlePost = async () => {
-    if ((!content.trim() && selectedFiles.length === 0) || posting) return;
+    if ((!content.trim() && selectedFiles.length === 0 && mainVideo.state.status !== 'ready') || posting || mainVideo.busy) return;
     setPosting(true);
     setPostError('');
     try {
       const mediaInputs = await uploadMediaFiles(selectedFiles);
-      const newPost = await createPost(content.trim(), undefined, mediaInputs);
+      const videoInput = (await mainVideo.upload()) ?? undefined;
+      const newPost = await createPost(content.trim(), undefined, mediaInputs, videoInput);
       setContent('');
       setSelectedFiles([]);
+      mainVideo.clear();
       setPosts(prev => [newPost, ...prev]);
       setTotal(prev => prev + 1);
       // 検索中で、その検索条件にヒットする投稿なら検索結果にも即時反映する。
@@ -410,14 +417,16 @@ export const PostListPage = () => {
   };
 
   const handleModalPost = async () => {
-    if ((!modalContent.trim() && modalFiles.length === 0) || posting) return;
+    if ((!modalContent.trim() && modalFiles.length === 0 && modalVideo.state.status !== 'ready') || posting || modalVideo.busy) return;
     setPosting(true);
     setPostError('');
     try {
       const mediaInputs = await uploadMediaFiles(modalFiles);
-      const newPost = await createPost(modalContent.trim(), undefined, mediaInputs);
+      const videoInput = (await modalVideo.upload()) ?? undefined;
+      const newPost = await createPost(modalContent.trim(), undefined, mediaInputs, videoInput);
       setModalContent('');
       setModalFiles([]);
+      modalVideo.clear();
       setPosts(prev => [newPost, ...prev]);
       setTotal(prev => prev + 1);
       // 検索中で、その検索条件にヒットする投稿なら検索結果にも即時反映する。
@@ -435,6 +444,7 @@ export const PostListPage = () => {
   const handleModalCancel = () => {
     setModalContent('');
     setModalFiles([]);
+    modalVideo.clear();
     setComposerOpen(false);
   };
 
@@ -448,6 +458,7 @@ export const PostListPage = () => {
   const [editContent, setEditContent] = useState('');
   const [editFiles, setEditFiles] = useState<File[]>([]);
   const [editDeletedMediaIDs, setEditDeletedMediaIDs] = useState<string[]>([]);
+  const [editRemoveVideo, setEditRemoveVideo] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState('');
 
@@ -457,10 +468,10 @@ export const PostListPage = () => {
     setSearchResults(prev => prev.map(p => p.ID === postId ? updater(p) : p));
   }, [followFeed]);
 
-  const handleReplySubmit = async (content: string, files: File[]) => {
+  const handleReplySubmit = async (content: string, files: File[], video?: VideoInput) => {
     if (!replyingTo) return;
     const mediaInputs = await uploadMediaFiles(files);
-    await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    await createPost(content.trim(), replyingTo.ID, mediaInputs, video);
     updatePostInAllLists(replyingTo.ID, p => ({ ...p, replyCount: p.replyCount + 1 }));
   };
 
@@ -483,20 +494,21 @@ export const PostListPage = () => {
     setEditContent(post.content);
     setEditFiles([]);
     setEditDeletedMediaIDs([]);
+    setEditRemoveVideo(false);
     setEditError('');
   };
 
   const handleEditSubmit = async () => {
     if (!editingPost || editSubmitting) return;
     const remainingExisting = editingPost.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) ?? [];
-    const hasAnyMedia = remainingExisting.length > 0 || editFiles.length > 0;
+    const hasAnyMedia = remainingExisting.length > 0 || editFiles.length > 0 || (!!editingPost.video && !editRemoveVideo);
     if (!editContent.trim() && !hasAnyMedia) return;
 
     setEditSubmitting(true);
     setEditError('');
     try {
       const mediaInputs = await uploadMediaFiles(editFiles);
-      const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs);
+      const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs, editRemoveVideo);
       const filteredUpdated = {
         ...updated,
         media: updated.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) ?? [],
@@ -604,6 +616,7 @@ export const PostListPage = () => {
               userName={profile?.user.name}
               selectedFiles={modalFiles}
               onFileSelect={setModalFiles}
+              videoDraft={modalVideo}
               onCancel={handleModalCancel}
               maxLength={500}
               isEmbedded
@@ -709,6 +722,7 @@ export const PostListPage = () => {
           accountId={profile?.user.accountID}
           selectedFiles={selectedFiles}
           onFileSelect={setSelectedFiles}
+          videoDraft={mainVideo}
           maxLength={500}
           enableHashtagSuggestions
         />
@@ -750,6 +764,9 @@ export const PostListPage = () => {
                   existingMedia={editingPost.media}
                   deletedMediaIDs={editDeletedMediaIDs}
                   onDeleteExistingMedia={(mediaId) => setEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                  existingVideo={editingPost.video}
+                  existingVideoRemoved={editRemoveVideo}
+                  onRemoveExistingVideo={() => setEditRemoveVideo(true)}
                   onCancel={() => setEditingPost(null)}
                   submitLabel="保存する"
                   submittingLabel="保存中..."
