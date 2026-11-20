@@ -97,6 +97,7 @@ const TYPE_ICON: Record<string, ReactNode> = {
   [QUESTION_ADDENDUM_TYPE]: <ChatIcon />,
   [ANSWER_ADDENDUM_TYPE]: <ChatIcon />,
   [COMMUNITY_INVITATION_TYPE]: <GroupIcon />,
+  community_invitation_accepted: <GroupIcon />,
   community_kick: <GroupIcon />,
   community_role: <GroupIcon />,
   announcement: <BellIcon />,

@@ -1,3 +1,4 @@
+import { COMMUNITY_INVITATION_ACCEPTED_TYPE, COMMUNITY_INVITATION_TYPE, refreshInvitationCaches } from '../lib/communityInvitationLinks';
 import {
   useCallback,
   useEffect,
@@ -197,6 +198,13 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
       source.addEventListener('terms_updated', refreshConsent);
 
+      // 招待が届いた・取り消された・自分の招待に返事があった。中身は載らないので、
+      // 開いている招待の一覧に取り直させる。
+      source.addEventListener('community_invitations_changed', (e: MessageEvent) => {
+        rememberEventId(e);
+        void refreshInvitationCaches();
+      });
+
       source.addEventListener('course_chat_status', (e: MessageEvent) => {
         try {
           const { enabled } = JSON.parse(e.data as string) as { enabled?: unknown };
@@ -230,6 +238,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           }
           setUnreadCount((c) => c + 1);
           setLastSseAt(Date.now());
+          if (payload.type === COMMUNITY_INVITATION_TYPE || payload.type === COMMUNITY_INVITATION_ACCEPTED_TYPE) {
+            void refreshInvitationCaches();
+          }
           let link = `/notifications/${payload.id}`;
           if (payload.type === 'announcement' && payload.targetID) {
             link = `/announcements/${payload.targetID}`;

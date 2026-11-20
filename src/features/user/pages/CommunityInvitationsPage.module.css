@@ -1,97 +1,919 @@
+/* 招待まわり（届いた招待一覧・招待の詳細・メンバー招待）で共有するスタイル。 */
+
 .page {
-  max-width: 720px;
+  --invite-accent: #f97316;
+  --invite-accent-hover: #ea580c;
+  --invite-accent-soft: color-mix(in srgb, #f97316 12%, transparent);
+
+  max-width: 640px;
   margin-inline: auto;
-  padding: clamp(1rem, 4vw, 2rem);
+  padding: clamp(1rem, 4vw, 2rem) clamp(1rem, 4vw, 1.5rem) 3rem;
+  color: var(--color-text);
 }
+
+/* ---- ヘッダー ---- */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: 1.25rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .75rem;
+  padding: .35rem .6rem .35rem .5rem;
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  font-size: .85rem;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--color-text);
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.countBadge {
+  min-width: 1.5rem;
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background: var(--invite-accent-soft);
+  color: var(--invite-accent);
+  font-size: .8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.lead {
+  margin: -.75rem 0 1.25rem;
+  color: var(--color-text-muted);
+  font-size: .875rem;
+}
+
+/* ---- ボタン ---- */
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.ghostButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-height: 2.5rem;
+  padding: .5rem 1.1rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s, color .15s, opacity .15s;
+}
+
+.primaryButton {
+  border: 1px solid var(--invite-accent);
+  background: var(--invite-accent);
+  color: #fff;
+}
+
+.primaryButton:hover:enabled {
+  border-color: var(--invite-accent-hover);
+  background: var(--invite-accent-hover);
+}
+
+.secondaryButton {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.secondaryButton:hover:enabled {
+  background: var(--color-bg);
+  border-color: var(--color-text-muted);
+}
+
+.dangerButton {
+  min-height: 2rem;
+  padding: .3rem .85rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: .8rem;
+}
+
+.dangerButton:hover:enabled {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.ghostButton {
+  min-height: 2rem;
+  padding: .3rem .85rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: .85rem;
+}
+
+.ghostButton:hover:enabled {
+  color: var(--color-text);
+  background: var(--color-bg-elevated);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled,
+.ghostButton:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.dangerButton:focus-visible,
+.ghostButton:focus-visible,
+.inviteCard:focus-visible,
+.backLink:focus-visible {
+  outline: 2px solid var(--invite-accent);
+  outline-offset: 2px;
+}
+
+/* ---- メッセージ ---- */
+
+.notice,
+.alert {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0 0 1rem;
+  padding: .7rem 1rem;
+  border-radius: 12px;
+  font-size: .875rem;
+  overflow-wrap: anywhere;
+}
+
+.notice {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.alert {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: .875rem;
+}
+
+/* ---- 届いた招待の一覧 ---- */
 
 .list {
   display: grid;
   gap: .75rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.list a,
-.card {
-  display: grid;
-  gap: .5rem;
-  padding: 1rem;
-  border: 1px solid currentColor;
-  border-radius: .75rem;
+.inviteCard {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  padding: .9rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-elevated);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
 }
 
-.card :is(h2, p) {
+.inviteCard:hover {
+  border-color: var(--invite-accent);
+  box-shadow: 0 4px 14px rgb(15 23 42 / .06);
+  transform: translateY(-1px);
+}
+
+.inviteBody {
+  display: grid;
+  flex: 1;
+  gap: .2rem;
+  min-width: 0;
+}
+
+.inviteName {
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.inviteMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .15rem .5rem;
+  color: var(--color-text-muted);
+  font-size: .8rem;
+}
+
+.inviteMeta > * + *::before {
+  content: '·';
+  margin-right: .5rem;
+}
+
+.inviteDescription {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: .15rem 0 0;
+  color: var(--color-text);
+  font-size: .85rem;
+  opacity: .8;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.inviteAside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+
+.chevron {
+  color: var(--color-text-muted);
+  transform: rotate(180deg);
+}
+
+.expiry {
+  display: inline-flex;
+  align-items: center;
+  padding: .15rem .55rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text-muted);
+  font-size: .75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.expiryUrgent {
+  background: var(--color-warning-bg);
+  box-shadow: none;
+  color: var(--color-warning);
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: .75rem;
+  padding: 3rem 1rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--invite-accent-soft);
+  font-size: 1.6rem;
+}
+
+.empty p {
   margin: 0;
 }
 
+.emptyTitle {
+  font-weight: 700;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  margin-top: 1.25rem;
+  color: var(--color-text-muted);
+  font-size: .85rem;
+}
+
+/* 読み込み中のプレースホルダー */
+.skeleton {
+  height: 5rem;
+  border-radius: 16px;
+  background: linear-gradient(90deg, var(--color-bg-elevated) 25%, var(--color-border) 50%, var(--color-bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  .inviteCard:hover { transform: none; }
+}
+
+/* ---- 招待の詳細 ---- */
+
+.card {
+  display: grid;
+  justify-items: center;
+  gap: .75rem;
+  padding: 2rem clamp(1rem, 5vw, 2rem) 1.5rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg-elevated);
+  text-align: center;
+}
+
+.card h2,
+.card p {
+  margin: 0;
+}
+
+.card h2 {
+  font-size: 1.35rem;
+  overflow-wrap: anywhere;
+}
+
+.invitedBy {
+  padding: .3rem .8rem;
+  border-radius: 999px;
+  background: var(--invite-accent-soft);
+  color: var(--invite-accent);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: .5rem;
+  color: var(--color-text-muted);
+  font-size: .85rem;
+}
+
 .description {
+  width: 100%;
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: .85rem 1rem;
+  border-radius: 12px;
+  background: var(--color-bg);
+  font-size: .9rem;
+  line-height: 1.6;
+  text-align: left;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.statusMessage {
+  padding: .5rem .9rem;
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: .875rem;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: .75rem;
+  width: 100%;
+  margin-top: .5rem;
 }
 
-.page section + section {
-  margin-top: 1.5rem;
+.card .actions .primaryButton {
+  min-width: 10rem;
 }
 
-.page button,
-.actions button,
-.page input,
-.backLink {
-  border: 1px solid var(--color-border);
-  border-radius: .45rem;
-  color: var(--color-text);
-  background: var(--color-surface);
-  padding: .5rem .75rem;
-}
+/* ---- メンバー招待 ---- */
 
-.backLink {
-  display: inline-flex;
-  text-decoration: none;
-}
-
-.backLink:hover {
+.section {
+  display: grid;
+  gap: .9rem;
+  padding: 1.25rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
   background: var(--color-bg-elevated);
 }
 
-.page button:enabled,
-.actions button:enabled {
-  cursor: pointer;
+.section + .section {
+  margin-top: 1rem;
 }
 
-.list a,
-.card {
-  border-color: var(--color-border);
-  background: var(--color-surface);
+.sectionHeader {
+  display: grid;
+  gap: .2rem;
 }
 
-.inviteRow,
-.linkBox {
+.sectionHeader h2 {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sectionHeader p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: .825rem;
+}
+
+.searchForm {
+  display: flex;
   gap: .5rem;
 }
 
-.inviteRow {
-  justify-content: space-between;
+.textInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: .5rem .9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: .9rem;
+}
+
+.textInput:focus {
+  border-color: var(--invite-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--invite-accent-soft);
+}
+
+.rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem 0;
+}
+
+.row + .row {
+  border-top: 1px solid var(--color-border);
+}
+
+.rowBody {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: .1rem;
+}
+
+.rowTitle {
+  overflow: hidden;
+  font-size: .9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rowSub {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: .78rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rowAside {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+
+.rowIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--invite-accent-soft);
+  color: var(--invite-accent);
+  font-size: 1rem;
+}
+
+.sentTag {
+  color: var(--color-success);
+  font-size: .8rem;
+  font-weight: 600;
 }
 
 .linkBox {
-  margin-top: .75rem;
+  display: grid;
+  gap: .6rem;
+  padding: .9rem;
+  border-radius: 12px;
+  background: var(--color-bg);
 }
 
-.linkBox input {
-  min-width: 12rem;
-  flex: 1;
+.linkField {
+  display: flex;
+  gap: .5rem;
 }
 
-.linkBox p {
+.linkField .textInput {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .8rem;
+}
+
+.linkMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  color: var(--color-text-muted);
+  font-size: .8rem;
+}
+
+@media (max-width: 480px) {
+  .inviteDescription { -webkit-line-clamp: 1; }
+  .linkField { flex-wrap: wrap; }
+  .linkField .textInput { flex-basis: 100%; }
+  .row { flex-wrap: wrap; }
+  .rowAside { margin-left: auto; }
+}
+
+/* ---- 届いた招待：その場で返事する ---- */
+
+.inviteItem {
+  display: grid;
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-bg-elevated);
+  overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.inviteItem:hover {
+  border-color: var(--invite-accent);
+  box-shadow: 0 4px 14px rgb(15 23 42 / .06);
+}
+
+.inviteItem .inviteCard {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.inviteActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  padding: 0 1rem .85rem;
+}
+
+.inviteActions .primaryButton {
+  min-height: 2.1rem;
+  padding: .35rem 1.1rem;
+  font-size: .85rem;
+}
+
+.inviteMessage {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: .2rem 0 0;
+  color: var(--color-text);
+  font-size: .85rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+/* ---- 招待に添えた一言 ---- */
+
+.messageQuote {
+  position: relative;
   width: 100%;
   margin: 0;
+  padding: .9rem 1rem .75rem 1.25rem;
+  border-left: 3px solid var(--invite-accent);
+  border-radius: 0 12px 12px 0;
+  background: var(--invite-accent-soft);
+  text-align: left;
+}
+
+.messageQuote blockquote {
+  margin: 0;
+  font-size: .95rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.messageQuote figcaption {
+  margin-top: .35rem;
+  color: var(--color-text-muted);
+  font-size: .78rem;
+  text-align: right;
+}
+
+/* ---- メンバー招待：選んでまとめて送る ---- */
+
+.alertTitle {
+  margin: 0;
+  font-weight: 700;
+}
+
+.failureList {
+  margin: .35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.selectRow {
+  margin: 0 -.6rem;
+  padding: .55rem .6rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color .15s;
+}
+
+.rows > li + li .selectRow {
+  border-top: none;
+}
+
+.selectRow:hover {
+  background: var(--color-bg);
+}
+
+.selectRowChecked,
+.selectRowChecked:hover {
+  background: var(--invite-accent-soft);
+}
+
+.selectRowDisabled {
+  cursor: default;
+}
+
+.selectRowDisabled:hover {
+  background: transparent;
+}
+
+.selectRowDisabled .rowTitle,
+.selectRowDisabled :global(img) {
+  opacity: .6;
+}
+
+.checkbox {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  accent-color: var(--invite-accent);
+  cursor: pointer;
+}
+
+.checkbox:disabled {
+  cursor: default;
+}
+
+.statusTag {
+  flex-shrink: 0;
+  padding: .15rem .6rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  color: var(--color-text-muted);
+  font-size: .75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusTagInfo {
+  background: var(--invite-accent-soft);
+  box-shadow: none;
+  color: var(--invite-accent);
+}
+
+.statusTagSuccess {
+  background: var(--color-success-bg);
+  box-shadow: none;
+  color: var(--color-success);
+}
+
+.statusTagDanger {
+  background: var(--color-danger-bg);
+  box-shadow: none;
+  color: var(--color-danger);
+}
+
+.composer {
+  display: grid;
+  gap: .75rem;
+  padding: .9rem;
+  border-radius: 12px;
+  background: var(--color-bg);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  max-width: 100%;
+  padding: .2rem .3rem .2rem .25rem;
+  border-radius: 999px;
+  background: var(--color-bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  font-size: .8rem;
+}
+
+.chip > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chip button {
+  display: grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: .9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chip button:hover {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.field {
+  display: grid;
+  gap: .35rem;
+  min-width: 0;
+}
+
+.fieldLabel {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  color: var(--color-text-muted);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.counter,
+.counterOver {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.counterOver {
+  color: var(--color-danger);
+}
+
+.textArea,
+.select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: .55rem .9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font: inherit;
+  font-size: .9rem;
+}
+
+.textArea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.select {
+  min-height: 2.5rem;
+  cursor: pointer;
+}
+
+.textArea:focus,
+.select:focus {
+  border-color: var(--invite-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--invite-accent-soft);
+}
+
+.composerFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.settingsGrid .textInput {
+  border-radius: 12px;
+}
+
+.rowMessage {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: .8rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: .8;
+}
+
+/* ---- 送った招待：有効 / 履歴 ---- */
+
+.tabs {
+  display: inline-flex;
+  justify-self: start;
+  gap: .25rem;
+  padding: .25rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+}
+
+.tab,
+.tabActive {
+  padding: .35rem .9rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabActive {
+  background: var(--color-bg-elevated);
+  box-shadow: 0 1px 3px rgb(15 23 42 / .12);
+  color: var(--color-text);
+}
+
+@media (max-width: 480px) {
+  .settingsGrid { grid-template-columns: 1fr; }
+  .composerFooter .primaryButton { width: 100%; }
 }

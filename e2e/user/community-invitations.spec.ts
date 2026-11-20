@@ -31,8 +31,13 @@ test('検索で招待した相手が通知詳細から参加し、参加案内�
     });
     await page.getByRole('searchbox', { name: '名前またはアカウントID' }).fill(recipientAccountID);
     await page.getByRole('button', { name: '検索', exact: true }).click();
-    await page.getByRole('button', { name: '招待する', exact: true }).click();
+    await page.getByRole('checkbox', { name: new RegExp(`@${recipientAccountID}`) }).check();
+    await page.getByRole('textbox', { name: /一言メッセージ/ }).fill('一緒に話しましょう');
+    await page.getByRole('button', { name: '1人を招待する', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('さんに招待を送りました。');
+    // 招待済みの人は、検索結果でもう選べない。
+    await expect(page.getByRole('checkbox', { name: new RegExp(`@${recipientAccountID}`) })).toBeDisabled();
+    await expect(page.getByText('招待中', { exact: true })).toBeVisible();
 
     await recipient.goto(new URL('/notifications', baseURL ?? env.baseURL).href);
     await recipient.locator('main').getByText(`${name}に招待されました`, { exact: true }).click();
@@ -54,8 +59,10 @@ test('検索で招待した相手が通知詳細から参加し、参加案内�
     ]);
     expect(label && badge && badge.x >= label.x + label.width).toBe(true);
     await inviteButton.click();
+    await expect(recipient.locator('main').getByText('「一緒に話しましょう」')).toBeVisible();
     await recipient.locator('main').getByRole('link', { name: new RegExp(name) }).click();
     await expect(recipient.getByRole('link', { name: '届いた招待に戻る', exact: true })).toBeVisible();
+    await expect(recipient.getByRole('blockquote')).toHaveText('一緒に話しましょう');
 
     await recipient.goto(new URL('/notifications', baseURL ?? env.baseURL).href);
     await recipient.locator('main').getByText(`${name}に招待されました`, { exact: true }).click();

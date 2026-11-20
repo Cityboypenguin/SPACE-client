@@ -5,6 +5,8 @@ import { useAuth } from '../../context/useAuth';
 import { acceptInvitation, declineInvitation, previewInvitation, type InvitationReference } from '../../api/communityInvitations';
 import { receivedInvitationCountKey } from '../../lib/communityInvitationLinks';
 import { toUserMessage } from '../../../../lib/errorMessages';
+import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
+import { InvitationExpiry } from './InvitationExpiry';
 import styles from '../../pages/CommunityInvitationsPage.module.css';
 
 const statusText: Record<string, string> = {
@@ -57,26 +59,37 @@ export const CommunityInvitationDetails = ({ input, returnTo, showSender = true 
   };
   return (
     <>
-      {isLoading && <p>読み込み中…</p>}
-      {(error || !input) && <p role="alert">この招待は利用できません。</p>}
+      {isLoading && <div className={styles.skeleton} style={{ height: '18rem' }} aria-busy="true" aria-label="読み込み中" />}
+      {(error || !input) && <p className={styles.alert} role="alert">この招待は利用できません。</p>}
       {data && (
         <section className={styles.card}>
+          <CommunityAvatar name={data.communityName} src={data.communityAvatarURL} size={88} />
           <h2>{data.communityName}</h2>
-          {showSender && data.senderName && <p>{data.senderName}さんからの招待</p>}
-          <p className={styles.description}>{data.communityDescription}</p>
-          {data.status === 'pending' && <p>有効期限 {new Date(data.expiresAt).toLocaleString('ja-JP')}</p>}
-          {data.status !== 'pending' && !data.isMember && <p>{statusText[data.status]}</p>}
+          <div className={styles.cardMeta}>
+            <span>メンバー {data.memberCount}人</span>
+            {data.status === 'pending' && !data.isMember && <InvitationExpiry expiresAt={data.expiresAt} />}
+          </div>
+          {showSender && data.senderName && <p className={styles.invitedBy}>{data.senderName}さんからの招待</p>}
+          {data.message && (
+            <figure className={styles.messageQuote}>
+              <blockquote>{data.message}</blockquote>
+              {data.senderName && <figcaption>— {data.senderName}さん</figcaption>}
+            </figure>
+          )}
+          {data.communityDescription && <p className={styles.description}>{data.communityDescription}</p>}
+          {data.isMember && <p className={styles.statusMessage}>すでにこのコミュニティに参加しています。</p>}
+          {data.status !== 'pending' && !data.isMember && <p className={styles.statusMessage}>{statusText[data.status]}</p>}
           <div className={styles.actions}>
+            {input && 'id' in input && !data.isMember && data.status === 'pending' && (
+              <button type="button" className={styles.secondaryButton} onClick={() => void respond(false)} disabled={busy}>辞退する</button>
+            )}
             {(data.isMember || data.status === 'pending') && (
-              <button type="button" onClick={() => void respond(true)} disabled={busy}>
+              <button type="button" className={styles.primaryButton} onClick={() => void respond(true)} disabled={busy}>
                 {data.isMember ? 'チャットを開く' : '参加する'}
               </button>
             )}
-            {input && 'id' in input && !data.isMember && data.status === 'pending' && (
-              <button type="button" onClick={() => void respond(false)} disabled={busy}>辞退する</button>
-            )}
           </div>
-          {actionError && <p role="alert">{actionError}</p>}
+          {actionError && <p className={styles.alert} role="alert">{actionError}</p>}
         </section>
       )}
     </>
