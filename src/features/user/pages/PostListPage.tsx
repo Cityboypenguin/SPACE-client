@@ -714,7 +714,7 @@ export const PostListPage = () => {
           submitting={posting}
           error={postError}
           placeholder="新規投稿"
-          submitLabel="投稿"
+          submitLabel="投稿する"
           rows={1}
           userId={userId}
           avatarUrl={profile?.avatarUrl}
@@ -732,7 +732,7 @@ export const PostListPage = () => {
             tabs={[
               { key: 'recommended', label: 'おすすめ' },
               { key: 'newest', label: '新しい順' },
-              { key: 'favorites', label: 'お気に入り' },
+              { key: 'favorites', label: 'フォロー中' },
             ]}
             activeTab={activeTab}
             onChange={setActiveTab}

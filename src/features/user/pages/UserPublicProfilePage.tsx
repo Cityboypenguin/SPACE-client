@@ -224,7 +224,7 @@ export const UserPublicProfilePage = () => {
         }
       }
     } catch (err) {
-      addToast(toUserMessage(err, 'お気に入りの操作に失敗しました。'), 'error');
+      addToast(toUserMessage(err, 'フォローの操作に失敗しました。'), 'error');
     } finally {
       setActionLoading(false);
     }
@@ -325,7 +325,7 @@ export const UserPublicProfilePage = () => {
       {!isBlocked && (
         <ProfilePillButton
           icon={favoriteIconOn}
-          label={isFavorited ? 'お気に入り解除' : 'お気に入り登録'}
+          label={isFavorited ? 'フォロー解除' : 'フォロー'}
           onClick={handleFavoriteToggle}
           disabled={actionLoading}
           className={`${styles.profileFavoriteButton}${isFavorited ? ` ${styles.profileActionButtonFavorited}` : ''}`}

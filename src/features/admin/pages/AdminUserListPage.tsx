@@ -63,7 +63,7 @@ export const AdminUserListPage = () => {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="ID・名前・メールアドレスで検索"
+              placeholder="ID・ユーザ名・メールアドレスで検索"
               className={styles.select}
               style={{ width: '280px' }}
             />
@@ -88,7 +88,7 @@ export const AdminUserListPage = () => {
             <thead>
               <tr className={styles.tableHeaderRow}>
                 <th className={styles.tableCellLarge}>ユーザーID</th>
-                <th className={styles.tableCellLarge}>名前</th>
+                <th className={styles.tableCellLarge}>ユーザー名</th>
                 <th className={styles.tableCellLarge}>メールアドレス</th>
                 <th className={styles.tableCellLarge}>登録日時</th>
               </tr>

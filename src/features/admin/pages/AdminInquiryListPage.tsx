@@ -105,10 +105,10 @@ export const AdminInquiryListPage: React.FC = () => {
           <table className={styles.table}>
             <thead>
               <tr className={styles.tableHeaderRow}>
-                <th className={styles.tableCellLarge}>件名</th>
+                <th className={styles.tableCellLarge}>問合せ内容</th>
                 <th className={styles.tableCellLarge}>氏名</th>
                 <th className={styles.tableCellLarge}>メールアドレス</th>
-                <th className={styles.tableCellLarge}>問合せ内容</th>
+                <th className={styles.tableCellLarge}>件名</th>
                 <th className={styles.tableCellLarge}>ステータス</th>
                 <th className={styles.tableCellLarge}>受信日時</th>
                 <th className={styles.tableCellLarge}>詳細</th>
@@ -117,10 +117,10 @@ export const AdminInquiryListPage: React.FC = () => {
             <tbody>
               {inquiries.map((inquiry) => (
                   <tr key={inquiry.id} className={styles.tableRow}>
-                    <td className={styles.tableCellLarge}>{inquiry.subject || '---'}</td>
+                    <td className={styles.tableCellLarge}>{CATEGORY_LABEL[inquiry.category] ?? inquiry.category}</td>
                     <td className={styles.tableCellLarge}>{inquiry.name}</td>
                     <td className={`${styles.tableCellLarge} ${styles.cellText}`}>{inquiry.email}</td>
-                    <td className={styles.tableCellLarge}>{CATEGORY_LABEL[inquiry.category] ?? inquiry.category}</td>
+                    <td className={styles.tableCellLarge}>{inquiry.subject || '---'}</td>
                     <td className={styles.tableCellLarge}>
                       <span className={styles.statusBadge} data-status={inquiry.status}>
                         {STATUS_LABEL[inquiry.status] ?? inquiry.status}

@@ -157,6 +157,7 @@ export const CommunityBoardListPage = () => {
             value={query}
             onChange={setQuery}
             onSubmit={handleSearch}
+            onClear={() => setQuery('')}
             placeholder="Search"
             disabled={searching}
           />

@@ -119,17 +119,19 @@ export const InquiryForm = ({ onSubmitted, onComplete }: Props) => {
           </div>
         </div>
 
-        <div className={styles.field}>
-          <span className={styles.label}>その他のお問い合わせを選択された方は記入をお願いします</span>
-          <input
-            className={styles.input}
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="件名を入力してください"
-            required={category === 'OTHER'}
-          />
-        </div>
+        {category === 'OTHER' && (
+          <div className={styles.field}>
+            <span className={styles.label}>その他のお問い合わせを選択された方は記入をお願いします</span>
+            <input
+              className={styles.input}
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="件名を入力してください"
+              required
+            />
+          </div>
+        )}
 
         <div className={styles.field}>
           <span className={styles.label}>お問い合せ内容</span>
