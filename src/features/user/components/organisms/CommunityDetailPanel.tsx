@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
+import useSWRInfinite from 'swr/infinite';
 import { useNavigate } from 'react-router-dom';
 import { CommunityAvatar } from '../../../../components/atoms/CommunityAvatar';
 import { ScrollSentinel } from '../../../../components/atoms/ScrollSentinel';
@@ -6,8 +7,8 @@ import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
 import { RoleBadge } from '../atoms/RoleBadge';
 import { useClickOutside } from '../../../../hooks/useClickOutside';
-import { getCommunityMembers, type Community, type CommunityMember } from '../../api/community';
-import { getCommunityMemberListCache, saveCommunityMemberListCache } from '../../cache/communityMembers';
+import { getCommunityMembers, type Community } from '../../api/community';
+import { communityMemberPanelKey } from '../../cache/communityMembers';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { storageUrl } from '../../../../lib/storage';
 import personIcon from '../../../../assets/パーツ_人間.svg';
@@ -29,55 +30,31 @@ export const CommunityDetailPanel = ({ community, isOwner, leaveError, onClose, 
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const menuWrapRef = useClickOutside<HTMLDivElement>(showMenu, () => setShowMenu(false));
-  const memberPageSize = 10;
-  const [initialCache] = useState(() => getCommunityMemberListCache(community.ID));
-  const [members, setMembers] = useState<CommunityMember[]>(initialCache?.members ?? []);
-  const [memberTotal, setMemberTotal] = useState(initialCache?.total ?? community.memberCount);
-  const [membersLoading, setMembersLoading] = useState(!initialCache);
-  const [membersLoadingMore, setMembersLoadingMore] = useState(false);
-  const [membersError, setMembersError] = useState(false);
-  const membersRef = useRef(members);
-  const memberTotalRef = useRef(memberTotal);
-  const membersLoadingRef = useRef(false);
-
-  const loadMembers = useCallback(async (offset: number, isInitial: boolean) => {
-    if (membersLoadingRef.current) return;
-    membersLoadingRef.current = true;
-    if (isInitial) setMembersLoading(true);
-    else setMembersLoadingMore(true);
-    try {
-      const page = await getCommunityMembers(community.ID, memberPageSize, offset);
-      setMembers((current) => {
-        const next = isInitial ? page.items : [...current, ...page.items];
-        membersRef.current = next;
-        saveCommunityMemberListCache(community.ID, { members: next, total: page.total });
-        return next;
-      });
-      memberTotalRef.current = page.total;
-      setMemberTotal(page.total);
-      setMembersError(false);
-    } catch {
-      setMembersError(true);
-    } finally {
-      membersLoadingRef.current = false;
-      if (isInitial) setMembersLoading(false);
-      else setMembersLoadingMore(false);
-    }
-  }, [community.ID]);
-
-  useEffect(() => {
-    if (initialCache) return;
-    void Promise.resolve().then(() => loadMembers(0, true));
-  }, [initialCache, loadMembers]);
+  // メンバー一覧は SWR に任せる: 前回の一覧（共有キャッシュ）を即座に出しつつ、開いたとき・
+  // タブに戻ったときに裏で取り直す。誰かの参加を受けたときは invalidateCommunityMembers()
+  // がこのキーを名指しで取り直させる。読み込み済みのページはまとめて取り直す（revalidateAll）
+  // ので、2ページ目以降だけ古いまま残ることはない。
+  const {
+    data: memberPages,
+    error: membersError,
+    isLoading: membersLoading,
+    isValidating,
+    size,
+    setSize,
+  } = useSWRInfinite(
+    communityMemberPanelKey(community.ID),
+    ([, cid, limit, offset]: readonly [string, string, number, number]) => getCommunityMembers(cid, limit, offset),
+    { revalidateAll: true, revalidateFirstPage: false },
+  );
+  const members = memberPages?.flatMap((page) => page.items) ?? [];
+  const memberTotal = memberPages?.[0]?.total ?? community.memberCount;
+  const hasMoreMembers = members.length < memberTotal && (memberPages?.at(-1)?.items.length ?? 0) > 0;
+  const membersLoadingMore = isValidating && !!memberPages && size > memberPages.length;
 
   const memberSentinelRef = useInfiniteScroll(
-    useCallback(() => {
-      if (!membersLoadingRef.current && membersRef.current.length < memberTotalRef.current) {
-        void loadMembers(membersRef.current.length, false);
-      }
-    }, [loadMembers]),
+    useCallback(() => { void setSize((current) => current + 1); }, [setSize]),
     membersLoading || membersLoadingMore,
-    !membersError && members.length < memberTotal,
+    !membersError && hasMoreMembers,
   );
 
   const returnPath = `/community/chat/${community.roomID}`;

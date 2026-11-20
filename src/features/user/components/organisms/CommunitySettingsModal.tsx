@@ -18,7 +18,7 @@ import {
   type CommunityMember,
 } from '../../api/community';
 import { uploadAvatarToStorage } from '../../api/profile';
-import { staticCacheOptions } from '../../cache/swrOptions';
+import { stableCacheOptions } from '../../cache/swrOptions';
 import { communityMembersKey } from '../../cache/communityMembers';
 import { storageUrl } from '../../../../lib/storage';
 import { AppSwal } from '../../../../lib/swal';
@@ -56,12 +56,12 @@ export const CommunitySettingsModal = ({ community, onClose, onUpdated }: Props)
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 詳細パネル・メンバーモーダルと同じキャッシュを共有する。開き直しても取り直さない。
-  // メンバーを変更したときだけ mutate で取り直す（下の kick/promote/demote）。
+  // 詳細パネル・各モーダルと同じキャッシュを共有する。キャッシュがあれば先に出し、
+  // 開くたびに裏で取り直す（他の人の参加・退出はリロードしないと拾えないため）。
   const { data: memberPage, error: membersLoadError } = useSWR(
     communityMembersKey(community.ID, memberPageSize, memberOffset),
     ([, cid, limit, offset]: [string, string, number, number]) => getCommunityMembers(cid, limit, offset),
-    staticCacheOptions,
+    stableCacheOptions,
   );
   const members = memberPage?.items ?? [];
 

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { mutate as globalMutate } from 'swr';
 import { UserSidebar } from '../components/organisms/UserSidebar';
 import { CommunityDetailPanel } from '../components/organisms/CommunityDetailPanel';
 import { CommunityWelcomeSuggestions } from '../components/molecules/CommunityWelcomeSuggestions';
@@ -221,6 +221,20 @@ export const CommunityRoomPage = () => {
   }, [communities, roomId, locationState, stateCommunity]);
 
   const communityID = community?.ID ?? null;
+
+  // 誰かが参加すると参加案内のメッセージが流れてくるので、それを合図にメンバー一覧と
+  // 人数のキャッシュを捨てる（開いている詳細パネルはその場で取り直す）。
+  // 開いた直後に読み込んだ既存の案内では捨てない。
+  const seenJoinNoticeRef = useRef<{ roomId?: string; id?: string }>({});
+  useEffect(() => {
+    if (!roomId) return;
+    const seen = seenJoinNoticeRef.current;
+    seenJoinNoticeRef.current = { roomId, id: latestJoinNotice };
+    if (seen.roomId !== roomId || !latestJoinNotice || seen.id === latestJoinNotice || !communityID) return;
+    void invalidateCommunityMembers(communityID);
+    // 一覧画面の人数も古くなるので、共有キャッシュごと取り直す。
+    void globalMutate('my-communities');
+  }, [communityID, roomId, latestJoinNotice]);
 
   const { data: role } = useSWR(
     communityID ? ['community-role', communityID] : null,

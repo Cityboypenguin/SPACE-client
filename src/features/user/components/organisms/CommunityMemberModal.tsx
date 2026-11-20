@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import { getCommunityMembers, type Community } from '../../api/community';
-import { staticCacheOptions } from '../../cache/swrOptions';
+import { stableCacheOptions } from '../../cache/swrOptions';
 import { communityMembersKey } from '../../cache/communityMembers';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../../components/atoms/UserNameLink';
@@ -26,11 +26,12 @@ type Props = {
 export const CommunityMembersModal = ({ community, onClose }: Props) => {
   const pageSize = 50;
   const [offset, setOffset] = useState(0);
-  // 詳細パネル・設定モーダルと同じキャッシュを共有する。開き直しても取り直さない。
+  // 詳細パネル・各モーダルと同じキャッシュを共有する。キャッシュがあれば先に出し、
+  // 開くたびに裏で取り直す（他の人の参加・退出はリロードしないと拾えないため）。
   const { data, isLoading: loading, error } = useSWR(
     communityMembersKey(community.ID, pageSize, offset),
     ([, cid, limit, pageOffset]: [string, string, number, number]) => getCommunityMembers(cid, limit, pageOffset),
-    staticCacheOptions,
+    stableCacheOptions,
   );
   const members = data?.items ?? [];
   const total = data?.total ?? 0;
