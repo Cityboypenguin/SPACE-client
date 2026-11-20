@@ -3,6 +3,7 @@ import { graphql } from '../../../generated';
 import { getUserToken } from './auth';
 import { type Media, type MediaInput } from '../../../lib/media';
 import { type Mention } from '../../../lib/mentions';
+import { type Video, type VideoInput } from '../../../lib/video/fields';
 
 export type { Media, MediaInput };
 
@@ -30,6 +31,8 @@ export type Post = {
   parent?: Post | null;
   replies?: Post[];
   media: Media[];
+  // 投稿に付いた動画（1本まで）。無ければ null。
+  video?: Video | null;
   // 本文中のメンション。表示側は text を本文と突き合わせて着色・リンク化する。
   mentions: Mention[];
 };
@@ -55,6 +58,9 @@ export const PostFieldsFragment = graphql(`
     isFavoritedByMe
     media {
       ...MediaFields
+    }
+    video {
+      ...VideoFields
     }
     mentions {
       user {
@@ -211,7 +217,7 @@ export const getPostReplies = async (id: string, limit = 50, offset = 0): Promis
   return (data.getPostByID?.replies as Post[] | undefined) ?? [];
 };
 
-export const createPost = async (content: string, parentId?: string, mediaInputs?: MediaInput[]): Promise<Post> => {
+export const createPost = async (content: string, parentId?: string, mediaInputs?: MediaInput[], videoInput?: VideoInput): Promise<Post> => {
   const data = await requestDoc(
     CreatePostDocument,
     {
@@ -219,6 +225,7 @@ export const createPost = async (content: string, parentId?: string, mediaInputs
         content,
         ...(parentId ? { parent_id: parentId } : {}),
         ...(mediaInputs && mediaInputs.length > 0 ? { mediaInputs } : {}),
+        ...(videoInput ? { videoInput } : {}),
       },
     },
     getUserToken(),
@@ -230,7 +237,8 @@ export const updatePost = async (
   id: string,
   content: string,
   newMediaInputs?: MediaInput[],
-  deletedMediaIDs?: string[]
+  deletedMediaIDs?: string[],
+  removeVideo?: boolean,
 ): Promise<Post> => {
   const data = await requestDoc(
     UpdatePostDocument,
@@ -240,6 +248,7 @@ export const updatePost = async (
         content,
         ...(newMediaInputs && newMediaInputs.length > 0 ? { newMediaInputs } : {}),
         ...(deletedMediaIDs && deletedMediaIDs.length > 0 ? { deletedMediaIDs } : {}),
+        ...(removeVideo ? { removeVideo: true } : {}),
       },
     },
     getUserToken(),

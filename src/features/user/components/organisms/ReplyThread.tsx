@@ -4,6 +4,7 @@ import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../../../../components/molecules/LikeButton';
 import { UserMeta } from '../../../../components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { VideoPlayer } from '../../../../components/molecules/VideoPlayer';
 import { formatTime } from '../../../../lib/formatTime';
 import { getPostReplies, type Post } from '../../api/post';
 import { countAllReplies } from '../../../../lib/postUtils';
@@ -164,6 +165,11 @@ export const ReplyThread = ({ post, depth = 0, currentUserId, onLike, onReply, r
           {post.media && post.media.length > 0 && (
             <div className={styles.mediaWrapper}>
               <PostMediaGrid media={post.media} />
+            </div>
+          )}
+          {post.video && (
+            <div className={styles.mediaWrapper}>
+              <VideoPlayer video={post.video} />
             </div>
           )}
           <div className={styles.actions}>

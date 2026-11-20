@@ -90,6 +90,8 @@ export const UserDashboard = () => {
   const [editContent, setEditContent] = useState('');
   const [editFiles, setEditFiles] = useState<File[]>([]);
   const [editDeletedMediaIDs, setEditDeletedMediaIDs] = useState<string[]>([]);
+  // 編集では動画を外すことだけできる。
+  const [editRemoveVideo, setEditRemoveVideo] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState('');
 
@@ -238,20 +240,21 @@ export const UserDashboard = () => {
     setEditContent(post.content);
     setEditFiles([]);
     setEditDeletedMediaIDs([]);
+    setEditRemoveVideo(false);
     setEditError('');
   };
 
   const handleEditSubmit = async () => {
     if (!editingPost || editSubmitting) return;
     const remainingExisting = editingPost.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) ?? [];
-    const hasAnyMedia = remainingExisting.length > 0 || editFiles.length > 0;
+    const hasAnyMedia = remainingExisting.length > 0 || editFiles.length > 0 || (!!editingPost.video && !editRemoveVideo);
     if (!editContent.trim() && !hasAnyMedia) return;
 
     setEditSubmitting(true);
     setEditError('');
     try {
       const mediaInputs = await uploadMediaFiles(editFiles);
-      const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs);
+      const updated = await updatePost(editingPost.ID, editContent.trim(), mediaInputs, editDeletedMediaIDs, editRemoveVideo);
       const filteredUpdated = {
         ...updated,
         media: updated.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) ?? [],
@@ -362,6 +365,9 @@ export const UserDashboard = () => {
                 existingMedia={editingPost.media}
                 deletedMediaIDs={editDeletedMediaIDs}
                 onDeleteExistingMedia={(mediaId) => setEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                existingVideo={editingPost.video}
+                existingVideoRemoved={editRemoveVideo}
+                onRemoveExistingVideo={() => setEditRemoveVideo(true)}
                 onCancel={() => setEditingPost(null)}
                 submitLabel="保存する"
                 submittingLabel="保存中..."

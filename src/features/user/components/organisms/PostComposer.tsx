@@ -11,6 +11,10 @@ import { applyMention, getActiveAccountMention, type MentionCandidate } from '..
 import cameraIcon from '../../../../assets/パーツ_画像送付.svg';
 import styles from './PostComposer.module.css';
 import { type Media } from '../../../../lib/media';
+import { type Video } from '../../../../lib/video/fields';
+import { ACCEPTED_VIDEO_TYPES } from '../../../../lib/video/constants';
+import type { VideoDraftController } from '../../hooks/useVideoDraft';
+import { VideoDraftPanel } from '../molecules/VideoDraftPanel';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -91,6 +95,12 @@ type Props = {
   enableHashtagSuggestions?: boolean;
   // メンション (@accountID) のサジェスト。投稿・返信のどこでもメンションは書けるので既定で有効。
   enableMentionSuggestions?: boolean;
+  // 動画（1本まで）。渡したときだけ動画の追加ボタンを出す。画像とは同時に付けられない。
+  videoDraft?: VideoDraftController;
+  // 編集中の投稿に付いている動画。編集では外すことだけできる（後から足すことはできない）。
+  existingVideo?: Video | null;
+  existingVideoRemoved?: boolean;
+  onRemoveExistingVideo?: () => void;
 };
 
 export const PostComposer = ({
@@ -118,9 +128,17 @@ export const PostComposer = ({
   isEmbedded = false,
   maxLength,
   enableHashtagSuggestions = false,
+  videoDraft,
+  existingVideo,
+  existingVideoRemoved = false,
+  onRemoveExistingVideo,
   enableMentionSuggestions = true,
 }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const existingVideoVisible = !!existingVideo && !existingVideoRemoved;
+  // 動画が付いている（圧縮中を含む）あいだは画像を足せない。
+  const hasVideo = (videoDraft?.hasVideo ?? false) || existingVideoVisible;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const previewUrlCacheRef = useRef<Map<File, string>>(new Map());
@@ -237,6 +255,10 @@ export const PostComposer = ({
   }, []);
 
   const addFiles = (incoming: File[]) => {
+    if (hasVideo) {
+      addToast('動画と画像は同時に付けられません。', 'error');
+      return;
+    }
     if (totalMediaCount + incoming.length > MAX_IMAGES) {
       addToast(`最大${MAX_IMAGES}枚までしか投稿できません。`, 'error');
       return;
@@ -307,9 +329,22 @@ export const PostComposer = ({
     addFiles(imageFiles);
   };
 
-  const hasAnyContent = value.trim() !== '' || totalMediaCount > 0;
+  const hasAnyContent = value.trim() !== '' || totalMediaCount > 0 || videoDraft?.state.status === 'ready' || existingVideoVisible;
   const overLimit = maxLength !== undefined && value.length > maxLength;
-  const canSubmit = !submitting && hasAnyContent && !overLimit;
+  // 圧縮中・アップロード中は送らせない（同じ投稿を二重に送らないため）。
+  const canSubmit = !submitting && hasAnyContent && !overLimit && !(videoDraft?.busy ?? false);
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // 同じファイルを選び直せるよう、値は毎回空にする。
+    e.target.value = '';
+    if (!file || !videoDraft) return;
+    if (totalMediaCount > 0) {
+      addToast('動画と画像は同時に付けられません。', 'error');
+      return;
+    }
+    videoDraft.select(file);
+  };
 
   return (
     <div
@@ -454,6 +489,18 @@ export const PostComposer = ({
           </div>
         )}
 
+        {existingVideoVisible && (
+          <div className={styles.existingVideo}>
+            <span>動画が付いています（{Math.round((existingVideo?.durationMs ?? 0) / 1000)}秒）</span>
+            {onRemoveExistingVideo && (
+              <button type="button" className={styles.existingVideoRemove} onClick={onRemoveExistingVideo} disabled={submitting}>
+                動画を外す
+              </button>
+            )}
+          </div>
+        )}
+        {videoDraft && <VideoDraftPanel draft={videoDraft} />}
+
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={`${styles.footer} ${large ? styles.footerLarge : styles.footerSmall}`}>
@@ -477,7 +524,27 @@ export const PostComposer = ({
               {cancelLabel}
             </button>
           )}
-          {onFileSelect && totalMediaCount === 0 && (
+          {videoDraft && (
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept={ACCEPTED_VIDEO_TYPES.join(',')}
+              onChange={handleVideoChange}
+              className={styles.hiddenInput}
+            />
+          )}
+          {videoDraft && totalMediaCount === 0 && !hasVideo && (
+            <button
+              type="button"
+              className={styles.videoButton}
+              onClick={() => videoInputRef.current?.click()}
+              disabled={submitting}
+              title="動画を追加（60秒まで）"
+            >
+              動画
+            </button>
+          )}
+          {onFileSelect && totalMediaCount === 0 && !hasVideo && (
             <button
               type="button"
               className={styles.cameraButton}

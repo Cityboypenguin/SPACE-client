@@ -36,6 +36,7 @@ const AdminCourseChatImagesPage = lazy(() => import('../pages/AdminCourseChatIma
 const AdminCourseChatListPage = lazy(() => import('../pages/AdminCourseChatListpage').then((m) => ({ default: m.AdminCourseChatListPage })));
 const AdminThreadDetailPage = lazy(() => import('../pages/AdminThreadDetailPage').then((m) => ({ default: m.AdminThreadDetailPage })));
 const AdminCourseChatDetailPage = lazy(() => import('../pages/AdminCourseChatDetailPage').then((m) => ({ default: m.AdminCourseChatDetailPage })));
+const AdminVideosPage = lazy(() => import('../pages/AdminVideosPage').then((m) => ({ default: m.AdminVideosPage })));
 const AdminCourseSyncPage = lazy(() => import('../pages/AdminCourseSyncPage').then((m) => ({ default: m.AdminCourseSyncPage })));
 
 export const AdminRoutes = () => {
@@ -226,6 +227,14 @@ export const AdminRoutes = () => {
         element={
           <AdminProtectedRoute>
             <AdminTermsDetailPage />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="videos"
+        element={
+          <AdminProtectedRoute>
+            <AdminVideosPage />
           </AdminProtectedRoute>
         }
       />

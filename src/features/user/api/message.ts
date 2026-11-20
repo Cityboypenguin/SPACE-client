@@ -4,6 +4,7 @@ import { graphql } from '../../../generated';
 import { putToStorage, type PresignedUpload } from '../../../lib/storage';
 import { getUserToken } from './auth';
 import { MEDIA_FIELDS_RAW, type Media, type MediaInput } from '../../../lib/media';
+import { VIDEO_FIELDS_RAW, type Video, type VideoInput } from '../../../lib/video/fields';
 import { type Mention, type MentionCandidate } from '../../../lib/mentions';
 
 export type MessageUser = {
@@ -46,6 +47,8 @@ export type Message = {
   // このときの本文は空で、添付・メンションも持たない。
   stampID?: string | null;
   media: Media[];
+  // メッセージに付いた動画（1本まで）。無ければ null。
+  video?: Video | null;
   createdAt: string;
   updatedAt: string;
   isMine: boolean;
@@ -89,6 +92,7 @@ export const MESSAGE_FIELDS = `
   content
   stampID
   media {${MEDIA_FIELDS_RAW}}
+  video {${VIDEO_FIELDS_RAW}}
   createdAt
   updatedAt
   isMine
@@ -152,8 +156,8 @@ const GetOrCreateDMRoomDocument = graphql(`
 `);
 
 const SendMessageDocument = graphql(`
-  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $mentionUserIDs: [ID!], $replyToID: ID, $stampID: String) {
-    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID, stampID: $stampID) {
+  mutation SendMessage($roomID: ID!, $content: String!, $mediaInputs: [MediaUploadInput!], $videoInput: VideoUploadInput, $mentionUserIDs: [ID!], $replyToID: ID, $stampID: String) {
+    sendMessage(roomID: $roomID, content: $content, mediaInputs: $mediaInputs, videoInput: $videoInput, mentionUserIDs: $mentionUserIDs, replyToID: $replyToID, stampID: $stampID) {
       ID
       roomID
       thread { roomID parentRoomID title isClosed messageCount }
@@ -167,6 +171,9 @@ const SendMessageDocument = graphql(`
       stampID
       media {
         ...MediaFields
+      }
+      video {
+        ...VideoFields
       }
       createdAt
       updatedAt
@@ -221,6 +228,9 @@ const UpdateMessageDocument = graphql(`
       stampID
       media {
         ...MediaFields
+      }
+      video {
+        ...VideoFields
       }
       createdAt
       updatedAt
@@ -320,6 +330,9 @@ const ListMessagesDocument = graphql(`
         stampID
         media {
           ...MediaFields
+        }
+        video {
+          ...VideoFields
         }
         createdAt
         updatedAt
@@ -496,9 +509,11 @@ export const sendMessage = async (
   mentionUserIDs?: string[],
   // スタンプだけのメッセージを送るときのスタンプのID。このとき content は空、添付・メンションは付けない。
   stampID?: string | null,
+  // 動画を1本付けるとき（画像・スタンプとは同時に付けない）。
+  videoInput?: VideoInput | null,
 ) => {
   const token = getUserToken();
-  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, mentionUserIDs, replyToID, stampID }, token);
+  return await requestDoc(SendMessageDocument, { roomID, content, mediaInputs, videoInput, mentionUserIDs, replyToID, stampID }, token);
 };
 
 export type ListMessagesOptions = {

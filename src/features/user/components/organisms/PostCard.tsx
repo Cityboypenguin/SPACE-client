@@ -4,6 +4,7 @@ import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { LikeButton } from '../../../../components/molecules/LikeButton';
 import { UserMeta } from '../../../../components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { VideoPlayer } from '../../../../components/molecules/VideoPlayer';
 import { DropdownMenu, DropdownMenuItem } from '../../../../components/molecules/DropdownMenu';
 import { type Post } from '../../api/post';
 import commentIcon from '../../../../assets/パーツ_コメント.svg';
@@ -114,6 +115,11 @@ export const PostCard = ({ post, currentUserId, onLike, onClick, onReply, onBloc
         {post.media && post.media.length > 0 && (
           <div className={styles.mediaWrapper}>
             <PostMediaGrid media={post.media} />
+          </div>
+        )}
+        {post.video && (
+          <div className={styles.mediaWrapper}>
+            <VideoPlayer video={post.video} />
           </div>
         )}
         <div className={styles.actions}>

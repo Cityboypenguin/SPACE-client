@@ -58,6 +58,7 @@ export const DMPage = () => {
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
+    videoDraft,
     sending,
     sendError,
     editingId, setEditingId,
@@ -271,6 +272,7 @@ export const DMPage = () => {
         onChange={setContent}
         onSubmit={handleSend}
         onFileSelect={setSelectedFiles}
+        videoDraft={videoDraft}
         selectedFiles={selectedFiles}
         disabled={sending}
         isBlocked={isBlocked}

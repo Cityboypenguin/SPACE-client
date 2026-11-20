@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserAvatar } from '../../../../components/atoms/UserAvatar';
 import { UserMeta } from '../../../../components/molecules/UserMeta';
 import { PostMediaGrid } from '../../../../components/molecules/PostMediaGrid';
+import { AdminVideo } from '../molecules/AdminVideo';
 import { LikeButton } from '../../../../components/molecules/LikeButton';
 import { formatTime } from '../../../../lib/formatTime';
 import { type Post } from '../../api/posts';
@@ -42,6 +43,11 @@ export const AdminPostCard = ({ post }: Props) => {
         {post.media && post.media.length > 0 && (
           <div className={styles.mediaWrapper}>
             <PostMediaGrid media={post.media} />
+          </div>
+        )}
+        {post.video && (
+          <div className={styles.mediaWrapper}>
+            <AdminVideo video={post.video} />
           </div>
         )}
         <div className={styles.actions}>

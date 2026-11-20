@@ -228,6 +228,9 @@ const ListRoomMessagesDocument = graphql(`
         media {
           ...MediaFields
         }
+        video {
+          ...VideoFields
+        }
         createdAt
         updatedAt
         isMine

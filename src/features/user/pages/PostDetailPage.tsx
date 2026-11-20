@@ -8,6 +8,7 @@ import { PostCard } from '../components/organisms/PostCard';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PostMediaGrid } from '../../../components/molecules/PostMediaGrid';
+import { VideoPlayer } from '../../../components/molecules/VideoPlayer';
 import { UserAvatar } from '../../../components/atoms/UserAvatar';
 import { UserNameLink } from '../../../components/atoms/UserNameLink';
 import { LikeButton } from '../../../components/molecules/LikeButton';
@@ -33,6 +34,8 @@ import {
   type Post,
 } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
+import type { VideoInput } from '../../../lib/video/fields';
+import { useVideoDraft } from '../hooks/useVideoDraft';
 import { useAuth } from '../context/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { createBlocker } from '../api/block';
@@ -62,6 +65,10 @@ export const PostDetailPage = () => {
 
   const [replyContent, setReplyContent] = useState('');
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
+  const replyVideo = useVideoDraft();
+  // 編集では動画を外すことだけできる。
+  const [editRemoveVideo, setEditRemoveVideo] = useState(false);
+  const [rootEditRemoveVideo, setRootEditRemoveVideo] = useState(false);
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -145,10 +152,10 @@ export const PostDetailPage = () => {
     void mutate();
   };
 
-  const handleReplyToPost = async (content: string, files: File[]) => {
+  const handleReplyToPost = async (content: string, files: File[], video?: VideoInput) => {
     if (!replyingTo) return;
     const mediaInputs = await uploadMediaFiles(files);
-    await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    await createPost(content.trim(), replyingTo.ID, mediaInputs, video);
     setReplyRefresh(current => ({ postID: replyingTo.ID, n: (current?.n ?? 0) + 1 }));
     if (id) {
       const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
@@ -158,14 +165,16 @@ export const PostDetailPage = () => {
   };
 
   const handleReply = async () => {
-    if ((!replyContent.trim() && replyFiles.length === 0) || replying || !id) return;
+    if ((!replyContent.trim() && replyFiles.length === 0 && replyVideo.state.status !== 'ready') || replying || replyVideo.busy || !id) return;
     setReplying(true);
     setReplyError('');
     try {
       const mediaInputs = await uploadMediaFiles(replyFiles);
-      await createPost(replyContent.trim(), id, mediaInputs);
+      const videoInput = (await replyVideo.upload()) ?? undefined;
+      await createPost(replyContent.trim(), id, mediaInputs, videoInput);
       setReplyContent('');
       setReplyFiles([]);
+      replyVideo.clear();
       if (id) {
         const updater = (p: Post): Post => ({ ...p, replyCount: p.replyCount + 1 });
         updatePostAcrossCaches(id, updater);
@@ -180,11 +189,11 @@ export const PostDetailPage = () => {
 
   const handleUpdate = async () => {
     const remainingExistingMedia = post?.media?.filter(m => !editDeletedMediaIDs.includes(m.ID)) || [];
-    const hasAnyMedia = remainingExistingMedia.length > 0 || editSelectedFiles.length > 0;
+    const hasAnyMedia = remainingExistingMedia.length > 0 || editSelectedFiles.length > 0 || (!!post?.video && !editRemoveVideo);
     if (!id || (!editContent.trim() && !hasAnyMedia) || isUpdating) return;
     const isContentChanged = editContent !== post?.content;
     const hasNewMedia = editSelectedFiles.length > 0;
-    const hasDeletedMedia = editDeletedMediaIDs.length > 0;
+    const hasDeletedMedia = editDeletedMediaIDs.length > 0 || editRemoveVideo;
     if (!isContentChanged && !hasNewMedia && !hasDeletedMedia) {
       setIsEditing(false);
       return;
@@ -196,7 +205,8 @@ export const PostDetailPage = () => {
       const mediaInputs = await uploadMediaFiles(editSelectedFiles);
 
       const deletedIDs = [...editDeletedMediaIDs];
-      await updatePost(id, editContent.trim(), mediaInputs, deletedIDs);
+      await updatePost(id, editContent.trim(), mediaInputs, deletedIDs, editRemoveVideo);
+      setEditRemoveVideo(false);
 
       setIsEditing(false);
       setEditSelectedFiles([]);
@@ -222,6 +232,7 @@ export const PostDetailPage = () => {
     setRootEditContent(rootPost.content);
     setRootEditSelectedFiles([]);
     setRootEditDeletedMediaIDs([]);
+    setRootEditRemoveVideo(false);
     setRootUpdateError('');
   };
 
@@ -230,7 +241,7 @@ export const PostDetailPage = () => {
     const remainingExistingMedia = editingRootPost.media?.filter(
       media => !rootEditDeletedMediaIDs.includes(media.ID),
     ) ?? [];
-    const hasAnyMedia = remainingExistingMedia.length > 0 || rootEditSelectedFiles.length > 0;
+    const hasAnyMedia = remainingExistingMedia.length > 0 || rootEditSelectedFiles.length > 0 || (!!editingRootPost.video && !rootEditRemoveVideo);
     if (!rootEditContent.trim() && !hasAnyMedia) return;
 
     setIsRootUpdating(true);
@@ -242,6 +253,7 @@ export const PostDetailPage = () => {
         rootEditContent.trim(),
         mediaInputs,
         rootEditDeletedMediaIDs,
+        rootEditRemoveVideo,
       );
       const filteredPost = {
         ...updatedPost,
@@ -334,6 +346,9 @@ export const PostDetailPage = () => {
                     existingMedia={editingRootPost.media}
                     deletedMediaIDs={rootEditDeletedMediaIDs}
                     onDeleteExistingMedia={(mediaId) => setRootEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                    existingVideo={editingRootPost.video}
+                    existingVideoRemoved={rootEditRemoveVideo}
+                    onRemoveExistingVideo={() => setRootEditRemoveVideo(true)}
                     onCancel={() => setEditingRootPost(null)}
                     submitLabel="保存する"
                     submittingLabel="保存中..."
@@ -386,6 +401,7 @@ export const PostDetailPage = () => {
                                 setEditContent(post.content);
                                 setEditSelectedFiles([]);
                                 setEditDeletedMediaIDs([]);
+                                setEditRemoveVideo(false);
                                 setUpdateError('');
                               }}
                             >
@@ -426,6 +442,9 @@ export const PostDetailPage = () => {
                       existingMedia={post.media}
                       deletedMediaIDs={editDeletedMediaIDs}
                       onDeleteExistingMedia={(mediaId) => setEditDeletedMediaIDs(prev => [...prev, mediaId])}
+                      existingVideo={post.video}
+                      existingVideoRemoved={editRemoveVideo}
+                      onRemoveExistingVideo={() => setEditRemoveVideo(true)}
                       submitLabel="保存する"
                       submittingLabel="保存中..."
                       placeholder="投稿を編集..."
@@ -455,6 +474,7 @@ export const PostDetailPage = () => {
                 {!isEditing && post.media && post.media.length > 0 && (
                   <PostMediaGrid media={post.media} large />
                 )}
+                {!isEditing && post.video && <VideoPlayer video={post.video} />}
 
                 <div className={styles.timestamp}>
                   {new Date(post.createdAt).toLocaleString('ja-JP')}
@@ -499,6 +519,7 @@ export const PostDetailPage = () => {
                   userName={profile?.user.name}
                   selectedFiles={replyFiles}
                   onFileSelect={setReplyFiles}
+                  videoDraft={replyVideo}
                 />
               </div>
             )}

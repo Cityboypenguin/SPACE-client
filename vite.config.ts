@@ -8,6 +8,11 @@ const storageTarget = process.env.SPACE_STORAGE_PROXY_TARGET ?? 'http://host.doc
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // 動画の圧縮 Worker が使う。開発サーバーが初めて読み込んだときに依存を見つけて
+  // ページごと再読み込みしないよう、先に束ねておく。
+  optimizeDeps: {
+    include: ['mediabunny'],
+  },
   build: {
     rollupOptions: {
       output: {
@@ -40,6 +45,11 @@ export default defineConfig({
       },
       // DM の添付の置き場（compose.yaml の MESSAGE_MEDIA_CONTAINER）。
       '/space-message-media': {
+        target: storageTarget,
+        changeOrigin: true,
+      },
+      // 動画とサムネイルの置き場（compose.yaml の VIDEO_CONTAINER）。
+      '/space-videos': {
         target: storageTarget,
         changeOrigin: true,
       },

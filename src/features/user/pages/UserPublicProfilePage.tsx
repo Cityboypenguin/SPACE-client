@@ -18,6 +18,7 @@ import { createBlocker, deleteBlocker, getBlockersByUserID } from '../api/block'
 import { getOrCreateDMRoom } from '../api/message';
 import { getPostsByUserID, createPost, createFavorite, deleteFavorite, type Post } from '../api/post';
 import { uploadMediaFiles } from '../api/media';
+import type { VideoInput } from '../../../lib/video/fields';
 import { toUserMessage } from '../../../lib/errorMessages';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import { getUserPostListCache, saveUserPostListCache } from '../cache/postListCache';
@@ -311,10 +312,10 @@ export const UserPublicProfilePage = () => {
     setReportingPostContent(postContent);
   };
 
-  const handleReplySubmit = async (content: string, files: File[]) => {
+  const handleReplySubmit = async (content: string, files: File[], video?: VideoInput) => {
     if (!replyingTo) return;
     const mediaInputs = await uploadMediaFiles(files);
-    await createPost(content.trim(), replyingTo.ID, mediaInputs);
+    await createPost(content.trim(), replyingTo.ID, mediaInputs, video);
     setPosts((prev) => prev.map((p) => p.ID === replyingTo.ID ? { ...p, replyCount: p.replyCount + 1 } : p));
   };
 

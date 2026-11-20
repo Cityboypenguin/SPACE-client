@@ -29,12 +29,27 @@ export type ReportedContent = {
   authorAccountID: string | null;
   content: string;
   media: { ID: string; url: string; contentType: string }[];
+  // 詳細（getReport）でだけ取る。一覧では undefined。
+  video?: ReportedVideo | null;
   stampID: string | null;
   addenda: string[];
   parentBody: string | null;
   pollOptions: string[];
   createdAt: string;
   updatedAt: string;
+};
+
+// 通報の写しの動画。available はファイルが残っているか（通報への対応が終わると消える）。
+export type ReportedVideo = {
+  ID: string;
+  durationMs: number;
+  width: number;
+  height: number;
+  hasAudio: boolean;
+  sizeBytes: number;
+  createdAt: string;
+  available: boolean;
+  thumbnailURL: string | null;
 };
 
 export type ReportDetail = Report & {
@@ -109,6 +124,17 @@ const GetReportDocument = graphql(`
           contentType
         }
         stampID
+        video {
+          ID
+          durationMs
+          width
+          height
+          hasAudio
+          sizeBytes
+          createdAt
+          available
+          thumbnailURL
+        }
         addenda
         parentBody
         pollOptions
@@ -120,6 +146,22 @@ const GetReportDocument = graphql(`
     }
   }
 `);
+
+const AdminReportedVideoPlaybackDocument = graphql(`
+  mutation AdminRequestReportedVideoPlayback($reportID: ID!) {
+    adminRequestReportedVideoPlayback(reportID: $reportID) {
+      url
+      expiresAt
+    }
+  }
+`);
+
+// requestReportedVideoPlayback は通報の写しの動画の再生用URL。投稿者が退会していても、
+// 通報への対応が終わるまでは取れる。
+export const requestReportedVideoPlayback = async (reportID: string) => {
+  const data = await requestDoc(AdminReportedVideoPlaybackDocument, { reportID }, getAdminToken());
+  return data.adminRequestReportedVideoPlayback;
+};
 
 const UpdateReportStatusDocument = graphql(`
   mutation UpdateReportStatus($id: ID!, $status: ReportStatus!) {

@@ -20,6 +20,7 @@ import styles from '../ChatRoom.module.css';
 import { renderChatText } from '../../../../lib/renderTextWithLinks';
 import { useMentionNavigation } from '../../hooks/useMentionNavigation';
 import { MediaList } from './ChatMessageMedia';
+import { VideoPlayer } from '../../../../components/molecules/VideoPlayer';
 import { FILES_REMOVED_TEXT } from '../../constants/filesRemoved';
 import { ReplyQuote } from './ChatReplyQuote';
 import { ReactionBar } from './ChatReactionBar';
@@ -93,7 +94,8 @@ export const ChatMessageBubble = ({
   const hasMedia = msg.media && msg.media.length > 0;
   // 本文も添付も無いメッセージは送れない。それでも空なのは、添付を上げた人が
   // 退会して個人情報ごと消されたか、管理者が画像を消して、添付だけが無くなったとき。
-  const filesRemoved = !isStamp && !hasText && !hasMedia;
+  const hasVideo = !!msg.video;
+  const filesRemoved = !isStamp && !hasText && !hasMedia && !hasVideo;
   const canEdit =
     !isThread && editable && isMine && !isStamp && msg.content.trim() !== '';
   const canReply = !isThread && !!onReply && !isEditing;
@@ -624,6 +626,11 @@ export const ChatMessageBubble = ({
                 )
               )}
               {hasMedia && <MediaList mediaItems={msg.media} isMine={isMine} />}
+              {msg.video && (
+                <div className={styles.videoWrap}>
+                  <VideoPlayer video={msg.video} />
+                </div>
+              )}
             </>
           )}
         </div>

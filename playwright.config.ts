@@ -35,6 +35,14 @@ export default defineConfig({
       dependencies: ['setup'],
     },
     {
+      // 動画の圧縮（src/lib/video）を実際のブラウザーで確かめる。サーバーは要らない。
+      // Playwright 同梱の Chromium は H.264 のエンコーダーを持たないことがあるので、
+      // インストール済みの Google Chrome を使う。
+      name: 'video',
+      testDir: './e2e/video',
+      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    },
+    {
       name: 'admin',
       testDir: './e2e/admin',
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/admin.json' },

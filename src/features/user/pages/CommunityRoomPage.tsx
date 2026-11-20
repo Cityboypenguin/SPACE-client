@@ -52,6 +52,7 @@ export const CommunityRoomPage = () => {
   const {
     content, setContent,
     selectedFiles, setSelectedFiles,
+    videoDraft,
     sending,
     sendError,
     editingId, setEditingId,
@@ -303,6 +304,7 @@ export const CommunityRoomPage = () => {
         onChange={setContent}
         onSubmit={handleSend}
         onFileSelect={setSelectedFiles}
+        videoDraft={videoDraft}
         selectedFiles={selectedFiles}
         disabled={sending}
         replyTarget={replyTarget}

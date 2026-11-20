@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ja">
+  <meta charset="utf-8" />
+  <body>
+    <!-- e2e/video の圧縮テスト用。アプリ本体を起動せずに lib/video の圧縮だけを動かす。 -->
+    <script type="module">
+      import { compressVideo, precheckVideoFile } from '/src/lib/video/compressVideo.ts';
+      window.__video = { compressVideo, precheckVideoFile };
+      window.__videoReady = true;
+    </script>
+  </body>
+</html>

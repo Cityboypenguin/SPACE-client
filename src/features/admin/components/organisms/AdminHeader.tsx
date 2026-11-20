@@ -34,6 +34,7 @@ const NAV_ITEMS = [
   { label: '利用規約管理', path: '/admin/terms', emoji: '📜' },
   { label: '管理者管理', path: '/admin/administrators', emoji: '👮', exact: true },
   { label: '新規管理者登録', path: '/admin/register', emoji: '➕' },
+  { label: '動画', path: '/admin/videos', emoji: '🎬' },
   { label: 'メンテナンス', path: '/admin/maintenance', icon: settingsIcon, iconSize: 20 },
 ];
 
