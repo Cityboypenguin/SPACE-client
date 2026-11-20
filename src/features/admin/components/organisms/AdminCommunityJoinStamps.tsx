@@ -8,8 +8,8 @@ import {
 import styles from '../../styles/AdminChatStamps.module.css';
 
 const groups = [
-  { key: 'welcomeIDs', label: '歓迎スタンプ', description: '新しく参加したとき、候補から1つをランダムに投稿します。' },
-  { key: 'greetingIDs', label: 'よろしくスタンプ', description: '参加した本人が候補から選べます。候補が1つならボタンでそのまま送信します。' },
+  { key: 'welcomeIDs', label: '歓迎スタンプ', description: '既存メンバーが、新しく参加した人を歓迎するときに選ぶ候補です。' },
+  { key: 'greetingIDs', label: 'よろしくスタンプ', description: '新しく参加した人の名前で、候補からランダムに1つを自動送信します。' },
 ] as const;
 
 export const AdminCommunityJoinStamps = ({

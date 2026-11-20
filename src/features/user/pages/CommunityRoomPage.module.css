@@ -9,33 +9,64 @@
   color: var(--color-danger);
 }
 
-.greeting {
-  display: grid;
-  justify-items: start;
-  gap: .45rem;
-  margin: .25rem 0 .75rem 2.5rem;
+.joinNotice {
+  display: flex;
+  justify-content: center;
+  padding: .4rem .75rem;
+  text-align: center;
 }
 
-.greeting button {
+.joinNotice span {
+  padding: .25rem .75rem;
+  border-radius: 1rem;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: .8rem;
+  overflow-wrap: anywhere;
+}
+
+.welcomePanel {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  max-width: calc(100% - 1.5rem);
+  margin: .375rem .75rem;
+  padding: .5rem .75rem;
   border: 1px solid var(--color-border);
-  border-radius: .5rem;
-  padding: .4rem .75rem;
-  color: var(--color-text);
+  border-radius: .75rem;
   background: var(--color-surface);
 }
 
-.greeting button:enabled {
+.welcomeHeading {
+  margin: 0 0 .4rem;
+  color: var(--color-text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.welcomeOptions {
+  display: flex;
+  gap: .5rem;
+  overflow-x: auto;
+}
+
+.welcomeOptions button {
+  flex: 0 0 auto;
+  min-width: 4.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: .5rem;
+  padding: .25rem;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+.welcomeOptions button:enabled {
   cursor: pointer;
 }
 
-.greetingOptions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4rem;
-}
-
-.greetingOptions img {
-  width: 52px;
-  height: 42px;
+.welcomeOptions img {
+  display: block;
+  width: 4rem;
+  height: 3rem;
   object-fit: contain;
 }

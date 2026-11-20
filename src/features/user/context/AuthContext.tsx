@@ -91,9 +91,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.removeItem(ADMIN_REFRESH_TOKEN_KEY);
         navigate('/admin/login');
       } else {
-        const { pathname, hash } = window.location;
+        const { pathname, search, hash } = window.location;
         if (pathname === '/login') return;
-        const returnTo = invitationLoginReturn(pathname + hash);
+        const returnTo = invitationLoginReturn(pathname + search + hash);
         navigate('/login', returnTo ? { state: { returnTo }, replace: true } : undefined);
       }
     });

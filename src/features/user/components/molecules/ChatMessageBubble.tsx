@@ -88,9 +88,8 @@ export const ChatMessageBubble = ({
   const location = useLocation();
   const { currentUserID, onMentionClick } = useMentionNavigation();
   const isThread = !!msg.thread;
-  const isWelcome = !!msg.isCommunityWelcome;
   // スタンプだけのメッセージ。本文・添付は無く、吹き出しなしでスタンプを大きく出す。
-  const isStamp = !isThread && !isWelcome && !!msg.stampID;
+  const isStamp = !isThread && !!msg.stampID;
   const hasText = (msg.thread?.title ?? msg.content).trim() !== '';
   const hasMedia = msg.media && msg.media.length > 0;
   // 本文も添付も無いメッセージは送れない。それでも空なのは、添付を上げた人が
@@ -98,7 +97,7 @@ export const ChatMessageBubble = ({
   const hasVideo = !!msg.video;
   const filesRemoved = !isStamp && !hasText && !hasMedia && !hasVideo;
   const canEdit =
-    !isThread && !isWelcome && editable && isMine && !isStamp && msg.content.trim() !== '';
+    !isThread && editable && isMine && !isStamp && msg.content.trim() !== '';
   const canReply = !isThread && !!onReply && !isEditing;
   const canReport = !isThread && !!onReport && !isMine && !isEditing;
   const reactions = msg.reactions ?? [];
@@ -488,8 +487,7 @@ export const ChatMessageBubble = ({
           <ReplyArrow size={18} />
         </span>
       )}
-      {isWelcome && <span className={styles.senderName}>システム</span>}
-      {!isWelcome && !isMine && isGroupStart && (
+      {!isMine && isGroupStart && (
         <span
           className={styles.senderName}
           onClick={() =>
@@ -575,14 +573,7 @@ export const ChatMessageBubble = ({
                * 返信のときは、本文が空（画像のみ）でも引用を入れるためにバブルを出す。
                * 返信でない場合の見た目は従来どおり（本文があるときだけバブル）。
                */}
-              {isWelcome ? (
-                <div className={`${styles.bubble} ${styles.bubbleTheirs}`}>
-                  <span>{msg.user.name}さんが参加しました</span>
-                  {msg.stampID && (
-                    <div><ReactionGlyph emoji={msg.stampID} large /></div>
-                  )}
-                </div>
-              ) : isStamp ? (
+              {isStamp ? (
                 <div
                   className={`${styles.stampMessage} ${isMine ? styles.stampMessageMine : styles.stampMessageTheirs}`}
                 >
@@ -678,7 +669,7 @@ export const ChatMessageBubble = ({
       data-message-id={msg.ID}
     >
       {/* 続きのメッセージではアイコンを出さないが、吹き出しの左端は揃えたいので場所だけ空ける */}
-      {isGroupStart && !isWelcome ? (
+      {isGroupStart ? (
         <UserAvatar
           userId={msg.user.ID}
           name={msg.user.name}

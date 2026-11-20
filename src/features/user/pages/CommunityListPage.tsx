@@ -119,8 +119,12 @@ export const CommunityListPage = () => {
       <UserSidebar />
       <main className={styles.main}>
         <div className={styles.topActions}>
-          <button className={styles.btnSecondary} onClick={() => navigate(RECEIVED_INVITATIONS)}>
-            届いた招待 <UnreadCountBadge count={inviteCount ?? 0} />
+          <button
+            className={`${styles.btnSecondary} ${styles.invitationButton}`}
+            aria-label={inviteCount ? `届いた招待 ${inviteCount}件` : undefined}
+            onClick={() => navigate(RECEIVED_INVITATIONS)}
+          >
+            <span>届いた招待</span><UnreadCountBadge count={inviteCount ?? 0} />
           </button>
           <button className={styles.btnSecondary} onClick={() => navigate('/community/browse')}>
             コミュニティを探す

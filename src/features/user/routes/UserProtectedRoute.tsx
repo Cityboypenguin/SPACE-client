@@ -15,7 +15,7 @@ export const UserProtectedRoute = () => {
   const { pendingTerms, consentChecking, clearPendingTerms } = useNotification();
 
   if (!token) {
-    const returnTo = invitationLoginReturn(location.pathname + location.hash);
+    const returnTo = invitationLoginReturn(location.pathname + location.search + location.hash);
     return <Navigate to="/login" state={returnTo ? { returnTo } : undefined} replace />;
   }
 

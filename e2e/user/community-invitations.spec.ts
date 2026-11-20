@@ -3,7 +3,7 @@ import { loginAsSecondUser } from '../support/secondUser';
 import { env } from '../support/env';
 import { dismissTermsConsentModalIfPresent } from '../support/terms';
 
-test('検索で招待した相手が受信一覧から参加し、歓迎投稿が1回だけ表示される', async ({
+test('検索で招待した相手が受信一覧から参加し、参加案内が1回だけ表示される', async ({
   page, browser, request, baseURL,
 }) => {
   const name = `招待E2E ${Date.now()}`;
@@ -34,13 +34,28 @@ test('検索で招待した相手が受信一覧から参加し、歓迎投稿�
     await page.getByRole('button', { name: '招待する', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('さんに招待を送りました。');
 
+    await recipient.goto(new URL('/notifications', baseURL ?? env.baseURL).href);
+    await recipient.locator('main').getByText(`${name}に招待されました`, { exact: true }).click();
+    await recipient.getByRole('link', { name: '通知に戻る', exact: true }).click();
+    await expect(recipient).toHaveURL(/\/notifications$/);
+
+    await recipient.setViewportSize({ width: 375, height: 812 });
     await recipient.goto(new URL('/community', baseURL ?? env.baseURL).href);
-    await recipient.getByRole('button', { name: /^届いた招待/ }).click();
+    const inviteButton = recipient.getByRole('button', { name: /^届いた招待 [1-9]/ });
+    await expect(inviteButton).toBeVisible();
+    const [label, badge] = await Promise.all([
+      inviteButton.locator('span').first().boundingBox(),
+      inviteButton.locator('span').last().boundingBox(),
+    ]);
+    expect(label && badge && badge.x >= label.x + label.width).toBe(true);
+    await inviteButton.click();
     await recipient.locator('main').getByRole('link', { name: new RegExp(name) }).click();
     await recipient.getByRole('button', { name: '参加する', exact: true }).click();
     await expect(recipient).toHaveURL(/\/community\/chat\//);
     const welcome = recipient.getByText(/さんが参加しました$/);
     await expect(welcome).toHaveCount(1);
+    await expect(welcome).toHaveCSS('text-align', 'center');
+    await expect(recipient.getByText('システム', { exact: true })).toHaveCount(0);
 
     await recipient.reload();
     await expect(welcome).toHaveCount(1);

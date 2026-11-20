@@ -40,12 +40,22 @@
 }
 
 .page button,
-.page input {
+.page input,
+.backLink {
   border: 1px solid var(--color-border);
   border-radius: .45rem;
   color: var(--color-text);
   background: var(--color-surface);
   padding: .5rem .75rem;
+}
+
+.backLink {
+  display: inline-flex;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  background: var(--color-bg-elevated);
 }
 
 .page button:enabled {

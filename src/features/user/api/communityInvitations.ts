@@ -57,6 +57,7 @@ const GreetingDocument = graphql(`
   query CommunityGreetingOptions($roomID: ID!) {
     communityGreeting(roomID: $roomID) {
       welcomeMessageID
+      joinedUserName
       stamps { id label imageUrl }
     }
   }

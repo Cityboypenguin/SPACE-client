@@ -1,4 +1,4 @@
-import { COMMUNITY_INVITATION_TYPE, individualInvitationPath } from '../lib/communityInvitationLinks';
+import { COMMUNITY_INVITATION_TYPE, notificationInvitationPath } from '../lib/communityInvitationLinks';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -262,7 +262,7 @@ export const NotificationListPage = () => {
       decrementUnread();
     }
     const invitationLink = group.type === COMMUNITY_INVITATION_TYPE && group.targetID
-      ? individualInvitationPath(group.targetID)
+      ? notificationInvitationPath(group.targetID)
       : null;
     navigate(invitationLink ?? replyLink ?? `/notifications/${group.latestID}`);
   };

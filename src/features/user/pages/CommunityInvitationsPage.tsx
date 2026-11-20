@@ -52,7 +52,9 @@ const statusText: Record<string, string> = {
 
 export const CommunityInvitationPage = ({ shared = false }: { shared?: boolean }) => {
   const { id } = useParams<{ id: string }>();
-  const { hash } = useLocation();
+  const { hash, search } = useLocation();
+  const fromNotification = new URLSearchParams(search).get('from') === 'notifications';
+  const returnTo = fromNotification ? '/notifications' : RECEIVED_INVITATIONS;
   const navigate = useNavigate();
   const { userId } = useAuth();
   const { mutate } = useSWRConfig();
@@ -83,7 +85,7 @@ export const CommunityInvitationPage = ({ shared = false }: { shared?: boolean }
       } else if (id) {
         await declineInvitation(id);
         if (userId) void mutate(receivedInvitationCountKey(userId));
-        navigate(RECEIVED_INVITATIONS, { replace: true });
+        navigate(returnTo, { replace: true });
       }
     } catch (err) {
       setActionError(toUserMessage(err, '招待を処理できませんでした。'));
@@ -96,7 +98,9 @@ export const CommunityInvitationPage = ({ shared = false }: { shared?: boolean }
     <div>
       <UserSidebar />
       <main className={styles.page}>
-        <Link to={RECEIVED_INVITATIONS}>届いた招待に戻る</Link>
+        <Link className={styles.backLink} to={returnTo}>
+          {fromNotification ? '通知に戻る' : '届いた招待に戻る'}
+        </Link>
         <h1>コミュニティへの招待</h1>
         {isLoading && <p>読み込み中…</p>}
         {(error || !input) && <p role="alert">この招待は利用できません。</p>}

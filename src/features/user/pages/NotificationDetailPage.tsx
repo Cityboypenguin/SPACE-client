@@ -1,4 +1,4 @@
-import { COMMUNITY_INVITATION_TYPE, individualInvitationPath } from '../lib/communityInvitationLinks';
+import { COMMUNITY_INVITATION_TYPE, notificationInvitationPath } from '../lib/communityInvitationLinks';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -53,7 +53,7 @@ const ACTION_LABEL: Record<string, string> = {
 const TARGET_PATH: Record<string, (id: string) => string> = {
   post: (id) => `/posts/${id}`,
   room: (id) => `/community/chat/${id}`,
-  communityInvitation: individualInvitationPath,
+  communityInvitation: notificationInvitationPath,
   community: () => `/community`,
   announcement: (id) => `/announcements/${id}`,
   // シラバス同期で時間割から外した授業（timetable_removed）。授業そのものより、
