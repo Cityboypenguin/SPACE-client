@@ -85,6 +85,25 @@ const SendGreetingDocument = graphql(`
   }
 `);
 
+const JoinGreetingDocument = graphql(`
+  query CommunityJoinGreeting($roomID: ID!) {
+    communityJoinGreeting(roomID: $roomID) { id label imageUrl }
+  }
+`);
+
+const SendJoinGreetingDocument = graphql(`
+  mutation SendCommunityJoinGreeting($roomID: ID!, $stampID: String!) {
+    sendCommunityJoinGreeting(roomID: $roomID, stampID: $stampID) {
+      ID roomID content stampID createdAt updatedAt isMine isCommunityWelcome
+      user { ID name accountID avatarUrl }
+    }
+  }
+`);
+
+const SkipJoinGreetingDocument = graphql(`
+  mutation SkipCommunityJoinGreeting($roomID: ID!) { skipCommunityJoinGreeting(roomID: $roomID) }
+`);
+
 export type InvitationReference = { id: string } | { token: string };
 
 const token = () => getUserToken() ?? undefined;
@@ -115,3 +134,8 @@ export const getCommunityGreeting = async (roomID: string) =>
   (await requestDoc(GreetingDocument, { roomID }, token())).communityGreeting;
 export const sendCommunityGreeting = async (roomID: string, welcomeMessageID: string, stampID: string) =>
   (await requestDoc(SendGreetingDocument, { roomID, welcomeMessageID, stampID }, token())).sendCommunityGreeting;
+export const getCommunityJoinGreeting = async (roomID: string) =>
+  (await requestDoc(JoinGreetingDocument, { roomID }, token())).communityJoinGreeting;
+export const sendCommunityJoinGreeting = async (roomID: string, stampID: string) =>
+  (await requestDoc(SendJoinGreetingDocument, { roomID, stampID }, token())).sendCommunityJoinGreeting;
+export const skipCommunityJoinGreeting = (roomID: string) => requestDoc(SkipJoinGreetingDocument, { roomID }, token());
