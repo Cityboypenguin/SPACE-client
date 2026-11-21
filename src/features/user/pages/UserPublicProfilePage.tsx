@@ -8,6 +8,7 @@ import { ReportModal } from '../components/organisms/ReportModal';
 import { ReplyModal } from '../components/organisms/ReplyModal';
 import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
 import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
+import { useTimetableEnabled } from '../hooks/useTimetableEnabled';
 import { ProfilePillButton } from '../components/molecules/ProfilePillButton';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/molecules/DropdownMenu';
 import { useProfile } from '../hooks/useProfile';
@@ -34,6 +35,7 @@ import { AppSwal } from '../../../lib/swal';
 import { withLikeToggled } from '../../../lib/postUtils';
 
 export const UserPublicProfilePage = () => {
+  const { enabled: timetableEnabled, isLoading: timetableStatusLoading } = useTimetableEnabled();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile, loading, error } = useProfile(id);
@@ -333,7 +335,13 @@ export const UserPublicProfilePage = () => {
         />
       )}
       <div className={styles.profileActionPair}>
-        {!isBlocked && <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} />}
+        {!isBlocked && (
+          <ProfileTimetableButton
+            onClick={() => setIsTimetableOpen(true)}
+            disabled={timetableStatusLoading || !timetableEnabled}
+            title={!timetableEnabled ? '時間割はメンテナンス中です' : timetableStatusLoading ? '時間割の状態を確認中です' : undefined}
+          />
+        )}
         <ProfilePillButton
           icon={dmIcon}
           onClick={handleDM}
@@ -431,7 +439,7 @@ export const UserPublicProfilePage = () => {
         />
       )}
 
-      {profile && isTimetableOpen && (
+      {profile && isTimetableOpen && timetableEnabled && !timetableStatusLoading && (
         <PublicTimetableOverlay
           userId={profile.user.ID}
           userName={profile.user.name}

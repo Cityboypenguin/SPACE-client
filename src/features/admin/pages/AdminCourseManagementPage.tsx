@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminHeader } from '../components/organisms/AdminHeader';
 import { useToast } from '../../../context/useToast';
+import { ADMIN_TOKEN_KEY } from '../api/auth';
+import { getTimetableEnabled, toggleTimetableEnabled } from '../api/maintenance';
 import {
   getCurrentSemester,
   updateCurrentSemester,
@@ -45,6 +47,11 @@ export const AdminCourseManagementPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [timetableEnabled, setTimetableEnabled] = useState(true);
+  const [timetableLoading, setTimetableLoading] = useState(() => Boolean(localStorage.getItem(ADMIN_TOKEN_KEY)));
+  const [timetableToggling, setTimetableToggling] = useState(false);
+  const [timetableError, setTimetableError] = useState('');
+  const [showTimetableConfirm, setShowTimetableConfirm] = useState(false);
 
   const [year, setYear] = useState(new Date().getFullYear());
   const [semester, setSemester] = useState('前期');
@@ -84,6 +91,15 @@ export const AdminCourseManagementPage = () => {
   }, []);
 
   useEffect(() => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!token) return;
+    getTimetableEnabled(token)
+      .then(setTimetableEnabled)
+      .catch(() => setTimetableError('時間割の状態取得に失敗しました'))
+      .finally(() => setTimetableLoading(false));
+  }, []);
+
+  useEffect(() => {
     if (status?.state !== 'RUNNING') return;
     const unsubscribe = subscribeToAdminGraphQL<{ adminCourseImportStatusUpdated: CourseImportStatus }>(
       ADMIN_COURSE_IMPORT_STATUS_UPDATED_SUBSCRIPTION,
@@ -112,6 +128,23 @@ export const AdminCourseManagementPage = () => {
       addToast(err instanceof Error ? err.message : '学期の更新に失敗しました', 'error');
     } finally {
       setSavingSemester(false);
+    }
+  };
+
+  const handleTimetableConfirm = async () => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!token) return;
+    setShowTimetableConfirm(false);
+    setTimetableError('');
+    setTimetableToggling(true);
+    try {
+      const next = !timetableEnabled;
+      await toggleTimetableEnabled(next, token);
+      setTimetableEnabled(next);
+    } catch {
+      setTimetableError('時間割の切り替えに失敗しました。もう一度お試しください。');
+    } finally {
+      setTimetableToggling(false);
     }
   };
 
@@ -199,6 +232,34 @@ export const AdminCourseManagementPage = () => {
                     {savingSemester ? '更新中...' : '学期を更新する'}
                   </button>
                 </div>
+              </div>
+
+              <div className={styles.card}>
+                <h2 className={styles.cardTitle}>時間割メンテナンス</h2>
+                {timetableLoading ? (
+                  <p className={styles.cellMuted}>状態を確認中...</p>
+                ) : (
+                  <>
+                    <p className={styles.statusParagraph}>
+                      現在の状態：
+                      <strong className={timetableEnabled ? styles.successText : styles.errorText}>
+                        {timetableEnabled ? ' 稼働中' : ' メンテナンス中'}
+                      </strong>
+                    </p>
+                    {timetableError && <p className={styles.errorText}>{timetableError}</p>}
+                    <button
+                      type="button"
+                      onClick={() => setShowTimetableConfirm(true)}
+                      disabled={timetableToggling}
+                      className={`${styles.maintenanceToggleButton} ${timetableEnabled ? styles.dangerFillButton : styles.successButton} ${timetableToggling ? styles.disabled : ''}`}
+                    >
+                      {timetableToggling ? '処理中...' : timetableEnabled ? '時間割を停止する' : '時間割を再開する'}
+                    </button>
+                    {!timetableEnabled && (
+                      <p className={styles.helpText}>利用者の時間割関連画面を一時停止中の表示に切り替えます。</p>
+                    )}
+                  </>
+                )}
               </div>
 
             <div className={styles.sectionCard}>
@@ -316,6 +377,35 @@ export const AdminCourseManagementPage = () => {
           </div>
         )}
       </main>
+
+      {showTimetableConfirm && (
+        <div
+          className={styles.modalOverlay}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowTimetableConfirm(false); }}
+        >
+          <div className={styles.confirmDialog}>
+            <p className={styles.confirmTitle}>
+              {timetableEnabled ? '時間割を停止しますか？' : '時間割を再開しますか？'}
+            </p>
+            <p className={styles.confirmText}>
+              {timetableEnabled
+                ? '利用者には時間割のメンテナンス画面が表示されます。'
+                : '利用者が時間割を通常通り利用できるようになります。'}
+            </p>
+            <div className={styles.confirmActions}>
+              <button onClick={() => setShowTimetableConfirm(false)} className={styles.secondaryButtonLarge}>
+                キャンセル
+              </button>
+              <button
+                onClick={() => { void handleTimetableConfirm(); }}
+                className={`${styles.primaryButtonLargeRounded} ${timetableEnabled ? styles.dangerFillButton : styles.successButton}`}
+              >
+                {timetableEnabled ? '停止する' : '再開する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

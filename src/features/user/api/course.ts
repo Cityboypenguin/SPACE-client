@@ -277,6 +277,15 @@ export const getCourseChatEnabled = async (): Promise<boolean> => {
   return data.courseChatEnabled;
 };
 
+export const getTimetableEnabled = async (): Promise<boolean> => {
+  const data = await request<{ timetableEnabled: boolean }>(
+    'query TimetableEnabled { timetableEnabled }',
+    {},
+    getUserToken(),
+  );
+  return data.timetableEnabled;
+};
+
 export const getCourseYears = async (): Promise<number[]> => {
   const data = await requestDoc(CourseYearsDocument, {}, getUserToken());
   return data.courseYears;

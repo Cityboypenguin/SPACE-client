@@ -1,0 +1,29 @@
+/* ライトモード用 */
+.disabled:disabled {
+  --pill-bg: #e2e8f0;
+  --pill-border: var(--color-border);
+  --pill-color: var(--color-text-muted);
+  --pill-bg-hover: #e2e8f0;
+  --pill-border-hover: var(--color-border);
+  opacity: 0.72;
+  filter: grayscale(1);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+/* ダークモード用 */
+:global(:root[data-theme='dark']) .disabled:disabled {
+  --pill-bg: #1e293b;
+  --pill-bg-hover: #1e293b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .disabled:disabled {
+    --pill-bg: #1e293b;
+    --pill-bg-hover: #1e293b;
+  }
+}
+
+.disabled:disabled img {
+  opacity: 0.45;
+  filter: grayscale(1);
+}

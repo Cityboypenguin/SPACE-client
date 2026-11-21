@@ -12,6 +12,7 @@ import { useToast } from '../../../context/useToast';
 import { getMyTermsConsentStatus, type TermsOfService } from '../api/terms';
 import { emitRoomChanged, type RoomChangedEvent } from '../hooks/useUnreadSubscription';
 import { applyCourseChatStatus, refreshCourseChatStatus } from '../hooks/useCourseChatEnabled';
+import { applyTimetableStatus, refreshTimetableStatus } from '../hooks/useTimetableEnabled';
 import { courseQuestionBoxLink, isAddendumNotification, isMessageJumpNotification, replyNotificationLink } from '../lib/notificationLinks';
 import { getUnreadNotificationCount, issueNotificationStreamTicket } from '../api/notification';
 
@@ -187,6 +188,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         refreshUnreadCount();
         refreshConsent();
         refreshCourseChatStatus();
+        refreshTimetableStatus();
       });
 
       // 通知の状態が変わった、という事実だけが届く（数字は載らない）。
@@ -209,6 +211,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         try {
           const { enabled } = JSON.parse(e.data as string) as { enabled?: unknown };
           if (typeof enabled === 'boolean') applyCourseChatStatus(enabled);
+        } catch {
+          // ignore malformed event
+        }
+      });
+
+      source.addEventListener('timetable_status', (e: MessageEvent) => {
+        try {
+          const { enabled } = JSON.parse(e.data as string) as { enabled?: unknown };
+          if (typeof enabled === 'boolean') applyTimetableStatus(enabled);
         } catch {
           // ignore malformed event
         }

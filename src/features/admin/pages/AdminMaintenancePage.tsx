@@ -77,6 +77,7 @@ export const AdminMaintenancePage = () => {
 
           </>
         )}
+
       </main>
 
       {showConfirm && (
@@ -110,6 +111,7 @@ export const AdminMaintenancePage = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

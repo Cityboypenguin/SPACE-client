@@ -60,6 +60,9 @@ const CommunityMembersPage = lazy(() =>
 const TimetablePage = lazy(() =>
   import('../pages/TimetablePage').then((m) => ({ default: m.TimetablePage })),
 );
+const TimetableMaintenanceGuard = lazy(() =>
+  import('../pages/TimetableMaintenanceGuard').then((m) => ({ default: m.TimetableMaintenanceGuard })),
+);
 const CourseSearchPage = lazy(() =>
   import('../pages/CourseSearchPage').then((m) => ({ default: m.CourseSearchPage })),
 );
@@ -126,8 +129,10 @@ export const userRoutes = (
       <Route path="/community/chat/:roomId" element={<CommunityRoomPage />} />
       <Route path="/community/edit/:communityID" element={<CommunityEditPage />} />
       <Route path="/community/members/:communityID" element={<CommunityMembersPage />} />
-      <Route path="/timetable" element={<TimetablePage />} />
-      <Route path="/timetable/search" element={<CourseSearchPage />} />
+      <Route path="/timetable" element={<TimetableMaintenanceGuard />}>
+        <Route index element={<TimetablePage />} />
+        <Route path="search" element={<CourseSearchPage />} />
+      </Route>
       <Route path="/courses/chat/:roomId" element={<CourseRoomPage />} />
       <Route path="/home" element={<PostListPage />} />
       <Route path="/posts/:id" element={<PostDetailPage />} />

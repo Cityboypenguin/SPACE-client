@@ -8,6 +8,7 @@ import { PostComposer } from '../components/organisms/PostComposer';
 import { ReportModal } from '../components/organisms/ReportModal';
 import { PublicTimetableOverlay } from '../components/organisms/PublicTimetableOverlay';
 import { ProfileTimetableButton } from '../components/molecules/ProfileTimetableButton';
+import { useTimetableEnabled } from '../hooks/useTimetableEnabled';
 import { ProfilePillButton } from '../components/molecules/ProfilePillButton';
 import editIcon from '../../../assets/パーツ_メッセージ編集.svg';
 import favoriteIcon from '../../../assets/パーツ_お気に入り.svg';
@@ -39,6 +40,7 @@ import { withLikeToggled } from '../../../lib/postUtils';
 const LIMIT = 20;
 
 export const UserDashboard = () => {
+  const { enabled: timetableEnabled, isLoading: timetableStatusLoading } = useTimetableEnabled();
   const navigate = useNavigate();
   const location = useLocation();
   const { userId } = useAuth();
@@ -312,7 +314,12 @@ export const UserDashboard = () => {
     <div className={styles.actionButtons}>
       <ProfilePillButton to="/mypage/profile-edit" icon={editIcon} label="プロフィール編集" themedIcon compact />
       <ProfilePillButton to="/mypage/favorites" icon={favoriteIcon} label="お気に入りリスト" themedIcon compact />
-      <ProfileTimetableButton onClick={() => setIsTimetableOpen(true)} compact />
+      <ProfileTimetableButton
+        onClick={() => setIsTimetableOpen(true)}
+        compact
+        disabled={timetableStatusLoading || !timetableEnabled}
+        title={!timetableEnabled ? '時間割はメンテナンス中です' : timetableStatusLoading ? '時間割の状態を確認中です' : undefined}
+      />
       {/* <ProfilePillButton to="/mypage/followers" icon={followerIcon} label="フォロワー" themedIcon /> */}
     </div>
   );
@@ -406,7 +413,7 @@ export const UserDashboard = () => {
           />
         )}
 
-        {profile && userId && isTimetableOpen && (
+        {profile && userId && isTimetableOpen && timetableEnabled && !timetableStatusLoading && (
           <PublicTimetableOverlay
             userId={userId}
             userName={profile.user.name}
